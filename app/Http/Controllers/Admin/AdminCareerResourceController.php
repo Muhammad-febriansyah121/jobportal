@@ -7,10 +7,10 @@ use App\Http\Controllers\Admin\Concerns\BuildsAdminPages;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SaveCareerResourceRequest;
 use App\Models\CareerResource;
+use App\Support\UniqueSlug;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -57,12 +57,12 @@ class AdminCareerResourceController extends Controller
             ],
             'columns' => [
                 ['key' => 'thumbnail', 'label' => 'Thumbnail'],
-                ['key' => 'title', 'label' => 'Title'],
+                ['key' => 'title', 'label' => 'Judul'],
                 ['key' => 'slug', 'label' => 'Slug'],
-                ['key' => 'type', 'label' => 'Type'],
+                ['key' => 'type', 'label' => 'Tipe'],
                 ['key' => 'category', 'label' => 'Kategori'],
                 ['key' => 'status', 'label' => 'Status'],
-                ['key' => 'published_at', 'label' => 'Publish'],
+                ['key' => 'published_at', 'label' => 'Tanggal terbit'],
             ],
             'rows' => $resources,
             'emptyState' => 'Belum ada career resource.',
@@ -100,8 +100,8 @@ class AdminCareerResourceController extends Controller
             'actions' => [
                 $this->action('Edit', route('admin.career-resources.edit', $careerResource), 'Pencil'),
                 $careerResource->published_at
-                    ? $this->action('Unpublish', route('admin.career-resources.unpublish', $careerResource), 'X', 'patch', 'outline', 'Unpublish artikel?', 'Artikel tidak tampil sebagai published.')
-                    : $this->action('Publish', route('admin.career-resources.publish', $careerResource), 'Check', 'patch', 'default', 'Publish artikel?', 'Artikel akan ditandai published.'),
+                    ? $this->action('Sembunyikan', route('admin.career-resources.unpublish', $careerResource), 'X', 'patch', 'outline', 'Sembunyikan artikel?', 'Artikel tidak akan tampil sebagai konten terbit.')
+                    : $this->action('Terbitkan', route('admin.career-resources.publish', $careerResource), 'Check', 'patch', 'default', 'Terbitkan artikel?', 'Artikel akan ditandai sebagai konten terbit.'),
             ],
         ]);
     }
@@ -166,15 +166,19 @@ class AdminCareerResourceController extends Controller
     {
         $validated = $request->validated();
         unset($validated['thumbnail']);
+        $careerResource = $request->route('career_resource') ?? $request->route('careerResource');
 
         $payload = [
             ...$validated,
-            'slug' => $validated['slug'] ?: Str::slug($validated['title']),
+            'slug' => UniqueSlug::make(
+                CareerResource::class,
+                $validated['title'],
+                'resource',
+                $careerResource instanceof CareerResource ? $careerResource : null,
+            ),
         ];
 
         if ($request->hasFile('thumbnail')) {
-            $careerResource = $request->route('careerResource');
-
             if ($careerResource instanceof CareerResource) {
                 $this->deleteThumbnail($careerResource);
             }
@@ -194,8 +198,8 @@ class AdminCareerResourceController extends Controller
             $this->action('Lihat Detail', route('admin.career-resources.show', $resource), 'Eye'),
             $this->action('Edit', route('admin.career-resources.edit', $resource), 'Pencil'),
             $resource->published_at
-                ? $this->action('Unpublish', route('admin.career-resources.unpublish', $resource), 'X', 'patch', 'outline', 'Unpublish artikel?', 'Artikel tidak tampil sebagai published.')
-                : $this->action('Publish', route('admin.career-resources.publish', $resource), 'Check', 'patch', 'default', 'Publish artikel?', 'Artikel akan ditandai published.'),
+                ? $this->action('Sembunyikan', route('admin.career-resources.unpublish', $resource), 'X', 'patch', 'outline', 'Sembunyikan artikel?', 'Artikel tidak akan tampil sebagai konten terbit.')
+                : $this->action('Terbitkan', route('admin.career-resources.publish', $resource), 'Check', 'patch', 'default', 'Terbitkan artikel?', 'Artikel akan ditandai sebagai konten terbit.'),
             $this->action('Hapus', route('admin.career-resources.destroy', $resource), 'Trash', 'delete', 'destructive', 'Hapus artikel?', 'Artikel akan dihapus permanen.'),
         ];
     }

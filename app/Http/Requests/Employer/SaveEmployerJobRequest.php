@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Employer;
 
-use App\Models\JobListing;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -19,12 +18,8 @@ class SaveEmployerJobRequest extends FormRequest
      */
     public function rules(): array
     {
-        /** @var JobListing|null $jobListing */
-        $jobListing = $this->route('jobListing');
-
         return [
             'title' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'alpha_dash', Rule::unique('job_listings', 'slug')->ignore($jobListing)],
             'industry_id' => ['nullable', 'integer', 'exists:industries,id'],
             'description' => ['nullable', 'string'],
             'responsibilities' => ['nullable', 'string'],

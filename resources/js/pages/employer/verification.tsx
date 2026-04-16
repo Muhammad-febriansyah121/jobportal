@@ -1,4 +1,6 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import { CheckCircle2, FileText, Upload, X } from 'lucide-react';
+import { useRef, useState } from 'react';
 import EmployerCompanyVerificationController from '@/actions/App/Http/Controllers/Employer/EmployerCompanyVerificationController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -123,36 +125,35 @@ export default function EmployerVerification({
                                                 </Field>
                                             </div>
 
-                                            <Field
-                                                label="Upload dokumen legal"
+                                            <DocumentUploadField
                                                 name="document"
+                                                currentUrl={
+                                                    verification?.document_url
+                                                }
                                                 error={errors.document}
-                                            >
-                                                <Input
-                                                    type="file"
-                                                    name="document"
-                                                    accept=".pdf,.jpg,.jpeg,.png"
-                                                />
-                                            </Field>
-
-                                            <Field
-                                                label="Atau URL dokumen"
-                                                name="document_url"
-                                                error={errors.document_url}
-                                            >
-                                                <Input
-                                                    name="document_url"
-                                                    defaultValue={
-                                                        verification?.document_url ??
-                                                        ''
-                                                    }
-                                                    placeholder="https://.../dokumen.pdf"
-                                                />
-                                            </Field>
+                                            />
 
                                             {progress ? (
-                                                <div className="rounded-lg border p-3 text-sm text-muted-foreground">
-                                                    Upload {progress.percentage}%
+                                                <div className="space-y-1.5">
+                                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                                        <span>
+                                                            Mengunggah dokumen…
+                                                        </span>
+                                                        <span>
+                                                            {
+                                                                progress.percentage
+                                                            }
+                                                            %
+                                                        </span>
+                                                    </div>
+                                                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                                                        <div
+                                                            className="h-full rounded-full bg-primary transition-all"
+                                                            style={{
+                                                                width: `${progress.percentage}%`,
+                                                            }}
+                                                        />
+                                                    </div>
                                                 </div>
                                             ) : null}
 
@@ -277,6 +278,142 @@ function StatusBadge({ status, label }: { status: string; label: string }) {
               : 'secondary';
 
     return <Badge variant={variant}>{label.replaceAll('_', ' ')}</Badge>;
+}
+
+function DocumentUploadField({
+    name,
+    currentUrl,
+    error,
+}: {
+    name: string;
+    currentUrl?: string | null;
+    error?: string;
+}) {
+    const [file, setFile] = useState<File | null>(null);
+    const [dragging, setDragging] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const isPdf = (f: File) => f.type === 'application/pdf';
+    const formatSize = (bytes: number) =>
+        bytes >= 1_000_000
+            ? `${(bytes / 1_000_000).toFixed(1)} MB`
+            : `${Math.round(bytes / 1024)} KB`;
+
+    const handleFiles = (files: FileList | null) => {
+        if (files?.[0]) {
+            setFile(files[0]);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setDragging(false);
+        handleFiles(e.dataTransfer.files);
+    };
+
+    const handleClear = () => {
+        setFile(null);
+        if (inputRef.current) inputRef.current.value = '';
+    };
+
+    const hasExistingDoc = !!currentUrl && !file;
+
+    return (
+        <div className="grid gap-2">
+            <Label>Dokumen legal</Label>
+            <p className="text-xs text-muted-foreground">
+                Upload NIB, NPWP, akta pendirian, atau dokumen legalitas
+                lainnya. Format: PDF, JPG, PNG — maks 5 MB.
+            </p>
+
+            {/* Current document indicator */}
+            {hasExistingDoc && (
+                <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+                    <CheckCircle2 className="size-5 shrink-0 text-green-600" />
+                    <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-green-800">
+                            Dokumen sebelumnya tersimpan
+                        </p>
+                        <a
+                            href={currentUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="truncate text-xs text-green-700 underline-offset-2 hover:underline"
+                        >
+                            Lihat dokumen
+                        </a>
+                    </div>
+                    <span className="shrink-0 text-xs text-green-600">
+                        Upload baru untuk mengganti
+                    </span>
+                </div>
+            )}
+
+            {/* Selected file preview */}
+            {file ? (
+                <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-background">
+                        <FileText className="size-5 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">
+                            {file.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                            {formatSize(file.size)}
+                            {isPdf(file) ? ' · PDF' : ' · Gambar'}
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={handleClear}
+                        className="rounded-full p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                        title="Hapus pilihan"
+                    >
+                        <X className="size-4" />
+                    </button>
+                </div>
+            ) : (
+                /* Drop zone */
+                <div
+                    onDragOver={(e) => {
+                        e.preventDefault();
+                        setDragging(true);
+                    }}
+                    onDragLeave={() => setDragging(false)}
+                    onDrop={handleDrop}
+                    onClick={() => inputRef.current?.click()}
+                    className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
+                        dragging
+                            ? 'border-primary bg-primary/5'
+                            : 'border-input bg-muted/20 hover:border-ring hover:bg-muted/40'
+                    }`}
+                >
+                    <div className="flex size-12 items-center justify-center rounded-full border bg-background">
+                        <Upload className="size-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium">
+                            Klik untuk pilih file, atau drag &amp; drop
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                            PDF, JPG, PNG hingga 5 MB
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            <input
+                ref={inputRef}
+                type="file"
+                name={name}
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+            />
+            <InputError message={error} />
+        </div>
+    );
 }
 
 EmployerVerification.layout = {

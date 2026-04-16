@@ -7,10 +7,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Employer\SaveEmployerJobRequest;
 use App\Models\Industry;
 use App\Models\JobListing;
+use App\Support\UniqueSlug;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -86,7 +86,7 @@ class EmployerJobListingController extends Controller
         }
 
         $data = $request->validated();
-        $data['slug'] = $this->generateSlug($data['slug'] ?? null, $data['title']);
+        $data['slug'] = UniqueSlug::make(JobListing::class, $data['title'], 'lowongan');
 
         JobListing::create([
             ...$data,
@@ -147,7 +147,7 @@ class EmployerJobListingController extends Controller
         $this->ensureBelongsToCompany($jobListing, $company->id);
 
         $data = $request->validated();
-        $data['slug'] = $this->generateSlug($data['slug'] ?? null, $data['title'], $jobListing);
+        $data['slug'] = UniqueSlug::make(JobListing::class, $data['title'], 'lowongan', $jobListing);
 
         $jobListing->update($data);
 
@@ -238,24 +238,5 @@ class EmployerJobListingController extends Controller
     private function ensureBelongsToCompany(JobListing $jobListing, int $companyId): void
     {
         abort_unless($jobListing->company_id === $companyId, 404);
-    }
-
-    private function generateSlug(?string $requestedSlug, string $title, ?JobListing $jobListing = null): string
-    {
-        $baseSlug = Str::slug($requestedSlug ?: $title);
-        $slug = $baseSlug !== '' ? $baseSlug : 'lowongan';
-        $counter = 1;
-
-        while (
-            JobListing::query()
-                ->when($jobListing !== null, fn ($query) => $query->whereKeyNot($jobListing->id))
-                ->where('slug', $slug)
-                ->exists()
-        ) {
-            $slug = $baseSlug.'-'.$counter;
-            $counter++;
-        }
-
-        return $slug;
     }
 }

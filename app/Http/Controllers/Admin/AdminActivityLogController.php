@@ -26,7 +26,7 @@ class AdminActivityLogController extends Controller
             ->through(fn (ActivityLog $log): array => [
                 'id' => $log->id,
                 'actor' => $log->actor?->name ?? 'Sistem',
-                'action' => $log->action,
+                'action' => str($log->action)->headline()->toString(),
                 'subject' => $this->subjectLabel($log),
                 'created_at' => $log->created_at?->format('d M Y H:i'),
                 'actions' => [
@@ -57,19 +57,25 @@ class AdminActivityLogController extends Controller
     {
         $activityLog->load(['actor:id,name,email']);
 
+        $actionLabel = ucwords(str_replace('_', ' ', $activityLog->action));
+        $properties = $activityLog->properties_json;
+        $propertiesValue = ($properties === null || $properties === [])
+            ? '-'
+            : json_encode($properties, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
         return Inertia::render('admin/resources/show', [
             'title' => 'Detail Activity Log',
-            'description' => $activityLog->action,
+            'description' => $actionLabel,
             'backHref' => route('admin.activity-logs.index'),
             'sections' => [
                 [
                     'title' => 'Activity',
                     'items' => [
                         ['label' => 'Actor', 'value' => $activityLog->actor ? $activityLog->actor->name.' <'.$activityLog->actor->email.'>' : 'Sistem'],
-                        ['label' => 'Action', 'value' => $activityLog->action],
+                        ['label' => 'Action', 'value' => $actionLabel],
                         ['label' => 'Subject', 'value' => $this->subjectLabel($activityLog)],
                         ['label' => 'Tanggal', 'value' => $activityLog->created_at?->format('d M Y H:i')],
-                        ['label' => 'Properties', 'value' => json_encode($activityLog->properties_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)],
+                        ['label' => 'Properties', 'value' => $propertiesValue],
                     ],
                 ],
             ],

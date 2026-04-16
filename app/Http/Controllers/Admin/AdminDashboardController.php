@@ -58,7 +58,7 @@ class AdminDashboardController extends Controller
                 ->map(fn (ActivityLog $activity): array => [
                     'id' => $activity->id,
                     'actor' => $activity->actor?->name ?? 'Sistem',
-                    'action' => $activity->action,
+                    'action' => str($activity->action)->headline()->toString(),
                     'subject' => class_basename((string) $activity->subject_type).' #'.$activity->subject_id,
                     'created_at' => $activity->created_at?->diffForHumans(),
                 ]),

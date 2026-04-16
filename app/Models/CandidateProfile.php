@@ -98,4 +98,14 @@ class CandidateProfile extends Model
     {
         return $this->hasMany(MentorMentee::class, 'candidate_id');
     }
+
+    public function intentSignal(): HasOne
+    {
+        return $this->hasOne(CandidateIntentSignal::class, 'candidate_id');
+    }
+
+    public function jobViews(): HasMany
+    {
+        return $this->hasMany(CandidateJobView::class, 'candidate_id');
+    }
 }

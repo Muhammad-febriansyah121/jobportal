@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Candidate;
 use App\Actions\Candidate\ResolveCandidateProfile;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Candidate\ApplyJobRequest;
+use App\Jobs\ComputeCandidateIntentJob;
 use App\Models\AiMatchScore;
 use App\Models\Application;
 use App\Models\ApplicationStatusHistory;
@@ -99,6 +100,8 @@ class CandidateApplicationController extends Controller
         JobListingAnalytic::query()
             ->firstOrCreate(['job_listing_id' => $jobListing->id, 'date' => today()])
             ->increment('apply_clicks_count');
+
+        ComputeCandidateIntentJob::dispatch($candidate);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Lamaran berhasil dikirim.']);
 

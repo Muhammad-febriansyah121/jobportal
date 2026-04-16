@@ -21,8 +21,7 @@ class SubmitCompanyVerificationRequest extends FormRequest
             'legal_name' => ['required', 'string', 'max:255'],
             'nib' => ['nullable', 'string', 'max:255'],
             'npwp' => ['nullable', 'string', 'max:255'],
-            'document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120', 'required_without:document_url'],
-            'document_url' => ['nullable', 'url', 'max:2048', 'required_without:document'],
+            'document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
         ];
     }
 }

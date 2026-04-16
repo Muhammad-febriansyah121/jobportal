@@ -1,11 +1,18 @@
 <?php
 
+use App\Models\Application;
+use App\Models\CandidateCv;
+use App\Models\CandidateProfile;
 use App\Models\Company;
 use App\Models\CompanyVerification;
 use App\Models\Industry;
 use App\Models\JobListing;
+use App\Models\Skill;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
+
 use function Pest\Laravel\actingAs;
 
 test('employer is redirected from generic dashboard to employer dashboard', function () {
@@ -34,7 +41,6 @@ test('employer can create company profile', function () {
     actingAs($employer)
         ->patch(route('employer.company.update'), [
             'name' => 'Karivia Tech',
-            'slug' => 'karivia-tech',
             'industry_id' => $industry->id,
             'description' => 'Perusahaan teknologi untuk solusi rekrutmen terpercaya.',
             'company_size' => '51-200 karyawan',
@@ -49,6 +55,7 @@ test('employer can create company profile', function () {
 
     expect($company)->not->toBeNull();
     expect($company?->name)->toBe('Karivia Tech');
+    expect($company?->slug)->toBe('karivia-tech');
     expect($company?->verification_status)->toBe('unverified');
 });
 
@@ -71,7 +78,6 @@ test('employer can create and publish a job listing', function () {
     actingAs($employer)
         ->post(route('employer.jobs.store'), [
             'title' => 'Backend Engineer',
-            'slug' => 'backend-engineer',
             'industry_id' => $industry->id,
             'description' => 'Bangun API Laravel yang aman dan scalable.',
             'responsibilities' => 'Membangun fitur backend dan integrasi sistem.',
@@ -93,6 +99,7 @@ test('employer can create and publish a job listing', function () {
     $job = JobListing::query()->whereBelongsTo($company)->first();
 
     expect($job)->not->toBeNull();
+    expect($job?->slug)->toBe('backend-engineer');
     expect($job?->status)->toBe('draft');
 
     actingAs($employer)
@@ -105,7 +112,94 @@ test('employer can create and publish a job listing', function () {
     expect($job->published_at)->not->toBeNull();
 });
 
+test('employer can view incoming candidates for their company', function () {
+    $employer = User::factory()->employer()->create();
+    $candidateUser = User::factory()->candidate()->create();
+    $industry = Industry::create([
+        'name' => 'Teknologi',
+        'slug' => 'teknologi',
+    ]);
+    $skill = Skill::create([
+        'name' => 'Laravel',
+        'slug' => 'laravel',
+        'category' => 'Backend',
+    ]);
+    $company = Company::create([
+        'owner_id' => $employer->id,
+        'industry_id' => $industry->id,
+        'name' => 'Karivia Tech',
+        'slug' => 'karivia-tech',
+        'verification_status' => 'approved',
+        'is_verified' => true,
+    ]);
+    $job = JobListing::create([
+        'company_id' => $company->id,
+        'created_by' => $employer->id,
+        'industry_id' => $industry->id,
+        'title' => 'Backend Engineer',
+        'slug' => 'backend-engineer',
+        'description' => 'Bangun API Laravel yang aman.',
+        'responsibilities' => 'Membangun fitur backend.',
+        'required_qualifications' => 'Menguasai Laravel.',
+        'work_mode' => 'hybrid',
+        'job_type' => 'full_time',
+        'experience_level' => 'mid',
+        'salary_currency' => 'IDR',
+        'is_salary_visible' => true,
+        'status' => 'published',
+    ]);
+    $candidate = CandidateProfile::create([
+        'user_id' => $candidateUser->id,
+        'full_name' => 'Alya Prameswari',
+        'headline' => 'Backend Developer',
+        'location_city' => 'Jakarta',
+        'location_province' => 'DKI Jakarta',
+        'preferred_industry_id' => $industry->id,
+        'preferred_role' => 'Software Engineer',
+        'profile_completion' => 90,
+    ]);
+    $candidate->skills()->attach($skill->id, [
+        'years_exp' => 3,
+        'proficiency' => 'advanced',
+    ]);
+    $cv = CandidateCv::create([
+        'candidate_id' => $candidate->id,
+        'file_url' => '/storage/demo/cv.pdf',
+        'source' => 'manual',
+        'is_primary' => true,
+        'uploaded_at' => now(),
+    ]);
+
+    Application::create([
+        'job_listing_id' => $job->id,
+        'candidate_id' => $candidate->id,
+        'candidate_cv_id' => $cv->id,
+        'status' => 'shortlisted',
+        'cover_letter' => 'Saya cocok untuk posisi ini.',
+        'ai_fit_score' => 86,
+        'ai_skill_match' => [
+            'matched' => ['Laravel'],
+            'missing' => ['Redis'],
+        ],
+        'applied_at' => now(),
+    ]);
+
+    actingAs($employer)
+        ->get(route('employer.candidates.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('employer/candidates')
+            ->where('company.name', 'Karivia Tech')
+            ->where('metrics.total', 1)
+            ->where('applications.data.0.candidate.name', 'Alya Prameswari')
+            ->where('applications.data.0.job.title', 'Backend Engineer')
+            ->where('applications.data.0.ai_fit_score', 86)
+            ->etc()
+        );
+});
+
 test('employer can submit company verification', function () {
+    Storage::fake('public');
     $employer = User::factory()->employer()->create();
     $industry = Industry::create([
         'name' => 'Teknologi',
@@ -126,7 +220,7 @@ test('employer can submit company verification', function () {
             'legal_name' => 'PT Karivia Teknologi Indonesia',
             'nib' => '1234567890123',
             'npwp' => '12.345.678.9-012.000',
-            'document_url' => 'https://karivia.id/legal/company.pdf',
+            'document' => UploadedFile::fake()->create('company.pdf', 512, 'application/pdf'),
         ])
         ->assertRedirect(route('employer.verification.index'));
 
@@ -136,6 +230,7 @@ test('employer can submit company verification', function () {
     expect($verification)->not->toBeNull();
     expect($verification?->status)->toBe('pending');
     expect($verification?->submitted_by)->toBe($employer->id);
+    Storage::disk('public')->assertExists(str_replace('/storage/', '', $verification?->document_url ?? ''));
     expect($company->verification_status)->toBe('pending');
     expect($company->is_verified)->toBeFalse();
 });
@@ -173,6 +268,7 @@ test('employer sees latest company verification status', function () {
 });
 
 test('employer cannot resubmit while verification is pending', function () {
+    Storage::fake('public');
     $employer = User::factory()->employer()->create();
     Company::create([
         'owner_id' => $employer->id,
@@ -185,7 +281,7 @@ test('employer cannot resubmit while verification is pending', function () {
     actingAs($employer)
         ->post(route('employer.verification.store'), [
             'legal_name' => 'PT Karivia Teknologi Indonesia',
-            'document_url' => 'https://karivia.id/legal/company.pdf',
+            'document' => UploadedFile::fake()->create('company.pdf', 512, 'application/pdf'),
         ])
         ->assertForbidden();
 });

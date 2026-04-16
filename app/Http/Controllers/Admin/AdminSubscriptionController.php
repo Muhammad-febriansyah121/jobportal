@@ -154,12 +154,12 @@ class AdminSubscriptionController extends Controller
     {
         return [
             $this->action('Lihat Detail', route('admin.subscriptions.show', $subscription), 'Eye'),
-            $this->action('Extend', route('admin.subscriptions.extend', $subscription), 'Check', 'patch', 'default', null, null, [
-                $this->field('ends_at', 'Ends at', 'date', $subscription->ends_at?->format('Y-m-d')),
-                $this->field('renews_at', 'Renews at', 'date', $subscription->renews_at?->format('Y-m-d')),
+            $this->action('Perpanjang', route('admin.subscriptions.extend', $subscription), 'Check', 'patch', 'default', null, null, [
+                $this->field('ends_at', 'Tanggal berakhir', 'date', $subscription->ends_at?->format('Y-m-d')),
+                $this->field('renews_at', 'Tanggal perpanjangan', 'date', $subscription->renews_at?->format('Y-m-d')),
                 $this->field('note', 'Catatan admin', 'textarea'),
             ]),
-            $this->action('Cancel', route('admin.subscriptions.cancel', $subscription), 'X', 'patch', 'destructive', 'Cancel subscription?', 'Subscription akan dibatalkan manual.', [
+            $this->action('Batalkan', route('admin.subscriptions.cancel', $subscription), 'X', 'patch', 'destructive', 'Batalkan langganan?', 'Langganan akan dibatalkan secara manual.', [
                 $this->field('note', 'Catatan admin', 'textarea'),
             ]),
         ];

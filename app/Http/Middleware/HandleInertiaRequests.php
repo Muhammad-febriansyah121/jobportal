@@ -39,10 +39,9 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            'name' => (Cache::remember('site_settings_head', 3600, fn () =>
-                Setting::whereIn('key', [
-                    'site_name', 'site_favicon_url', 'site_meta_description', 'site_meta_keywords',
-                ])->pluck('value', 'key')->toArray()
+            'name' => (Cache::remember('site_settings_head', 3600, fn () => Setting::whereIn('key', [
+                'site_name', 'site_favicon_url', 'site_meta_description', 'site_meta_keywords',
+            ])->pluck('value', 'key')->toArray()
             ))['site_name'] ?? config('app.name'),
             'auth' => [
                 'user' => $request->user(),

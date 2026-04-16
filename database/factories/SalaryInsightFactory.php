@@ -1,0 +1,68 @@
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Industry;
+use App\Models\SalaryInsight;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends Factory<SalaryInsight>
+ */
+class SalaryInsightFactory extends Factory
+{
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        $salaryMin = $this->faker->numberBetween(5_000_000, 15_000_000);
+        $salaryMedian = $salaryMin + $this->faker->numberBetween(2_000_000, 8_000_000);
+        $salaryMax = $salaryMedian + $this->faker->numberBetween(2_000_000, 10_000_000);
+
+        return [
+            'company_id' => null,
+            'industry_id' => Industry::inRandomOrder()->value('id'),
+            'job_title' => $this->faker->randomElement([
+                'Software Engineer',
+                'Senior Software Engineer',
+                'Frontend Developer',
+                'Backend Developer',
+                'Full Stack Developer',
+                'Mobile Developer',
+                'DevOps Engineer',
+                'Data Analyst',
+                'Data Scientist',
+                'Product Manager',
+                'Project Manager',
+                'UX Designer',
+                'UI Designer',
+                'QA Engineer',
+                'Business Analyst',
+                'Marketing Manager',
+                'HR Manager',
+                'Finance Analyst',
+                'Operations Manager',
+                'Sales Executive',
+            ]),
+            'location_city' => $this->faker->randomElement([
+                'Jakarta',
+                'Surabaya',
+                'Bandung',
+                'Medan',
+                'Bekasi',
+                'Tangerang',
+                'Depok',
+                'Semarang',
+                'Makassar',
+                'Yogyakarta',
+            ]),
+            'salary_min' => $salaryMin,
+            'salary_median' => $salaryMedian,
+            'salary_max' => $salaryMax,
+            'source_count' => $this->faker->numberBetween(5, 200),
+        ];
+    }
+}

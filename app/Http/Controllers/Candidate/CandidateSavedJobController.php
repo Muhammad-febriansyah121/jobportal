@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Candidate;
 
 use App\Actions\Candidate\ResolveCandidateProfile;
 use App\Http\Controllers\Controller;
+use App\Jobs\ComputeCandidateIntentJob;
 use App\Models\JobListing;
 use App\Models\JobListingAnalytic;
 use Illuminate\Http\RedirectResponse;
@@ -49,6 +50,8 @@ class CandidateSavedJobController extends Controller
         JobListingAnalytic::query()
             ->firstOrCreate(['job_listing_id' => $jobListing->id, 'date' => today()])
             ->increment('saves_count');
+
+        ComputeCandidateIntentJob::dispatch($candidate);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Lowongan berhasil disimpan.']);
 

@@ -7,10 +7,10 @@ use App\Http\Controllers\Admin\Concerns\BuildsAdminPages;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SaveSkillRequest;
 use App\Models\Skill;
+use App\Support\UniqueSlug;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -62,7 +62,7 @@ class AdminSkillController extends Controller
     public function store(SaveSkillRequest $request, RecordActivity $activity): RedirectResponse
     {
         $validated = $request->validated();
-        $validated['slug'] = $validated['slug'] ?: Str::slug($validated['name']);
+        $validated['slug'] = UniqueSlug::make(Skill::class, $validated['name'], 'skill');
 
         $skill = Skill::create($validated);
         Cache::forget('admin.skills.list');
@@ -76,7 +76,7 @@ class AdminSkillController extends Controller
     public function update(SaveSkillRequest $request, Skill $skill, RecordActivity $activity): RedirectResponse
     {
         $validated = $request->validated();
-        $validated['slug'] = $validated['slug'] ?: Str::slug($validated['name']);
+        $validated['slug'] = UniqueSlug::make(Skill::class, $validated['name'], 'skill', $skill);
 
         $skill->update($validated);
         Cache::forget('admin.skills.list');
@@ -116,7 +116,6 @@ class AdminSkillController extends Controller
     {
         return [
             $this->field('name', 'Nama', 'text', $skill?->name, [], ['required' => true]),
-            $this->field('slug', 'Slug', 'text', $skill?->slug),
             $this->field('category', 'Kategori', 'text', $skill?->category),
         ];
     }

@@ -7,10 +7,10 @@ use App\Http\Controllers\Admin\Concerns\BuildsAdminPages;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SaveIndustryRequest;
 use App\Models\Industry;
+use App\Support\UniqueSlug;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -58,7 +58,7 @@ class AdminIndustryController extends Controller
     public function store(SaveIndustryRequest $request, RecordActivity $activity): RedirectResponse
     {
         $validated = $request->validated();
-        $validated['slug'] = $validated['slug'] ?: Str::slug($validated['name']);
+        $validated['slug'] = UniqueSlug::make(Industry::class, $validated['name'], 'industri');
 
         $industry = Industry::create($validated);
         Cache::forget('admin.industries.list');
@@ -72,7 +72,7 @@ class AdminIndustryController extends Controller
     public function update(SaveIndustryRequest $request, Industry $industry, RecordActivity $activity): RedirectResponse
     {
         $validated = $request->validated();
-        $validated['slug'] = $validated['slug'] ?: Str::slug($validated['name']);
+        $validated['slug'] = UniqueSlug::make(Industry::class, $validated['name'], 'industri', $industry);
 
         $industry->update($validated);
         Cache::forget('admin.industries.list');
@@ -112,7 +112,6 @@ class AdminIndustryController extends Controller
     {
         return [
             $this->field('name', 'Nama', 'text', $industry?->name, [], ['required' => true]),
-            $this->field('slug', 'Slug', 'text', $industry?->slug),
         ];
     }
 }

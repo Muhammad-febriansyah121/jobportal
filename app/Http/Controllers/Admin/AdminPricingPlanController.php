@@ -7,10 +7,10 @@ use App\Http\Controllers\Admin\Concerns\BuildsAdminPages;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SavePricingPlanRequest;
 use App\Models\PricingPlan;
+use App\Support\UniqueSlug;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -147,10 +147,16 @@ class AdminPricingPlanController extends Controller
     private function planPayload(SavePricingPlanRequest $request): array
     {
         $validated = $request->validated();
+        $pricingPlan = $request->route('pricing_plan') ?? $request->route('pricingPlan');
 
         return [
             'name' => $validated['name'],
-            'slug' => $validated['slug'] ?: Str::slug($validated['name']),
+            'slug' => UniqueSlug::make(
+                PricingPlan::class,
+                $validated['name'],
+                'paket',
+                $pricingPlan instanceof PricingPlan ? $pricingPlan : null,
+            ),
             'price' => $validated['price'],
             'duration_days' => $validated['duration_days'],
             'active_jobs_limit' => $validated['active_jobs_limit'],

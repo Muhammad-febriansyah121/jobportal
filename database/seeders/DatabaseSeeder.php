@@ -41,5 +41,7 @@ class DatabaseSeeder extends Seeder
                 'onboarding_completed_at' => now(),
             ]);
         }
+
+        $this->call(DummyDataSeeder::class);
     }
 }

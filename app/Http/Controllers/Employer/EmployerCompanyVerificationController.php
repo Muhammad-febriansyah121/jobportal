@@ -59,13 +59,10 @@ class EmployerCompanyVerificationController extends Controller
         abort_if(in_array($company->verification_status, ['pending', 'approved'], true), 403);
 
         $validated = $request->validated();
-        $documentUrl = $validated['document_url'] ?? null;
 
-        if ($request->hasFile('document')) {
-            $documentUrl = Storage::disk('public')->url(
-                $request->file('document')->store('company-verifications', 'public')
-            );
-        }
+        $documentUrl = Storage::url(
+            $request->file('document')->store('company-verifications', 'public')
+        );
 
         DB::transaction(function () use ($company, $documentUrl, $request, $validated): void {
             CompanyVerification::create([

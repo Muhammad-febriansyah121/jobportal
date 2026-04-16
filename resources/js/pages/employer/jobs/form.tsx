@@ -19,7 +19,6 @@ type JobFormProps = {
     job: {
         id: number;
         title: string;
-        slug: string;
         industry_id?: number | null;
         description?: string | null;
         responsibilities?: string | null;
@@ -95,17 +94,6 @@ export default function EmployerJobForm({
                                                 name="title"
                                                 defaultValue={job?.title ?? ''}
                                                 placeholder="Senior Backend Engineer"
-                                            />
-                                        </Field>
-                                        <Field
-                                            label="Slug"
-                                            name="slug"
-                                            error={errors.slug}
-                                        >
-                                            <Input
-                                                name="slug"
-                                                defaultValue={job?.slug ?? ''}
-                                                placeholder="senior-backend-engineer"
                                             />
                                         </Field>
                                     </div>

@@ -4,7 +4,6 @@ namespace App\Http\Requests\Admin;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class SaveIndustryRequest extends FormRequest
 {
@@ -25,7 +24,6 @@ class SaveIndustryRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'alpha_dash', Rule::unique('industries', 'slug')->ignore($this->route('industry'))],
         ];
     }
 }

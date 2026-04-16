@@ -63,6 +63,7 @@ type JobsIndexProps = {
         verified_company: boolean;
         skill_match: boolean;
     };
+    has_intent_data: boolean;
     industries: Option[];
     jobs: {
         data: Job[];
@@ -76,6 +77,7 @@ type JobsIndexProps = {
 
 export default function CandidateJobsIndex({
     filters,
+    has_intent_data,
     industries,
     jobs,
 }: JobsIndexProps) {
@@ -96,21 +98,28 @@ export default function CandidateJobsIndex({
                     description="Cari, filter, simpan, dan lamar lowongan aktif yang sesuai dengan profil kamu."
                 />
 
-                <div className="flex flex-wrap gap-2">
-                    {tabs.map(([tab, label]) => (
-                        <Button
-                            asChild
-                            key={tab}
-                            variant={
-                                filters.tab === tab ? 'default' : 'outline'
-                            }
-                            size="sm"
-                        >
-                            <Link href={index({ query: { tab } })}>
-                                {label}
-                            </Link>
-                        </Button>
-                    ))}
+                <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                        {tabs.map(([tab, label]) => (
+                            <Button
+                                asChild
+                                key={tab}
+                                variant={
+                                    filters.tab === tab ? 'default' : 'outline'
+                                }
+                                size="sm"
+                            >
+                                <Link href={index({ query: { tab } })}>
+                                    {label}
+                                </Link>
+                            </Button>
+                        ))}
+                    </div>
+                    {filters.tab === 'recommended' && has_intent_data && (
+                        <p className="text-xs text-muted-foreground">
+                            Diurutkan berdasarkan aktivitas dan minat Anda
+                        </p>
+                    )}
                 </div>
 
                 <Card>

@@ -175,12 +175,12 @@ class AdminJobListingController extends Controller
     {
         return [
             $this->action('Lihat Detail', route('admin.jobs.show', $job), 'Eye'),
-            $this->action('Update Score', route('admin.jobs.integrity-score', $job), 'Pencil', 'patch', 'outline', null, null, [
-                $this->field('integrity_score', 'Integrity score', 'number', $job->integrity_score, [], ['min' => 0, 'max' => 100]),
+            $this->action('Perbarui Skor', route('admin.jobs.integrity-score', $job), 'Pencil', 'patch', 'outline', null, null, [
+                $this->field('integrity_score', 'Skor integritas', 'number', $job->integrity_score, [], ['min' => 0, 'max' => 100]),
             ]),
-            $this->action('Publish', route('admin.jobs.publish', $job), 'Check', 'patch', 'default', 'Publish lowongan?', 'Lowongan akan tampil untuk kandidat.'),
-            $this->action('Suspend', route('admin.jobs.suspend', $job), 'Ban', 'patch', 'destructive', 'Suspend lowongan?', 'Lowongan akan disembunyikan dari platform.'),
-            $this->action('Reject', route('admin.jobs.reject', $job), 'X', 'patch', 'destructive', 'Tolak lowongan?', 'Status lowongan akan menjadi rejected.'),
+            $this->action('Terbitkan', route('admin.jobs.publish', $job), 'Check', 'patch', 'default', 'Terbitkan lowongan?', 'Lowongan akan tampil untuk kandidat.'),
+            $this->action('Nonaktifkan', route('admin.jobs.suspend', $job), 'Ban', 'patch', 'destructive', 'Nonaktifkan lowongan?', 'Lowongan akan disembunyikan dari platform.'),
+            $this->action('Tolak', route('admin.jobs.reject', $job), 'X', 'patch', 'destructive', 'Tolak lowongan?', 'Status lowongan akan menjadi ditolak.'),
         ];
     }
 

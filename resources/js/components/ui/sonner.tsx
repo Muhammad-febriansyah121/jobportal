@@ -12,6 +12,7 @@ function Toaster({ ...props }: ToasterProps) {
             theme={appearance}
             className="toaster group"
             position="top-right"
+            richColors
             style={
                 {
                     '--normal-bg': 'var(--popover)',
@@ -23,9 +24,9 @@ function Toaster({ ...props }: ToasterProps) {
                     '--error-bg': '#fef2f2',
                     '--error-text': '#b91c1c',
                     '--error-border': '#fca5a5',
-                    '--warning-bg': '#fff7ed',
-                    '--warning-text': '#c2410c',
-                    '--warning-border': '#fdba74',
+                    '--warning-bg': '#fffbeb',
+                    '--warning-text': '#b45309',
+                    '--warning-border': '#fcd34d',
                 } as React.CSSProperties
             }
             {...props}

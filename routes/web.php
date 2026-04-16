@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminActivityLogController;
 use App\Http\Controllers\Admin\AdminAiAuditLogController;
 use App\Http\Controllers\Admin\AdminCareerResourceController;
 use App\Http\Controllers\Admin\AdminCompanyController;
+use App\Http\Controllers\Admin\AdminCompanySizeController;
 use App\Http\Controllers\Admin\AdminCompanyVerificationController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminIndustryController;
@@ -19,7 +20,12 @@ use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminWebSettingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PakasirWebhookController;
 use Illuminate\Support\Facades\Route;
+
+Route::post('webhooks/pakasir', [PakasirWebhookController::class, 'handle'])
+    ->name('webhooks.pakasir')
+    ->withoutMiddleware(['web']);
 
 Route::get('/', HomeController::class)->name('home');
 
@@ -37,11 +43,13 @@ Route::prefix('admin')
         Route::patch('users/{user}/activate', [AdminUserController::class, 'activate'])->name('users.activate');
         Route::patch('users/{user}/deactivate', [AdminUserController::class, 'deactivate'])->name('users.deactivate');
         Route::patch('users/{user}/reset-email-verification', [AdminUserController::class, 'resetEmailVerification'])->name('users.reset-email-verification');
+        Route::post('users/{user}/detect-risk', [AdminUserController::class, 'detectRisk'])->name('users.detect-risk');
         Route::post('users/{user}/generate-ai-summary', [AdminUserController::class, 'generateAiSummary'])->name('users.generate-ai-summary');
 
         Route::resource('companies', AdminCompanyController::class)->only(['index', 'show']);
         Route::patch('companies/{company}/suspend', [AdminCompanyController::class, 'suspend'])->name('companies.suspend');
         Route::patch('companies/{company}/activate', [AdminCompanyController::class, 'activate'])->name('companies.activate');
+        Route::post('companies/{company}/generate-ai-insight', [AdminCompanyController::class, 'generateAiInsight'])->name('companies.generate-ai-insight');
 
         Route::resource('company-verifications', AdminCompanyVerificationController::class)
             ->parameters(['company-verifications' => 'companyVerification'])
@@ -64,6 +72,7 @@ Route::prefix('admin')
 
         Route::resource('skills', AdminSkillController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('industries', AdminIndustryController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::resource('company-sizes', AdminCompanySizeController::class)->only(['index', 'store', 'update', 'destroy']);
 
         Route::resource('pricing-plans', AdminPricingPlanController::class)
             ->parameters(['pricing-plans' => 'pricingPlan'])

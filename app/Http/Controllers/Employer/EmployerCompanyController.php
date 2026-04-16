@@ -6,10 +6,12 @@ use App\Actions\Employer\ResolveEmployerCompany;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employer\SaveEmployerCompanyRequest;
 use App\Models\Company;
+use App\Models\CompanySize;
 use App\Models\Industry;
+use App\Support\UniqueSlug;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,6 +20,7 @@ class EmployerCompanyController extends Controller
     public function edit(Request $request, ResolveEmployerCompany $resolveEmployerCompany): Response
     {
         $company = $resolveEmployerCompany->handle($request->user());
+        $company?->load('latestVerification');
 
         return Inertia::render('employer/company', [
             'company' => $company === null ? null : [
@@ -38,6 +41,14 @@ class EmployerCompanyController extends Controller
                 'verification_rejection_reason' => $company->latestVerification?->rejection_reason,
                 'subscription_name' => $company->activeSubscription?->plan?->name,
             ],
+            'verification' => $company === null ? null : ($company->latestVerification === null ? null : [
+                'legal_name' => $company->latestVerification->legal_name,
+                'nib' => $company->latestVerification->nib,
+                'npwp' => $company->latestVerification->npwp,
+                'document_url' => $company->latestVerification->document_url,
+                'status' => $company->latestVerification->status,
+            ]),
+            'canSubmitVerification' => $company !== null && in_array($company->verification_status, ['unverified', 'rejected', 'need_revision'], true),
             'industries' => Industry::query()
                 ->select(['id', 'name'])
                 ->orderBy('name')
@@ -46,6 +57,11 @@ class EmployerCompanyController extends Controller
                     'value' => (string) $industry->id,
                     'label' => $industry->name,
                 ]),
+            'companySizes' => CompanySize::query()
+                ->select(['label'])
+                ->orderBy('sort_order')
+                ->orderBy('label')
+                ->pluck('label'),
         ]);
     }
 
@@ -55,7 +71,27 @@ class EmployerCompanyController extends Controller
         $request->attributes->set('employerCompany', $company);
 
         $data = $request->validated();
-        $data['slug'] = $this->generateSlug($data['slug'] ?? null, $data['name'], $company);
+        $data['slug'] = UniqueSlug::make(Company::class, $data['name'], 'perusahaan', $company);
+
+        if ($request->hasFile('logo')) {
+            if ($company?->logo_url && str_starts_with($company->logo_url, '/storage/')) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $company->logo_url));
+            }
+            $data['logo_url'] = Storage::disk('public')->url(
+                $request->file('logo')->store('companies/logos', 'public'),
+            );
+        }
+
+        if ($request->hasFile('cover')) {
+            if ($company?->cover_url && str_starts_with($company->cover_url, '/storage/')) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $company->cover_url));
+            }
+            $data['cover_url'] = Storage::disk('public')->url(
+                $request->file('cover')->store('companies/covers', 'public'),
+            );
+        }
+
+        unset($data['logo'], $data['cover']);
 
         if ($company === null) {
             Company::create([
@@ -75,24 +111,5 @@ class EmployerCompanyController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Profil perusahaan berhasil diperbarui.']);
 
         return to_route('employer.company.edit');
-    }
-
-    private function generateSlug(?string $requestedSlug, string $name, ?Company $company = null): string
-    {
-        $baseSlug = Str::slug($requestedSlug ?: $name);
-        $slug = $baseSlug !== '' ? $baseSlug : 'perusahaan';
-        $counter = 1;
-
-        while (
-            Company::query()
-                ->when($company !== null, fn ($query) => $query->whereKeyNot($company->id))
-                ->where('slug', $slug)
-                ->exists()
-        ) {
-            $slug = $baseSlug.'-'.$counter;
-            $counter++;
-        }
-
-        return $slug;
     }
 }

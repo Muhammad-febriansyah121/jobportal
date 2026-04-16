@@ -2,7 +2,11 @@ import { Head, useForm } from '@inertiajs/react';
 import { toast } from 'sonner';
 import {
     BookOpen,
+    Bot,
     Building2,
+    CreditCard,
+    Eye,
+    EyeOff,
     Globe,
     ImageIcon,
     KeyRound,
@@ -140,6 +144,41 @@ function Textarea({
             rows={rows}
             className="w-full resize-y rounded-lg border bg-background px-3 py-2 text-sm ring-offset-background transition outline-none focus:border-[#ED6A2F] focus:ring-2 focus:ring-[#ED6A2F]/50"
         />
+    );
+}
+
+function AiApiKeyInput({
+    value,
+    onChange,
+}: {
+    value: string;
+    onChange: (v: string) => void;
+}) {
+    const [show, setShow] = useState(false);
+
+    return (
+        <div className="relative">
+            <input
+                type={show ? 'text' : 'password'}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder="sk-..."
+                className="w-full rounded-lg border bg-background px-3 py-2 pr-10 text-sm ring-offset-background transition outline-none focus:border-[#ED6A2F] focus:ring-2 focus:ring-[#ED6A2F]/50"
+            />
+            <button
+                type="button"
+                onClick={() => setShow((prev) => !prev)}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                tabIndex={-1}
+                aria-label={show ? 'Sembunyikan API key' : 'Tampilkan API key'}
+            >
+                {show ? (
+                    <EyeOff className="size-4" />
+                ) : (
+                    <Eye className="size-4" />
+                )}
+            </button>
+        </div>
     );
 }
 
@@ -281,6 +320,9 @@ export default function AdminSettings({ settings }: SettingsProps) {
         recaptcha_secret_key: get('recaptcha_secret_key'),
         privacy_title: get('privacy_title'),
         terms_title: get('terms_title'),
+        ai_api_key: get('ai_api_key'),
+        pakasir_project: get('pakasir_project'),
+        pakasir_api_key: get('pakasir_api_key'),
     });
 
     const [activeTab, setActiveTab] = useState('umum');
@@ -290,6 +332,8 @@ export default function AdminSettings({ settings }: SettingsProps) {
         { key: 'media', label: 'Media', icon: ImageIcon },
         { key: 'sosial', label: 'Sosial & Kontak', icon: Share2 },
         { key: 'tentang', label: 'Tentang Kami', icon: Building2 },
+        { key: 'ai', label: 'AI', icon: Bot },
+        { key: 'pembayaran', label: 'Pembayaran', icon: CreditCard },
         { key: 'sistem', label: 'Sistem', icon: ShieldOff },
     ];
 
@@ -586,6 +630,55 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                     }
                                     aspectHint="Disarankan: 800×600px"
                                 />
+                            </Section>
+                        </div>
+
+                        {/* Tab: AI */}
+                        <div
+                            className={`mt-5 flex flex-col gap-5 ${activeTab === 'ai' ? '' : 'hidden'}`}
+                        >
+                            <Section icon={Bot} title="AI API Key">
+                                <Field label="API Key" full>
+                                    <AiApiKeyInput
+                                        value={str('ai_api_key')}
+                                        onChange={set('ai_api_key')}
+                                    />
+                                    <p className="mt-1.5 text-xs text-muted-foreground">
+                                        Disimpan terenkripsi. API key digunakan
+                                        untuk fitur AI Summary, AI Insight, AI
+                                        Interview, dan AI Matching. Jangan
+                                        bagikan key ini kepada siapapun.
+                                    </p>
+                                </Field>
+                            </Section>
+                        </div>
+
+                        {/* Tab: Pembayaran */}
+                        <div
+                            className={`mt-5 flex flex-col gap-5 ${activeTab === 'pembayaran' ? '' : 'hidden'}`}
+                        >
+                            <Section icon={CreditCard} title="Pakasir">
+                                <Field label="Project Slug" full>
+                                    <Input
+                                        value={str('pakasir_project')}
+                                        onChange={set('pakasir_project')}
+                                        placeholder="jobportal"
+                                    />
+                                    <p className="mt-1.5 text-xs text-muted-foreground">
+                                        Slug proyek Pakasir kamu. Terlihat di
+                                        dashboard app.pakasir.com.
+                                    </p>
+                                </Field>
+                                <Field label="API Key" full>
+                                    <AiApiKeyInput
+                                        value={str('pakasir_api_key')}
+                                        onChange={set('pakasir_api_key')}
+                                    />
+                                    <p className="mt-1.5 text-xs text-muted-foreground">
+                                        API key dari dashboard Pakasir. Jangan
+                                        bagikan key ini kepada siapapun.
+                                    </p>
+                                </Field>
                             </Section>
                         </div>
 

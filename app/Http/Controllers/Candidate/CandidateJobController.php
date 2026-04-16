@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Candidate;
 
+use App\Actions\Candidate\RecordCandidateJobView;
 use App\Actions\Candidate\ResolveCandidateProfile;
 use App\Http\Controllers\Controller;
 use App\Models\AiMatchScore;
+use App\Models\CandidateIntentSignal;
 use App\Models\Industry;
 use App\Models\JobListing;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,9 +18,13 @@ class CandidateJobController extends Controller
 {
     public function index(Request $request, ResolveCandidateProfile $resolveCandidateProfile): Response
     {
-        $candidate = $resolveCandidateProfile->handle($request->user())->load('skills:id');
+        $candidate = $resolveCandidateProfile->handle($request->user())->load(['skills:id', 'intentSignal']);
         $skillIds = $candidate->skills->pluck('id')->all();
         $activeTab = $request->string('tab', 'recommended')->toString();
+
+        /** @var CandidateIntentSignal|null $intentSignal */
+        $intentSignal = $candidate->intentSignal;
+        $hasIntentData = $intentSignal !== null && $intentSignal->intent_strength > 0;
 
         $jobs = JobListing::query()
             ->published()
@@ -55,7 +61,24 @@ class CandidateJobController extends Controller
             ->when($request->boolean('skill_match') && $skillIds !== [], fn (Builder $query) => $query->whereHas('skills', fn (Builder $query) => $query->whereIn('skills.id', $skillIds)))
             ->when(
                 in_array($activeTab, ['recommended', 'skill-match'], true),
-                fn (Builder $query) => $query->orderByDesc('matched_skills_count'),
+                function (Builder $query) use ($activeTab, $hasIntentData, $intentSignal): void {
+                    if ($activeTab === 'recommended' && $hasIntentData) {
+                        $industryIds = $intentSignal->topIndustryIds();
+                        $workModes = $intentSignal->topWorkModes();
+
+                        $industryPlaceholders = $industryIds !== [] ? implode(',', array_fill(0, count($industryIds), '?')) : 'NULL';
+                        $workModePlaceholders = $workModes !== [] ? implode(',', array_fill(0, count($workModes), '?')) : "'__none__'";
+
+                        $bindings = array_merge($industryIds, $workModes);
+
+                        $query->orderByRaw(
+                            "(matched_skills_count + CASE WHEN industry_id IN ({$industryPlaceholders}) THEN 3 ELSE 0 END + CASE WHEN work_mode IN ({$workModePlaceholders}) THEN 2 ELSE 0 END) DESC",
+                            $bindings
+                        );
+                    } else {
+                        $query->orderByDesc('matched_skills_count');
+                    }
+                },
                 fn (Builder $query) => $query->latest('published_at')
             )
             ->paginate(12)
@@ -83,6 +106,7 @@ class CandidateJobController extends Controller
                 'verified_company' => $request->boolean('verified_company'),
                 'skill_match' => $request->boolean('skill_match'),
             ],
+            'has_intent_data' => $hasIntentData,
             'industries' => $this->industries(),
             'jobs' => $jobs->through(fn (JobListing $job): array => $this->jobCard(
                 $job,
@@ -93,11 +117,12 @@ class CandidateJobController extends Controller
         ]);
     }
 
-    public function show(Request $request, JobListing $jobListing, ResolveCandidateProfile $resolveCandidateProfile): Response
+    public function show(Request $request, JobListing $jobListing, ResolveCandidateProfile $resolveCandidateProfile, RecordCandidateJobView $recordCandidateJobView): Response
     {
         abort_unless($jobListing->status === 'published', 404);
 
         $candidate = $resolveCandidateProfile->handle($request->user());
+        $recordCandidateJobView->handle($candidate, $jobListing);
         $jobListing->load(['company:id,name,description,is_verified,trust_score,response_rate,median_response_hours', 'industry:id,name', 'skills:id,name', 'screeningQuestions']);
 
         $matchScore = AiMatchScore::query()

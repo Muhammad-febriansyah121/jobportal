@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\AiAuditLog;
 use App\Models\User;
+use App\Services\ActivityRiskDetector;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -99,7 +100,7 @@ class AdminUserController extends Controller
             ->get()
             ->map(fn (ActivityLog $activity): array => [
                 'id' => $activity->id,
-                'action' => $activity->action,
+                'action' => str($activity->action)->headline()->toString(),
                 'subject' => $activity->subject_type === null ? '-' : class_basename((string) $activity->subject_type).' #'.$activity->subject_id,
                 'created_at' => $activity->created_at?->format('d M Y H:i'),
             ]);
@@ -117,6 +118,11 @@ class AdminUserController extends Controller
                 'generated_at' => $latestAiSummary->created_at?->format('d M Y H:i'),
             ]
             : null;
+        $riskLog = AiAuditLog::query()
+            ->where('user_id', $user->id)
+            ->where('feature', 'user_activity_risk_detection')
+            ->latest()
+            ->first(['output_json', 'status', 'created_at']);
 
         return Inertia::render('admin/resources/show', [
             'title' => 'Detail User',
@@ -136,6 +142,10 @@ class AdminUserController extends Controller
                         ['label' => 'Tanggal daftar', 'value' => $user->created_at?->format('d M Y H:i')],
                     ],
                 ],
+                [
+                    'title' => 'AI Risk Detection',
+                    'items' => $this->riskItems($riskLog),
+                ],
             ],
             'tables' => [
                 [
@@ -149,6 +159,20 @@ class AdminUserController extends Controller
                 ],
             ],
         ]);
+    }
+
+    public function detectRisk(User $user, ActivityRiskDetector $riskDetector): RedirectResponse
+    {
+        $log = $riskDetector->analyze($user);
+        $level = str((string) ($log->output_json['risk_level'] ?? 'unknown'))->headline()->toString();
+
+        if ($log->status === 'success') {
+            $this->flash("Risk detection AI selesai. Level: {$level}.");
+        } else {
+            $this->flash("Risk detection dibuat dengan fallback heuristik. Level: {$level}. Konfigurasi API key perlu dicek.", 'warning');
+        }
+
+        return back();
     }
 
     public function generateAiSummary(User $user, GenerateUserAiSummary $action): RedirectResponse
@@ -207,11 +231,37 @@ class AdminUserController extends Controller
     {
         return [
             $this->action('Lihat Detail', route('admin.users.show', $user), 'Eye'),
-            $this->action('Generate AI Summary', route('admin.users.generate-ai-summary', $user), 'Sparkles', 'post', 'outline'),
+            $this->action('Ringkasan AI', route('admin.users.generate-ai-summary', $user), 'Sparkles', 'post', 'outline'),
             $user->is_active
                 ? $this->action('Nonaktifkan', route('admin.users.deactivate', $user), 'Ban', 'patch', 'destructive', 'Nonaktifkan user?', 'User tidak bisa memakai platform sampai diaktifkan kembali.')
                 : $this->action('Aktifkan', route('admin.users.activate', $user), 'Check', 'patch', 'default'),
             $this->action('Reset Email', route('admin.users.reset-email-verification', $user), 'ShieldCheck', 'patch', 'outline', 'Reset verifikasi email?', 'User perlu melakukan verifikasi email ulang.'),
+            $this->action('Deteksi Risiko', route('admin.users.detect-risk', $user), 'ShieldAlert', 'post', 'outline', 'Jalankan deteksi risiko?', 'AI akan menilai pola apply, login gagal, dan aksi destruktif user.'),
+            $this->action('Ringkasan AI', route('admin.users.generate-ai-summary', $user), 'Bot', 'post', 'outline', 'Buat ringkasan AI?', 'AI akan membaca aktivitas user terbaru untuk membuat ringkasan admin.'),
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function riskItems(?AiAuditLog $riskLog): array
+    {
+        if ($riskLog === null) {
+            return [
+                ['label' => 'Status', 'value' => 'Belum dianalisis'],
+            ];
+        }
+
+        $output = $riskLog->output_json ?? [];
+
+        return [
+            ['label' => 'Risk level', 'value' => str((string) ($output['risk_level'] ?? '-'))->headline()->toString()],
+            ['label' => 'Risk score', 'value' => $output['risk_score'] ?? '-'],
+            ['label' => 'Confidence', 'value' => $output['confidence'] ?? '-'],
+            ['label' => 'Status', 'value' => str($riskLog->status)->headline()->toString()],
+            ['label' => 'Analisis terakhir', 'value' => $riskLog->created_at?->format('d M Y H:i')],
+            ['label' => 'Alasan', 'value' => collect($output['reasons'] ?? [])->implode("\n")],
+            ['label' => 'Rekomendasi', 'value' => collect($output['recommended_actions'] ?? [])->implode("\n")],
         ];
     }
 }

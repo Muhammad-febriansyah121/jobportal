@@ -189,10 +189,10 @@ class AdminReportController extends Controller
             $this->action('Selesai', route('admin.reports.resolve', $report), 'Check', 'patch', 'default', null, null, [
                 $this->field('note', 'Catatan admin', 'textarea'),
             ]),
-            $this->action('Suspend Subject', route('admin.reports.suspend-subject', $report), 'Ban', 'patch', 'destructive', 'Suspend subject?', 'Aksi ini akan menonaktifkan subject yang dilaporkan jika didukung.', [
+            $this->action('Nonaktifkan Subject', route('admin.reports.suspend-subject', $report), 'Ban', 'patch', 'destructive', 'Nonaktifkan subject?', 'Aksi ini akan menonaktifkan subject yang dilaporkan jika didukung.', [
                 $this->field('note', 'Catatan admin', 'textarea'),
             ]),
-            $this->action('Tutup', route('admin.reports.dismiss', $report), 'X', 'patch', 'outline', 'Tutup report?', 'Report akan ditandai dismissed.', [
+            $this->action('Tutup', route('admin.reports.dismiss', $report), 'X', 'patch', 'outline', 'Tutup laporan?', 'Laporan akan ditandai ditutup.', [
                 $this->field('note', 'Catatan admin', 'textarea'),
             ]),
         ];

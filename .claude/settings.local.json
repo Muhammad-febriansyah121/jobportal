@@ -18,7 +18,12 @@
       "mcp__laravel-boost__last-error",
       "Bash(npx tsc *)",
       "Bash(xargs ls *)",
-      "mcp__laravel-boost__search-docs"
+      "mcp__laravel-boost__search-docs",
+      "Bash(grep -l \"HasFactory\" /Applications/laravel/jobportal/app/Models/*.php)",
+      "WebSearch",
+      "WebFetch(domain:pakasir.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(grep -n \"factory\\\\|Company\\\\|PricingPlan\\\\|Payment\\\\|Subscription\" /Applications/laravel/jobportal/database/factories/*.php)"
     ]
   },
   "enableAllProjectMcpServers": true,

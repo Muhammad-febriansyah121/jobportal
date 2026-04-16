@@ -4,7 +4,6 @@ namespace App\Http\Requests\Admin;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class SavePricingPlanRequest extends FormRequest
 {
@@ -25,7 +24,6 @@ class SavePricingPlanRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'alpha_dash', Rule::unique('pricing_plans', 'slug')->ignore($this->route('pricing_plan') ?? $this->route('pricingPlan'))],
             'price' => ['required', 'integer', 'min:0'],
             'duration_days' => ['required', 'integer', 'min:1'],
             'active_jobs_limit' => ['required', 'integer', 'min:0'],

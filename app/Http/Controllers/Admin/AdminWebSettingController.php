@@ -65,6 +65,9 @@ class AdminWebSettingController extends Controller
             'recaptcha_secret_key' => ['sometimes', 'nullable', 'string', 'max:255'],
             'privacy_title' => ['sometimes', 'nullable', 'string', 'max:255'],
             'terms_title' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'ai_api_key' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'pakasir_project' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'pakasir_api_key' => ['sometimes', 'nullable', 'string', 'max:500'],
         ]);
 
         foreach ($request->except('_token', '_method') as $key => $value) {

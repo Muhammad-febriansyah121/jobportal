@@ -64,30 +64,21 @@ class AdminAiAuditLogController extends Controller
     {
         $aiAuditLog->load(['user:id,name,email']);
 
-        return Inertia::render('admin/resources/show', [
-            'title' => 'Detail AI Log',
-            'description' => str($aiAuditLog->feature)->headline()->toString(),
+        return Inertia::render('admin/ai-audit-logs/show', [
+            'log' => [
+                'id' => $aiAuditLog->id,
+                'feature' => str($aiAuditLog->feature)->headline()->toString(),
+                'user_name' => $aiAuditLog->user?->name ?? 'Sistem',
+                'user_email' => $aiAuditLog->user?->email ?? '-',
+                'model_name' => $aiAuditLog->model_name ?? '-',
+                'status' => $aiAuditLog->status,
+                'input_hash' => $aiAuditLog->input_hash ?? '-',
+                'input_json' => $aiAuditLog->input_json,
+                'output_json' => $aiAuditLog->output_json,
+                'created_at' => $aiAuditLog->created_at?->format('d M Y H:i'),
+            ],
             'backHref' => route('admin.ai-audit-logs.index'),
             'actions' => $this->aiLogActions($aiAuditLog),
-            'sections' => [
-                [
-                    'title' => 'Audit',
-                    'items' => [
-                        ['label' => 'Feature', 'value' => str($aiAuditLog->feature)->headline()->toString()],
-                        ['label' => 'User', 'value' => $aiAuditLog->user?->name.' <'.$aiAuditLog->user?->email.'>'],
-                        ['label' => 'Model', 'value' => $aiAuditLog->model_name],
-                        ['label' => 'Status', 'value' => str($aiAuditLog->status)->headline()->toString()],
-                        ['label' => 'Input hash', 'value' => $aiAuditLog->input_hash],
-                        ['label' => 'Created at', 'value' => $aiAuditLog->created_at?->format('d M Y H:i')],
-                    ],
-                ],
-                [
-                    'title' => 'Output JSON',
-                    'items' => [
-                        ['label' => 'Output', 'value' => json_encode($aiAuditLog->output_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)],
-                    ],
-                ],
-            ],
         ]);
     }
 

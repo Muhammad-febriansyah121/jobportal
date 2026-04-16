@@ -12,6 +12,11 @@ class AiService
 
     private const MODEL = 'gpt-4o-mini';
 
+    public function modelName(): string
+    {
+        return self::MODEL;
+    }
+
     public function chat(array $messages, int $maxTokens = 1000, float $temperature = 0.7): ?string
     {
         $apiKey = Setting::get('ai_api_key');

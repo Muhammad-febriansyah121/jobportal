@@ -4,7 +4,6 @@ namespace App\Http\Requests\Admin;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class SaveCareerResourceRequest extends FormRequest
 {
@@ -25,10 +24,9 @@ class SaveCareerResourceRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'alpha_dash', Rule::unique('career_resources', 'slug')->ignore($this->route('career_resource') ?? $this->route('careerResource'))],
             'type' => ['required', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:255'],
-            'thumbnail' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'thumbnail' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'content' => ['required', 'string'],
         ];
     }

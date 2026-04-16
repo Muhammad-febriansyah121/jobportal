@@ -4,6 +4,7 @@ use App\Models\ActivityLog;
 use App\Models\CareerResource;
 use App\Models\Company;
 use App\Models\CompanyVerification;
+use App\Models\Industry;
 use App\Models\JobListing;
 use App\Models\PricingPlan;
 use App\Models\Skill;
@@ -38,7 +39,6 @@ test('admin can manage skills', function () {
     $this->actingAs($admin)
         ->post(route('admin.skills.store'), [
             'name' => 'Laravel',
-            'slug' => 'laravel',
             'category' => 'Backend',
         ])
         ->assertRedirect();
@@ -46,23 +46,49 @@ test('admin can manage skills', function () {
     $skill = Skill::firstOrFail();
 
     expect($skill->name)->toBe('Laravel');
+    expect($skill->slug)->toBe('laravel');
     expect($skill->category)->toBe('Backend');
 
     $this->actingAs($admin)
         ->patch(route('admin.skills.update', $skill), [
             'name' => 'Laravel Octane',
-            'slug' => 'laravel-octane',
             'category' => 'Backend',
         ])
         ->assertRedirect();
 
     expect($skill->refresh()->name)->toBe('Laravel Octane');
+    expect($skill->slug)->toBe('laravel-octane');
 
     $this->actingAs($admin)
         ->delete(route('admin.skills.destroy', $skill))
         ->assertRedirect();
 
     expect(Skill::query()->exists())->toBeFalse();
+});
+
+test('admin resource slugs are generated from names without manual input', function () {
+    $admin = User::factory()->admin()->create();
+    Skill::create([
+        'name' => 'Product Design',
+        'slug' => 'product-design',
+        'category' => 'Design',
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.industries.store'), [
+            'name' => 'Financial Services',
+        ])
+        ->assertRedirect();
+
+    $this->actingAs($admin)
+        ->post(route('admin.skills.store'), [
+            'name' => 'Product Design',
+            'category' => 'Design',
+        ])
+        ->assertRedirect();
+
+    expect(Industry::firstWhere('name', 'Financial Services')?->slug)->toBe('financial-services');
+    expect(Skill::query()->where('name', 'Product Design')->latest('id')->first()?->slug)->toBe('product-design-1');
 });
 
 test('admin can approve company verification and notify the owner', function () {
@@ -144,7 +170,6 @@ test('admin can create a career resource with thumbnail and view its detail page
     $this->actingAs($admin)
         ->post(route('admin.career-resources.store'), [
             'title' => 'Cara Menjawab Pertanyaan Gaji',
-            'slug' => 'cara-menjawab-pertanyaan-gaji',
             'type' => 'article',
             'category' => 'Karir Strategi',
             'thumbnail' => $thumbnail,
@@ -155,6 +180,7 @@ test('admin can create a career resource with thumbnail and view its detail page
     $resource = CareerResource::firstOrFail();
 
     expect($resource->thumbnail_path)->not->toBeNull();
+    expect($resource->slug)->toBe('cara-menjawab-pertanyaan-gaji');
     Storage::disk('public')->assertExists($resource->thumbnail_path);
 
     $this->actingAs($admin)
@@ -193,7 +219,6 @@ test('admin can replace a career resource thumbnail from the edit page', functio
         ->post(route('admin.career-resources.update', $resource), [
             '_method' => 'patch',
             'title' => 'Portfolio UX Designer',
-            'slug' => 'portfolio-ux-designer',
             'type' => 'guide',
             'category' => 'Portfolio',
             'thumbnail' => UploadedFile::fake()->image('new-thumbnail.png', 1200, 630),
@@ -204,6 +229,7 @@ test('admin can replace a career resource thumbnail from the edit page', functio
     $resource->refresh();
 
     expect($resource->title)->toBe('Portfolio UX Designer');
+    expect($resource->slug)->toBe('portfolio-ux-designer');
     expect($resource->thumbnail_path)->not->toBe($oldThumbnail);
     Storage::disk('public')->assertMissing($oldThumbnail);
     Storage::disk('public')->assertExists($resource->thumbnail_path);
@@ -223,7 +249,6 @@ test('admin can create and view a pricing plan through dedicated pages', functio
     $this->actingAs($admin)
         ->post(route('admin.pricing-plans.store'), [
             'name' => 'Growth',
-            'slug' => 'growth',
             'price' => 499000,
             'duration_days' => 30,
             'active_jobs_limit' => 10,
@@ -237,6 +262,7 @@ test('admin can create and view a pricing plan through dedicated pages', functio
 
     $plan = PricingPlan::firstOrFail();
 
+    expect($plan->slug)->toBe('growth');
     expect($plan->features_json)->toBe([
         'AI screening kandidat',
         'Talent search',
@@ -281,7 +307,6 @@ test('admin can update a pricing plan from the edit page', function () {
     $this->actingAs($admin)
         ->patch(route('admin.pricing-plans.update', $plan), [
             'name' => 'Starter Plus',
-            'slug' => 'starter-plus',
             'price' => 149000,
             'duration_days' => 14,
             'active_jobs_limit' => 5,
@@ -296,6 +321,7 @@ test('admin can update a pricing plan from the edit page', function () {
     $plan->refresh();
 
     expect($plan->name)->toBe('Starter Plus');
+    expect($plan->slug)->toBe('starter-plus');
     expect($plan->price)->toBe(149000);
     expect($plan->duration_days)->toBe(14);
     expect($plan->is_active)->toBeFalse();

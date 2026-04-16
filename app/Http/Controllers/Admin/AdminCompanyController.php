@@ -2,15 +2,20 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Admin\GenerateCompanyAiInsight;
 use App\Actions\Admin\RecordActivity;
 use App\Http\Controllers\Admin\Concerns\BuildsAdminPages;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AdminNoteRequest;
+use App\Models\AiAuditLog;
 use App\Models\Company;
+use App\Models\CompanyBadge;
 use App\Models\CompanyMember;
+use App\Models\CompanyOffice;
 use App\Models\CompanyVerification;
 use App\Models\Industry;
 use App\Models\JobListing;
+use App\Models\Subscription;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -46,7 +51,7 @@ class AdminCompanyController extends Controller
                     'tone' => $this->statusTone($company->verification_status),
                 ],
                 'active_status' => [
-                    'label' => $company->is_active ? 'Aktif' : 'Suspend',
+                    'label' => $company->is_active ? 'Aktif' : 'Nonaktif',
                     'tone' => $company->is_active ? 'success' : 'danger',
                 ],
                 'active_jobs_count' => $company->active_jobs_count,
@@ -73,7 +78,7 @@ class AdminCompanyController extends Controller
                 $this->field('status', 'Status aktif', 'select', $request->string('status')->toString(), $this->options([
                     '' => 'Semua status',
                     'active' => 'Aktif',
-                    'suspended' => 'Suspend',
+                    'suspended' => 'Nonaktif',
                 ])),
             ],
             'columns' => [
@@ -93,13 +98,28 @@ class AdminCompanyController extends Controller
 
     public function show(Company $company): Response
     {
-        $company->load(['industry:id,name', 'owner:id,name,email', 'latestVerification']);
+        $company->load(['industry:id,name', 'owner:id,name,email', 'latestVerification', 'activeSubscription.pricingPlan:id,name,duration_days']);
+
+        $latestAiInsight = AiAuditLog::query()
+            ->where('feature', 'admin_company_insight')
+            ->where('status', 'success')
+            ->whereJsonContains('output_json->company_id', $company->id)
+            ->latest()
+            ->first(['output_json', 'created_at']);
+
+        $aiSummary = $latestAiInsight
+            ? [
+                'summary' => $latestAiInsight->output_json['summary'] ?? null,
+                'generated_at' => $latestAiInsight->created_at?->format('d M Y H:i'),
+            ]
+            : null;
 
         return Inertia::render('admin/resources/show', [
             'title' => 'Detail Perusahaan',
             'description' => $company->name,
             'backHref' => route('admin.companies.index'),
             'actions' => $this->companyActions($company),
+            'aiSummary' => $aiSummary,
             'sections' => [
                 [
                     'title' => 'Profil perusahaan',
@@ -107,21 +127,41 @@ class AdminCompanyController extends Controller
                         ['label' => 'Nama', 'value' => $company->name],
                         ['label' => 'Slug', 'value' => $company->slug],
                         ['label' => 'Industri', 'value' => $company->industry?->name ?? '-'],
+                        ['label' => 'Ukuran perusahaan', 'value' => $company->company_size ?? '-'],
                         ['label' => 'Website', 'value' => $company->website ?? '-'],
                         ['label' => 'Kota', 'value' => $company->hq_city ?? '-'],
-                        ['label' => 'Status aktif', 'value' => $company->is_active ? 'Aktif' : 'Suspend'],
+                        ['label' => 'Provinsi', 'value' => $company->hq_province ?? '-'],
+                        ['label' => 'Alamat', 'value' => $company->address ?? '-'],
+                        ['label' => 'Status aktif', 'value' => $company->is_active ? 'Aktif' : 'Nonaktif'],
                         ['label' => 'Status verifikasi', 'value' => str($company->verification_status)->headline()->toString()],
                         ['label' => 'Owner', 'value' => $company->owner?->name.' <'.$company->owner?->email.'>'],
+                        ['label' => 'Bergabung', 'value' => $company->created_at?->format('d M Y')],
                     ],
                 ],
                 [
-                    'title' => 'Trust',
+                    'title' => 'Deskripsi',
+                    'items' => [
+                        ['label' => 'Deskripsi perusahaan', 'value' => $company->description ?? '-'],
+                    ],
+                ],
+                [
+                    'title' => 'Trust & Kredibilitas',
                     'items' => [
                         ['label' => 'Verified', 'value' => $company->is_verified ? 'Ya' : 'Belum'],
                         ['label' => 'Response rate', 'value' => $company->response_rate ? $company->response_rate.'%' : '-'],
                         ['label' => 'Median response', 'value' => $company->median_response_hours ? $company->median_response_hours.' jam' : '-'],
                         ['label' => 'Trust score', 'value' => $company->trust_score ?? '-'],
+                        ['label' => 'Ditangguhkan pada', 'value' => $company->suspended_at?->format('d M Y H:i') ?? '-'],
                         ['label' => 'Alasan suspend', 'value' => $company->suspension_reason ?? '-'],
+                    ],
+                ],
+                [
+                    'title' => 'Langganan aktif',
+                    'items' => [
+                        ['label' => 'Paket', 'value' => $company->activeSubscription?->pricingPlan?->name ?? 'Tidak ada paket aktif'],
+                        ['label' => 'Status', 'value' => $company->activeSubscription ? str($company->activeSubscription->status)->headline()->toString() : '-'],
+                        ['label' => 'Mulai', 'value' => $company->activeSubscription?->starts_at?->format('d M Y') ?? '-'],
+                        ['label' => 'Berakhir', 'value' => $company->activeSubscription?->ends_at?->format('d M Y') ?? '-'],
                     ],
                 ],
             ],
@@ -131,7 +171,7 @@ class AdminCompanyController extends Controller
                     'columns' => [
                         ['key' => 'title', 'label' => 'Judul'],
                         ['key' => 'status', 'label' => 'Status'],
-                        ['key' => 'published_at', 'label' => 'Publish'],
+                        ['key' => 'published_at', 'label' => 'Tanggal terbit'],
                     ],
                     'rows' => JobListing::query()
                         ->select(['id', 'title', 'status', 'published_at'])
@@ -172,12 +212,14 @@ class AdminCompanyController extends Controller
                 [
                     'title' => 'Submission verifikasi',
                     'columns' => [
-                        ['key' => 'legal_name', 'label' => 'Legal name'],
+                        ['key' => 'legal_name', 'label' => 'Nama legal'],
+                        ['key' => 'nib', 'label' => 'NIB'],
+                        ['key' => 'npwp', 'label' => 'NPWP'],
                         ['key' => 'status', 'label' => 'Status'],
                         ['key' => 'reviewed_at', 'label' => 'Review'],
                     ],
                     'rows' => CompanyVerification::query()
-                        ->select(['id', 'company_id', 'legal_name', 'status', 'reviewed_at'])
+                        ->select(['id', 'company_id', 'legal_name', 'nib', 'npwp', 'status', 'reviewed_at'])
                         ->whereBelongsTo($company)
                         ->latest()
                         ->limit(10)
@@ -185,12 +227,87 @@ class AdminCompanyController extends Controller
                         ->map(fn (CompanyVerification $verification): array => [
                             'id' => $verification->id,
                             'legal_name' => $verification->legal_name,
+                            'nib' => $verification->nib ?? '-',
+                            'npwp' => $verification->npwp ?? '-',
                             'status' => str($verification->status)->headline()->toString(),
                             'reviewed_at' => $verification->reviewed_at?->format('d M Y H:i') ?? '-',
                         ]),
                 ],
+                [
+                    'title' => 'Kantor cabang',
+                    'columns' => [
+                        ['key' => 'city', 'label' => 'Kota'],
+                        ['key' => 'province', 'label' => 'Provinsi'],
+                        ['key' => 'address', 'label' => 'Alamat'],
+                    ],
+                    'rows' => CompanyOffice::query()
+                        ->select(['id', 'company_id', 'city', 'province', 'address'])
+                        ->whereBelongsTo($company)
+                        ->get()
+                        ->map(fn (CompanyOffice $office): array => [
+                            'id' => $office->id,
+                            'city' => $office->city ?? '-',
+                            'province' => $office->province ?? '-',
+                            'address' => $office->address ?? '-',
+                        ]),
+                ],
+                [
+                    'title' => 'Badge perusahaan',
+                    'columns' => [
+                        ['key' => 'type', 'label' => 'Tipe'],
+                        ['key' => 'label', 'label' => 'Label'],
+                        ['key' => 'issued_at', 'label' => 'Diterbitkan'],
+                    ],
+                    'rows' => CompanyBadge::query()
+                        ->select(['id', 'company_id', 'type', 'label', 'issued_at'])
+                        ->whereBelongsTo($company)
+                        ->latest('issued_at')
+                        ->get()
+                        ->map(fn (CompanyBadge $badge): array => [
+                            'id' => $badge->id,
+                            'type' => str($badge->type)->headline()->toString(),
+                            'label' => $badge->label,
+                            'issued_at' => $badge->issued_at?->format('d M Y') ?? '-',
+                        ]),
+                ],
+                [
+                    'title' => 'Riwayat langganan',
+                    'columns' => [
+                        ['key' => 'plan', 'label' => 'Paket'],
+                        ['key' => 'status', 'label' => 'Status'],
+                        ['key' => 'starts_at', 'label' => 'Mulai'],
+                        ['key' => 'ends_at', 'label' => 'Berakhir'],
+                    ],
+                    'rows' => Subscription::query()
+                        ->select(['id', 'company_id', 'pricing_plan_id', 'status', 'starts_at', 'ends_at'])
+                        ->with(['pricingPlan:id,name'])
+                        ->whereBelongsTo($company)
+                        ->latest()
+                        ->limit(10)
+                        ->get()
+                        ->map(fn (Subscription $subscription): array => [
+                            'id' => $subscription->id,
+                            'plan' => $subscription->pricingPlan?->name ?? '-',
+                            'status' => str($subscription->status)->headline()->toString(),
+                            'starts_at' => $subscription->starts_at?->format('d M Y') ?? '-',
+                            'ends_at' => $subscription->ends_at?->format('d M Y') ?? '-',
+                        ]),
+                ],
             ],
         ]);
+    }
+
+    public function generateAiInsight(Company $company, GenerateCompanyAiInsight $action): RedirectResponse
+    {
+        $log = $action->handle($company);
+
+        if ($log && $log->status === 'success') {
+            $this->flash('Insight AI berhasil dibuat.');
+        } else {
+            $this->flash('Gagal membuat insight AI. Periksa konfigurasi API key.', 'error');
+        }
+
+        return back();
     }
 
     public function suspend(AdminNoteRequest $request, Company $company, RecordActivity $activity): RedirectResponse
@@ -232,8 +349,9 @@ class AdminCompanyController extends Controller
     {
         return [
             $this->action('Lihat Detail', route('admin.companies.show', $company), 'Eye'),
+            $this->action('Analisis AI', route('admin.companies.generate-ai-insight', $company), 'Sparkles', 'post', 'outline'),
             $company->is_active
-                ? $this->action('Suspend', route('admin.companies.suspend', $company), 'Ban', 'patch', 'destructive', 'Suspend perusahaan?', 'Perusahaan dan tim recruiter akan ditandai tidak aktif.', [
+                ? $this->action('Nonaktifkan', route('admin.companies.suspend', $company), 'Ban', 'patch', 'destructive', 'Nonaktifkan perusahaan?', 'Perusahaan dan tim recruiter akan ditandai tidak aktif.', [
                     $this->field('note', 'Catatan admin', 'textarea'),
                 ])
                 : $this->action('Aktifkan', route('admin.companies.activate', $company), 'Check', 'patch'),

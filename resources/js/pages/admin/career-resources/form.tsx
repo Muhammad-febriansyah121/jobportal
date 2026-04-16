@@ -24,7 +24,6 @@ import { cn } from '@/lib/utils';
 export type CareerResourceFormValue = {
     id?: number;
     title: string;
-    slug: string;
     type: string;
     category: string | null;
     thumbnail_url: string | null;
@@ -39,7 +38,6 @@ type ResourceTypeOption = {
 type CareerResourceFormData = {
     _method?: 'patch';
     title: string;
-    slug: string;
     type: string;
     category: string;
     thumbnail: File | null;
@@ -66,7 +64,6 @@ export function CareerResourceForm({
     const form = useForm<CareerResourceFormData>({
         ...(method === 'patch' ? { _method: 'patch' as const } : {}),
         title: resource?.title ?? '',
-        slug: resource?.slug ?? '',
         type: resource?.type ?? 'article',
         category: resource?.category ?? '',
         thumbnail: null,
@@ -124,19 +121,6 @@ export function CareerResourceForm({
                                 required
                             />
                             <InputError message={form.errors.title} />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="slug">Slug</Label>
-                            <Input
-                                id="slug"
-                                value={form.data.slug}
-                                onChange={(event) =>
-                                    form.setData('slug', event.target.value)
-                                }
-                                placeholder="Otomatis dari judul jika kosong"
-                            />
-                            <InputError message={form.errors.slug} />
                         </div>
 
                         <div className="grid gap-2">
@@ -200,7 +184,7 @@ export function CareerResourceForm({
                     <div className="mb-4">
                         <h2 className="text-lg font-semibold">Thumbnail</h2>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            PNG, JPG, atau WebP. Maksimal 2 MB.
+                            PNG, JPG, atau WebP. Maksimal 4 MB.
                         </p>
                     </div>
 

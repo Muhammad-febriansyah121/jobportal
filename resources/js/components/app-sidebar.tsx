@@ -74,6 +74,7 @@ import { index as adminAiAuditLogs } from '@/routes/admin/ai-audit-logs';
 import { index as adminCareerResources } from '@/routes/admin/career-resources';
 import { index as adminCompanies } from '@/routes/admin/companies';
 import { index as adminCompanyVerifications } from '@/routes/admin/company-verifications';
+import { index as adminCompanySizes } from '@/routes/admin/company-sizes';
 import { index as adminIndustries } from '@/routes/admin/industries';
 import { index as adminJobs } from '@/routes/admin/jobs';
 import { index as adminPricingPlans } from '@/routes/admin/pricing-plans';
@@ -96,6 +97,7 @@ import { index as employerCandidates } from '@/routes/employer/candidates';
 import { index as employerJobs } from '@/routes/employer/jobs';
 import { index as employerMessages } from '@/routes/employer/messages';
 import { index as employerTalentSearch } from '@/routes/employer/talent-search';
+import { index as employerTeam } from '@/routes/employer/team';
 import { edit as settingsProfileEdit } from '@/routes/profile';
 import { dashboard, logout } from '@/routes';
 import type { Auth, NavItem } from '@/types';
@@ -125,7 +127,10 @@ const adminNavItems: NavItem[] = [
                 title: 'Kandidat',
                 href: adminUsers({ query: { role: 'candidate' } }),
             },
-            { title: 'Mentor', href: adminUsers({ query: { role: 'mentor' } }) },
+            {
+                title: 'Mentor',
+                href: adminUsers({ query: { role: 'mentor' } }),
+            },
         ],
     },
     { title: 'Perusahaan', href: adminCompanies(), icon: Building2 },
@@ -137,6 +142,7 @@ const adminNavItems: NavItem[] = [
     { title: 'Lowongan', href: adminJobs(), icon: BriefcaseBusiness },
     { title: 'Skill & Keahlian', href: adminSkills(), icon: Tags },
     { title: 'Industri', href: adminIndustries(), icon: Library },
+    { title: 'Ukuran Perusahaan', href: adminCompanySizes(), icon: Building2 },
     { title: 'Insight Gaji', href: adminSalaryInsights(), icon: BarChart3 },
     {
         title: 'Resource Karir',
@@ -233,7 +239,7 @@ function AdminSidebar() {
                         <SidebarMenuButton
                             size="lg"
                             asChild
-                            className="h-14 rounded-lg px-0 hover:bg-transparent data-[active=true]:bg-transparent group-data-[collapsible=icon]:justify-center"
+                            className="h-14 rounded-lg px-0 group-data-[collapsible=icon]:justify-center hover:bg-transparent data-[active=true]:bg-transparent"
                         >
                             <Link href={adminDashboard()} prefetch>
                                 <span className="flex size-11 items-center justify-center rounded-lg bg-[#f45113] text-white shadow-sm">
@@ -301,9 +307,11 @@ function AdminSidebarMenuItem({
                         <SidebarMenuButton
                             isActive={isActive}
                             tooltip={{ children: item.title }}
-                            className="h-11 rounded-lg px-4 text-[15px] font-semibold text-[#4b5565] hover:bg-[#fff4ef] hover:text-[#f45113] data-[active=true]:bg-[#fff4ef] data-[active=true]:text-[#f45113] group-data-[collapsible=icon]:justify-center"
+                            className="h-11 rounded-lg px-4 text-[15px] font-semibold text-[#4b5565] group-data-[collapsible=icon]:justify-center hover:bg-[#fff4ef] hover:text-[#f45113] data-[active=true]:bg-[#fff4ef] data-[active=true]:text-[#f45113]"
                         >
-                            {item.icon ? <item.icon className="size-5" /> : null}
+                            {item.icon ? (
+                                <item.icon className="size-5" />
+                            ) : null}
                             <span>{item.title}</span>
                             <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[collapsible=icon]:hidden group-data-[state=open]/collapsible:rotate-90" />
                         </SidebarMenuButton>
@@ -336,7 +344,7 @@ function AdminSidebarMenuItem({
                 asChild
                 isActive={isActive}
                 tooltip={{ children: item.title }}
-                className="h-11 rounded-lg px-4 text-[15px] font-semibold text-[#4b5565] hover:bg-[#fff4ef] hover:text-[#f45113] data-[active=true]:bg-[#fff4ef] data-[active=true]:text-[#f45113] group-data-[collapsible=icon]:justify-center"
+                className="h-11 rounded-lg px-4 text-[15px] font-semibold text-[#4b5565] group-data-[collapsible=icon]:justify-center hover:bg-[#fff4ef] hover:text-[#f45113] data-[active=true]:bg-[#fff4ef] data-[active=true]:text-[#f45113]"
             >
                 <Link href={item.href} prefetch>
                     {item.icon ? <item.icon className="size-5" /> : null}
@@ -407,7 +415,7 @@ function CandidateSidebar() {
                         <SidebarMenuButton
                             size="lg"
                             asChild
-                            className="h-14 rounded-lg px-0 hover:bg-transparent data-[active=true]:bg-transparent group-data-[collapsible=icon]:justify-center"
+                            className="h-14 rounded-lg px-0 group-data-[collapsible=icon]:justify-center hover:bg-transparent data-[active=true]:bg-transparent"
                         >
                             <Link href={candidateDashboard()} prefetch>
                                 <span className="flex size-11 items-center justify-center rounded-lg bg-[#f45113] text-white shadow-sm">
@@ -435,7 +443,7 @@ function CandidateSidebar() {
                                 asChild
                                 isActive={isCurrentUrl(item.href)}
                                 tooltip={{ children: item.title }}
-                                className="h-11 rounded-lg px-4 text-[15px] font-semibold text-[#4b5565] hover:bg-[#fff4ef] hover:text-[#f45113] data-[active=true]:bg-[#fff4ef] data-[active=true]:text-[#f45113] group-data-[collapsible=icon]:justify-center"
+                                className="h-11 rounded-lg px-4 text-[15px] font-semibold text-[#4b5565] group-data-[collapsible=icon]:justify-center hover:bg-[#fff4ef] hover:text-[#f45113] data-[active=true]:bg-[#fff4ef] data-[active=true]:text-[#f45113]"
                             >
                                 <Link href={item.href} prefetch>
                                     <item.icon className="size-5" />
@@ -450,7 +458,7 @@ function CandidateSidebar() {
                     <p className="text-xs font-bold tracking-[0.12em] text-[#f45113] uppercase">
                         Pusat Bantuan
                     </p>
-                    <p className="mt-3 text-sm font-medium leading-6 text-[#6b7280]">
+                    <p className="mt-3 text-sm leading-6 font-medium text-[#6b7280]">
                         Butuh bantuan navigasi atau tips karir?
                     </p>
                     <Link
@@ -493,6 +501,11 @@ const employerMenuItems: EmployerMenuItem[] = [
         icon: BarChart3,
     },
     {
+        title: 'Tim',
+        href: employerTeam(),
+        icon: Users,
+    },
+    {
         title: 'Billing',
         href: employerBilling(),
         icon: CreditCard,
@@ -520,7 +533,7 @@ function EmployerSidebar() {
                         <SidebarMenuButton
                             size="lg"
                             asChild
-                            className="h-14 rounded-lg px-0 hover:bg-transparent data-[active=true]:bg-transparent group-data-[collapsible=icon]:justify-center"
+                            className="h-14 rounded-lg px-0 group-data-[collapsible=icon]:justify-center hover:bg-transparent data-[active=true]:bg-transparent"
                         >
                             <Link href={employerDashboard()} prefetch>
                                 <span className="flex size-11 items-center justify-center rounded-lg bg-[#f45113] text-white shadow-sm">
@@ -552,7 +565,7 @@ function EmployerSidebar() {
                                 }
                                 tooltip={{ children: item.title }}
                                 className={cn(
-                                    'h-11 rounded-lg px-3 text-[15px] font-semibold text-[#4b5565] hover:bg-[#fff4ef] hover:text-[#f45113] data-[active=true]:bg-[#fff4ef] data-[active=true]:text-[#f45113] group-data-[collapsible=icon]:justify-center',
+                                    'h-11 rounded-lg px-3 text-[15px] font-semibold text-[#4b5565] group-data-[collapsible=icon]:justify-center hover:bg-[#fff4ef] hover:text-[#f45113] data-[active=true]:bg-[#fff4ef] data-[active=true]:text-[#f45113]',
                                     item.badge ? 'pr-9' : '',
                                 )}
                             >
@@ -603,7 +616,7 @@ function EmployerSidebar() {
                             <DropdownMenuTrigger asChild>
                                 <SidebarMenuButton
                                     size="lg"
-                                    className="h-14 rounded-lg p-0 hover:bg-[#fff4ef] data-[state=open]:bg-[#fff4ef] group-data-[collapsible=icon]:justify-center"
+                                    className="h-14 rounded-lg p-0 group-data-[collapsible=icon]:justify-center hover:bg-[#fff4ef] data-[state=open]:bg-[#fff4ef]"
                                 >
                                     <span className="flex size-11 items-center justify-center rounded-full bg-[#f2a05f] text-sm font-bold text-white">
                                         {getInitials(auth.user?.name ?? 'HR')}

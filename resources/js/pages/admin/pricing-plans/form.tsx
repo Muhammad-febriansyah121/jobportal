@@ -12,7 +12,6 @@ import { Label } from '@/components/ui/label';
 export type PricingPlanValue = {
     id?: number;
     name: string;
-    slug: string;
     price: number;
     duration_days: number;
     active_jobs_limit: number;
@@ -27,7 +26,6 @@ export type PricingPlanValue = {
 type PricingPlanFormData = {
     _method?: 'patch';
     name: string;
-    slug: string;
     price: number;
     duration_days: number;
     active_jobs_limit: number;
@@ -59,7 +57,6 @@ export function PricingPlanForm({
     const form = useForm<PricingPlanFormData>({
         ...(method === 'patch' ? { _method: 'patch' as const } : {}),
         name: plan?.name ?? '',
-        slug: plan?.slug ?? '',
         price: plan?.price ?? 0,
         duration_days: plan?.duration_days ?? 30,
         active_jobs_limit: plan?.active_jobs_limit ?? 0,
@@ -119,7 +116,7 @@ export function PricingPlanForm({
                     <div className="mb-5">
                         <h2 className="text-lg font-semibold">Informasi Paket</h2>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Nama paket, slug, harga, dan status tampil di halaman billing employer.
+                            Nama paket, harga, dan status tampil di halaman billing employer.
                         </p>
                     </div>
 
@@ -136,19 +133,6 @@ export function PricingPlanForm({
                                 required
                             />
                             <InputError message={form.errors.name} />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="slug">Slug</Label>
-                            <Input
-                                id="slug"
-                                value={form.data.slug}
-                                onChange={(event) =>
-                                    form.setData('slug', event.target.value)
-                                }
-                                placeholder="Otomatis dari nama jika kosong"
-                            />
-                            <InputError message={form.errors.slug} />
                         </div>
 
                         <div className="grid gap-2">
