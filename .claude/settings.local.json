@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node *)",
+      "mcp__laravel-boost__database-schema",
+      "mcp__laravel-boost__database-query",
+      "Bash(mysql *)",
+      "Bash(php artisan *)",
+      "Bash(grep \"^  GET.*/$\\\\|^ GET.*home\\\\| GET.*welcome\\\\| GET.*front\")",
+      "Bash(npm run *)",
+      "Bash(vendor/bin/pint *)",
+      "Bash(npm install *)",
+      "Read(//Applications/laravel/karivia/**)",
+      "Bash(find *)",
+      "mcp__laravel-boost__read-log-entries",
+      "mcp__laravel-boost__application-info",
+      "mcp__laravel-boost__browser-logs",
+      "mcp__laravel-boost__last-error",
+      "Bash(npx tsc *)",
+      "Bash(xargs ls *)",
+      "mcp__laravel-boost__search-docs"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "laravel-boost"
+  ]
+}
