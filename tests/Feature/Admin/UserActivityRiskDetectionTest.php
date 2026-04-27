@@ -54,7 +54,7 @@ test('admin can run user activity risk detection with ai', function () {
     $log = AiAuditLog::where('feature', 'user_activity_risk_detection')->where('user_id', $candidate->id)->firstOrFail();
 
     expect($log->status)->toBe('success');
-    expect($log->model_name)->toBe('gpt-4o-mini');
+    expect($log->model_name)->toBe('gpt-5');
     expect($log->input_json['signals']['apply_count'])->toBe(20);
     expect($log->input_json['signals']['failed_login_count'])->toBe(5);
     expect($log->input_json['recent_activities'][0])->toHaveKeys(['id', 'action', 'created_at', 'ip']);
@@ -63,7 +63,7 @@ test('admin can run user activity risk detection with ai', function () {
     expect($log->output_json['analysis_source'])->toBe('ai');
 
     Http::assertSent(fn (Request $request): bool => $request->hasHeader('Authorization', 'Bearer test-key')
-        && $request['model'] === 'gpt-4o-mini'
+        && $request['model'] === 'gpt-5'
         && str_contains($request['messages'][1]['content'], 'failed_login'));
 });
 

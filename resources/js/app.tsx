@@ -7,7 +7,10 @@ import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
 const appName =
-    (typeof document !== 'undefined' ? document.querySelector<HTMLMetaElement>('meta[name="site-name"]')?.content : null) ??
+    (typeof document !== 'undefined'
+        ? document.querySelector<HTMLMetaElement>('meta[name="site-name"]')
+              ?.content
+        : null) ??
     import.meta.env.VITE_APP_NAME ??
     'Laravel';
 
@@ -17,11 +20,20 @@ createInertiaApp({
         switch (true) {
             case name === 'welcome':
             case name === 'auth/login':
+            case name === 'auth/register-candidate':
+            case name === 'auth/register-employer':
+            case name === 'auth/forgot-password':
             case name.startsWith('front/'):
+            case name.startsWith('companies/'):
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('settings/'):
+            case name === 'candidate/profile':
+            case name === 'candidate/experiences':
+            case name === 'candidate/educations':
+            case name === 'candidate/skills':
+            case name === 'candidate/cvs/index':
                 return [AppLayout, SettingsLayout];
             default:
                 return AppLayout;

@@ -39,6 +39,19 @@ class SaveCandidateProfileRequest extends FormRequest
             'portfolio_url' => ['nullable', 'url', 'max:255'],
             'skill_ids' => ['nullable', 'array'],
             'skill_ids.*' => ['integer', 'exists:skills,id'],
+            'first_experience_company_name' => ['nullable', 'string', 'max:255'],
+            'first_experience_job_title' => ['nullable', 'string', 'max:255', 'required_with:first_experience_company_name'],
+            'first_experience_start_date' => ['nullable', 'date', 'required_with:first_experience_company_name'],
+            'first_experience_end_date' => ['nullable', 'date', 'after_or_equal:first_experience_start_date'],
+            'first_experience_is_current' => ['nullable', 'boolean'],
+            'first_experience_location' => ['nullable', 'string', 'max:255'],
+            'first_experience_description' => ['nullable', 'string', 'max:5000'],
+            'first_education_institution' => ['nullable', 'string', 'max:255'],
+            'first_education_degree' => ['nullable', 'string', 'max:255'],
+            'first_education_field_of_study' => ['nullable', 'string', 'max:255'],
+            'first_education_start_year' => ['nullable', 'integer', 'min:1950', 'max:'.now()->addYears(10)->year],
+            'first_education_end_year' => ['nullable', 'integer', 'min:1950', 'max:'.now()->addYears(10)->year, 'gte:first_education_start_year'],
+            'first_education_gpa' => ['nullable', 'numeric', 'min:0', 'max:4'],
         ];
     }
 }

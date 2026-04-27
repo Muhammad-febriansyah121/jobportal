@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { AdminDataTable } from '@/components/admin/admin-data-table';
 import { AdminFilterBar } from '@/components/admin/admin-filter-bar';
 import { Button } from '@/components/ui/button';
+import { useTranslate } from '@/hooks/use-translate';
 import type { AdminColumn, AdminField, AdminPaginatedRows } from '@/types';
 
 type CareerResourceIndexProps = {
@@ -26,6 +27,7 @@ export default function CareerResourceIndex({
     rows,
     emptyState,
 }: CareerResourceIndexProps) {
+    const { t } = useTranslate();
     return (
         <>
             <Head title={title} />
@@ -44,11 +46,11 @@ export default function CareerResourceIndex({
                     </div>
                     <Button
                         asChild
-                        className="bg-[#f45113] hover:bg-[#d94710]"
+                        className="bg-[#01296A] hover:bg-[#001D4D]"
                     >
                         <Link href={createHref} prefetch>
                             <Plus />
-                            Tambah Artikel
+                            {t('admin.career_resources_index.add_article')}
                         </Link>
                     </Button>
                 </div>

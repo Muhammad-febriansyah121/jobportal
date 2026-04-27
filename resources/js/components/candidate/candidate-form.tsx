@@ -1,6 +1,7 @@
 import { CalendarIcon } from 'lucide-react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
+import { useTranslate } from '@/hooks/use-translate';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
@@ -16,13 +17,21 @@ type FieldProps = {
     label: string;
     name: string;
     error?: string;
+    required?: boolean;
     children: React.ReactNode;
 };
 
-export function Field({ label, name, error, children }: FieldProps) {
+export function Field({ label, name, error, required, children }: FieldProps) {
     return (
         <div className="grid gap-2">
-            <Label htmlFor={name}>{label}</Label>
+            <Label htmlFor={name}>
+                {label}
+                {required ? (
+                    <span className="ml-1 text-red-600" aria-hidden="true">
+                        *
+                    </span>
+                ) : null}
+            </Label>
             {children}
             <InputError message={error} />
         </div>
@@ -71,13 +80,15 @@ type DatePickerInputProps = {
 export function DatePickerInput({
     name,
     defaultValue,
-    placeholder = 'Pilih tanggal',
+    placeholder,
 }: DatePickerInputProps) {
+    const { t } = useTranslate();
     const [open, setOpen] = useState(false);
     const [date, setDate] = useState<Date | undefined>(
         parseDate(defaultValue ?? ''),
     );
     const value = date ? toDateInputValue(date) : '';
+    const resolvedPlaceholder = placeholder ?? t('common.candidate_form.select_date');
 
     return (
         <>
@@ -94,7 +105,7 @@ export function DatePickerInput({
                         )}
                     >
                         <CalendarIcon />
-                        {date ? formatDate(date) : placeholder}
+                        {date ? formatDate(date) : resolvedPlaceholder}
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent align="start" className="w-auto p-0">
@@ -124,7 +135,9 @@ export function RupiahInput({
     defaultValue,
     placeholder = 'Rp0',
 }: RupiahInputProps) {
-    const [amount, setAmount] = useState<number>(() => onlyDigits(defaultValue));
+    const [amount, setAmount] = useState<number>(() =>
+        onlyDigits(defaultValue),
+    );
 
     return (
         <>
@@ -142,7 +155,7 @@ export function RupiahInput({
 
 export function formatRupiah(value?: number | null): string {
     if (!value) {
-        return '-';
+        return '';
     }
 
     return new Intl.NumberFormat('id-ID', {

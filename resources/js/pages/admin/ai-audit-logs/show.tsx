@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { AdminActionList } from '@/components/admin/admin-action';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { AdminAction } from '@/types';
 
 type AiAuditLogDetail = {
@@ -28,7 +29,7 @@ const STATUS_STYLES: Record<string, string> = {
     success: 'bg-green-100 text-green-700',
     failed: 'bg-red-100 text-red-700',
     retry_requested: 'bg-yellow-100 text-yellow-700',
-    ai_unavailable: 'bg-orange-100 text-orange-700',
+    ai_unavailable: 'bg-primary-100 text-primary-700',
 };
 
 const RISK_STYLES: Record<string, string> = {
@@ -39,6 +40,7 @@ const RISK_STYLES: Record<string, string> = {
 
 function StatusBadge({ status }: { status: string }) {
     const cls = STATUS_STYLES[status] ?? 'bg-muted text-muted-foreground';
+
     return (
         <span
             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${cls}`}
@@ -78,6 +80,7 @@ function Pill({
         red: 'bg-red-100 text-red-700',
         neutral: 'bg-muted text-muted-foreground',
     }[color];
+
     return (
         <span
             className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}
@@ -89,6 +92,7 @@ function Pill({
 
 function RawJsonToggle({ data }: { data: Record<string, unknown> }) {
     const [open, setOpen] = useState(false);
+
     return (
         <div className="mt-4 border-t pt-4">
             <button
@@ -299,6 +303,7 @@ function InputRiskDetection({ data }: { data: Record<string, unknown> }) {
 
 function InputGeneric({ data }: { data: Record<string, unknown> }) {
     const entries = Object.entries(data);
+
     return (
         <div className="flex flex-col gap-3">
             <div className="divide-y rounded-lg border">
@@ -378,7 +383,7 @@ function OutputRiskDetection({ data }: { data: Record<string, unknown> }) {
                                     key={i}
                                     className="flex items-start gap-2 text-sm"
                                 >
-                                    <span className="mt-0.5 shrink-0 text-orange-500">
+                                    <span className="mt-0.5 shrink-0 text-primary-500">
                                         •
                                     </span>
                                     {r}
@@ -452,11 +457,11 @@ function OutputSummary({ data }: { data: Record<string, unknown> }) {
     return (
         <div className="flex flex-col gap-4">
             {data.summary !== undefined && data.summary !== null && (
-                <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
-                    <p className="mb-1 text-xs font-semibold text-orange-600 uppercase">
+                <div className="rounded-lg border border-primary-200 bg-primary-50 p-4">
+                    <p className="mb-1 text-xs font-semibold text-primary-600 uppercase">
                         Ringkasan
                     </p>
-                    <p className="text-sm leading-relaxed text-orange-900">
+                    <p className="text-sm leading-relaxed text-primary-900">
                         {String(data.summary)}
                     </p>
                 </div>
@@ -476,6 +481,7 @@ function OutputSummary({ data }: { data: Record<string, unknown> }) {
 
 function OutputGeneric({ data }: { data: Record<string, unknown> }) {
     const entries = Object.entries(data);
+
     return (
         <div className="flex flex-col gap-3">
             <div className="divide-y rounded-lg border">
@@ -522,14 +528,14 @@ function JsonCard({
 }) {
     if (!data) {
         return (
-            <div className="rounded-xl border">
-                <div className="border-b px-5 py-3">
-                    <h2 className="text-sm font-semibold">{label}</h2>
-                </div>
-                <p className="px-5 py-4 text-sm text-muted-foreground italic">
-                    Tidak ada data.
-                </p>
-            </div>
+            <Card>
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">{label}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm italic text-muted-foreground">Tidak ada data.</p>
+                </CardContent>
+            </Card>
         );
     }
 
@@ -539,6 +545,7 @@ function JsonCard({
         feature.toLowerCase().includes('insight');
 
     let content: React.ReactNode;
+
     if (type === 'input') {
         content = isRisk ? (
             <InputRiskDetection data={data} />
@@ -546,18 +553,22 @@ function JsonCard({
             <InputGeneric data={data} />
         );
     } else {
-        if (isRisk) content = <OutputRiskDetection data={data} />;
-        else if (isSummary) content = <OutputSummary data={data} />;
-        else content = <OutputGeneric data={data} />;
+        if (isRisk) {
+content = <OutputRiskDetection data={data} />;
+} else if (isSummary) {
+content = <OutputSummary data={data} />;
+} else {
+content = <OutputGeneric data={data} />;
+}
     }
 
     return (
-        <div className="rounded-xl border bg-background shadow-sm">
-            <div className="border-b px-5 py-3">
-                <h2 className="text-sm font-semibold">{label}</h2>
-            </div>
-            <div className="p-5">{content}</div>
-        </div>
+        <Card>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm">{label}</CardTitle>
+            </CardHeader>
+            <CardContent>{content}</CardContent>
+        </Card>
     );
 }
 
@@ -574,17 +585,20 @@ export default function AiAuditLogShow({ log, backHref, actions }: Props) {
                 />
 
                 {actions && actions.length > 0 && (
-                    <div className="flex justify-end border-b pb-4">
-                        <AdminActionList actions={actions} />
-                    </div>
+                    <Card>
+                        <CardContent className="flex justify-end py-3">
+                            <AdminActionList actions={actions} />
+                        </CardContent>
+                    </Card>
                 )}
 
                 {/* Metadata card */}
-                <div className="rounded-xl border bg-background shadow-sm">
-                    <div className="border-b px-5 py-3">
-                        <h2 className="text-sm font-semibold">Informasi Log</h2>
-                    </div>
-                    <dl className="grid gap-5 p-5 sm:grid-cols-2 xl:grid-cols-3">
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm">Informasi Log</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                    <dl className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                         <MetaItem label="Feature">{log.feature}</MetaItem>
                         <MetaItem label="User">
                             <span className="block font-medium">
@@ -605,7 +619,8 @@ export default function AiAuditLogShow({ log, backHref, actions }: Props) {
                         </MetaItem>
                         <MetaItem label="Dibuat">{log.created_at}</MetaItem>
                     </dl>
-                </div>
+                    </CardContent>
+                </Card>
 
                 <JsonCard
                     label="Input"

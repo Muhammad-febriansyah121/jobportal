@@ -1,8 +1,10 @@
 <?php
 
+use App\Actions\Candidate\ResolveCandidateProfile;
 use App\Models\Industry;
 use App\Models\Skill;
 use App\Models\User;
+use Inertia\Testing\AssertableInertia as Assert;
 
 test('candidate can complete onboarding and attach primary skills', function () {
     $candidate = User::factory()->candidate()->create(['name' => 'Ayu']);
@@ -23,6 +25,16 @@ test('candidate can complete onboarding and attach primary skills', function () 
             'preferred_industry_id' => $industry->id,
             'preferred_role' => 'Frontend Engineer',
             'skill_ids' => [$skill->id],
+            'first_experience_company_name' => 'PT Karivia Indonesia',
+            'first_experience_job_title' => 'Frontend Engineer',
+            'first_experience_start_date' => '2023-01-01',
+            'first_experience_end_date' => '2024-01-01',
+            'first_education_institution' => 'Universitas Indonesia',
+            'first_education_degree' => 'S1',
+            'first_education_field_of_study' => 'Informatika',
+            'first_education_start_year' => 2019,
+            'first_education_end_year' => 2023,
+            'first_education_gpa' => 3.75,
         ])
         ->assertRedirect(route('candidate.dashboard'));
 
@@ -33,12 +45,24 @@ test('candidate can complete onboarding and attach primary skills', function () 
         'preferred_industry_id' => $industry->id,
     ]);
 
+    $candidateProfile = $candidate->refresh()->candidateProfile()->firstOrFail();
+
     $this->assertDatabaseHas('candidate_skill', [
-        'candidate_id' => $candidate->candidateProfile->id,
+        'candidate_id' => $candidateProfile->id,
         'skill_id' => $skill->id,
     ]);
+    $this->assertDatabaseHas('candidate_experiences', [
+        'candidate_id' => $candidateProfile->id,
+        'company_name' => 'PT Karivia Indonesia',
+        'job_title' => 'Frontend Engineer',
+    ]);
+    $this->assertDatabaseHas('candidate_educations', [
+        'candidate_id' => $candidateProfile->id,
+        'institution' => 'Universitas Indonesia',
+        'degree' => 'S1',
+    ]);
 
-    expect($candidate->refresh()->onboarding_completed_at)->not->toBeNull();
+    expect($candidate->refresh()->onboarding_completed_at)->toBeNull();
 });
 
 test('candidate can update profile preferences', function () {
@@ -68,4 +92,97 @@ test('candidate can update profile preferences', function () {
         'expected_salary_min' => 9000000,
         'expected_salary_max' => 16000000,
     ]);
+});
+
+test('candidate profile edit page shows missing completion checklist', function () {
+    $candidate = User::factory()->candidate()->create([
+        'name' => 'Bima Santoso',
+    ]);
+
+    $this->actingAs($candidate)
+        ->get(route('candidate.profile.edit'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('candidate/profile')
+            ->where('profile.full_name', 'Bima Santoso')
+            ->has('profile.profile_completion_missing')
+            ->where('profile.profile_completion_missing.0.label', 'Headline profil')
+            ->where('profile.profile_completion_missing', fn ($items): bool => collect($items)->contains(
+                fn (array $item): bool => $item['key'] === 'profile_photo' && $item['label'] === 'Foto profil'
+            )));
+});
+
+test('candidate with incomplete onboarding is redirected when opening locked menus', function () {
+    $candidate = User::factory()->candidate()->create([
+        'onboarding_completed_at' => null,
+    ]);
+
+    $this->actingAs($candidate)
+        ->get(route('candidate.applications.index'))
+        ->assertRedirect(route('candidate.onboarding.edit'));
+});
+
+test('candidate with completed onboarding can access candidate menus', function () {
+    $candidate = User::factory()->candidate()->create([
+        'onboarding_completed_at' => now(),
+    ]);
+
+    $this->actingAs($candidate)
+        ->get(route('candidate.applications.index'))
+        ->assertOk();
+});
+
+test('candidate with 100 profile completion auto-unlocks onboarded routes', function () {
+    $candidate = User::factory()->candidate()->create([
+        'onboarding_completed_at' => null,
+    ]);
+
+    $candidate->candidateProfile()->updateOrCreate(
+        ['user_id' => $candidate->id],
+        [
+            'full_name' => $candidate->name,
+            'work_mode_pref' => 'any',
+            'profile_completion' => 100,
+        ],
+    );
+
+    $this->actingAs($candidate)
+        ->get(route('candidate.applications.index'))
+        ->assertOk();
+
+    expect($candidate->refresh()->onboarding_completed_at)->not->toBeNull();
+});
+
+test('refreshCompletion auto-sets onboarding_completed_at when profile reaches 100%', function () {
+    $candidate = User::factory()->candidate()->create([
+        'onboarding_completed_at' => null,
+        'avatar_url' => 'https://example.com/avatar.jpg',
+    ]);
+    $profile = $candidate->candidateProfile()->firstOrCreate(
+        ['user_id' => $candidate->id],
+        ['full_name' => $candidate->name, 'work_mode_pref' => 'any'],
+    );
+    $industry = Industry::create(['name' => 'Tech Auto', 'slug' => 'tech-auto']);
+    $skill = Skill::create(['name' => 'Vue', 'slug' => 'vue']);
+
+    $profile->update([
+        'full_name' => 'Test User',
+        'headline' => 'Engineer',
+        'bio' => 'Some bio',
+        'location_city' => 'Jakarta',
+        'location_province' => 'DKI Jakarta',
+        'expected_salary_min' => 10000000,
+        'work_mode_pref' => 'remote',
+        'availability' => 'Immediate',
+        'preferred_industry_id' => $industry->id,
+    ]);
+    $profile->skills()->syncWithoutDetaching([$skill->id => ['proficiency' => 'intermediate']]);
+    $profile->educations()->create(['institution' => 'UI', 'degree' => 'S1', 'field_of_study' => 'CS', 'start_year' => 2018, 'end_year' => 2022]);
+    $profile->experiences()->create(['company_name' => 'PT X', 'job_title' => 'Dev', 'start_date' => '2022-02-01', 'is_current' => true]);
+    $profile->cvs()->create(['file_url' => 'cv.pdf', 'is_primary' => true, 'uploaded_at' => now()]);
+
+    $action = app(ResolveCandidateProfile::class);
+    $action->refreshCompletion($profile);
+
+    expect($candidate->refresh()->onboarding_completed_at)->not->toBeNull();
 });

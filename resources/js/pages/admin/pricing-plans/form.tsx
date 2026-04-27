@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { Check, Plus, Trash2 } from 'lucide-react';
 import type { FormEvent } from 'react';
+import { useMemo } from 'react';
 import { toast } from 'sonner';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslate } from '@/hooks/use-translate';
 
 export type PricingPlanValue = {
     id?: number;
@@ -16,7 +18,6 @@ export type PricingPlanValue = {
     duration_days: number;
     active_jobs_limit: number;
     recruiter_seat_limit: number;
-    ai_screening_quota: number;
     talent_search_quota: number;
     features: string[];
     is_active: boolean;
@@ -30,17 +31,10 @@ type PricingPlanFormData = {
     duration_days: number;
     active_jobs_limit: number;
     recruiter_seat_limit: number;
-    ai_screening_quota: number;
     talent_search_quota: number;
     features: string;
     is_active: boolean;
 };
-
-const defaultFeatures = [
-    'AI screening kandidat',
-    'Talent search',
-    'Dashboard analytics',
-];
 
 export function PricingPlanForm({
     action,
@@ -51,6 +45,15 @@ export function PricingPlanForm({
     method?: 'patch' | 'post';
     plan?: PricingPlanValue;
 }) {
+    const { t } = useTranslate();
+    const defaultFeatures = useMemo(
+        () => [
+            t('admin.pricing_plans_form.default_feature_1'),
+            t('admin.pricing_plans_form.default_feature_2'),
+            t('admin.pricing_plans_form.default_feature_3'),
+        ],
+        [t],
+    );
     const initialFeatures = plan?.features?.length
         ? plan.features
         : defaultFeatures;
@@ -61,7 +64,6 @@ export function PricingPlanForm({
         duration_days: plan?.duration_days ?? 30,
         active_jobs_limit: plan?.active_jobs_limit ?? 0,
         recruiter_seat_limit: plan?.recruiter_seat_limit ?? 1,
-        ai_screening_quota: plan?.ai_screening_quota ?? 0,
         talent_search_quota: plan?.talent_search_quota ?? 0,
         features: initialFeatures.join('\n'),
         is_active: plan?.is_active ?? true,
@@ -74,7 +76,7 @@ export function PricingPlanForm({
         form.post(action, {
             preserveScroll: true,
             onError: () => {
-                toast.error('Periksa kembali data pricing plan.');
+                toast.error(t('admin.pricing_plans_form.error_review'));
             },
         });
     }
@@ -82,7 +84,6 @@ export function PricingPlanForm({
     function updateNumber(
         field:
             | 'active_jobs_limit'
-            | 'ai_screening_quota'
             | 'duration_days'
             | 'price'
             | 'recruiter_seat_limit'
@@ -109,34 +110,47 @@ export function PricingPlanForm({
         form.setData('features', [...features, ''].join('\n'));
     }
 
+    function durationLabelLocal(days: number): string {
+        if (!days) {
+            return t('admin.pricing_plans_form.enter_duration');
+        }
+        if (days === 365) {
+            return t('admin.pricing_plans_form.duration_12_months');
+        }
+        if (days % 30 === 0) {
+            return t('admin.pricing_plans_form.duration_n_months', { months: days / 30 });
+        }
+        return t('admin.pricing_plans_form.duration_n_days', { days });
+    }
+
     return (
         <form onSubmit={submit} className="grid gap-6 xl:grid-cols-[1fr_360px]">
             <div className="space-y-6">
                 <section className="rounded-lg border bg-white p-5 shadow-sm">
                     <div className="mb-5">
-                        <h2 className="text-lg font-semibold">Informasi Paket</h2>
+                        <h2 className="text-lg font-semibold">{t('admin.pricing_plans_form.package_info')}</h2>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Nama paket, harga, dan status tampil di halaman billing employer.
+                            {t('admin.pricing_plans_form.package_info_hint')}
                         </p>
                     </div>
 
                     <div className="grid gap-5 md:grid-cols-2">
                         <div className="grid gap-2">
-                            <Label htmlFor="name">Nama Paket</Label>
+                            <Label htmlFor="name">{t('admin.pricing_plans_form.name')}</Label>
                             <Input
                                 id="name"
                                 value={form.data.name}
                                 onChange={(event) =>
                                     form.setData('name', event.target.value)
                                 }
-                                placeholder="Contoh: Growth"
+                                placeholder={t('admin.pricing_plans_form.placeholder_name')}
                                 required
                             />
                             <InputError message={form.errors.name} />
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="price">Harga</Label>
+                            <Label htmlFor="price">{t('admin.pricing_plans_form.price')}</Label>
                             <Input
                                 id="price"
                                 inputMode="numeric"
@@ -150,7 +164,7 @@ export function PricingPlanForm({
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="duration_days">Masa Aktif</Label>
+                            <Label htmlFor="duration_days">{t('admin.pricing_plans_form.active_period')}</Label>
                             <Input
                                 id="duration_days"
                                 inputMode="numeric"
@@ -161,7 +175,7 @@ export function PricingPlanForm({
                                 placeholder="30"
                             />
                             <p className="text-xs font-medium text-muted-foreground">
-                                {durationLabel(form.data.duration_days)}
+                                {durationLabelLocal(form.data.duration_days)}
                             </p>
                             <InputError message={form.errors.duration_days} />
                         </div>
@@ -175,10 +189,10 @@ export function PricingPlanForm({
                             />
                             <span>
                                 <span className="block text-sm font-semibold">
-                                    Paket aktif
+                                    {t('admin.pricing_plans_form.active_package')}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
-                                    Paket bisa dipakai untuk subscription baru.
+                                    {t('admin.pricing_plans_form.active_package_hint')}
                                 </span>
                             </span>
                         </label>
@@ -188,16 +202,16 @@ export function PricingPlanForm({
 
                 <section className="rounded-lg border bg-white p-5 shadow-sm">
                     <div className="mb-5">
-                        <h2 className="text-lg font-semibold">Kuota Paket</h2>
+                        <h2 className="text-lg font-semibold">{t('admin.pricing_plans_form.package_quota')}</h2>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Tentukan batas lowongan aktif, seat recruiter, dan kuota AI.
+                            {t('admin.pricing_plans_form.package_quota_hint')}
                         </p>
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
                         <NumberField
                             id="active_jobs_limit"
-                            label="Active jobs limit"
+                            label={t('admin.pricing_plans_form.active_jobs_limit')}
                             value={form.data.active_jobs_limit}
                             error={form.errors.active_jobs_limit}
                             onChange={(value) =>
@@ -206,7 +220,7 @@ export function PricingPlanForm({
                         />
                         <NumberField
                             id="recruiter_seat_limit"
-                            label="Recruiter seat limit"
+                            label={t('admin.pricing_plans_form.recruiter_seat_limit')}
                             value={form.data.recruiter_seat_limit}
                             error={form.errors.recruiter_seat_limit}
                             onChange={(value) =>
@@ -214,17 +228,8 @@ export function PricingPlanForm({
                             }
                         />
                         <NumberField
-                            id="ai_screening_quota"
-                            label="AI screening quota"
-                            value={form.data.ai_screening_quota}
-                            error={form.errors.ai_screening_quota}
-                            onChange={(value) =>
-                                updateNumber('ai_screening_quota', value)
-                            }
-                        />
-                        <NumberField
                             id="talent_search_quota"
-                            label="Talent search quota"
+                            label={t('admin.pricing_plans_form.talent_search_quota')}
                             value={form.data.talent_search_quota}
                             error={form.errors.talent_search_quota}
                             onChange={(value) =>
@@ -237,14 +242,14 @@ export function PricingPlanForm({
                 <section className="rounded-lg border bg-white p-5 shadow-sm">
                     <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
-                            <h2 className="text-lg font-semibold">Feature List</h2>
+                            <h2 className="text-lg font-semibold">{t('admin.pricing_plans_form.feature_list')}</h2>
                             <p className="mt-1 text-sm text-muted-foreground">
-                                Tulis satu benefit per baris. Ini akan muncul sebagai daftar fitur paket.
+                                {t('admin.pricing_plans_form.feature_list_hint')}
                             </p>
                         </div>
                         <Button type="button" variant="outline" onClick={addFeature}>
                             <Plus />
-                            Tambah Fitur
+                            {t('admin.pricing_plans_form.add_feature')}
                         </Button>
                     </div>
 
@@ -256,7 +261,7 @@ export function PricingPlanForm({
                                     onChange={(event) =>
                                         updateFeature(index, event.target.value)
                                     }
-                                    placeholder="Contoh: 10 kuota AI screening"
+                                    placeholder={t('admin.pricing_plans_form.placeholder_feature')}
                                 />
                                 <Button
                                     type="button"
@@ -290,8 +295,8 @@ export function PricingPlanForm({
                         </Badge>
                     </div>
 
-                    <div className="mt-5 rounded-lg border bg-[#fff8f4] p-4">
-                        <p className="text-sm font-semibold text-[#f45113]">
+                    <div className="mt-5 rounded-lg border bg-[#eff4ff] p-4">
+                        <p className="text-sm font-semibold text-[#01296A]">
                             {form.data.name || 'Nama Paket'}
                         </p>
                         <p className="mt-3 text-3xl font-bold tracking-tight">
@@ -300,7 +305,7 @@ export function PricingPlanForm({
                         <p className="mt-1 text-xs text-muted-foreground">
                             harga paket
                         </p>
-                        <p className="mt-4 rounded-md bg-white px-3 py-2 text-sm font-bold text-[#f45113]">
+                        <p className="mt-4 rounded-md bg-white px-3 py-2 text-sm font-bold text-[#01296A]">
                             {durationLabel(form.data.duration_days)}
                         </p>
                     </div>
@@ -308,7 +313,6 @@ export function PricingPlanForm({
                     <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
                         <Quota label="Active jobs" value={form.data.active_jobs_limit} />
                         <Quota label="Recruiter seat" value={form.data.recruiter_seat_limit} />
-                        <Quota label="AI screening" value={form.data.ai_screening_quota} />
                         <Quota label="Talent search" value={form.data.talent_search_quota} />
                     </dl>
 
@@ -331,7 +335,7 @@ export function PricingPlanForm({
                     </p>
                     <Button
                         type="submit"
-                        className="mt-5 w-full bg-[#f45113] hover:bg-[#d94710]"
+                        className="mt-5 w-full bg-[#01296A] hover:bg-[#001D4D]"
                         disabled={form.processing}
                     >
                         {form.processing ? 'Menyimpan...' : 'Simpan Paket'}

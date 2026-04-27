@@ -10,9 +10,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'company_id', 'created_by', 'industry_id', 'title', 'slug', 'description',
-    'responsibilities', 'required_qualifications', 'preferred_qualifications',
+    'responsibilities', 'required_qualifications', 'preferred_qualifications', 'benefits',
     'location_city', 'location_province', 'work_mode', 'job_type', 'experience_level',
-    'salary_min', 'salary_max', 'salary_currency', 'is_salary_visible',
+    'salary_min', 'salary_max', 'salary_currency', 'is_salary_visible', 'is_anonymous',
     'status', 'integrity_score', 'response_sla_hours', 'published_at', 'closes_at',
 ])]
 class JobListing extends Model
@@ -72,7 +72,14 @@ class JobListing extends Model
     protected function casts(): array
     {
         return [
+            'company_id' => 'integer',
+            'created_by' => 'integer',
+            'industry_id' => 'integer',
             'is_salary_visible' => 'boolean',
+            'is_anonymous' => 'boolean',
+            'salary_min' => 'integer',
+            'salary_max' => 'integer',
+            'response_sla_hours' => 'integer',
             'published_at' => 'datetime',
             'closes_at' => 'datetime',
         ];

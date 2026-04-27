@@ -2,30 +2,71 @@
 
 namespace App\Http\Controllers\Candidate;
 
+use App\Actions\Candidate\CandidateWalletManager;
 use App\Actions\Candidate\ResolveCandidateProfile;
 use App\Http\Controllers\Controller;
+use App\Models\AiRecommendation;
 use App\Models\Application;
 use App\Models\CareerResource;
 use App\Models\Interview;
 use App\Models\JobListing;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class CandidateDashboardController extends Controller
 {
-    public function __invoke(Request $request, ResolveCandidateProfile $resolveCandidateProfile): Response
-    {
-        $candidate = $resolveCandidateProfile->refreshCompletion(
-            $resolveCandidateProfile->handle($request->user())
-        )->load(['primaryCv', 'skills:id,name', 'preferredIndustry:id,name']);
+    public function __invoke(
+        Request $request,
+        ResolveCandidateProfile $resolveCandidateProfile,
+        CandidateWalletManager $walletManager
+    ): Response {
+        $candidateProfile = $resolveCandidateProfile->handle($request->user());
+
+        $candidate = $resolveCandidateProfile
+            ->refreshCompletion($walletManager->ensureFreeQuota($candidateProfile))
+            ->load(['primaryCv', 'skills:id,name', 'preferredIndustry:id,name']);
 
         $skillIds = $candidate->skills->pluck('id')->all();
         $pipelineSummary = $candidate->applications()
             ->selectRaw('status, count(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status');
+        $activeApplications = Application::query()
+            ->select(['id', 'job_listing_id', 'status', 'ai_fit_score', 'applied_at'])
+            ->with(['jobListing:id,company_id,title,slug', 'jobListing.company:id,name'])
+            ->where('candidate_id', $candidate->id)
+            ->latest('applied_at')
+            ->limit(5)
+            ->get()
+            ->map(fn (Application $application): array => [
+                'id' => $application->id,
+                'job_title' => $application->jobListing?->title,
+                'company' => $application->jobListing?->company?->name,
+                'status' => $application->status,
+                'status_label' => $this->statusLabel($application->status),
+                'ai_fit_score' => $application->ai_fit_score,
+                'applied_at' => $application->applied_at?->format('d M Y'),
+            ]);
+        $skills = $candidate->skills
+            ->map(fn ($skill): array => [
+                'id' => $skill->id,
+                'name' => $skill->name,
+                'proficiency' => $skill->pivot->proficiency,
+                'years_exp' => $skill->pivot->years_exp,
+                'verified' => filled($skill->pivot->verified_at),
+            ]);
+        $profileCompletionMissing = collect($resolveCandidateProfile->completionChecklist($candidate))
+            ->filter(fn (array $item): bool => ! $item['completed'])
+            ->values()
+            ->map(fn (array $item): array => [
+                'key' => $item['key'],
+                'label' => $item['label'],
+            ])
+            ->all();
+        $recommendedJobs = $this->recommendedJobs($candidate->id, $skillIds);
 
         return Inertia::render('candidate/dashboard', [
             'profile' => [
@@ -37,6 +78,8 @@ class CandidateDashboardController extends Controller
                 'preferred_role' => $candidate->preferred_role,
                 'preferred_industry' => $candidate->preferredIndustry?->name,
                 'ai_cv_summary' => $candidate->ai_cv_summary,
+                'avatar_url' => $request->user()->avatar_url,
+                'profile_completion_missing' => $profileCompletionMissing,
             ],
             'metrics' => [
                 'saved_jobs' => $candidate->savedJobs()->count(),
@@ -49,39 +92,24 @@ class CandidateDashboardController extends Controller
                 'file_url' => $candidate->primaryCv->file_url,
                 'uploaded_at' => $candidate->primaryCv->uploaded_at?->format('d M Y'),
             ] : null,
-            'recommendedJobs' => JobListing::query()
-                ->published()
-                ->select(['id', 'company_id', 'title', 'slug', 'location_city', 'location_province', 'work_mode', 'job_type', 'salary_min', 'salary_max', 'is_salary_visible', 'published_at'])
-                ->with(['company:id,name,is_verified'])
-                ->withCount(['skills as matched_skills_count' => fn (Builder $query) => $query->whereIn('skills.id', $skillIds)])
-                ->where(fn (Builder $query) => $query->whereNull('closes_at')->orWhere('closes_at', '>=', now()))
-                ->orderByDesc('matched_skills_count')
-                ->latest('published_at')
-                ->limit(5)
-                ->get()
-                ->map(fn (JobListing $job): array => $this->jobSummary($job)),
+            'cvBuilder' => [
+                'has_free_draft_available' => $walletManager->canUseFreeBuilderDraft($candidate),
+                'can_generate_draft' => $walletManager->canUseFreeBuilderDraft($candidate) || $walletManager->canUseBuilderDraft($candidate),
+                'ai_token_balance' => (int) $candidate->ai_token_balance,
+                'cv_builder_quota_balance' => (int) $candidate->cv_builder_quota_balance,
+                'draft_token_cost' => CandidateWalletManager::CV_BUILDER_DRAFT_TOKEN_COST,
+                'draft_quota_cost' => CandidateWalletManager::CV_BUILDER_DRAFT_QUOTA_COST,
+                'builder_href' => route('candidate.cvs.index'),
+                'pricing_href' => route('candidate.pricing.index'),
+            ],
+            'recommendedJobs' => $recommendedJobs,
             'savedJobs' => $candidate->savedJobs()
                 ->with(['jobListing:id,company_id,title,slug,location_city,location_province,work_mode,job_type,salary_min,salary_max,is_salary_visible,published_at', 'jobListing.company:id,name,is_verified'])
                 ->latest()
                 ->limit(4)
                 ->get()
                 ->map(fn ($savedJob): array => $this->jobSummary($savedJob->jobListing)),
-            'activeApplications' => Application::query()
-                ->select(['id', 'job_listing_id', 'status', 'ai_fit_score', 'applied_at'])
-                ->with(['jobListing:id,company_id,title,slug', 'jobListing.company:id,name'])
-                ->where('candidate_id', $candidate->id)
-                ->latest('applied_at')
-                ->limit(5)
-                ->get()
-                ->map(fn (Application $application): array => [
-                    'id' => $application->id,
-                    'job_title' => $application->jobListing?->title,
-                    'company' => $application->jobListing?->company?->name,
-                    'status' => $application->status,
-                    'status_label' => $this->statusLabel($application->status),
-                    'ai_fit_score' => $application->ai_fit_score,
-                    'applied_at' => $application->applied_at?->format('d M Y'),
-                ]),
+            'activeApplications' => $activeApplications,
             'applicationTracker' => collect(['applied', 'screened', 'shortlisted', 'interview', 'offer', 'hired', 'rejected', 'withdrawn'])
                 ->map(fn (string $status): array => [
                     'status' => $status,
@@ -101,23 +129,9 @@ class CandidateDashboardController extends Controller
                     'scheduled_at' => $interview->scheduled_at?->format('d M Y H:i'),
                     'status' => $interview->status,
                 ]),
-            'skills' => $candidate->skills
-                ->map(fn ($skill): array => [
-                    'id' => $skill->id,
-                    'name' => $skill->name,
-                    'proficiency' => $skill->pivot->proficiency,
-                    'years_exp' => $skill->pivot->years_exp,
-                    'verified' => filled($skill->pivot->verified_at),
-                ]),
-            'assessmentSuggestions' => $candidate->skills()
-                ->limit(4)
-                ->get(['skills.id', 'skills.name'])
-                ->map(fn ($skill): array => [
-                    'id' => $skill->id,
-                    'name' => $skill->name,
-                ]),
+            'skills' => $skills,
             'careerTips' => CareerResource::query()
-                ->select(['id', 'title', 'type', 'category', 'published_at'])
+                ->select(['id', 'title', 'type', 'category', 'thumbnail_path', 'published_at'])
                 ->whereNotNull('published_at')
                 ->latest('published_at')
                 ->limit(3)
@@ -127,9 +141,53 @@ class CandidateDashboardController extends Controller
                     'title' => $resource->title,
                     'type' => $resource->type,
                     'category' => $resource->category,
+                    'thumbnail_path' => $resource->thumbnail_path,
                     'published_at' => $resource->published_at?->format('d M Y'),
                 ]),
         ]);
+    }
+
+    /**
+     * @param  array<int, int>  $skillIds
+     */
+    private function recommendedJobs(int $candidateId, array $skillIds): Collection
+    {
+        $aiRecommendations = AiRecommendation::query()
+            ->select(['id', 'candidate_id', 'job_listing_id', 'score', 'reason'])
+            ->with(['jobListing:id,company_id,title,slug,location_city,location_province,work_mode,job_type,salary_min,salary_max,is_salary_visible,published_at,closes_at,status', 'jobListing.company:id,name,is_verified'])
+            ->where('candidate_id', $candidateId)
+            ->whereHas('jobListing', fn (Builder $query) => $query
+                ->published()
+                ->where(fn (Builder $query) => $query->whereNull('closes_at')->orWhere('closes_at', '>=', now())))
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(fn (AiRecommendation $recommendation): array => $this->jobSummary(
+                $recommendation->jobListing,
+                $recommendation->score,
+                $recommendation->reason
+            ));
+
+        if ($aiRecommendations->isNotEmpty()) {
+            return $aiRecommendations;
+        }
+
+        return JobListing::query()
+            ->published()
+            ->select(['id', 'company_id', 'title', 'slug', 'location_city', 'location_province', 'work_mode', 'job_type', 'salary_min', 'salary_max', 'is_salary_visible', 'published_at'])
+            ->with(['company:id,name,is_verified'])
+            ->withCount(['skills as matched_skills_count' => fn (Builder $query) => $query->whereIn('skills.id', $skillIds)])
+            ->with(['aiMatchScores' => fn ($query) => $query->where('candidate_id', $candidateId)->latest('computed_at')])
+            ->where(fn (Builder $query) => $query->whereNull('closes_at')->orWhere('closes_at', '>=', now()))
+            ->orderByDesc('matched_skills_count')
+            ->latest('published_at')
+            ->limit(5)
+            ->get()
+            ->map(fn (JobListing $job): array => $this->jobSummary(
+                $job,
+                $job->aiMatchScores->first()?->overall_score,
+                $job->aiMatchScores->first()?->explanation
+            ));
     }
 
     private function upcomingInterviewsQuery(int $candidateId): Builder
@@ -140,7 +198,7 @@ class CandidateDashboardController extends Controller
             ->oldest('scheduled_at');
     }
 
-    private function jobSummary(?JobListing $job): array
+    private function jobSummary(?JobListing $job, ?int $matchScore = null, ?string $matchReason = null): array
     {
         if ($job === null) {
             return [];
@@ -157,6 +215,8 @@ class CandidateDashboardController extends Controller
             'job_type' => str($job->job_type)->headline()->toString(),
             'salary_range' => $this->salaryRange($job),
             'published_at' => $job->published_at?->format('d M Y'),
+            'match_score' => $matchScore,
+            'match_reason' => $matchReason,
         ];
     }
 
@@ -176,10 +236,10 @@ class CandidateDashboardController extends Controller
     {
         return [
             'applied' => 'Terkirim',
-            'screened' => 'Screening',
-            'shortlisted' => 'Shortlist',
-            'interview' => 'Interview',
-            'offer' => 'Offer',
+            'screened' => 'Seleksi Awal',
+            'shortlisted' => 'Terpilih',
+            'interview' => 'Wawancara',
+            'offer' => 'Penawaran',
             'hired' => 'Diterima',
             'rejected' => 'Ditolak',
             'withdrawn' => 'Ditarik',

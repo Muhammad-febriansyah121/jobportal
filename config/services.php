@@ -35,4 +35,22 @@ return [
         ],
     ],
 
+    'google' => [
+        'client_secret' => env('GOOGLE_OAUTH_CLIENT_SECRET'),
+    ],
+
+    'google_calendar' => [
+        'client_id' => env('GOOGLE_CALENDAR_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CALENDAR_CLIENT_SECRET'),
+        'redirect_uri' => env('GOOGLE_CALENDAR_REDIRECT_URI'),
+    ],
+
+    'whatsapp' => [
+        'base_url' => env('WHATSAPP_GATEWAY_URL'),
+        'api_key' => env('WHATSAPP_GATEWAY_API_KEY'),
+        'default_session_id' => env('WHATSAPP_GATEWAY_DEFAULT_SESSION_ID'),
+        'connect_timeout' => (int) env('WHATSAPP_GATEWAY_CONNECT_TIMEOUT', 3),
+        'timeout' => (int) env('WHATSAPP_GATEWAY_TIMEOUT', 10),
+    ],
+
 ];

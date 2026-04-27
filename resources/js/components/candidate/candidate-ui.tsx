@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { cleanPaginationLabel, shouldRenderPagination } from '@/lib/pagination';
 import { cn } from '@/lib/utils';
 
 export type PaginationLink = {
@@ -35,7 +36,7 @@ export function EmptyState({
 }
 
 export function PaginationLinks({ links = [] }: { links?: PaginationLink[] }) {
-    if (!links.length) {
+    if (!shouldRenderPagination(links)) {
         return null;
     }
 
@@ -49,7 +50,9 @@ export function PaginationLinks({ links = [] }: { links?: PaginationLink[] }) {
                         size="sm"
                         variant={link.active ? 'default' : 'outline'}
                     >
-                        <Link href={link.url}>{cleanPaginationLabel(link.label)}</Link>
+                        <Link href={link.url}>
+                            {cleanPaginationLabel(link.label)}
+                        </Link>
                     </Button>
                 ) : (
                     <Button
@@ -64,14 +67,6 @@ export function PaginationLinks({ links = [] }: { links?: PaginationLink[] }) {
             )}
         </div>
     );
-}
-
-function cleanPaginationLabel(label: string): string {
-    return label
-        .replace('&laquo;', '«')
-        .replace('&raquo;', '»')
-        .replace('pagination.previous', '«')
-        .replace('pagination.next', '»');
 }
 
 export function StatusBadge({

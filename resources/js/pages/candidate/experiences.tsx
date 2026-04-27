@@ -1,12 +1,12 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { Trash2 } from 'lucide-react';
-import Heading from '@/components/heading';
 import {
     DatePickerInput,
     Field,
     Textarea,
 } from '@/components/candidate/candidate-form';
 import { EmptyState } from '@/components/candidate/candidate-ui';
+
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -16,6 +16,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useTranslate } from '@/hooks/use-translate';
 import {
     destroy as destroyExperience,
     index,
@@ -40,24 +41,23 @@ export default function CandidateExperiences({
 }: {
     experiences: Experience[];
 }) {
+    const { t } = useTranslate();
+
     return (
         <>
-            <Head title="Pengalaman Kerja" />
+            <Head title={t('candidate.experiences.page_title')} />
 
-            <div className="space-y-6 p-4 md:p-6">
-                <Heading
-                    title="Pengalaman Kerja"
-                    description="Tambahkan pengalaman terbaru agar recruiter melihat konteks kerja kamu."
-                />
-
+            <div className="space-y-6">
                 <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-                    <ExperienceForm />
+                    <ExperienceForm t={t} />
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Riwayat pengalaman</CardTitle>
+                            <CardTitle>
+                                {t('candidate.experiences.history_title')}
+                            </CardTitle>
                             <CardDescription>
-                                Urutan terbaru tampil di bagian atas.
+                                {t('candidate.experiences.history_description')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -93,7 +93,9 @@ export default function CandidateExperiences({
                                                     as="button"
                                                 >
                                                     <Trash2 />
-                                                    Hapus
+                                                    {t(
+                                                        'candidate.experiences.delete',
+                                                    )}
                                                 </Link>
                                             </Button>
                                         </div>
@@ -104,11 +106,14 @@ export default function CandidateExperiences({
                                         ) : null}
                                         <details className="mt-4">
                                             <summary className="cursor-pointer text-sm font-medium text-primary">
-                                                Edit pengalaman
+                                                {t(
+                                                    'candidate.experiences.edit',
+                                                )}
                                             </summary>
                                             <div className="mt-4">
                                                 <ExperienceForm
                                                     experience={experience}
+                                                    t={t}
                                                 />
                                             </div>
                                         </details>
@@ -116,8 +121,12 @@ export default function CandidateExperiences({
                                 ))
                             ) : (
                                 <EmptyState
-                                    title="Belum ada pengalaman"
-                                    description="Tambahkan pengalaman magang, kerja full time, freelance, atau project profesional."
+                                    title={t(
+                                        'candidate.experiences.empty_title',
+                                    )}
+                                    description={t(
+                                        'candidate.experiences.empty_description',
+                                    )}
                                 />
                             )}
                         </CardContent>
@@ -128,29 +137,35 @@ export default function CandidateExperiences({
     );
 }
 
-function ExperienceForm({ experience }: { experience?: Experience }) {
+function ExperienceForm({
+    experience,
+    t,
+}: {
+    experience?: Experience;
+    t: (key: string) => string;
+}) {
     const isEdit = Boolean(experience);
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>
-                    {isEdit ? 'Edit pengalaman' : 'Tambah pengalaman'}
+                    {isEdit
+                        ? t('candidate.experiences.form_edit_title')
+                        : t('candidate.experiences.form_add_title')}
                 </CardTitle>
             </CardHeader>
             <CardContent>
                 <Form
                     {...(isEdit
-                        ? updateExperience.form(
-                              experience!.id,
-                          )
+                        ? updateExperience.form(experience!.id)
                         : storeExperience.form())}
                     className="space-y-4"
                 >
                     {({ processing, errors }) => (
                         <>
                             <Field
-                                label="Nama perusahaan"
+                                label={t('candidate.experiences.company_name')}
                                 name="company_name"
                                 error={errors.company_name}
                             >
@@ -159,41 +174,51 @@ function ExperienceForm({ experience }: { experience?: Experience }) {
                                     defaultValue={
                                         experience?.company_name ?? ''
                                     }
-                                    placeholder="PT Karivia Indonesia"
+                                    placeholder={t(
+                                        'candidate.experiences.company_name_placeholder',
+                                    )}
                                 />
                             </Field>
                             <Field
-                                label="Jabatan"
+                                label={t('candidate.experiences.job_title')}
                                 name="job_title"
                                 error={errors.job_title}
                             >
                                 <Input
                                     name="job_title"
                                     defaultValue={experience?.job_title ?? ''}
-                                    placeholder="Software Engineer"
+                                    placeholder={t(
+                                        'candidate.experiences.job_title_placeholder',
+                                    )}
                                 />
                             </Field>
                             <div className="grid gap-4 md:grid-cols-2">
                                 <Field
-                                    label="Mulai"
+                                    label={t(
+                                        'candidate.experiences.start_date',
+                                    )}
                                     name="start_date"
                                     error={errors.start_date}
                                 >
                                     <DatePickerInput
                                         name="start_date"
                                         defaultValue={experience?.start_date}
-                                        placeholder="Pilih tanggal mulai"
+                                        placeholder={t(
+                                            'candidate.experiences.start_date_placeholder',
+                                        )}
                                     />
                                 </Field>
                                 <Field
-                                    label="Selesai"
+                                    label={t('candidate.experiences.end_date')}
                                     name="end_date"
                                     error={errors.end_date}
                                 >
                                     <DatePickerInput
                                         name="end_date"
                                         defaultValue={experience?.end_date}
-                                        placeholder="Pilih tanggal selesai"
+                                        placeholder={t(
+                                            'candidate.experiences.end_date_placeholder',
+                                        )}
                                     />
                                 </Field>
                             </div>
@@ -208,38 +233,42 @@ function ExperienceForm({ experience }: { experience?: Experience }) {
                                         experience?.is_current ?? false
                                     }
                                 />
-                                Masih bekerja di sini
+                                {t('candidate.experiences.is_current')}
                             </label>
                             <Field
-                                label="Lokasi"
+                                label={t('candidate.experiences.location')}
                                 name="location"
                                 error={errors.location}
                             >
                                 <Input
                                     name="location"
                                     defaultValue={experience?.location ?? ''}
-                                    placeholder="Jakarta"
+                                    placeholder={t(
+                                        'candidate.experiences.location_placeholder',
+                                    )}
                                 />
                             </Field>
                             <Field
-                                label="Deskripsi"
+                                label={t('candidate.experiences.description')}
                                 name="description"
                                 error={errors.description}
                             >
                                 <Textarea
                                     name="description"
-                                    defaultValue={
-                                        experience?.description ?? ''
-                                    }
-                                    placeholder="Tulis impact, stack, dan tanggung jawab utama."
+                                    defaultValue={experience?.description ?? ''}
+                                    placeholder={t(
+                                        'candidate.experiences.description_placeholder',
+                                    )}
                                 />
                             </Field>
                             <Button disabled={processing}>
                                 {processing
-                                    ? 'Menyimpan...'
+                                    ? t('candidate.form.saving')
                                     : isEdit
-                                      ? 'Simpan perubahan'
-                                      : 'Tambah pengalaman'}
+                                      ? t('candidate.form.save_changes')
+                                      : t(
+                                            'candidate.experiences.form_add_button',
+                                        )}
                             </Button>
                         </>
                     )}

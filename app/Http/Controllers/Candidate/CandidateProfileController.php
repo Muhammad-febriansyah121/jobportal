@@ -19,6 +19,14 @@ class CandidateProfileController extends Controller
         $candidate = $resolveCandidateProfile->refreshCompletion(
             $resolveCandidateProfile->handle($request->user())
         )->load(['skills:id,name']);
+        $profileCompletionMissing = collect($resolveCandidateProfile->completionChecklist($candidate))
+            ->filter(fn (array $item): bool => ! $item['completed'])
+            ->values()
+            ->map(fn (array $item): array => [
+                'key' => $item['key'],
+                'label' => $item['label'],
+            ])
+            ->all();
 
         return Inertia::render('candidate/profile', [
             'profile' => [
@@ -37,6 +45,7 @@ class CandidateProfileController extends Controller
                 'github_url' => $candidate->github_url,
                 'portfolio_url' => $candidate->portfolio_url,
                 'profile_completion' => $candidate->profile_completion,
+                'profile_completion_missing' => $profileCompletionMissing,
                 'ai_cv_summary' => $candidate->ai_cv_summary,
                 'skill_ids' => $candidate->skills->pluck('id')->all(),
             ],

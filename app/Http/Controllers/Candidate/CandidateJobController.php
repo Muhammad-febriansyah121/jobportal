@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Candidate;
 
+use App\Actions\Candidate\GenerateJobAiInsight;
+use App\Actions\Candidate\PredictItJobAcceptance;
 use App\Actions\Candidate\RecordCandidateJobView;
 use App\Actions\Candidate\ResolveCandidateProfile;
 use App\Http\Controllers\Controller;
@@ -117,79 +119,138 @@ class CandidateJobController extends Controller
         ]);
     }
 
-    public function show(Request $request, JobListing $jobListing, ResolveCandidateProfile $resolveCandidateProfile, RecordCandidateJobView $recordCandidateJobView): Response
-    {
-        abort_unless($jobListing->status === 'published', 404);
+    public function show(
+        Request $request,
+        JobListing $jobListing,
+        ResolveCandidateProfile $resolveCandidateProfile,
+        RecordCandidateJobView $recordCandidateJobView,
+        GenerateJobAiInsight $generateJobAiInsight,
+        PredictItJobAcceptance $predictItJobAcceptance,
+    ): Response {
+        $user = $request->user();
+        $isPublicRoute = $request->routeIs('jobs.show');
 
-        $candidate = $resolveCandidateProfile->handle($request->user());
-        $recordCandidateJobView->handle($candidate, $jobListing);
-        $jobListing->load(['company:id,name,description,is_verified,trust_score,response_rate,median_response_hours', 'industry:id,name', 'skills:id,name', 'screeningQuestions']);
+        $candidate = $user ? $resolveCandidateProfile->handle($user)->load(['skills:id,name']) : null;
+        $candidateApplication = $candidate
+            ? $candidate->applications()
+                ->where('job_listing_id', $jobListing->id)
+                ->latest('id')
+                ->first()
+            : null;
+        $hasApplied = $candidateApplication !== null;
 
-        $matchScore = AiMatchScore::query()
-            ->where('candidate_id', $candidate->id)
-            ->where('job_listing_id', $jobListing->id)
-            ->first();
+        abort_unless($jobListing->status === 'published' || $hasApplied, 404);
 
-        return Inertia::render('candidate/jobs/show', [
-            'job' => [
-                ...$this->jobCard(
-                    $jobListing,
-                    $candidate->savedJobs()->where('job_listing_id', $jobListing->id)->exists(),
-                    $candidate->applications()->where('job_listing_id', $jobListing->id)->exists(),
-                    $matchScore
-                ),
-                'description' => $jobListing->description,
-                'responsibilities' => $jobListing->responsibilities,
-                'required_qualifications' => $jobListing->required_qualifications,
-                'preferred_qualifications' => $jobListing->preferred_qualifications,
-                'experience_level' => str($jobListing->experience_level)->headline()->toString(),
-                'integrity_score' => $jobListing->integrity_score,
-                'company_description' => $jobListing->company?->description,
-                'company_trust_score' => $jobListing->company?->trust_score,
-                'company_response_rate' => $jobListing->company?->response_rate,
-                'company_median_response_hours' => $jobListing->company?->median_response_hours,
-                'matched_skills' => $matchScore?->matched_skills ?? [],
-                'missing_skills' => $matchScore?->missing_skills ?? [],
-                'screening_questions' => $jobListing->screeningQuestions
-                    ->map(fn ($question): array => [
-                        'id' => $question->id,
-                        'question' => $question->question,
-                        'type' => $question->type,
-                        'options' => $question->options_json ?? [],
-                        'is_required' => $question->is_required,
-                    ]),
-            ],
-            'cvs' => $candidate->cvs()
-                ->latest('is_primary')
-                ->latest('uploaded_at')
-                ->get()
-                ->map(fn ($cv): array => [
-                    'id' => $cv->id,
-                    'file_url' => $cv->file_url,
-                    'is_primary' => $cv->is_primary,
-                    'uploaded_at' => $cv->uploaded_at?->format('d M Y'),
-                ]),
-            'similarJobs' => JobListing::query()
-                ->published()
-                ->select(['id', 'company_id', 'title', 'slug', 'location_city', 'location_province', 'work_mode', 'job_type', 'salary_min', 'salary_max', 'is_salary_visible', 'published_at'])
-                ->with(['company:id,name,is_verified'])
-                ->whereKeyNot($jobListing->id)
-                ->where('industry_id', $jobListing->industry_id)
-                ->latest('published_at')
-                ->limit(4)
-                ->get()
-                ->map(fn (JobListing $job): array => $this->jobCard($job, false, false, null)),
+        if ($candidate) {
+            $recordCandidateJobView->handle($candidate, $jobListing);
+        }
+
+        $jobListing->load([
+            'company:id,name,slug,description,culture,benefits,logo_url,company_size,industry_id,is_verified,trust_score,response_rate,median_response_hours',
+            'company.industry:id,name',
+            'industry:id,name',
+            'skills:id,name',
+            'screeningQuestions',
         ]);
+
+        $matchScore = $candidate
+            ? AiMatchScore::query()
+                ->where('candidate_id', $candidate->id)
+                ->where('job_listing_id', $jobListing->id)
+                ->first()
+            : null;
+
+        $aiInsight = $candidate ? $generateJobAiInsight->handle($jobListing, $candidate) : null;
+        $applicationChance = $candidate ? $predictItJobAcceptance->handle($jobListing, $candidate) : null;
+
+        $shouldRenderApplyPage = ! $isPublicRoute
+            && $request->boolean('apply')
+            && ! $hasApplied;
+
+        return Inertia::render(
+            $isPublicRoute
+                ? 'front/jobs/show'
+                : ($shouldRenderApplyPage ? 'candidate/jobs/apply' : 'candidate/jobs/show'),
+            [
+                'job' => [
+                    ...$this->jobCard(
+                        $jobListing,
+                        $candidate ? $candidate->savedJobs()->where('job_listing_id', $jobListing->id)->exists() : false,
+                        $hasApplied,
+                        $matchScore
+                    ),
+                    'description' => $jobListing->description,
+                    'responsibilities' => $jobListing->responsibilities,
+                    'required_qualifications' => $jobListing->required_qualifications,
+                    'preferred_qualifications' => $jobListing->preferred_qualifications,
+                    'benefits' => $jobListing->benefits,
+                    'experience_level' => str($jobListing->experience_level)->headline()->toString(),
+                    'integrity_score' => $jobListing->integrity_score,
+                    'response_sla_hours' => $jobListing->response_sla_hours,
+                    'company_logo' => $jobListing->is_anonymous ? null : $jobListing->company?->logo_url,
+                    'company_slug' => $jobListing->is_anonymous ? null : $jobListing->company?->slug,
+                    'company_size' => $jobListing->company?->company_size,
+                    'company_industry' => $jobListing->company?->industry?->name,
+                    'company_description' => $jobListing->is_anonymous ? null : $jobListing->company?->description,
+                    'company_culture' => $jobListing->is_anonymous ? null : $jobListing->company?->culture,
+                    'company_benefits' => $jobListing->is_anonymous ? null : $jobListing->company?->benefits,
+                    'company_trust_score' => $jobListing->is_anonymous ? null : $jobListing->company?->trust_score,
+                    'company_response_rate' => $jobListing->is_anonymous ? null : $jobListing->company?->response_rate,
+                    'company_median_response_hours' => $jobListing->is_anonymous ? null : $jobListing->company?->median_response_hours,
+                    'matched_skills' => $matchScore?->matched_skills ?? [],
+                    'missing_skills' => $matchScore?->missing_skills ?? [],
+                    'ai_insight' => $aiInsight,
+                    'ai_interview_application_id' => $candidateApplication?->id,
+                    'screening_questions' => $jobListing->screeningQuestions
+                        ->map(fn ($question): array => [
+                            'id' => $question->id,
+                            'question' => $question->question,
+                            'type' => $question->type,
+                            'options' => $question->options_json ?? [],
+                            'is_required' => $question->is_required,
+                        ]),
+                ],
+                'cvs' => $candidate
+                    ? $candidate->cvs()
+                        ->latest('is_primary')
+                        ->latest('uploaded_at')
+                        ->get()
+                        ->map(fn ($cv): array => [
+                            'id' => $cv->id,
+                            'file_url' => $cv->file_url,
+                            'is_primary' => $cv->is_primary,
+                            'uploaded_at' => $cv->uploaded_at?->format('d M Y'),
+                        ])
+                    : [],
+                'similarJobs' => JobListing::query()
+                    ->published()
+                    ->select(['id', 'company_id', 'title', 'slug', 'location_city', 'location_province', 'work_mode', 'job_type', 'salary_min', 'salary_max', 'is_salary_visible', 'published_at'])
+                    ->with(['company:id,name,logo_url,is_verified'])
+                    ->whereKeyNot($jobListing->id)
+                    ->where('industry_id', $jobListing->industry_id)
+                    ->latest('published_at')
+                    ->limit(4)
+                    ->get()
+                    ->map(fn (JobListing $job): array => [
+                        ...$this->jobCard($job, false, false, null),
+                        'company_logo' => $job->is_anonymous ? null : $job->company?->logo_url,
+                    ]),
+                'application_chance' => $shouldRenderApplyPage ? $applicationChance : null,
+            ]
+        );
     }
 
     private function jobCard(JobListing $job, bool $isSaved, bool $hasApplied, ?AiMatchScore $matchScore): array
     {
+        $isAnonymous = (bool) $job->is_anonymous;
+
         return [
             'id' => $job->id,
             'slug' => $job->slug,
             'title' => $job->title,
-            'company' => $job->company?->name,
-            'company_verified' => (bool) $job->company?->is_verified,
+            'is_anonymous' => $isAnonymous,
+            'company' => $isAnonymous ? null : $job->company?->name,
+            'company_verified' => $isAnonymous ? false : (bool) $job->company?->is_verified,
             'industry' => $job->industry?->name,
             'location' => collect([$job->location_city, $job->location_province])->filter()->implode(', '),
             'work_mode' => $job->work_mode,

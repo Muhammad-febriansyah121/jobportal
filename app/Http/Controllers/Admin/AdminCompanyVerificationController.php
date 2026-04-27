@@ -7,7 +7,9 @@ use App\Http\Controllers\Admin\Concerns\BuildsAdminPages;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ReviewCompanyVerificationRequest;
 use App\Models\CompanyVerification;
-use App\Models\UserNotification;
+use App\Models\PricingPlan;
+use App\Models\User;
+use App\Services\UserNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -82,22 +84,35 @@ class AdminCompanyVerificationController extends Controller
 
     public function show(CompanyVerification $companyVerification): Response
     {
-        $companyVerification->load(['company.owner:id,name,email', 'submitter:id,name,email', 'reviewer:id,name,email']);
+        $companyVerification->load([
+            'company:id,name,slug,logo_url,cover_url,owner_id',
+            'company.owner:id,name,email',
+            'submitter:id,name,email',
+            'reviewer:id,name,email',
+        ]);
+
+        $documentUrl = $this->resolveDocumentUrl($companyVerification->document_url);
 
         return Inertia::render('admin/resources/show', [
             'title' => 'Detail Verifikasi',
-            'description' => $companyVerification->company?->name,
+            'description' => $companyVerification->company?->name.' • '.str($companyVerification->status)->headline()->toString(),
             'backHref' => route('admin.company-verifications.index'),
             'actions' => $this->verificationActions($companyVerification),
+            'hero' => [
+                'name' => $companyVerification->company?->name ?? 'Perusahaan',
+                'logo_url' => $companyVerification->company?->logo_url,
+                'cover_url' => $companyVerification->company?->cover_url,
+            ],
             'sections' => [
                 [
                     'title' => 'Dokumen legal',
                     'items' => [
+                        ['label' => 'ID verifikasi', 'value' => $companyVerification->id],
                         ['label' => 'Perusahaan', 'value' => $companyVerification->company?->name],
                         ['label' => 'Legal name', 'value' => $companyVerification->legal_name],
                         ['label' => 'NIB', 'value' => $companyVerification->nib ?? '-'],
                         ['label' => 'NPWP', 'value' => $companyVerification->npwp ?? '-'],
-                        ['label' => 'Dokumen upload', 'value' => $companyVerification->document_url ?? '-'],
+                        ['label' => 'Dokumen upload', 'value' => $documentUrl ?? '-'],
                         ['label' => 'Status', 'value' => str($companyVerification->status)->headline()->toString()],
                         ['label' => 'Catatan reviewer', 'value' => $companyVerification->rejection_reason ?? '-'],
                     ],
@@ -106,12 +121,33 @@ class AdminCompanyVerificationController extends Controller
                     'title' => 'Review',
                     'items' => [
                         ['label' => 'Submitter', 'value' => $companyVerification->submitter?->name.' <'.$companyVerification->submitter?->email.'>'],
+                        ['label' => 'Tanggal submit', 'value' => $companyVerification->created_at?->format('d M Y H:i') ?? '-'],
                         ['label' => 'Reviewer', 'value' => $companyVerification->reviewer?->name ?? '-'],
                         ['label' => 'Reviewed at', 'value' => $companyVerification->reviewed_at?->format('d M Y H:i') ?? '-'],
                     ],
                 ],
             ],
         ]);
+    }
+
+    private function resolveDocumentUrl(?string $documentUrl): ?string
+    {
+        if (! $documentUrl) {
+            return null;
+        }
+
+        if (str_starts_with($documentUrl, 'http://') || str_starts_with($documentUrl, 'https://')) {
+            return $documentUrl;
+        }
+
+        $path = ltrim($documentUrl, '/');
+        $path = str_replace('storage/storage/', 'storage/', $path);
+
+        if (! str_starts_with($path, 'storage/')) {
+            $path = 'storage/'.$path;
+        }
+
+        return asset($path);
     }
 
     public function approve(ReviewCompanyVerificationRequest $request, CompanyVerification $companyVerification, RecordActivity $activity): RedirectResponse
@@ -128,6 +164,34 @@ class AdminCompanyVerificationController extends Controller
                 'is_verified' => true,
                 'verification_status' => 'approved',
             ]);
+
+            $company = $companyVerification->company()->with('activeSubscription')->first();
+
+            if ($company !== null && $company->activeSubscription === null) {
+                $trialPlan = PricingPlan::query()
+                    ->where('is_active', true)
+                    ->where(function ($query): void {
+                        $query->where('slug', 'gratis-trial')
+                            ->orWhere('price', 0);
+                    })
+                    ->orderByRaw("CASE WHEN slug = 'gratis-trial' THEN 0 ELSE 1 END")
+                    ->orderBy('id')
+                    ->first();
+
+                if ($trialPlan !== null) {
+                    $startsAt = now();
+                    $endsAt = $trialPlan->duration_days > 0
+                        ? $startsAt->copy()->addDays((int) $trialPlan->duration_days)
+                        : null;
+
+                    $company->subscriptions()->create([
+                        'pricing_plan_id' => $trialPlan->id,
+                        'status' => 'active',
+                        'starts_at' => $startsAt,
+                        'ends_at' => $endsAt,
+                    ]);
+                }
+            }
 
             $this->notifyCompany($companyVerification, 'Verifikasi disetujui', 'Perusahaan Anda sudah terverifikasi.');
             $activity->handle($request->user(), 'approve_company_verification', $companyVerification);
@@ -215,13 +279,18 @@ class AdminCompanyVerificationController extends Controller
             return;
         }
 
-        UserNotification::create([
-            'user_id' => $ownerId,
-            'type' => 'company_verification',
-            'title' => $title,
-            'message' => $message,
-            'data_json' => ['company_id' => $verification->company_id, 'verification_id' => $verification->id],
-            'is_read' => false,
-        ]);
+        $recipient = User::query()->find($ownerId);
+
+        if ($recipient === null) {
+            return;
+        }
+
+        app(UserNotificationService::class)->sendToUser(
+            $recipient,
+            'company_verification',
+            $title,
+            $message,
+            ['company_id' => $verification->company_id, 'verification_id' => $verification->id],
+        );
     }
 }

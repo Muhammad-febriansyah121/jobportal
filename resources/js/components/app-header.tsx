@@ -1,8 +1,10 @@
 import { Link, usePage } from '@inertiajs/react';
 import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-react';
+import { useMemo } from 'react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,6 +33,7 @@ import {
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
+import { useTranslate } from '@/hooks/use-translate';
 import { cn, toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
@@ -38,27 +41,6 @@ import type { BreadcrumbItem, NavItem } from '@/types';
 type Props = {
     breadcrumbs?: BreadcrumbItem[];
 };
-
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
-
-const rightNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
-];
 
 const activeItemStyles =
     'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
@@ -68,6 +50,34 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const { auth } = page.props;
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+    const { t } = useTranslate();
+
+    const mainNavItems = useMemo<NavItem[]>(
+        () => [
+            {
+                title: t('common.dashboard'),
+                href: dashboard(),
+                icon: LayoutGrid,
+            },
+        ],
+        [t],
+    );
+
+    const rightNavItems = useMemo<NavItem[]>(
+        () => [
+            {
+                title: t('common.repository'),
+                href: 'https://github.com/laravel/react-starter-kit',
+                icon: Folder,
+            },
+            {
+                title: t('common.documentation'),
+                href: 'https://laravel.com/docs/starter-kits#react',
+                icon: BookOpen,
+            },
+        ],
+        [t],
+    );
 
     return (
         <>
@@ -90,7 +100,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 className="flex h-full w-64 flex-col items-stretch justify-between bg-sidebar"
                             >
                                 <SheetTitle className="sr-only">
-                                    Navigation menu
+                                    {t('common.navigation_menu')}
                                 </SheetTitle>
                                 <SheetHeader className="flex justify-start text-left">
                                     <AppLogoIcon className="h-6 w-6 fill-current text-black dark:text-white" />
@@ -177,10 +187,12 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
 
                     <div className="ml-auto flex items-center space-x-2">
+                        <LanguageSwitcher align="end" variant="inline" />
                         <div className="relative flex items-center space-x-1">
                             <Button
                                 variant="ghost"
                                 size="icon"
+                                aria-label={t('common.search')}
                                 className="group h-9 w-9 cursor-pointer"
                             >
                                 <Search className="!size-5 opacity-80 group-hover:opacity-100" />
@@ -218,7 +230,11 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 >
                                     <Avatar className="size-8 overflow-hidden rounded-full">
                                         <AvatarImage
-                                            src={auth.user?.avatar}
+                                            src={
+                                                auth.user?.avatar ??
+                                                auth.user?.avatar_url ??
+                                                undefined
+                                            }
                                             alt={auth.user?.name}
                                         />
                                         <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">

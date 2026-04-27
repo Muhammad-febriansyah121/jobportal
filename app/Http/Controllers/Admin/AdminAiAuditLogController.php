@@ -27,7 +27,7 @@ class AdminAiAuditLogController extends Controller
             ->withQueryString()
             ->through(fn (AiAuditLog $log): array => [
                 'id' => $log->id,
-                'feature' => str($log->feature)->headline()->toString(),
+                'feature' => $this->featureLabel($log->feature),
                 'user' => $log->user?->name ?? 'Sistem',
                 'model_name' => $log->model_name,
                 'input_hash' => $log->input_hash,
@@ -109,6 +109,20 @@ class AdminAiAuditLogController extends Controller
         ];
     }
 
+    private function featureLabel(string $feature): string
+    {
+        return match ($feature) {
+            'candidate_dashboard_insight' => 'Insight Dashboard Kandidat',
+            'candidate_cv_builder_draft' => 'Pembuat Draft CV Kandidat',
+            'candidate.ai_interview.analysis' => 'Analisis Interview AI Kandidat',
+            'job_ai_insight' => 'Insight Lowongan AI',
+            'employer_talent_search_rerank' => 'Pencarian Talent (Employer)',
+            'admin_company_insight' => 'Insight Perusahaan (Admin)',
+            'admin_user_summary' => 'Ringkasan Pengguna (Admin)',
+            default => str($feature)->headline()->toString(),
+        };
+    }
+
     /**
      * @return array<int, array<string, string>>
      */
@@ -121,7 +135,7 @@ class AdminAiAuditLogController extends Controller
                 ->distinct()
                 ->orderBy('feature')
                 ->pluck('feature')
-                ->map(fn (string $feature): array => ['value' => $feature, 'label' => str($feature)->headline()->toString()])
+                ->map(fn (string $feature): array => ['value' => $feature, 'label' => $this->featureLabel($feature)])
                 ->all(),
         ];
     }

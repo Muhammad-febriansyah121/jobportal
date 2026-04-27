@@ -1,9 +1,10 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { ShieldCheck, Trash2 } from 'lucide-react';
+
 import CandidateSkillController from '@/actions/App/Http/Controllers/Candidate/CandidateSkillController';
-import Heading from '@/components/heading';
 import { Field, Select } from '@/components/candidate/candidate-form';
 import { EmptyState } from '@/components/candidate/candidate-ui';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,6 +15,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useTranslate } from '@/hooks/use-translate';
 import { index } from '@/routes/candidate/skills';
 
 type Option = {
@@ -37,22 +39,21 @@ export default function CandidateSkills({
     candidateSkills: CandidateSkill[];
     skills: Option[];
 }) {
+    const { t } = useTranslate();
+
     return (
         <>
-            <Head title="Skill Kandidat" />
-            <div className="space-y-6 p-4 md:p-6">
-                <Heading
-                    title="Skill Kandidat"
-                    description="Kelola skill utama, tahun pengalaman, proficiency, dan badge verified."
-                />
+            <Head title={t('candidate.skills.page_title')} />
+            <div className="space-y-6">
                 <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-                    <SkillForm skills={skills} />
+                    <SkillForm skills={skills} t={t} />
                     <Card>
                         <CardHeader>
-                            <CardTitle>Skill aktif</CardTitle>
+                            <CardTitle>
+                                {t('candidate.skills.active_title')}
+                            </CardTitle>
                             <CardDescription>
-                                Skill ini dipakai untuk rekomendasi lowongan dan
-                                match score.
+                                {t('candidate.skills.active_description')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -71,17 +72,22 @@ export default function CandidateSkills({
                                                     {skill.verified_at ? (
                                                         <Badge>
                                                             <ShieldCheck className="size-3" />
-                                                            Verified
+                                                            {t(
+                                                                'candidate.skills.verified',
+                                                            )}
                                                         </Badge>
                                                     ) : (
                                                         <Badge variant="secondary">
-                                                            Belum verified
+                                                            {t(
+                                                                'candidate.skills.not_verified',
+                                                            )}
                                                         </Badge>
                                                     )}
                                                 </div>
                                                 <p className="mt-1 text-sm text-muted-foreground">
                                                     {skill.proficiency ?? '-'} ·{' '}
-                                                    {skill.years_exp ?? 0} tahun
+                                                    {skill.years_exp ?? 0}{' '}
+                                                    {t('candidate.skills.year')}
                                                 </p>
                                             </div>
                                             <Button
@@ -97,18 +103,23 @@ export default function CandidateSkills({
                                                     as="button"
                                                 >
                                                     <Trash2 />
-                                                    Hapus
+                                                    {t(
+                                                        'candidate.skills.delete',
+                                                    )}
                                                 </Link>
                                             </Button>
                                         </div>
                                         <details className="mt-4">
                                             <summary className="cursor-pointer text-sm font-medium text-primary">
-                                                Edit skill
+                                                {t(
+                                                    'candidate.skills.edit_skill',
+                                                )}
                                             </summary>
                                             <div className="mt-4">
                                                 <SkillForm
                                                     skills={skills}
                                                     skill={skill}
+                                                    t={t}
                                                 />
                                             </div>
                                         </details>
@@ -116,8 +127,10 @@ export default function CandidateSkills({
                                 ))
                             ) : (
                                 <EmptyState
-                                    title="Belum ada skill"
-                                    description="Tambahkan skill utama agar rekomendasi lowongan lebih cocok."
+                                    title={t('candidate.skills.empty_title')}
+                                    description={t(
+                                        'candidate.skills.empty_description',
+                                    )}
                                 />
                             )}
                         </CardContent>
@@ -131,16 +144,22 @@ export default function CandidateSkills({
 function SkillForm({
     skills,
     skill,
+    t,
 }: {
     skills: Option[];
     skill?: CandidateSkill;
+    t: (key: string) => string;
 }) {
     const isEdit = Boolean(skill);
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle>{isEdit ? 'Edit skill' : 'Tambah skill'}</CardTitle>
+                <CardTitle>
+                    {isEdit
+                        ? t('candidate.skills.form_edit_title')
+                        : t('candidate.skills.form_add_title')}
+                </CardTitle>
             </CardHeader>
             <CardContent>
                 <Form
@@ -152,26 +171,47 @@ function SkillForm({
                     {({ processing, errors }) => (
                         <>
                             {isEdit ? null : (
-                                <Field
-                                    label="Skill"
-                                    name="skill_id"
-                                    error={errors.skill_id}
-                                >
-                                    <Select name="skill_id" defaultValue="">
-                                        <option value="">Pilih skill</option>
-                                        {skills.map((option) => (
-                                            <option
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {option.label}
+                                <>
+                                    <Field
+                                        label={t(
+                                            'candidate.skills.select_skill',
+                                        )}
+                                        name="skill_id"
+                                        error={errors.skill_id}
+                                    >
+                                        <Select name="skill_id" defaultValue="">
+                                            <option value="">
+                                                {t(
+                                                    'candidate.skills.choose_existing',
+                                                )}
                                             </option>
-                                        ))}
-                                    </Select>
-                                </Field>
+                                            {skills.map((option) => (
+                                                <option
+                                                    key={option.value}
+                                                    value={option.value}
+                                                >
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                        </Select>
+                                    </Field>
+
+                                    <Field
+                                        label={t('candidate.skills.new_skill')}
+                                        name="skill_name"
+                                        error={errors.skill_name}
+                                    >
+                                        <Input
+                                            name="skill_name"
+                                            placeholder={t(
+                                                'candidate.skills.new_skill_placeholder',
+                                            )}
+                                        />
+                                    </Field>
+                                </>
                             )}
                             <Field
-                                label="Tahun pengalaman"
+                                label={t('candidate.skills.years_exp')}
                                 name="years_exp"
                                 error={errors.years_exp}
                             >
@@ -179,11 +219,13 @@ function SkillForm({
                                     type="number"
                                     name="years_exp"
                                     defaultValue={skill?.years_exp ?? ''}
-                                    placeholder="3"
+                                    placeholder={t(
+                                        'candidate.skills.years_exp_placeholder',
+                                    )}
                                 />
                             </Field>
                             <Field
-                                label="Proficiency"
+                                label={t('candidate.skills.proficiency')}
                                 name="proficiency"
                                 error={errors.proficiency}
                             >
@@ -191,21 +233,31 @@ function SkillForm({
                                     name="proficiency"
                                     defaultValue={skill?.proficiency ?? ''}
                                 >
-                                    <option value="">Pilih level</option>
-                                    <option value="beginner">Beginner</option>
-                                    <option value="intermediate">
-                                        Intermediate
+                                    <option value="">
+                                        {t('candidate.skills.select_level')}
                                     </option>
-                                    <option value="advanced">Advanced</option>
-                                    <option value="expert">Expert</option>
+                                    <option value="beginner">
+                                        {t('candidate.skills.level_beginner')}
+                                    </option>
+                                    <option value="intermediate">
+                                        {t(
+                                            'candidate.skills.level_intermediate',
+                                        )}
+                                    </option>
+                                    <option value="advanced">
+                                        {t('candidate.skills.level_advanced')}
+                                    </option>
+                                    <option value="expert">
+                                        {t('candidate.skills.level_expert')}
+                                    </option>
                                 </Select>
                             </Field>
                             <Button disabled={processing}>
                                 {processing
-                                    ? 'Menyimpan...'
+                                    ? t('candidate.form.saving')
                                     : isEdit
-                                      ? 'Simpan perubahan'
-                                      : 'Tambah skill'}
+                                      ? t('candidate.form.save_changes')
+                                      : t('candidate.skills.form_add_button')}
                             </Button>
                         </>
                     )}

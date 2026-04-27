@@ -20,12 +20,13 @@ class CreateNewUser implements CreatesNewUsers
     /**
      * Validate and create a newly registered user.
      *
-     * @param  array<string, string>  $input
+     * @param  array<string, mixed>  $input
      */
     public function create(array $input): User
     {
         Validator::make($input, [
             ...$this->profileRules(),
+            'role' => ['required', 'in:candidate,employer'],
             'password' => $this->passwordRules(),
         ])->validate();
 
@@ -42,10 +43,23 @@ class CreateNewUser implements CreatesNewUsers
             }
         }
 
-        return User::create([
+        $user = User::create([
             'name' => $input['name'],
             'email' => $input['email'],
             'password' => $input['password'],
+            'role' => $input['role'],
         ]);
+
+        if ($user->role === 'candidate') {
+            $user->candidateProfile()->firstOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'full_name' => $user->name,
+                    'work_mode_pref' => 'any',
+                ]
+            );
+        }
+
+        return $user;
     }
 }

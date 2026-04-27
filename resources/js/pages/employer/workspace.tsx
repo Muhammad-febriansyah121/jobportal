@@ -9,6 +9,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { useTranslate } from '@/hooks/use-translate';
 import { dashboard } from '@/routes/employer';
 
 type WorkspaceProps = {
@@ -22,6 +23,7 @@ export default function EmployerWorkspace({
     description,
     message,
 }: WorkspaceProps) {
+    const { t } = useTranslate();
     return (
         <>
             <Head title={title} />
@@ -31,7 +33,7 @@ export default function EmployerWorkspace({
 
                 <Card className="border-[#e8edf3]">
                     <CardHeader>
-                        <div className="flex size-12 items-center justify-center rounded-lg bg-[#fff4ef] text-[#f45113]">
+                        <div className="flex size-12 items-center justify-center rounded-lg bg-[#eaf2ff] text-[#01296A]">
                             <Sparkles className="size-6" />
                         </div>
                         <CardTitle className="text-[#111827]">
@@ -42,7 +44,7 @@ export default function EmployerWorkspace({
                     <CardContent>
                         <Button asChild>
                             <Link href={dashboard()}>
-                                Kembali ke Overview
+                                {t('employer.workspace.back_to_overview')}
                                 <ArrowRight className="size-4" />
                             </Link>
                         </Button>

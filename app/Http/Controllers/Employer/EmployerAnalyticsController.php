@@ -68,12 +68,25 @@ class EmployerAnalyticsController extends Controller
             ->groupBy('status')
             ->pluck('total', 'status');
 
-        $pipeline = collect(['applied', 'screened', 'shortlisted', 'interview', 'offer', 'hired', 'rejected', 'withdrawn'])
-            ->map(fn (string $status): array => [
-                'status' => $status,
-                'label' => str($status)->headline()->toString(),
-                'total' => (int) ($pipelineRaw[$status] ?? 0),
-            ])
+        $statusLabels = [
+            'applied' => 'Melamar',
+            'screened' => 'Seleksi Awal',
+            'shortlisted' => 'Lolos Seleksi',
+            'interview' => 'Interview',
+            'offer' => 'Penawaran Kerja',
+            'hired' => 'Diterima',
+            'rejected' => 'Ditolak',
+            'withdrawn' => 'Mengundurkan Diri',
+        ];
+
+        $pipeline = collect(array_keys($statusLabels))
+            ->map(function (string $status) use ($statusLabels, $pipelineRaw): array {
+                return [
+                    'status' => $status,
+                    'label' => $statusLabels[$status],
+                    'total' => (int) ($pipelineRaw[$status] ?? 0),
+                ];
+            })
             ->filter(fn (array $s): bool => $s['total'] > 0)
             ->values()
             ->all();

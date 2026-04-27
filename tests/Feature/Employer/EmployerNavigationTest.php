@@ -23,7 +23,11 @@ test('employer workspace menu pages are available', function (string $routeName,
         ->get(route($routeName))
         ->assertOk()
         ->assertInertia(function (Assert $page) use ($component, $title): Assert {
-            $page->component($component);
+            $page
+                ->component($component)
+                ->has('employer_unread_messages')
+                ->has('header_notifications.unread_count')
+                ->has('header_notifications.items');
 
             if ($title !== null) {
                 $page
@@ -36,8 +40,8 @@ test('employer workspace menu pages are available', function (string $routeName,
         });
 })->with([
     'candidates' => ['employer.candidates.index', 'employer/candidates', null, true],
-    'messages' => ['employer.messages.index', 'employer/workspace', 'Pesan', false],
+    'messages' => ['employer.messages.index', 'employer/messages', null, true],
     'analytics' => ['employer.analytics.index', 'employer/analytics', null, false],
     'billing' => ['employer.billing.index', 'employer/billing', null, false],
-    'talent search' => ['employer.talent-search.index', 'employer/workspace', 'Cari Talenta', false],
+    'talent search' => ['employer.talent-search.index', 'employer/talent-search', null, false],
 ]);

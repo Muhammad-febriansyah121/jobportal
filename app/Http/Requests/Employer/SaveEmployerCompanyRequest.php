@@ -23,6 +23,8 @@ class SaveEmployerCompanyRequest extends FormRequest
             'logo' => ['nullable', 'image', 'max:3072'],
             'cover' => ['nullable', 'image', 'max:4096'],
             'description' => ['nullable', 'string'],
+            'culture' => ['nullable', 'string', 'max:4000'],
+            'benefits' => ['nullable', 'string', 'max:4000'],
             'company_size' => ['nullable', 'string', 'max:100'],
             'website' => ['nullable', 'url', 'max:255'],
             'hq_city' => ['nullable', 'string', 'max:255'],

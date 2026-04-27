@@ -28,8 +28,16 @@ const AlertDialogCancel = React.forwardRef<HTMLButtonElement, React.ComponentPro
 );
 AlertDialogCancel.displayName = 'AlertDialogCancel';
 
+const AlertDialogAction = React.forwardRef<HTMLButtonElement, React.ComponentProps<typeof Button>>(
+    ({ className, ...props }, ref) => (
+        <Button ref={ref} className={cn(className)} {...props} />
+    ),
+);
+AlertDialogAction.displayName = 'AlertDialogAction';
+
 export {
     AlertDialog,
+    AlertDialogAction,
     AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,

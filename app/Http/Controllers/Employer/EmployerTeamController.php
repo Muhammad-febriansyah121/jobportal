@@ -56,37 +56,27 @@ class EmployerTeamController extends Controller
         abort_if($company === null, 403);
         abort_unless($company->owner_id === $request->user()->id, 403);
 
-        $user = User::where('email', $request->validated('email'))->firstOrFail();
+        $user = User::create([
+            'name' => $request->validated('name'),
+            'email' => $request->validated('email'),
+            'password' => bcrypt($request->validated('password')),
+            'role' => 'employer',
+        ]);
 
-        abort_if($user->id === $company->owner_id, 422);
+        $user->markEmailAsVerified();
 
-        $existing = CompanyMember::where('company_id', $company->id)
-            ->where('user_id', $user->id)
-            ->first();
+        CompanyMember::create([
+            'company_id' => $company->id,
+            'user_id' => $user->id,
+            'role' => $request->validated('role'),
+            'is_active' => true,
+            'invited_at' => now(),
+            'joined_at' => now(),
+        ]);
 
-        if ($existing !== null) {
-            $existing->update([
-                'role' => $request->validated('role'),
-                'is_active' => true,
-                'joined_at' => $existing->joined_at ?? now(),
-            ]);
-        } else {
-            CompanyMember::create([
-                'company_id' => $company->id,
-                'user_id' => $user->id,
-                'role' => $request->validated('role'),
-                'is_active' => true,
-                'invited_at' => now(),
-                'joined_at' => now(),
-            ]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => "{$user->name} berhasil ditambahkan ke tim."]);
 
-            // Give employer role if user doesn't have it yet
-            if ($user->role !== 'employer') {
-                $user->update(['role' => 'employer']);
-            }
-        }
-
-        return back()->with('success', "{$user->name} berhasil ditambahkan ke tim.");
+        return back();
     }
 
     public function update(Request $request, CompanyMember $teamMember, ResolveEmployerCompany $resolveEmployerCompany): RedirectResponse
@@ -102,7 +92,9 @@ class EmployerTeamController extends Controller
 
         $teamMember->update(['role' => $request->input('role')]);
 
-        return back()->with('success', 'Role anggota berhasil diperbarui.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Role anggota berhasil diperbarui.']);
+
+        return back();
     }
 
     public function destroy(Request $request, CompanyMember $teamMember, ResolveEmployerCompany $resolveEmployerCompany): RedirectResponse
@@ -114,7 +106,9 @@ class EmployerTeamController extends Controller
 
         $teamMember->delete();
 
-        return back()->with('success', 'Anggota berhasil dihapus dari tim.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Anggota berhasil dihapus dari tim.']);
+
+        return back();
     }
 
     public function toggle(Request $request, CompanyMember $teamMember, ResolveEmployerCompany $resolveEmployerCompany): RedirectResponse
@@ -128,6 +122,8 @@ class EmployerTeamController extends Controller
 
         $label = $teamMember->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
-        return back()->with('success', "Anggota berhasil {$label}.");
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Anggota berhasil {$label}."]);
+
+        return back();
     }
 }

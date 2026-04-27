@@ -183,16 +183,16 @@ class AdminReportController extends Controller
     {
         return [
             $this->action('Lihat Detail', route('admin.reports.show', $report), 'Eye'),
-            $this->action('Proses', route('admin.reports.under-review', $report), 'ShieldCheck', 'patch', 'outline', null, null, [
+            $this->action('Proses', route('admin.reports.under-review', $report), 'ShieldCheck', 'patch', 'outline', 'Tandai sedang diproses?', 'Laporan akan ditandai sedang ditinjau dan tercatat atas namamu.', [
                 $this->field('note', 'Catatan admin', 'textarea'),
             ]),
-            $this->action('Selesai', route('admin.reports.resolve', $report), 'Check', 'patch', 'default', null, null, [
+            $this->action('Selesai', route('admin.reports.resolve', $report), 'Check', 'patch', 'default', 'Selesaikan laporan?', 'Laporan akan ditandai selesai. Pastikan tindak lanjut sudah dilakukan.', [
                 $this->field('note', 'Catatan admin', 'textarea'),
             ]),
-            $this->action('Nonaktifkan Subject', route('admin.reports.suspend-subject', $report), 'Ban', 'patch', 'destructive', 'Nonaktifkan subject?', 'Aksi ini akan menonaktifkan subject yang dilaporkan jika didukung.', [
+            $this->action('Nonaktifkan Subject', route('admin.reports.suspend-subject', $report), 'Ban', 'patch', 'destructive', 'Nonaktifkan subject?', 'Subject yang dilaporkan akan dinonaktifkan dan laporan ditandai selesai. Aksi ini sulit dibatalkan.', [
                 $this->field('note', 'Catatan admin', 'textarea'),
             ]),
-            $this->action('Tutup', route('admin.reports.dismiss', $report), 'X', 'patch', 'outline', 'Tutup laporan?', 'Laporan akan ditandai ditutup.', [
+            $this->action('Tutup', route('admin.reports.dismiss', $report), 'X', 'patch', 'outline', 'Tutup laporan?', 'Laporan akan ditandai ditolak/ditutup tanpa tindakan lanjutan.', [
                 $this->field('note', 'Catatan admin', 'textarea'),
             ]),
         ];

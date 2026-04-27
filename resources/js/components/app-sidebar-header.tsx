@@ -11,18 +11,36 @@ import {
 import { Input } from '@/components/ui/input';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
-import { edit as employerCompanyEdit } from '@/routes/employer/company';
-import { edit as candidateProfileEdit } from '@/routes/candidate/profile';
-import { edit as settingsProfileEdit } from '@/routes/profile';
+import { cn } from '@/lib/utils';
 import { logout } from '@/routes';
+import { edit as candidateProfileEdit } from '@/routes/candidate/profile';
+import { edit as employerCompanyEdit } from '@/routes/employer/company';
+import { edit as settingsProfileEdit } from '@/routes/profile';
 import type { Auth, BreadcrumbItem as BreadcrumbItemType } from '@/types';
+
+type HeaderNotification = {
+    id: string;
+    type: string;
+    title: string;
+    message?: string | null;
+    href: string;
+    is_read: boolean;
+    created_at?: string | null;
+    time_label?: string | null;
+};
 
 export function AppSidebarHeader({
     breadcrumbs: _breadcrumbs = [],
 }: {
     breadcrumbs?: BreadcrumbItemType[];
 }) {
-    const { auth } = usePage<{ auth: Auth }>().props;
+    const { auth, header_notifications } = usePage<{
+        auth: Auth;
+        header_notifications?: {
+            unread_count?: number;
+            items?: HeaderNotification[];
+        };
+    }>().props;
     const cleanup = useMobileNavigation();
     const isEmployer = auth.user?.role === 'employer';
     const isCandidate = auth.user?.role === 'candidate';
@@ -53,12 +71,19 @@ export function AppSidebarHeader({
           : auth.user?.role === 'admin'
             ? 'Cari user, perusahaan, atau lowongan...'
             : 'Cari sesuatu disini...';
+    const notifications = Array.isArray(header_notifications?.items)
+        ? header_notifications.items
+        : [];
+    const unreadNotificationCount = Math.max(
+        0,
+        Number(header_notifications?.unread_count ?? 0),
+    );
 
     return (
-        <header className="flex min-h-18 shrink-0 flex-col gap-4 border-b border-[#e8edf3] bg-white px-4 py-4 transition-[width,height] ease-linear md:h-18 md:flex-row md:items-center md:justify-between md:px-8 md:py-0">
+        <header className="flex h-18 shrink-0 items-center justify-between gap-4 border-b border-[#e8edf3] bg-white px-4 py-3 transition-[width,height] ease-linear md:px-8 md:py-0">
             <div className="flex items-center gap-3 md:flex-1">
-                <SidebarTrigger className="-ml-1 text-[#667085] hover:text-[#f45113]" />
-                <div className="relative w-full max-w-[520px]">
+                <SidebarTrigger className="-ml-1 text-[#667085] hover:text-[#01296A]" />
+                <div className="relative hidden w-full max-w-[520px] md:block">
                     <Search className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-[#9aa4b2]" />
                     <Input
                         placeholder={searchPlaceholder}
@@ -68,27 +93,101 @@ export function AppSidebarHeader({
             </div>
 
             <div className="flex items-center justify-between gap-4 md:justify-end">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="relative h-11 w-11 rounded-lg bg-[#f4f7fa] text-[#667085] hover:bg-[#fff4ef] hover:text-[#f45113]"
-                >
-                    <Bell className="size-5" />
-                    <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-[#f45113]" />
-                </Button>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="relative h-11 w-11 rounded-lg bg-[#f4f7fa] text-[#667085] hover:bg-[#eaf2ff] hover:text-[#01296A]"
+                            aria-label="Notifikasi"
+                        >
+                            <Bell className="size-5" />
+                            {unreadNotificationCount > 0 ? (
+                                <span className="absolute top-1.5 right-1.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#01296A] px-1 text-[10px] font-bold text-white">
+                                    {unreadNotificationCount > 9
+                                        ? '9+'
+                                        : unreadNotificationCount}
+                                </span>
+                            ) : null}
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                        align="end"
+                        className="w-[min(92vw,360px)] rounded-lg border-[#e8edf3] p-2"
+                    >
+                        <div className="px-2 py-1">
+                            <p className="text-sm font-bold text-[#111827]">
+                                Notifikasi
+                            </p>
+                            <p className="text-xs text-[#8490a3]">
+                                {unreadNotificationCount > 0
+                                    ? `${unreadNotificationCount} notifikasi belum dibaca`
+                                    : 'Belum ada notifikasi baru'}
+                            </p>
+                        </div>
+                        <DropdownMenuSeparator />
+                        <div className="max-h-80 overflow-y-auto">
+                            {notifications.length === 0 ? (
+                                <div className="rounded-md px-3 py-6 text-center text-sm text-[#8490a3]">
+                                    Belum ada notifikasi.
+                                </div>
+                            ) : (
+                                notifications.map((notification) => (
+                                    <DropdownMenuItem
+                                        key={notification.id}
+                                        asChild
+                                        className="p-0 focus:bg-transparent"
+                                    >
+                                        <Link
+                                            href={notification.href}
+                                            prefetch
+                                            onClick={cleanup}
+                                            className={cn(
+                                                'flex w-full flex-col gap-1 rounded-md px-3 py-2.5 transition',
+                                                notification.is_read
+                                                    ? 'hover:bg-[#f8fafc]'
+                                                    : 'bg-[#eff4ff] hover:bg-[#dde8ff]',
+                                            )}
+                                        >
+                                            <div className="flex items-start justify-between gap-2">
+                                                <span className="text-sm font-semibold text-[#111827]">
+                                                    {notification.title}
+                                                </span>
+                                                {notification.is_read ? null : (
+                                                    <span className="mt-1 size-2 rounded-full bg-[#01296A]" />
+                                                )}
+                                            </div>
+                                            {notification.message ? (
+                                                <p className="line-clamp-2 text-xs text-[#5f6b7a]">
+                                                    {notification.message}
+                                                </p>
+                                            ) : null}
+                                            <p className="text-[11px] font-medium text-[#94a3b8]">
+                                                {notification.time_label ??
+                                                    getNotificationTypeLabel(
+                                                        notification.type,
+                                                    )}
+                                            </p>
+                                        </Link>
+                                    </DropdownMenuItem>
+                                ))
+                            )}
+                        </div>
+                    </DropdownMenuContent>
+                </DropdownMenu>
                 <div className="hidden h-10 w-px bg-[#e8edf3] md:block" />
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <button className="flex items-center gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-[#fff4ef] data-[state=open]:bg-[#fff4ef]">
-                            <span className="text-right">
-                                <span className="block text-sm font-bold text-[#111827]">
+                        <button className="flex min-w-0 items-center gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-[#eaf2ff] data-[state=open]:bg-[#eaf2ff]">
+                            <span className="hidden min-w-0 text-right md:block">
+                                <span className="block truncate text-sm font-bold text-[#111827]">
                                     {auth.user?.name ?? 'Karivia'}
                                 </span>
-                                <span className="block text-xs font-medium text-[#8490a3]">
+                                <span className="block truncate text-xs font-medium text-[#8490a3]">
                                     {roleLabel}
                                 </span>
                             </span>
-                            <span className="flex size-11 items-center justify-center rounded-full border-2 border-[#ffe0d4] bg-[#f2a05f] text-sm font-bold text-white">
+                            <span className="flex size-11 items-center justify-center rounded-full border-2 border-[#d6e0f5] bg-[#1E4D96] text-sm font-bold text-white">
                                 {getInitials(auth.user?.name ?? 'Karivia')}
                             </span>
                         </button>
@@ -135,4 +234,23 @@ function getInitials(name: string): string {
         .slice(0, 2)
         .map((part) => part[0]?.toUpperCase())
         .join('');
+}
+
+function getNotificationTypeLabel(type: string): string {
+    return (
+        {
+            unread_messages: 'Pesan',
+            upcoming_interviews: 'Interview',
+            interview_scheduled: 'Interview',
+            ai_interview_scheduled: 'AI Interview',
+            ai_interview_confirmed: 'AI Interview',
+            ai_interview_declined: 'AI Interview',
+            ai_interview_completed: 'AI Interview',
+            ai_interview_reschedule_requested: 'AI Interview',
+            ai_interview_reschedule_approved: 'AI Interview',
+            ai_interview_reschedule_rejected: 'AI Interview',
+            application_submitted: 'Lamaran',
+            company_verification: 'Verifikasi',
+        }[type] ?? 'Aktivitas'
+    );
 }

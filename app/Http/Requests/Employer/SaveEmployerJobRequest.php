@@ -25,6 +25,7 @@ class SaveEmployerJobRequest extends FormRequest
             'responsibilities' => ['nullable', 'string'],
             'required_qualifications' => ['nullable', 'string'],
             'preferred_qualifications' => ['nullable', 'string'],
+            'benefits' => ['nullable', 'string', 'max:4000'],
             'location_city' => ['nullable', 'string', 'max:255'],
             'location_province' => ['nullable', 'string', 'max:255'],
             'work_mode' => ['required', Rule::in(['remote', 'hybrid', 'onsite'])],
@@ -34,8 +35,9 @@ class SaveEmployerJobRequest extends FormRequest
             'salary_max' => ['nullable', 'integer', 'min:0', 'gte:salary_min'],
             'salary_currency' => ['required', 'string', 'size:3'],
             'is_salary_visible' => ['required', 'boolean'],
+            'is_anonymous' => ['nullable', 'boolean'],
             'response_sla_hours' => ['nullable', 'integer', 'min:1', 'max:720'],
-            'closes_at' => ['nullable', 'date'],
+            'closes_at' => ['nullable', 'date', 'after:today'],
         ];
     }
 }

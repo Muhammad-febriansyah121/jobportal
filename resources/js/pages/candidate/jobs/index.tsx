@@ -1,12 +1,15 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Bookmark, BookmarkCheck, Search } from 'lucide-react';
-import Heading from '@/components/heading';
 import {
     Field,
     RupiahInput,
     Select,
 } from '@/components/candidate/candidate-form';
-import { EmptyState, PaginationLinks } from '@/components/candidate/candidate-ui';
+import {
+    EmptyState,
+    PaginationLinks,
+} from '@/components/candidate/candidate-ui';
+import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,12 +20,8 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-    index,
-    save,
-    show,
-    unsave,
-} from '@/routes/candidate/jobs';
+import { useTranslate } from '@/hooks/use-translate';
+import { index, save, show, unsave } from '@/routes/candidate/jobs';
 
 type Option = {
     value: string;
@@ -33,6 +32,7 @@ type Job = {
     id: number;
     slug: string;
     title: string;
+    is_anonymous: boolean;
     company?: string | null;
     company_verified: boolean;
     industry?: string | null;
@@ -81,21 +81,23 @@ export default function CandidateJobsIndex({
     industries,
     jobs,
 }: JobsIndexProps) {
+    const { t } = useTranslate();
+
     const tabs = [
-        ['recommended', 'Rekomendasi'],
-        ['all', 'Semua'],
-        ['remote', 'Remote'],
-        ['salary-transparent', 'Salary transparan'],
+        ['recommended', t('candidate.jobs.tabs.recommended')],
+        ['all', t('candidate.jobs.tabs.all')],
+        ['remote', t('candidate.jobs.tabs.remote')],
+        ['salary-transparent', t('candidate.jobs.tabs.salary_transparent')],
     ] as const;
 
     return (
         <>
-            <Head title="Cari Lowongan" />
+            <Head title={t('candidate.jobs.page_title')} />
 
             <div className="space-y-6 p-4 md:p-6">
                 <Heading
-                    title="Cari Lowongan"
-                    description="Cari, filter, simpan, dan lamar lowongan aktif yang sesuai dengan profil kamu."
+                    title={t('candidate.jobs.page_title')}
+                    description={t('candidate.jobs.page_description')}
                 />
 
                 <div className="space-y-2">
@@ -117,16 +119,18 @@ export default function CandidateJobsIndex({
                     </div>
                     {filters.tab === 'recommended' && has_intent_data && (
                         <p className="text-xs text-muted-foreground">
-                            Diurutkan berdasarkan aktivitas dan minat Anda
+                            {t('candidate.jobs.intent_hint')}
                         </p>
                     )}
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Filter lowongan</CardTitle>
+                        <CardTitle>
+                            {t('candidate.jobs.filter_title')}
+                        </CardTitle>
                         <CardDescription>
-                            Gunakan keyword, lokasi, salary, dan skill match.
+                            {t('candidate.jobs.filter_description')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -154,48 +158,82 @@ export default function CandidateJobsIndex({
                                 name="tab"
                                 value={filters.tab}
                             />
-                            <Field label="Keyword" name="search">
+                            <Field
+                                label={t('candidate.jobs.keyword')}
+                                name="search"
+                            >
                                 <Input
                                     name="search"
                                     defaultValue={filters.search ?? ''}
-                                    placeholder="React, data analyst, fintech"
+                                    placeholder={t(
+                                        'candidate.jobs.keyword_placeholder',
+                                    )}
                                 />
                             </Field>
-                            <Field label="Lokasi" name="location">
+                            <Field
+                                label={t('candidate.jobs.location')}
+                                name="location"
+                            >
                                 <Input
                                     name="location"
                                     defaultValue={filters.location ?? ''}
-                                    placeholder="Jakarta, Bandung, remote"
+                                    placeholder={t(
+                                        'candidate.jobs.location_placeholder',
+                                    )}
                                 />
                             </Field>
-                            <Field label="Mode kerja" name="work_mode">
+                            <Field
+                                label={t('candidate.jobs.work_mode')}
+                                name="work_mode"
+                            >
                                 <Select
                                     name="work_mode"
                                     defaultValue={filters.work_mode ?? ''}
                                 >
-                                    <option value="">Semua mode</option>
-                                    <option value="remote">Remote</option>
-                                    <option value="hybrid">Hybrid</option>
-                                    <option value="onsite">Onsite</option>
+                                    <option value="">
+                                        {t('candidate.jobs.all_modes')}
+                                    </option>
+                                    <option value="remote">
+                                        {t('candidate.jobs.mode_remote')}
+                                    </option>
+                                    <option value="hybrid">
+                                        {t('candidate.jobs.mode_hybrid')}
+                                    </option>
+                                    <option value="onsite">
+                                        {t('candidate.jobs.mode_onsite')}
+                                    </option>
                                 </Select>
                             </Field>
-                            <Field label="Job type" name="job_type">
+                            <Field
+                                label={t('candidate.jobs.job_type')}
+                                name="job_type"
+                            >
                                 <Select
                                     name="job_type"
                                     defaultValue={filters.job_type ?? ''}
                                 >
-                                    <option value="">Semua tipe</option>
-                                    <option value="full_time">Full Time</option>
-                                    <option value="part_time">Part Time</option>
-                                    <option value="contract">Contract</option>
-                                    <option value="internship">
-                                        Internship
+                                    <option value="">
+                                        {t('candidate.jobs.all_types')}
                                     </option>
-                                    <option value="freelance">Freelance</option>
+                                    <option value="full_time">
+                                        {t('candidate.jobs.type_full_time')}
+                                    </option>
+                                    <option value="part_time">
+                                        {t('candidate.jobs.type_part_time')}
+                                    </option>
+                                    <option value="contract">
+                                        {t('candidate.jobs.type_contract')}
+                                    </option>
+                                    <option value="internship">
+                                        {t('candidate.jobs.type_internship')}
+                                    </option>
+                                    <option value="freelance">
+                                        {t('candidate.jobs.type_freelance')}
+                                    </option>
                                 </Select>
                             </Field>
                             <Field
-                                label="Experience"
+                                label={t('candidate.jobs.experience')}
                                 name="experience_level"
                             >
                                 <Select
@@ -204,20 +242,37 @@ export default function CandidateJobsIndex({
                                         filters.experience_level ?? ''
                                     }
                                 >
-                                    <option value="">Semua level</option>
-                                    <option value="entry">Entry</option>
-                                    <option value="mid">Mid</option>
-                                    <option value="senior">Senior</option>
-                                    <option value="lead">Lead</option>
-                                    <option value="manager">Manager</option>
+                                    <option value="">
+                                        {t('candidate.jobs.all_levels')}
+                                    </option>
+                                    <option value="entry">
+                                        {t('candidate.jobs.level_entry')}
+                                    </option>
+                                    <option value="mid">
+                                        {t('candidate.jobs.level_mid')}
+                                    </option>
+                                    <option value="senior">
+                                        {t('candidate.jobs.level_senior')}
+                                    </option>
+                                    <option value="lead">
+                                        {t('candidate.jobs.level_lead')}
+                                    </option>
+                                    <option value="manager">
+                                        {t('candidate.jobs.level_manager')}
+                                    </option>
                                 </Select>
                             </Field>
-                            <Field label="Industri" name="industry_id">
+                            <Field
+                                label={t('candidate.jobs.industry')}
+                                name="industry_id"
+                            >
                                 <Select
                                     name="industry_id"
                                     defaultValue={filters.industry_id ?? ''}
                                 >
-                                    <option value="">Semua industri</option>
+                                    <option value="">
+                                        {t('candidate.jobs.all_industries')}
+                                    </option>
                                     {industries.map((industry) => (
                                         <option
                                             key={industry.value}
@@ -228,11 +283,16 @@ export default function CandidateJobsIndex({
                                     ))}
                                 </Select>
                             </Field>
-                            <Field label="Salary min" name="salary_min">
+                            <Field
+                                label={t('candidate.jobs.salary_min')}
+                                name="salary_min"
+                            >
                                 <RupiahInput
                                     name="salary_min"
                                     defaultValue={filters.salary_min}
-                                    placeholder="Rp10.000.000"
+                                    placeholder={t(
+                                        'candidate.jobs.salary_min_placeholder',
+                                    )}
                                 />
                             </Field>
                             <div className="flex flex-col justify-end gap-3">
@@ -246,7 +306,7 @@ export default function CandidateJobsIndex({
                                             filters.verified_company
                                         }
                                     />
-                                    Perusahaan verified
+                                    {t('candidate.jobs.verified_company')}
                                 </label>
                                 <label className="flex items-center gap-2 text-sm">
                                     <input
@@ -256,13 +316,13 @@ export default function CandidateJobsIndex({
                                         value="1"
                                         defaultChecked={filters.skill_match}
                                     />
-                                    Skill match
+                                    {t('candidate.jobs.skill_match')}
                                 </label>
                             </div>
                             <div className="lg:col-span-4">
                                 <Button type="submit">
                                     <Search />
-                                    Terapkan filter
+                                    {t('candidate.jobs.apply_filter')}
                                 </Button>
                             </div>
                         </form>
@@ -271,11 +331,13 @@ export default function CandidateJobsIndex({
 
                 <div className="grid gap-4">
                     {jobs.data.length ? (
-                        jobs.data.map((job) => <JobCard job={job} key={job.id} />)
+                        jobs.data.map((job) => (
+                            <JobCard job={job} key={job.id} t={t} />
+                        ))
                     ) : (
                         <EmptyState
-                            title="Lowongan tidak ditemukan"
-                            description="Coba ubah keyword, lokasi, atau filter salary."
+                            title={t('candidate.jobs.empty_title')}
+                            description={t('candidate.jobs.empty_description')}
                         />
                     )}
                 </div>
@@ -286,7 +348,13 @@ export default function CandidateJobsIndex({
     );
 }
 
-function JobCard({ job }: { job: Job }) {
+function JobCard({
+    job,
+    t,
+}: {
+    job: Job;
+    t: (key: string, replacements?: Record<string, string | number>) => string;
+}) {
     return (
         <Card>
             <CardContent className="p-5">
@@ -300,12 +368,27 @@ function JobCard({ job }: { job: Job }) {
                                 {job.title}
                             </Link>
                             <p className="text-sm text-muted-foreground">
-                                {job.company} · {job.location || 'Remote'}
+                                {job.is_anonymous ? (
+                                    <span className="italic">
+                                        {t('candidate.jobs.anonymous_company')}
+                                    </span>
+                                ) : (
+                                    job.company
+                                )}{' '}
+                                ·{' '}
+                                {job.location ||
+                                    t('candidate.jobs.mode_remote')}
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {job.company_verified ? (
-                                <Badge>Verified</Badge>
+                            {job.is_anonymous ? (
+                                <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                                    {t('candidate.jobs.anonymous_badge')}
+                                </Badge>
+                            ) : job.company_verified ? (
+                                <Badge>
+                                    {t('candidate.jobs.verified_badge')}
+                                </Badge>
                             ) : null}
                             <Badge variant="secondary">
                                 {job.work_mode_label}
@@ -315,7 +398,9 @@ function JobCard({ job }: { job: Job }) {
                             </Badge>
                             {job.ai_match_score ? (
                                 <Badge variant="outline">
-                                    AI match {job.ai_match_score}%
+                                    {t('candidate.jobs.ai_match', {
+                                        score: job.ai_match_score,
+                                    })}
                                 </Badge>
                             ) : null}
                         </div>
@@ -327,7 +412,8 @@ function JobCard({ job }: { job: Job }) {
                             ))}
                         </div>
                         <p className="text-sm text-muted-foreground">
-                            {job.salary_range} · Publish {job.published_at ?? '-'}
+                            {job.salary_range} · {t('candidate.jobs.publish')}{' '}
+                            {job.published_at ?? '-'}
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -339,7 +425,7 @@ function JobCard({ job }: { job: Job }) {
                                     as="button"
                                 >
                                     <BookmarkCheck />
-                                    Tersimpan
+                                    {t('candidate.jobs.saved')}
                                 </Link>
                             </Button>
                         ) : (
@@ -350,13 +436,15 @@ function JobCard({ job }: { job: Job }) {
                                     as="button"
                                 >
                                     <Bookmark />
-                                    Simpan
+                                    {t('candidate.jobs.save')}
                                 </Link>
                             </Button>
                         )}
                         <Button asChild>
                             <Link href={show(job.slug)}>
-                                {job.has_applied ? 'Lihat lamaran' : 'Detail'}
+                                {job.has_applied
+                                    ? t('candidate.jobs.view_application')
+                                    : t('candidate.jobs.detail')}
                             </Link>
                         </Button>
                     </div>

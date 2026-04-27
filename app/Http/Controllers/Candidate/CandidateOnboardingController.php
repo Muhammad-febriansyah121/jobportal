@@ -8,8 +8,14 @@ use App\Http\Requests\Candidate\SaveCandidateProfileRequest;
 use App\Models\CandidateProfile;
 use App\Models\Industry;
 use App\Models\Skill;
+use App\Services\AiService;
+use App\Services\CvTextExtractorService;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -32,7 +38,39 @@ class CandidateOnboardingController extends Controller
         $candidate = $resolveCandidateProfile->handle($request->user());
         $data = $request->validated();
         $skillIds = $data['skill_ids'] ?? [];
+        $firstExperience = [
+            'company_name' => $data['first_experience_company_name'] ?? null,
+            'job_title' => $data['first_experience_job_title'] ?? null,
+            'start_date' => $data['first_experience_start_date'] ?? null,
+            'end_date' => $data['first_experience_end_date'] ?? null,
+            'is_current' => (bool) ($data['first_experience_is_current'] ?? false),
+            'location' => $data['first_experience_location'] ?? null,
+            'description' => $data['first_experience_description'] ?? null,
+        ];
+        $firstEducation = [
+            'institution' => $data['first_education_institution'] ?? null,
+            'degree' => $data['first_education_degree'] ?? null,
+            'field_of_study' => $data['first_education_field_of_study'] ?? null,
+            'start_year' => $data['first_education_start_year'] ?? null,
+            'end_year' => $data['first_education_end_year'] ?? null,
+            'gpa' => $data['first_education_gpa'] ?? null,
+        ];
         unset($data['skill_ids']);
+        unset(
+            $data['first_experience_company_name'],
+            $data['first_experience_job_title'],
+            $data['first_experience_start_date'],
+            $data['first_experience_end_date'],
+            $data['first_experience_is_current'],
+            $data['first_experience_location'],
+            $data['first_experience_description'],
+            $data['first_education_institution'],
+            $data['first_education_degree'],
+            $data['first_education_field_of_study'],
+            $data['first_education_start_year'],
+            $data['first_education_end_year'],
+            $data['first_education_gpa'],
+        );
 
         $candidate->update($data);
 
@@ -43,13 +81,174 @@ class CandidateOnboardingController extends Controller
                 ])->all()
             );
         }
+        if ($candidate->experiences()->doesntExist() && filled($firstExperience['company_name'])) {
+            if ($firstExperience['is_current']) {
+                $firstExperience['end_date'] = null;
+            }
 
-        $request->user()->forceFill(['onboarding_completed_at' => now()])->save();
+            $candidate->experiences()->create([
+                'company_name' => $firstExperience['company_name'],
+                'job_title' => $firstExperience['job_title'] ?? 'Tidak diketahui',
+                'start_date' => $firstExperience['start_date'] ?? now()->toDateString(),
+                'end_date' => $firstExperience['end_date'],
+                'is_current' => $firstExperience['is_current'],
+                'location' => $firstExperience['location'],
+                'description' => $firstExperience['description'],
+            ]);
+        }
+
+        if ($candidate->educations()->doesntExist() && filled($firstEducation['institution'])) {
+            $candidate->educations()->create([
+                'institution' => $firstEducation['institution'],
+                'degree' => $firstEducation['degree'],
+                'field_of_study' => $firstEducation['field_of_study'],
+                'start_year' => $firstEducation['start_year'],
+                'end_year' => $firstEducation['end_year'],
+                'gpa' => $firstEducation['gpa'],
+            ]);
+        }
+
         $resolveCandidateProfile->refreshCompletion($candidate);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Onboarding kandidat berhasil disimpan.']);
 
         return to_route('candidate.dashboard');
+    }
+
+    public function parseCv(Request $request, CvTextExtractorService $extractor, AiService $ai): JsonResponse
+    {
+        $request->validate([
+            'cv_file' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
+        ]);
+
+        $file = $request->file('cv_file');
+        $cvText = $extractor->extractFromPath($file->getPathname(), (string) $file->getMimeType());
+
+        if (trim($cvText) === '') {
+            return response()->json(['error' => 'Teks tidak dapat diekstrak dari file ini. Coba file lain atau isi form manual.'], 422);
+        }
+
+        $parsed = $ai->chatJson(
+            [
+                ['role' => 'system', 'content' => 'You are a CV/resume parser. Extract structured information. Return only valid JSON. For dates use YYYY-MM-DD. For years use integers. Do not invent data.'],
+                ['role' => 'user', 'content' => "Parse the following CV text:\n\n---\n{$cvText}\n---"],
+            ],
+            $this->cvParseSchema(),
+            'cv_parse_result',
+            maxTokens: 2000,
+        );
+
+        if (! is_array($parsed)) {
+            return response()->json(['error' => 'AI tidak dapat memproses CV ini. Coba lagi atau isi form manual.'], 422);
+        }
+
+        $skillNames = collect($parsed['skills'] ?? [])
+            ->filter(fn ($s): bool => is_string($s) && trim($s) !== '')
+            ->map(fn (string $s): string => Str::lower(trim($s)))
+            ->unique()
+            ->take(15)
+            ->all();
+
+        $matchedSkillIds = Skill::query()
+            ->whereIn(DB::raw('LOWER(name)'), $skillNames)
+            ->pluck('id')
+            ->all();
+
+        $firstExp = isset($parsed['experiences'][0]) && is_array($parsed['experiences'][0])
+            ? $parsed['experiences'][0]
+            : null;
+
+        $firstEdu = isset($parsed['educations'][0]) && is_array($parsed['educations'][0])
+            ? $parsed['educations'][0]
+            : null;
+
+        return response()->json([
+            'full_name' => trim((string) ($parsed['full_name'] ?? '')),
+            'headline' => trim((string) ($parsed['headline'] ?? '')),
+            'bio' => trim((string) ($parsed['summary'] ?? '')),
+            'location_city' => trim((string) ($parsed['location_city'] ?? '')),
+            'location_province' => trim((string) ($parsed['location_province'] ?? '')),
+            'matched_skill_ids' => $matchedSkillIds,
+            'first_experience' => $firstExp ? [
+                'company_name' => trim((string) ($firstExp['company_name'] ?? '')),
+                'job_title' => trim((string) ($firstExp['job_title'] ?? '')),
+                'start_date' => $this->parseDate((string) ($firstExp['start_date'] ?? '')),
+                'end_date' => $this->parseDate((string) ($firstExp['end_date'] ?? '')),
+                'is_current' => (bool) ($firstExp['is_current'] ?? false),
+            ] : null,
+            'first_education' => $firstEdu ? [
+                'institution' => trim((string) ($firstEdu['institution'] ?? '')),
+                'degree' => trim((string) ($firstEdu['degree'] ?? '')),
+                'field_of_study' => trim((string) ($firstEdu['field_of_study'] ?? '')),
+                'start_year' => (string) ($firstEdu['start_year'] ?? ''),
+                'end_year' => (string) ($firstEdu['end_year'] ?? ''),
+                'gpa' => (string) ($firstEdu['gpa'] ?? ''),
+            ] : null,
+        ]);
+    }
+
+    private function parseDate(string $value): string
+    {
+        if ($value === '') {
+            return '';
+        }
+
+        try {
+            return Carbon::parse($value)->format('Y-m-d');
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function cvParseSchema(): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'full_name' => ['type' => 'string'],
+                'headline' => ['type' => 'string'],
+                'summary' => ['type' => 'string'],
+                'location_city' => ['type' => 'string'],
+                'location_province' => ['type' => 'string'],
+                'skills' => ['type' => 'array', 'items' => ['type' => 'string']],
+                'experiences' => [
+                    'type' => 'array',
+                    'items' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'company_name' => ['type' => 'string'],
+                            'job_title' => ['type' => 'string'],
+                            'start_date' => ['type' => 'string'],
+                            'end_date' => ['type' => 'string'],
+                            'is_current' => ['type' => 'boolean'],
+                        ],
+                        'required' => ['company_name', 'job_title', 'start_date', 'end_date', 'is_current'],
+                        'additionalProperties' => false,
+                    ],
+                ],
+                'educations' => [
+                    'type' => 'array',
+                    'items' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'institution' => ['type' => 'string'],
+                            'degree' => ['type' => 'string'],
+                            'field_of_study' => ['type' => 'string'],
+                            'start_year' => ['type' => 'string'],
+                            'end_year' => ['type' => 'string'],
+                            'gpa' => ['type' => 'string'],
+                        ],
+                        'required' => ['institution', 'degree', 'field_of_study', 'start_year', 'end_year', 'gpa'],
+                        'additionalProperties' => false,
+                    ],
+                ],
+            ],
+            'required' => ['full_name', 'headline', 'summary', 'location_city', 'location_province', 'skills', 'experiences', 'educations'],
+            'additionalProperties' => false,
+        ];
     }
 
     private function profilePayload(CandidateProfile $candidate): array

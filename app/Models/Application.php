@@ -50,6 +50,11 @@ class Application extends Model
         return $this->hasMany(AiInterviewSession::class);
     }
 
+    public function latestAiInterviewSession(): HasOne
+    {
+        return $this->hasOne(AiInterviewSession::class)->latestOfMany();
+    }
+
     protected function casts(): array
     {
         return [

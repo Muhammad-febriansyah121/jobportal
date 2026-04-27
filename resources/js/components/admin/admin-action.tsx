@@ -14,6 +14,7 @@ import {
 import type { ComponentType, SVGProps } from 'react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
+import { useTranslate } from '@/hooks/use-translate';
 import {
     AlertDialog,
     AlertDialogCancel,
@@ -37,7 +38,11 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import type { AdminAction, AdminField } from '@/types';
 
@@ -88,7 +93,10 @@ export function AdminActionList({ actions = [] }: { actions?: AdminAction[] }) {
     return (
         <div className="flex flex-wrap justify-end gap-2">
             {actions.map((action) => (
-                <AdminActionButton action={action} key={`${action.href}-${action.label}`} />
+                <AdminActionButton
+                    action={action}
+                    key={`${action.href}-${action.label}`}
+                />
             ))}
         </div>
     );
@@ -98,8 +106,11 @@ function ConfirmedAction({
     action,
     Icon,
 }: AdminActionButtonProps & { Icon: ComponentType<SVGProps<SVGSVGElement>> }) {
+    const [open, setOpen] = useState(false);
+    const { t } = useTranslate();
+
     return (
-        <AlertDialog>
+        <AlertDialog open={open} onOpenChange={setOpen}>
             <AlertDialogTrigger asChild>
                 <Button variant={action.variant ?? 'outline'} size="sm">
                     <Icon />
@@ -108,12 +119,20 @@ function ConfirmedAction({
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>{action.confirmTitle ?? `${action.label}?`}</AlertDialogTitle>
+                    <AlertDialogTitle>
+                        {action.confirmTitle ?? `${action.label}?`}
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                        {action.confirmDescription ?? 'Pastikan aksi ini sudah sesuai.'}
+                        {action.confirmDescription ??
+                            t('admin.components.admin_action.confirm_default')}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <ActionForm action={action} Icon={Icon} mode="confirm" />
+                <ActionForm
+                    action={action}
+                    Icon={Icon}
+                    mode="confirm"
+                    onSuccess={() => setOpen(false)}
+                />
             </AlertDialogContent>
         </AlertDialog>
     );
@@ -124,6 +143,7 @@ function FormDialogAction({
     Icon,
 }: AdminActionButtonProps & { Icon: ComponentType<SVGProps<SVGSVGElement>> }) {
     const [open, setOpen] = useState(false);
+    const { t } = useTranslate();
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -136,9 +156,16 @@ function FormDialogAction({
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>{action.label}</DialogTitle>
-                    <DialogDescription>Lengkapi data di bawah ini.</DialogDescription>
+                    <DialogDescription>
+                        {t('admin.components.admin_action.dialog_description')}
+                    </DialogDescription>
                 </DialogHeader>
-                <ActionForm action={action} Icon={Icon} mode="dialog" onSuccess={() => setOpen(false)} />
+                <ActionForm
+                    action={action}
+                    Icon={Icon}
+                    mode="dialog"
+                    onSuccess={() => setOpen(false)}
+                />
             </DialogContent>
         </Dialog>
     );
@@ -154,12 +181,19 @@ function ActionForm({
     mode: 'confirm' | 'dialog';
     onSuccess?: () => void;
 }) {
-    const method = (action.method ?? 'post') as 'delete' | 'patch' | 'post' | 'put';
+    const { t } = useTranslate();
+    const method = (action.method ?? 'post') as
+        | 'delete'
+        | 'patch'
+        | 'post'
+        | 'put';
+    const hasFileField = (action.fields ?? []).some((field) => field.type === 'file');
 
     return (
         <Form
             action={action.href}
             method={method}
+            encType={hasFileField ? 'multipart/form-data' : undefined}
             options={{ preserveScroll: true }}
             resetOnSuccess
             onSuccess={onSuccess}
@@ -168,22 +202,34 @@ function ActionForm({
             {({ errors, processing }) => (
                 <>
                     {action.fields?.map((field) => (
-                        <AdminFormField field={field} errors={errors as Record<string, string>} key={field.name} />
+                        <AdminFormField
+                            field={field}
+                            errors={errors as Record<string, string>}
+                            key={field.name}
+                        />
                     ))}
 
                     {mode === 'confirm' ? (
                         <AlertDialogFooter>
-                            <AlertDialogCancel>Batal</AlertDialogCancel>
-                            <Button type="submit" variant={action.variant ?? 'default'} disabled={processing}>
+                            <AlertDialogCancel>{t('admin.components.admin_action.cancel')}</AlertDialogCancel>
+                            <Button
+                                type="submit"
+                                variant={action.variant ?? 'default'}
+                                disabled={processing}
+                            >
                                 <Icon />
-                                {processing ? 'Memproses...' : action.label}
+                                {processing ? t('admin.components.admin_action.processing') : action.label}
                             </Button>
                         </AlertDialogFooter>
                     ) : (
                         <DialogFooter>
-                            <Button type="submit" variant={action.variant ?? 'default'} disabled={processing}>
+                            <Button
+                                type="submit"
+                                variant={action.variant ?? 'default'}
+                                disabled={processing}
+                            >
                                 <Icon />
-                                {processing ? 'Menyimpan...' : action.label}
+                                {processing ? t('admin.components.admin_action.saving') : action.label}
                             </Button>
                         </DialogFooter>
                     )}
@@ -193,8 +239,15 @@ function ActionForm({
     );
 }
 
-function AdminFormField({ field, errors }: { field: AdminField; errors: Record<string, string> }) {
-    const placeholder = field.placeholder ?? defaultPlaceholder(field);
+function AdminFormField({
+    field,
+    errors,
+}: {
+    field: AdminField;
+    errors: Record<string, string>;
+}) {
+    const { t } = useTranslate();
+    const placeholder = field.placeholder ?? defaultPlaceholder(field, t);
 
     if (field.type === 'checkbox') {
         return (
@@ -242,6 +295,13 @@ function AdminFormField({ field, errors }: { field: AdminField; errors: Record<s
                 </select>
             ) : field.type === 'date' ? (
                 <DatePickerField field={field} placeholder={placeholder} />
+            ) : field.type === 'file' ? (
+                <Input
+                    id={field.name}
+                    name={field.name}
+                    type="file"
+                    required={field.required}
+                />
             ) : field.type === 'currency' || isCurrencyField(field) ? (
                 <RupiahField field={field} placeholder={placeholder} />
             ) : (
@@ -261,9 +321,19 @@ function AdminFormField({ field, errors }: { field: AdminField; errors: Record<s
     );
 }
 
-function DatePickerField({ field, placeholder }: { field: AdminField; placeholder: string }) {
+type FieldDefaultPlaceholderTranslator = (key: string, replacements?: Record<string, string | number>) => string;
+
+function DatePickerField({
+    field,
+    placeholder,
+}: {
+    field: AdminField;
+    placeholder: string;
+}) {
     const [open, setOpen] = useState(false);
-    const [date, setDate] = useState<Date | undefined>(parseDate(String(field.value ?? '')));
+    const [date, setDate] = useState<Date | undefined>(
+        parseDate(String(field.value ?? '')),
+    );
     const value = date ? toDateInputValue(date) : '';
 
     return (
@@ -275,7 +345,10 @@ function DatePickerField({ field, placeholder }: { field: AdminField; placeholde
                         id={field.name}
                         type="button"
                         variant="outline"
-                        className={cn('w-full justify-start text-left font-normal', !date && 'text-muted-foreground')}
+                        className={cn(
+                            'w-full justify-start text-left font-normal',
+                            !date && 'text-muted-foreground',
+                        )}
                     >
                         <CalendarIcon />
                         {date ? formatDate(date) : placeholder}
@@ -297,7 +370,13 @@ function DatePickerField({ field, placeholder }: { field: AdminField; placeholde
     );
 }
 
-function RupiahField({ field, placeholder }: { field: AdminField; placeholder: string }) {
+function RupiahField({
+    field,
+    placeholder,
+}: {
+    field: AdminField;
+    placeholder: string;
+}) {
     const [amount, setAmount] = useState<number>(() => onlyDigits(field.value));
 
     return (
@@ -315,24 +394,30 @@ function RupiahField({ field, placeholder }: { field: AdminField; placeholder: s
     );
 }
 
-function defaultPlaceholder(field: AdminField): string {
+function defaultPlaceholder(field: AdminField, t: FieldDefaultPlaceholderTranslator): string {
     if (field.type === 'date') {
-        return `Pilih ${field.label}`;
+        return t('admin.components.admin_action.placeholder_select', { label: field.label });
     }
 
     if (field.type === 'select') {
-        return `Pilih ${field.label}`;
+        return t('admin.components.admin_action.placeholder_select', { label: field.label });
     }
 
     if (field.type === 'currency' || isCurrencyField(field)) {
-        return `Masukkan ${field.label} dalam Rupiah`;
+        return t('admin.components.admin_action.placeholder_enter_rupiah', { label: field.label });
     }
 
-    return `Masukkan ${field.label}`;
+    return t('admin.components.admin_action.placeholder_enter', { label: field.label });
 }
 
 function isCurrencyField(field: AdminField): boolean {
-    return ['amount', 'price', 'salary_max', 'salary_median', 'salary_min'].includes(field.name);
+    return [
+        'amount',
+        'price',
+        'salary_max',
+        'salary_median',
+        'salary_min',
+    ].includes(field.name);
 }
 
 function onlyDigits(value: unknown): number {

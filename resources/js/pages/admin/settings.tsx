@@ -1,5 +1,4 @@
 import { Head, useForm } from '@inertiajs/react';
-import { toast } from 'sonner';
 import {
     BookOpen,
     Bot,
@@ -18,6 +17,9 @@ import {
     X,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { RichEditor } from '@/components/rich-editor';
+import { Card, CardContent } from '@/components/ui/card';
 import { update as settingsUpdate } from '@/routes/admin/settings';
 
 type Tab = { key: string; label: string; icon: React.ElementType };
@@ -40,7 +42,7 @@ function CustomTabs({
                     onClick={() => onChange(tab.key)}
                     className={`flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition ${
                         active === tab.key
-                            ? 'border-[#ED6A2F] text-[#ED6A2F]'
+                            ? 'border-[#1E4D96] text-[#1E4D96]'
                             : 'border-transparent text-muted-foreground hover:text-foreground'
                     }`}
                 >
@@ -56,9 +58,23 @@ type SettingsProps = {
     settings: Record<string, string | null>;
 };
 
+const imageFieldKeys = [
+    'site_logo_url',
+    'site_favicon_url',
+    'login_banner_url',
+    'about_hero_image',
+    'about_office_image',
+] as const;
+
 function storageUrl(path: string | null | undefined): string | null {
-    if (!path) return null;
-    if (path.startsWith('http')) return path;
+    if (!path) {
+return null;
+}
+
+    if (path.startsWith('http')) {
+return path;
+}
+
     return `/storage/${path}`;
 }
 
@@ -72,15 +88,15 @@ function Section({
     children: React.ReactNode;
 }) {
     return (
-        <div className="rounded-xl border bg-background shadow-sm">
+        <Card>
             <div className="flex items-center gap-3 border-b px-6 py-4">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-[#ED6A2F]/10">
-                    <Icon className="size-4 text-[#ED6A2F]" />
+                <div className="flex size-8 items-center justify-center rounded-lg bg-[#1E4D96]/10">
+                    <Icon className="size-4 text-[#1E4D96]" />
                 </div>
                 <h2 className="text-base font-semibold">{title}</h2>
             </div>
-            <div className="grid gap-5 p-6 sm:grid-cols-2">{children}</div>
-        </div>
+            <CardContent className="grid gap-5 pt-6 sm:grid-cols-2">{children}</CardContent>
+        </Card>
     );
 }
 
@@ -120,7 +136,7 @@ function Input({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
-            className="w-full rounded-lg border bg-background px-3 py-2 text-sm ring-offset-background transition outline-none focus:border-[#ED6A2F] focus:ring-2 focus:ring-[#ED6A2F]/50"
+            className="w-full rounded-lg border bg-white px-3 py-2 text-sm ring-offset-background transition outline-none focus:border-[#1E4D96] focus:ring-2 focus:ring-[#1E4D96]/50"
         />
     );
 }
@@ -142,7 +158,7 @@ function Textarea({
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
             rows={rows}
-            className="w-full resize-y rounded-lg border bg-background px-3 py-2 text-sm ring-offset-background transition outline-none focus:border-[#ED6A2F] focus:ring-2 focus:ring-[#ED6A2F]/50"
+            className="w-full resize-y rounded-lg border bg-white px-3 py-2 text-sm ring-offset-background transition outline-none focus:border-[#1E4D96] focus:ring-2 focus:ring-[#1E4D96]/50"
         />
     );
 }
@@ -163,7 +179,7 @@ function AiApiKeyInput({
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder="sk-..."
-                className="w-full rounded-lg border bg-background px-3 py-2 pr-10 text-sm ring-offset-background transition outline-none focus:border-[#ED6A2F] focus:ring-2 focus:ring-[#ED6A2F]/50"
+                className="w-full rounded-lg border bg-white px-3 py-2 pr-10 text-sm ring-offset-background transition outline-none focus:border-[#1E4D96] focus:ring-2 focus:ring-[#1E4D96]/50"
             />
             <button
                 type="button"
@@ -201,6 +217,7 @@ function ImageUpload({
 
     const handleFile = (file: File | null) => {
         onFileSelect(file);
+
         if (file) {
             const reader = new FileReader();
             reader.onload = (e) => setPreview(e.target?.result as string);
@@ -212,13 +229,19 @@ function ImageUpload({
         e.preventDefault();
         setIsDragging(false);
         const file = e.dataTransfer.files[0];
-        if (file && file.type.startsWith('image/')) handleFile(file);
+
+        if (file && file.type.startsWith('image/')) {
+handleFile(file);
+}
     };
 
     const handleRemove = () => {
         setPreview(null);
         onFileSelect(null);
-        if (inputRef.current) inputRef.current.value = '';
+
+        if (inputRef.current) {
+inputRef.current.value = '';
+}
     };
 
     return (
@@ -229,8 +252,8 @@ function ImageUpload({
             <div
                 className={`relative flex min-h-36 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition ${
                     isDragging
-                        ? 'border-[#ED6A2F] bg-[#ED6A2F]/5'
-                        : 'border-border bg-muted/30 hover:border-[#ED6A2F]/50'
+                        ? 'border-[#1E4D96] bg-[#1E4D96]/5'
+                        : 'border-border bg-muted/30 hover:border-[#1E4D96]/50'
                 }`}
                 onDragOver={(e) => {
                     e.preventDefault();
@@ -285,7 +308,7 @@ function ImageUpload({
 export default function AdminSettings({ settings }: SettingsProps) {
     const get = (key: string) => settings[key] ?? '';
 
-    const { data, setData, post, processing } = useForm<
+    const { data, setData, post, processing, transform } = useForm<
         Record<string, string | File | null | boolean>
     >({
         site_name: get('site_name'),
@@ -318,9 +341,18 @@ export default function AdminSettings({ settings }: SettingsProps) {
         office_maps_embed_url: get('office_maps_embed_url'),
         recaptcha_site_key: get('recaptcha_site_key'),
         recaptcha_secret_key: get('recaptcha_secret_key'),
+        google_login_client_id: get('google_login_client_id'),
+        google_login_client_secret: get('google_login_client_secret'),
         privacy_title: get('privacy_title'),
         terms_title: get('terms_title'),
         ai_api_key: get('ai_api_key'),
+        ai_model: get('ai_model') || 'gpt-5',
+        whatsapp_gateway_url: get('whatsapp_gateway_url'),
+        whatsapp_gateway_api_key: get('whatsapp_gateway_api_key'),
+        whatsapp_gateway_default_session_id: get('whatsapp_gateway_default_session_id'),
+        whatsapp_gateway_connect_timeout:
+            get('whatsapp_gateway_connect_timeout') || '3',
+        whatsapp_gateway_timeout: get('whatsapp_gateway_timeout') || '10',
         pakasir_project: get('pakasir_project'),
         pakasir_api_key: get('pakasir_api_key'),
     });
@@ -343,10 +375,28 @@ export default function AdminSettings({ settings }: SettingsProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        transform((formData) => {
+            const payload = { ...formData };
+
+            for (const imageKey of imageFieldKeys) {
+                if (!(payload[imageKey] instanceof File)) {
+                    delete payload[imageKey];
+                }
+            }
+
+            return payload;
+        });
+
         post(settingsUpdate.url(), {
             forceFormData: true,
-            onError: () => {
-                toast.error('Periksa kembali pengaturan yang diisi.');
+            onError: (formErrors) => {
+                const firstError = Object.values(formErrors)[0];
+                toast.error(
+                    typeof firstError === 'string'
+                        ? firstError
+                        : 'Periksa kembali pengaturan yang diisi.',
+                );
             },
         });
     };
@@ -371,7 +421,7 @@ export default function AdminSettings({ settings }: SettingsProps) {
                         <button
                             type="submit"
                             disabled={processing}
-                            className="rounded-lg bg-[#ED6A2F] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#d45a22] disabled:opacity-60"
+                            className="rounded-lg bg-[#1E4D96] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#001D4D] disabled:opacity-60"
                         >
                             {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
                         </button>
@@ -589,19 +639,19 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                     />
                                 </Field>
                                 <Field label="Deskripsi" full>
-                                    <Textarea
+                                    <RichEditor
                                         value={str('about_description')}
                                         onChange={set('about_description')}
-                                        rows={3}
                                         placeholder="Deskripsi singkat perusahaan..."
+                                        minHeight="160px"
                                     />
                                 </Field>
                                 <Field label="Konten (HTML)" full>
-                                    <Textarea
+                                    <RichEditor
                                         value={str('about_content')}
                                         onChange={set('about_content')}
-                                        rows={5}
-                                        placeholder="<p>Konten HTML tentang perusahaan...</p>"
+                                        placeholder="Tulis konten tentang perusahaan..."
+                                        minHeight="320px"
                                     />
                                 </Field>
                                 <ImageUpload
@@ -638,6 +688,18 @@ export default function AdminSettings({ settings }: SettingsProps) {
                             className={`mt-5 flex flex-col gap-5 ${activeTab === 'ai' ? '' : 'hidden'}`}
                         >
                             <Section icon={Bot} title="AI API Key">
+                                <Field label="Model AI" full>
+                                    <Input
+                                        value={str('ai_model')}
+                                        onChange={set('ai_model')}
+                                        placeholder="gpt-5"
+                                    />
+                                    <p className="mt-1.5 text-xs text-muted-foreground">
+                                        Gunakan nama model persis seperti yang
+                                        didukung provider API kamu. Contoh:
+                                        gpt-5.
+                                    </p>
+                                </Field>
                                 <Field label="API Key" full>
                                     <AiApiKeyInput
                                         value={str('ai_api_key')}
@@ -650,6 +712,29 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                         bagikan key ini kepada siapapun.
                                     </p>
                                 </Field>
+                            </Section>
+
+                            <Section icon={Bot} title="WhatsApp Gateway">
+                                <Field label="Gateway URL" full>
+                                    <Input
+                                        value={str('whatsapp_gateway_url')}
+                                        onChange={set('whatsapp_gateway_url')}
+                                        placeholder="http://127.0.0.1:3000"
+                                    />
+                                    <p className="mt-1.5 text-xs text-muted-foreground">
+                                        Base URL service WA gateway untuk fitur
+                                        notifikasi employer.
+                                    </p>
+                                </Field>
+                                <Field label="Gateway API Key" full>
+                                    <AiApiKeyInput
+                                        value={str('whatsapp_gateway_api_key')}
+                                        onChange={set(
+                                            'whatsapp_gateway_api_key',
+                                        )}
+                                    />
+                                </Field>
+                                {/* Default Session ID, Connect Timeout, Request Timeout — hidden */}
                             </Section>
                         </div>
 
@@ -705,14 +790,14 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                                 }
                                             />
                                             <div
-                                                className={`h-6 w-11 rounded-full transition-colors ${Boolean(data['maintenance_mode']) ? 'bg-[#ED6A2F]' : 'bg-muted-foreground/30'}`}
+                                                className={`h-6 w-11 rounded-full transition-colors ${data['maintenance_mode'] ? 'bg-[#1E4D96]' : 'bg-muted-foreground/30'}`}
                                             />
                                             <div
-                                                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${Boolean(data['maintenance_mode']) ? 'translate-x-5.5' : 'translate-x-0.5'}`}
+                                                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${data['maintenance_mode'] ? 'translate-x-5.5' : 'translate-x-0.5'}`}
                                             />
                                         </div>
                                         <span className="text-sm">
-                                            {Boolean(data['maintenance_mode'])
+                                            {data['maintenance_mode']
                                                 ? 'Aktif — situs dalam mode maintenance'
                                                 : 'Tidak aktif'}
                                         </span>
@@ -766,6 +851,30 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                         placeholder="Secret key reCAPTCHA..."
                                         type="password"
                                     />
+                                </Field>
+                            </Section>
+
+                            <Section icon={KeyRound} title="Google Login">
+                                <Field label="Google OAuth Client ID" full>
+                                    <Input
+                                        value={str('google_login_client_id')}
+                                        onChange={set('google_login_client_id')}
+                                        placeholder="304084128651-xxxx.apps.googleusercontent.com"
+                                    />
+                                    <p className="mt-1.5 text-xs text-muted-foreground">
+                                        OAuth Client ID tipe Web Application dari Google Cloud Console.
+                                    </p>
+                                </Field>
+                                <Field label="Google OAuth Client Secret" full>
+                                    <Input
+                                        value={str('google_login_client_secret')}
+                                        onChange={set('google_login_client_secret')}
+                                        placeholder="GOCSPX-xxxx..."
+                                        type="password"
+                                    />
+                                    <p className="mt-1.5 text-xs text-muted-foreground">
+                                        Client Secret dari Google Cloud Console. Jangan bagikan ke siapapun.
+                                    </p>
                                 </Field>
                             </Section>
 

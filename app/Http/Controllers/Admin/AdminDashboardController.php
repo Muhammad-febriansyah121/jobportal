@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\ActivityLog;
 use App\Models\AiAuditLog;
 use App\Models\Application;
 use App\Models\Company;
+use App\Models\Interview;
 use App\Models\JobListing;
+use App\Models\Payment;
 use App\Models\Report;
 use App\Models\Subscription;
 use App\Models\User;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
@@ -30,6 +34,39 @@ class AdminDashboardController extends Controller
             'pending_company_verifications' => Company::where('verification_status', 'pending')->count(),
             'pending_reports' => Report::whereIn('status', ['open', 'pending'])->count(),
             'active_subscriptions' => Subscription::where('status', 'active')->count(),
+            'subscription_revenue_total' => Payment::where('status', 'paid')
+                ->whereNotNull('subscription_id')
+                ->sum('amount'),
+            'subscription_revenue_month' => Payment::query()
+                ->where('status', 'paid')
+                ->whereNotNull('subscription_id')
+                ->where(function (Builder $query): void {
+                    $startOfMonth = now()->startOfMonth();
+
+                    $query
+                        ->where('paid_at', '>=', $startOfMonth)
+                        ->orWhere(fn (Builder $nested): Builder => $nested
+                            ->whereNull('paid_at')
+                            ->where('created_at', '>=', $startOfMonth));
+                })
+                ->sum('amount'),
+            'subscription_revenue_prev_month' => Payment::query()
+                ->where('status', 'paid')
+                ->whereNotNull('subscription_id')
+                ->where(function (Builder $query): void {
+                    $start = now()->subMonth()->startOfMonth();
+                    $end = now()->subMonth()->endOfMonth();
+
+                    $query
+                        ->whereBetween('paid_at', [$start, $end])
+                        ->orWhere(fn (Builder $nested): Builder => $nested
+                            ->whereNull('paid_at')
+                            ->whereBetween('created_at', [$start, $end]));
+                })
+                ->sum('amount'),
+            'new_subscriptions_month' => Subscription::query()
+                ->where('created_at', '>=', now()->startOfMonth())
+                ->count(),
             'ai_usage' => [
                 'total' => AiAuditLog::count(),
                 'failed' => AiAuditLog::where('status', 'failed')->count(),
@@ -39,6 +76,28 @@ class AdminDashboardController extends Controller
 
         return Inertia::render('admin/dashboard', [
             'metrics' => $metrics,
+            'revenueSeries' => $this->monthlyRevenue(),
+            'revenueByPlan' => Payment::query()
+                ->where('payments.status', 'paid')
+                ->whereNotNull('payments.subscription_id')
+                ->join('subscriptions', 'payments.subscription_id', '=', 'subscriptions.id')
+                ->join('pricing_plans', 'subscriptions.pricing_plan_id', '=', 'pricing_plans.id')
+                ->selectRaw('pricing_plans.name as plan_name, SUM(payments.amount) as total_revenue, COUNT(*) as payment_count')
+                ->groupBy('pricing_plans.name')
+                ->orderByDesc('total_revenue')
+                ->get()
+                ->map(fn (Payment $row): array => [
+                    'plan' => (string) $row->plan_name,
+                    'total' => (int) $row->total_revenue,
+                    'count' => (int) $row->payment_count,
+                ])
+                ->values()
+                ->all(),
+            'registrationSeries' => [
+                'users' => $this->monthlyCounts(User::query()),
+                'companies' => $this->monthlyCounts(Company::query()),
+                'jobs' => $this->monthlyCounts(JobListing::query()),
+            ],
             'aiUsageByFeature' => AiAuditLog::query()
                 ->selectRaw('feature, count(*) as total')
                 ->groupBy('feature')
@@ -46,22 +105,115 @@ class AdminDashboardController extends Controller
                 ->limit(6)
                 ->get()
                 ->map(fn (AiAuditLog $log): array => [
-                    'feature' => $log->feature,
+                    'feature' => str((string) $log->feature)->replace('_', ' ')->headline()->toString(),
                     'total' => (int) $log->total,
                 ]),
-            'recentActivity' => ActivityLog::query()
-                ->select(['id', 'actor_id', 'action', 'subject_type', 'subject_id', 'created_at'])
-                ->with(['actor:id,name,email'])
+            'conversionFunnel' => [
+                'applications' => Application::count(),
+                'interviews' => Interview::count(),
+                'hired' => Application::where('status', 'hired')->count(),
+            ],
+            'topJobs' => JobListing::query()
+                ->withCount('applications')
+                ->with(['company:id,name'])
+                ->orderByDesc('applications_count')
+                ->limit(5)
+                ->get(['id', 'title', 'company_id', 'status', 'work_mode'])
+                ->map(fn (JobListing $job): array => [
+                    'id' => $job->id,
+                    'title' => $job->title,
+                    'company' => $job->company?->name ?? '—',
+                    'status' => $job->status,
+                    'work_mode' => $job->work_mode,
+                    'applications_count' => $job->applications_count,
+                ])
+                ->values()
+                ->all(),
+            'topCompanies' => Company::query()
+                ->withCount(['jobListings', 'members'])
+                ->orderByDesc('job_listings_count')
+                ->limit(5)
+                ->get(['id', 'name', 'verification_status', 'is_active', 'hq_city'])
+                ->map(fn (Company $company): array => [
+                    'id' => $company->id,
+                    'name' => $company->name,
+                    'verification_status' => $company->verification_status,
+                    'is_active' => $company->is_active,
+                    'hq_city' => $company->hq_city,
+                    'job_listings_count' => $company->job_listings_count,
+                    'members_count' => $company->members_count,
+                ])
+                ->values()
+                ->all(),
+            'recentRegistrations' => User::query()
+                ->whereIn('role', ['candidate', 'employer'])
                 ->latest()
                 ->limit(8)
-                ->get()
-                ->map(fn (ActivityLog $activity): array => [
-                    'id' => $activity->id,
-                    'actor' => $activity->actor?->name ?? 'Sistem',
-                    'action' => str($activity->action)->headline()->toString(),
-                    'subject' => class_basename((string) $activity->subject_type).' #'.$activity->subject_id,
-                    'created_at' => $activity->created_at?->diffForHumans(),
-                ]),
+                ->get(['id', 'name', 'email', 'role', 'created_at'])
+                ->map(fn (User $user): array => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'created_at' => $user->created_at?->diffForHumans(),
+                ])
+                ->values()
+                ->all(),
         ]);
+    }
+
+    /**
+     * @param  Builder<Model>  $query
+     * @return array<int, array<string, int|string>>
+     */
+    private function monthlyCounts(Builder $query): array
+    {
+        $start = CarbonImmutable::now()->startOfMonth()->subMonths(5);
+        $months = collect(range(0, 5))
+            ->map(fn (int $offset): string => $start->addMonths($offset)->format('Y-m'));
+
+        $counts = $query
+            ->where('created_at', '>=', $start)
+            ->get(['created_at'])
+            ->groupBy(fn (Model $model): string => $model->created_at->format('Y-m'))
+            ->map->count();
+
+        return $months
+            ->map(fn (string $month): array => [
+                'month' => $month,
+                'total' => (int) ($counts[$month] ?? 0),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /** @return array<int, array<string, int|string>> */
+    private function monthlyRevenue(): array
+    {
+        $start = CarbonImmutable::now()->startOfMonth()->subMonths(5);
+        $months = collect(range(0, 5))
+            ->map(fn (int $offset): string => $start->addMonths($offset)->format('Y-m'));
+
+        $totals = Payment::query()
+            ->where('status', 'paid')
+            ->whereNotNull('subscription_id')
+            ->where(function (Builder $query) use ($start): void {
+                $query
+                    ->where('paid_at', '>=', $start)
+                    ->orWhere(fn (Builder $nested): Builder => $nested
+                        ->whereNull('paid_at')
+                        ->where('created_at', '>=', $start));
+            })
+            ->get(['amount', 'paid_at', 'created_at'])
+            ->groupBy(fn (Payment $payment): string => ($payment->paid_at ?? $payment->created_at)->format('Y-m'))
+            ->map(fn ($group): int => (int) $group->sum('amount'));
+
+        return $months
+            ->map(fn (string $month): array => [
+                'month' => $month,
+                'total' => (int) ($totals[$month] ?? 0),
+            ])
+            ->values()
+            ->all();
     }
 }

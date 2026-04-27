@@ -28,7 +28,6 @@ class SavePricingPlanRequest extends FormRequest
             'duration_days' => ['required', 'integer', 'min:1'],
             'active_jobs_limit' => ['required', 'integer', 'min:0'],
             'recruiter_seat_limit' => ['required', 'integer', 'min:0'],
-            'ai_screening_quota' => ['required', 'integer', 'min:0'],
             'talent_search_quota' => ['required', 'integer', 'min:0'],
             'features' => ['nullable', 'string', 'max:5000'],
             'is_active' => ['nullable', 'boolean'],

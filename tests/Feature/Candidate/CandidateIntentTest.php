@@ -39,7 +39,9 @@ function makeJobWithIndustry(CandidateProfile $candidate, string $workMode = 're
 }
 
 test('viewing a job detail records a candidate job view', function () {
-    $candidateUser = User::factory()->candidate()->create();
+    $candidateUser = User::factory()->candidate()->create([
+        'onboarding_completed_at' => now(),
+    ]);
     $candidate = CandidateProfile::create(['user_id' => $candidateUser->id, 'full_name' => 'Test', 'work_mode_pref' => 'any']);
     $job = makeJobWithIndustry($candidate);
 
@@ -53,7 +55,9 @@ test('viewing a job detail records a candidate job view', function () {
 });
 
 test('viewing the same job multiple times increments view_count', function () {
-    $candidateUser = User::factory()->candidate()->create();
+    $candidateUser = User::factory()->candidate()->create([
+        'onboarding_completed_at' => now(),
+    ]);
     $candidate = CandidateProfile::create(['user_id' => $candidateUser->id, 'full_name' => 'Test', 'work_mode_pref' => 'any']);
     $job = makeJobWithIndustry($candidate);
 
@@ -72,7 +76,9 @@ test('viewing the same job multiple times increments view_count', function () {
 test('saving a job dispatches ComputeCandidateIntentJob', function () {
     Queue::fake();
 
-    $candidateUser = User::factory()->candidate()->create();
+    $candidateUser = User::factory()->candidate()->create([
+        'onboarding_completed_at' => now(),
+    ]);
     $candidate = CandidateProfile::create(['user_id' => $candidateUser->id, 'full_name' => 'Test', 'work_mode_pref' => 'any']);
     $job = makeJobWithIndustry($candidate);
 
@@ -83,7 +89,9 @@ test('saving a job dispatches ComputeCandidateIntentJob', function () {
 
 test('ComputeCandidateIntentJob computes intent signals from saved jobs', function () {
     $industry = Industry::create(['name' => 'Teknologi-'.uniqid(), 'slug' => 'teknologi-'.uniqid()]);
-    $candidateUser = User::factory()->candidate()->create();
+    $candidateUser = User::factory()->candidate()->create([
+        'onboarding_completed_at' => now(),
+    ]);
     $candidate = CandidateProfile::create(['user_id' => $candidateUser->id, 'full_name' => 'Test', 'work_mode_pref' => 'any']);
     $job = makeJobWithIndustry($candidate, 'remote', $industry->id);
 
@@ -103,7 +111,9 @@ test('ComputeCandidateIntentJob weights applications higher than saves', functio
     $industry1 = Industry::create(['name' => 'Keuangan-'.uniqid(), 'slug' => 'keuangan-'.uniqid()]);
     $industry2 = Industry::create(['name' => 'Kesehatan-'.uniqid(), 'slug' => 'kesehatan-'.uniqid()]);
 
-    $candidateUser = User::factory()->candidate()->create();
+    $candidateUser = User::factory()->candidate()->create([
+        'onboarding_completed_at' => now(),
+    ]);
     $candidate = CandidateProfile::create(['user_id' => $candidateUser->id, 'full_name' => 'Test', 'work_mode_pref' => 'any']);
 
     $savedJob = makeJobWithIndustry($candidate, 'hybrid', $industry1->id);
@@ -136,7 +146,9 @@ test('ComputeCandidateIntentJob weights applications higher than saves', functio
 });
 
 test('intent signal updates existing record on recompute', function () {
-    $candidateUser = User::factory()->candidate()->create();
+    $candidateUser = User::factory()->candidate()->create([
+        'onboarding_completed_at' => now(),
+    ]);
     $candidate = CandidateProfile::create(['user_id' => $candidateUser->id, 'full_name' => 'Test', 'work_mode_pref' => 'any']);
     $job = makeJobWithIndustry($candidate);
 

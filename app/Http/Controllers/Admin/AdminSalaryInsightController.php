@@ -5,14 +5,17 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\Admin\RecordActivity;
 use App\Http\Controllers\Admin\Concerns\BuildsAdminPages;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ImportSalaryInsightRequest;
 use App\Http\Requests\Admin\SaveSalaryInsightRequest;
 use App\Models\Company;
 use App\Models\Industry;
 use App\Models\SalaryInsight;
+use App\Services\SalaryInsightCsvImporter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use InvalidArgumentException;
 
 class AdminSalaryInsightController extends Controller
 {
@@ -21,10 +24,12 @@ class AdminSalaryInsightController extends Controller
     public function index(Request $request): Response
     {
         $insights = SalaryInsight::query()
-            ->select(['id', 'company_id', 'industry_id', 'job_title', 'salary_min', 'salary_median', 'salary_max', 'source_count', 'published_at', 'created_at'])
+            ->select(['id', 'company_id', 'industry_id', 'job_title', 'location_city', 'source_name', 'dataset_date', 'salary_min', 'salary_median', 'salary_max', 'source_count', 'published_at', 'created_at'])
             ->with(['company:id,name', 'industry:id,name'])
             ->when($request->filled('search'), fn ($query) => $query->where('job_title', 'like', '%'.$request->string('search')->toString().'%'))
             ->when($request->filled('industry_id'), fn ($query) => $query->where('industry_id', $request->integer('industry_id')))
+            ->when($request->filled('source_name'), fn ($query) => $query->where('source_name', 'like', '%'.$request->string('source_name')->toString().'%'))
+            ->when($request->filled('dataset_date'), fn ($query) => $query->whereDate('dataset_date', $request->string('dataset_date')->toString()))
             ->latest()
             ->paginate(15)
             ->withQueryString()
@@ -33,6 +38,9 @@ class AdminSalaryInsightController extends Controller
                 'job_title' => $insight->job_title,
                 'industry' => $insight->industry?->name ?? '-',
                 'company' => $insight->company?->name ?? '-',
+                'location_city' => $insight->location_city ?? '-',
+                'source_name' => $insight->source_name ?? '-',
+                'dataset_date' => $insight->dataset_date?->format('Y-m-d') ?? '-',
                 'salary_min' => $this->money($insight->salary_min),
                 'salary_median' => $this->money($insight->salary_median),
                 'salary_max' => $this->money($insight->salary_max),
@@ -48,15 +56,23 @@ class AdminSalaryInsightController extends Controller
             'title' => 'Kelola Salary Insight',
             'description' => 'Tambah, edit, publish, dan hapus insight gaji per role, industri, dan perusahaan.',
             'indexAction' => route('admin.salary-insights.index'),
-            'createAction' => $this->action('Tambah Salary Insight', route('admin.salary-insights.store'), 'Plus', 'post', 'default', null, null, $this->insightFields()),
+            'headerActions' => [
+                $this->action('Tambah Salary Insight', route('admin.salary-insights.store'), 'Plus', 'post', 'default', null, null, $this->insightFields()),
+                $this->action('Import CSV', route('admin.salary-insights.import'), 'Plus', 'post', 'outline', null, null, $this->importFields()),
+            ],
             'filters' => [
                 $this->field('search', 'Cari job title', 'search', $request->string('search')->toString()),
                 $this->field('industry_id', 'Industri', 'select', $request->string('industry_id')->toString(), $this->industryOptions()),
+                $this->field('source_name', 'Source', 'text', $request->string('source_name')->toString()),
+                $this->field('dataset_date', 'Tanggal Dataset', 'date', $request->string('dataset_date')->toString()),
             ],
             'columns' => [
                 ['key' => 'job_title', 'label' => 'Job title'],
                 ['key' => 'industry', 'label' => 'Industri'],
                 ['key' => 'company', 'label' => 'Company'],
+                ['key' => 'location_city', 'label' => 'Lokasi'],
+                ['key' => 'source_name', 'label' => 'Source'],
+                ['key' => 'dataset_date', 'label' => 'Dataset Date'],
                 ['key' => 'salary_min', 'label' => 'Min'],
                 ['key' => 'salary_median', 'label' => 'Median'],
                 ['key' => 'salary_max', 'label' => 'Max'],
@@ -118,6 +134,36 @@ class AdminSalaryInsightController extends Controller
         return back();
     }
 
+    public function import(
+        ImportSalaryInsightRequest $request,
+        SalaryInsightCsvImporter $importer,
+        RecordActivity $activity,
+    ): RedirectResponse {
+        $data = $request->validated();
+
+        try {
+            $summary = $importer->import(
+                filePath: $request->file('file')->getPathname(),
+                publish: (bool) ($data['publish'] ?? false),
+                sourceName: isset($data['source_name']) ? trim((string) $data['source_name']) : null,
+                datasetDate: isset($data['dataset_date']) ? trim((string) $data['dataset_date']) : null,
+            );
+        } catch (InvalidArgumentException $exception) {
+            return back()->withErrors(['file' => $exception->getMessage()]);
+        }
+
+        $activity->handle($request->user(), 'import_salary_insight_csv', null, [
+            'aggregated_rows' => $summary['aggregated_rows'],
+            'created' => $summary['created'],
+            'file' => $request->file('file')->getClientOriginalName(),
+            'updated' => $summary['updated'],
+        ]);
+
+        $this->flash("Import selesai. Dibuat {$summary['created']} dan diperbarui {$summary['updated']} insight.");
+
+        return back();
+    }
+
     private function money(?int $amount): string
     {
         return $amount === null ? '-' : 'Rp '.number_format($amount, 0, ',', '.');
@@ -144,12 +190,28 @@ class AdminSalaryInsightController extends Controller
     {
         return [
             $this->field('job_title', 'Job title', 'text', $insight?->job_title, [], ['required' => true]),
+            $this->field('location_city', 'Kota', 'text', $insight?->location_city),
+            $this->field('source_name', 'Source', 'text', $insight?->source_name),
+            $this->field('dataset_date', 'Tanggal Dataset', 'date', $insight?->dataset_date?->format('Y-m-d')),
             $this->field('industry_id', 'Industri', 'select', $insight?->industry_id, $this->industryOptions()),
             $this->field('company_id', 'Company', 'select', $insight?->company_id, $this->companyOptions()),
             $this->field('salary_min', 'Salary min', 'currency', $insight?->salary_min ?? 0, [], ['min' => 0]),
             $this->field('salary_median', 'Salary median', 'currency', $insight?->salary_median ?? 0, [], ['min' => 0]),
             $this->field('salary_max', 'Salary max', 'currency', $insight?->salary_max ?? 0, [], ['min' => 0]),
             $this->field('source_count', 'Source count', 'number', $insight?->source_count ?? 0, [], ['min' => 0]),
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function importFields(): array
+    {
+        return [
+            $this->field('file', 'File CSV', 'file', null, [], ['required' => true]),
+            $this->field('source_name', 'Source', 'text', 'LinkedIn + JobStreet'),
+            $this->field('dataset_date', 'Tanggal Dataset', 'date', now()->format('Y-m-d')),
+            $this->field('publish', 'Publish setelah import', 'checkbox', true),
         ];
     }
 

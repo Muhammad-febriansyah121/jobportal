@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Employer;
 
 use App\Actions\Employer\ResolveEmployerCompany;
 use App\Http\Controllers\Controller;
+use App\Models\JobListing;
 use App\Models\Payment;
 use App\Models\PricingPlan;
 use App\Services\PakasirService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -45,18 +47,35 @@ class EmployerBillingController extends Controller
             if ($sub !== null) {
                 $plan = $sub->plan;
 
+                $activeJobsCount = JobListing::query()
+                    ->where('company_id', $company->id)
+                    ->where('status', 'published')
+                    ->count();
+
+                $now = Carbon::now();
+                $totalDays = $sub->starts_at && $sub->ends_at
+                    ? max(1, (int) $sub->starts_at->diffInDays($sub->ends_at))
+                    : null;
+                $daysRemaining = $sub->ends_at
+                    ? max(0, (int) $now->diffInDays($sub->ends_at, false))
+                    : null;
+
                 $activeSubscription = [
                     'id' => $sub->id,
+                    'plan_id' => $plan?->id,
                     'plan_name' => $plan?->name ?? '-',
                     'status' => $sub->status,
                     'starts_at' => $sub->starts_at?->format('d M Y'),
                     'ends_at' => $sub->ends_at?->format('d M Y'),
                     'renews_at' => $sub->renews_at?->format('d M Y'),
+                    'days_total' => $totalDays,
+                    'days_remaining' => $daysRemaining,
                     'active_jobs_limit' => $plan?->active_jobs_limit,
+                    'active_jobs_used' => $activeJobsCount,
                     'recruiter_seat_limit' => $plan?->recruiter_seat_limit,
                     'ai_screening_quota' => $plan?->ai_screening_quota,
                     'talent_search_quota' => $plan?->talent_search_quota,
-                    'features' => $plan?->features_json ?? [],
+                    'features' => $plan?->normalizedFeatures() ?? [],
                 ];
 
                 $payments = $sub->payments
@@ -88,7 +107,7 @@ class EmployerBillingController extends Controller
                 'recruiter_seat_limit' => $plan->recruiter_seat_limit,
                 'ai_screening_quota' => $plan->ai_screening_quota,
                 'talent_search_quota' => $plan->talent_search_quota,
-                'features' => $plan->features_json ?? [],
+                'features' => $plan->normalizedFeatures(),
             ])
             ->all();
 

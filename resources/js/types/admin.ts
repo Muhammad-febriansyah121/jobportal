@@ -10,6 +10,7 @@ export type AdminField = {
         | 'checkbox'
         | 'currency'
         | 'date'
+        | 'file'
         | 'number'
         | 'search'
         | 'select'
@@ -50,9 +51,16 @@ export type AdminImageCell = {
     alt?: string | null;
 };
 
+export type AdminLinkCell = {
+    type: 'link';
+    href: string;
+    label: string;
+};
+
 export type AdminCell =
     | AdminBadgeCell
     | AdminImageCell
+    | AdminLinkCell
     | boolean
     | number
     | string

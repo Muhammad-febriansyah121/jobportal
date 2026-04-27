@@ -3,6 +3,7 @@ import { CalendarDays, Tag } from 'lucide-react';
 import { AdminActionList } from '@/components/admin/admin-action';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { Badge } from '@/components/ui/badge';
+import { useTranslate } from '@/hooks/use-translate';
 import type { AdminAction } from '@/types';
 
 type CareerResourceDetail = {
@@ -35,6 +36,7 @@ export default function CareerResourceShow({
     resource,
     actions = [],
 }: CareerResourceShowProps) {
+    const { t } = useTranslate();
     return (
         <>
             <Head title={title} />
@@ -48,7 +50,7 @@ export default function CareerResourceShow({
 
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex flex-wrap gap-2">
-                        <Badge className="bg-[#f45113] text-white">
+                        <Badge className="bg-[#01296A] text-white">
                             {resource.type_label}
                         </Badge>
                         <Badge variant="outline">
@@ -72,14 +74,14 @@ export default function CareerResourceShow({
                             className="aspect-[16/6] w-full object-cover"
                         />
                     ) : (
-                        <div className="flex aspect-[16/6] w-full items-center justify-center bg-[#fff8f4] text-sm font-bold text-[#f45113]">
-                            Belum ada thumbnail
+                        <div className="flex aspect-[16/6] w-full items-center justify-center bg-[#eff4ff] text-sm font-bold text-[#01296A]">
+                            {t('admin.career_resources_show.no_thumbnail')}
                         </div>
                     )}
 
                     <div className="space-y-6 p-6">
                         <header className="space-y-3">
-                            <p className="text-sm font-semibold text-[#f45113]">
+                            <p className="text-sm font-semibold text-[#01296A]">
                                 /{resource.slug}
                             </p>
                             <h1 className="max-w-4xl text-3xl font-bold tracking-tight text-[#111827]">
@@ -88,17 +90,17 @@ export default function CareerResourceShow({
                             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                                 <span className="inline-flex items-center gap-2">
                                     <CalendarDays className="size-4" />
-                                    Published:{' '}
-                                    {resource.published_at ?? 'Draft'}
+                                    {t('admin.career_resources_show.published')}:{' '}
+                                    {resource.published_at ?? t('admin.career_resources_show.draft')}
                                 </span>
                                 <span>
-                                    Updated: {resource.updated_at ?? '-'}
+                                    {t('admin.career_resources_show.updated')}: {resource.updated_at ?? '-'}
                                 </span>
                             </div>
                         </header>
 
                         <div
-                            className="max-w-4xl text-base leading-8 text-[#313947] [&_blockquote]:border-l-4 [&_blockquote]:border-[#f45113] [&_blockquote]:bg-[#fff8f4] [&_blockquote]:px-4 [&_blockquote]:py-2 [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-2xl [&_h2]:font-bold [&_h3]:text-xl [&_h3]:font-bold [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-4 [&_strong]:font-bold [&_ul]:list-disc [&_ul]:pl-6"
+                            className="max-w-4xl text-base leading-8 text-[#313947] [&_blockquote]:border-l-4 [&_blockquote]:border-[#01296A] [&_blockquote]:bg-[#eff4ff] [&_blockquote]:px-4 [&_blockquote]:py-2 [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-2xl [&_h2]:font-bold [&_h3]:text-xl [&_h3]:font-bold [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-4 [&_strong]:font-bold [&_ul]:list-disc [&_ul]:pl-6"
                             dangerouslySetInnerHTML={{
                                 __html: resource.content,
                             }}

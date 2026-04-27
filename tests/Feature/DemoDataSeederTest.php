@@ -31,6 +31,7 @@ use App\Models\Skill;
 use App\Models\Subscription;
 use App\Models\UserNotification;
 use Database\Seeders\DemoDataSeeder;
+use Illuminate\Support\Facades\Storage;
 
 test('demo data seeder creates the requested minimum dataset', function () {
     $this->seed(DemoDataSeeder::class);
@@ -65,6 +66,8 @@ test('demo data seeder creates the requested minimum dataset', function () {
     expect(Payment::count())->toBeGreaterThanOrEqual(3);
     expect(Report::count())->toBeGreaterThanOrEqual(5);
     expect(CareerResource::count())->toBeGreaterThanOrEqual(8);
+    Storage::disk('public')->assertExists('demo/cvs/candidate-1.pdf');
+    Storage::disk('public')->assertExists('demo/cvs/candidate-10.pdf');
 });
 
 test('demo data seeder can be rerun without duplicating keyed records', function () {

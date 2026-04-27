@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'owner_id', 'industry_id', 'name', 'slug', 'logo_url', 'cover_url', 'description',
-    'company_size', 'website', 'hq_city', 'hq_province', 'address',
+    'culture', 'benefits', 'company_size', 'website', 'hq_city', 'hq_province', 'address',
     'is_verified', 'verification_status', 'is_active', 'suspended_at', 'suspension_reason',
     'response_rate', 'median_response_hours', 'trust_score',
 ])]
@@ -64,6 +64,11 @@ class Company extends Model
     public function salaryInsights(): HasMany
     {
         return $this->hasMany(SalaryInsight::class);
+    }
+
+    public function talentCandidates(): HasMany
+    {
+        return $this->hasMany(EmployerTalentCandidate::class);
     }
 
     public function subscriptions(): HasMany

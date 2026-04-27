@@ -5,6 +5,7 @@ import EmployerCompanyController from '@/actions/App/Http/Controllers/Employer/E
 import EmployerCompanyVerificationController from '@/actions/App/Http/Controllers/Employer/EmployerCompanyVerificationController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { LocationCombobox } from '@/components/location-combobox';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +17,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslate } from '@/hooks/use-translate';
 import { edit } from '@/routes/employer/company';
 import { index as verificationIndex } from '@/routes/employer/verification';
 
@@ -27,6 +29,8 @@ type CompanyPageProps = {
         logo_url?: string | null;
         cover_url?: string | null;
         description?: string | null;
+        culture?: string | null;
+        benefits?: string | null;
         company_size?: string | null;
         website?: string | null;
         hq_city?: string | null;
@@ -58,13 +62,19 @@ export default function EmployerCompany({
     verification,
     canSubmitVerification,
 }: CompanyPageProps) {
+    const { t } = useTranslate();
     const isOnboarding = company === null;
+    const [selectedProvince, setSelectedProvince] = useState(
+        company?.hq_province ?? '',
+    );
 
     return (
         <>
             <Head
                 title={
-                    isOnboarding ? 'Onboarding Perusahaan' : 'Profil Perusahaan'
+                    isOnboarding
+                        ? t('employer.company.title_onboarding')
+                        : t('employer.company.title_profile')
                 }
             />
 
@@ -72,21 +82,19 @@ export default function EmployerCompany({
                 <Heading
                     title={
                         isOnboarding
-                            ? 'Onboarding Perusahaan'
-                            : 'Profil Perusahaan'
+                            ? t('employer.company.title_onboarding')
+                            : t('employer.company.title_profile')
                     }
-                    description="Lengkapi data dasar perusahaan agar trust signal dan operasional hiring siap dipakai."
+                    description={t('employer.company.description')}
                 />
 
                 <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
                     <div className="space-y-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Informasi perusahaan</CardTitle>
+                                <CardTitle>{t('employer.company.info_title')}</CardTitle>
                                 <CardDescription>
-                                    Data ini akan tampil di area internal
-                                    employer dan siap dipakai untuk profil
-                                    public berikutnya.
+                                    {t('employer.company.info_desc')}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -99,7 +107,7 @@ export default function EmployerCompany({
                                         <>
                                             <div className="grid gap-4 md:grid-cols-2">
                                                 <Field
-                                                    label="Nama perusahaan"
+                                                    label={t('employer.company.company_name')}
                                                     name="name"
                                                     error={errors.name}
                                                 >
@@ -108,14 +116,14 @@ export default function EmployerCompany({
                                                         defaultValue={
                                                             company?.name ?? ''
                                                         }
-                                                        placeholder="PT Karivia Indonesia"
+                                                        placeholder={t('employer.company.company_name_placeholder')}
                                                     />
                                                 </Field>
                                             </div>
 
                                             <div className="grid gap-4 md:grid-cols-2">
                                                 <Field
-                                                    label="Industri"
+                                                    label={t('employer.company.industry')}
                                                     name="industry_id"
                                                     error={errors.industry_id}
                                                 >
@@ -128,7 +136,7 @@ export default function EmployerCompany({
                                                         className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none"
                                                     >
                                                         <option value="">
-                                                            Pilih industri
+                                                            {t('employer.company.select_industry')}
                                                         </option>
                                                         {industries.map(
                                                             (industry) => (
@@ -149,7 +157,7 @@ export default function EmployerCompany({
                                                     </select>
                                                 </Field>
                                                 <Field
-                                                    label="Ukuran perusahaan"
+                                                    label={t('employer.company.company_size')}
                                                     name="company_size"
                                                     error={errors.company_size}
                                                 >
@@ -162,7 +170,7 @@ export default function EmployerCompany({
                                                         className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none"
                                                     >
                                                         <option value="">
-                                                            Pilih ukuran
+                                                            {t('employer.company.select_size')}
                                                         </option>
                                                         {companySizes.map(
                                                             (size) => (
@@ -180,7 +188,7 @@ export default function EmployerCompany({
 
                                             <div className="grid gap-4 md:grid-cols-2">
                                                 <Field
-                                                    label="Website"
+                                                    label={t('employer.company.website')}
                                                     name="website"
                                                     error={errors.website}
                                                 >
@@ -198,8 +206,8 @@ export default function EmployerCompany({
                                             {/* Logo & Cover image uploads */}
                                             <ImageUploadField
                                                 name="logo"
-                                                label="Logo perusahaan"
-                                                hint="Disarankan ukuran 400×400 px, format PNG/JPG, maks 3 MB"
+                                                label={t('employer.company.logo')}
+                                                hint={t('employer.company.logo_hint')}
                                                 currentUrl={company?.logo_url}
                                                 shape="square"
                                                 error={errors.logo}
@@ -207,15 +215,15 @@ export default function EmployerCompany({
 
                                             <ImageUploadField
                                                 name="cover"
-                                                label="Cover / banner"
-                                                hint="Disarankan ukuran 1200×400 px, format PNG/JPG, maks 4 MB"
+                                                label={t('employer.company.cover')}
+                                                hint={t('employer.company.cover_hint')}
                                                 currentUrl={company?.cover_url}
                                                 shape="wide"
                                                 error={errors.cover}
                                             />
 
                                             <Field
-                                                label="Deskripsi"
+                                                label={t('employer.company.description_field')}
                                                 name="description"
                                                 error={errors.description}
                                             >
@@ -227,43 +235,91 @@ export default function EmployerCompany({
                                                     }
                                                     rows={5}
                                                     className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                                                    placeholder="Jelaskan nilai utama, fokus bisnis, dan budaya kerja perusahaan."
+                                                    placeholder={t('employer.company.description_placeholder')}
                                                 />
                                             </Field>
 
                                             <div className="grid gap-4 md:grid-cols-2">
                                                 <Field
-                                                    label="Kota kantor pusat"
-                                                    name="hq_city"
-                                                    error={errors.hq_city}
+                                                    label={t('employer.company.culture')}
+                                                    name="culture"
+                                                    error={errors.culture}
+                                                    hint={t('employer.company.culture_hint')}
                                                 >
-                                                    <Input
-                                                        name="hq_city"
+                                                    <textarea
+                                                        name="culture"
                                                         defaultValue={
-                                                            company?.hq_city ??
+                                                            company?.culture ??
                                                             ''
                                                         }
-                                                        placeholder="Jakarta Selatan"
+                                                        rows={5}
+                                                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                                        placeholder={t('employer.company.culture_placeholder')}
                                                     />
                                                 </Field>
+
                                                 <Field
-                                                    label="Provinsi"
+                                                    label={t('employer.company.benefits')}
+                                                    name="benefits"
+                                                    error={errors.benefits}
+                                                    hint={t('employer.company.benefits_hint')}
+                                                >
+                                                    <textarea
+                                                        name="benefits"
+                                                        defaultValue={
+                                                            company?.benefits ??
+                                                            ''
+                                                        }
+                                                        rows={5}
+                                                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                                        placeholder={t('employer.company.benefits_placeholder')}
+                                                    />
+                                                </Field>
+                                            </div>
+
+                                            <div className="grid gap-4 md:grid-cols-2">
+                                                <Field
+                                                    label={t('employer.company.province')}
                                                     name="hq_province"
                                                     error={errors.hq_province}
                                                 >
-                                                    <Input
+                                                    <LocationCombobox
                                                         name="hq_province"
+                                                        fetchUrl="/regions/provinces"
                                                         defaultValue={
                                                             company?.hq_province ??
                                                             ''
                                                         }
-                                                        placeholder="DKI Jakarta"
+                                                        placeholder={t('employer.company.select_province')}
+                                                        onChange={(val) =>
+                                                            setSelectedProvince(
+                                                                val,
+                                                            )
+                                                        }
+                                                    />
+                                                </Field>
+                                                <Field
+                                                    label={t('employer.company.city')}
+                                                    name="hq_city"
+                                                    error={errors.hq_city}
+                                                >
+                                                    <LocationCombobox
+                                                        name="hq_city"
+                                                        fetchUrl={`/regions/cities?province=${encodeURIComponent(selectedProvince)}`}
+                                                        defaultValue={
+                                                            company?.hq_city ??
+                                                            ''
+                                                        }
+                                                        placeholder={t('employer.company.select_city')}
+                                                        resetKey={
+                                                            selectedProvince
+                                                        }
                                                     />
                                                 </Field>
                                             </div>
 
                                             <Field
-                                                label="Alamat lengkap"
+                                                label={t('employer.company.address')}
                                                 name="address"
                                                 error={errors.address}
                                             >
@@ -274,14 +330,14 @@ export default function EmployerCompany({
                                                     }
                                                     rows={3}
                                                     className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                                                    placeholder="Alamat kantor pusat perusahaan."
+                                                    placeholder={t('employer.company.address_placeholder')}
                                                 />
                                             </Field>
 
                                             <Button disabled={processing}>
                                                 {isOnboarding
-                                                    ? 'Simpan Profil Perusahaan'
-                                                    : 'Perbarui Profil Perusahaan'}
+                                                    ? t('employer.company.save_onboarding')
+                                                    : t('employer.company.save_profile')}
                                             </Button>
                                         </>
                                     )}
@@ -289,15 +345,13 @@ export default function EmployerCompany({
                             </CardContent>
                         </Card>
 
-                        {/* Dokumen Legalitas */}
+                        {/* Legal Documents */}
                         {company !== null && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>Dokumen legalitas</CardTitle>
+                                    <CardTitle>{t('employer.company.legal_docs_title')}</CardTitle>
                                     <CardDescription>
-                                        NIB, NPWP, dan akta/dokumen pendukung
-                                        untuk verifikasi perusahaan oleh admin
-                                        Karivia.
+                                        {t('employer.company.legal_docs_desc')}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
@@ -305,20 +359,20 @@ export default function EmployerCompany({
                                     verification !== null ? (
                                         <div className="space-y-4">
                                             <div className="grid gap-4 sm:grid-cols-3">
-                                                <Tile label="Nama legal">
+                                                <Tile label={t('employer.company.legal_name')}>
                                                     <p className="text-sm font-medium">
                                                         {
                                                             verification.legal_name
                                                         }
                                                     </p>
                                                 </Tile>
-                                                <Tile label="NIB">
+                                                <Tile label={t('employer.company.nib')}>
                                                     <p className="text-sm font-medium">
                                                         {verification.nib ??
                                                             '—'}
                                                     </p>
                                                 </Tile>
-                                                <Tile label="NPWP">
+                                                <Tile label={t('employer.company.npwp')}>
                                                     <p className="text-sm font-medium">
                                                         {verification.npwp ??
                                                             '—'}
@@ -334,20 +388,18 @@ export default function EmployerCompany({
                                                     rel="noopener noreferrer"
                                                     className="inline-flex items-center gap-2 text-sm text-primary underline-offset-4 hover:underline"
                                                 >
-                                                    Lihat dokumen akta /
-                                                    legalitas
+                                                    {t('employer.company.view_legal_doc')}
                                                 </a>
                                             )}
                                             <p className="text-xs text-muted-foreground">
-                                                Status:{' '}
+                                                {t('employer.company.verification_status_label')}{' '}
                                                 <span className="font-medium capitalize">
                                                     {verification.status.replaceAll(
                                                         '_',
                                                         ' ',
                                                     )}
                                                 </span>
-                                                . Edit hanya tersedia setelah
-                                                ditolak atau diminta revisi.
+                                                . {t('employer.company.edit_only_after_rejection')}
                                             </p>
                                         </div>
                                     ) : canSubmitVerification ? (
@@ -359,7 +411,7 @@ export default function EmployerCompany({
                                             {({ processing, errors }) => (
                                                 <>
                                                     <Field
-                                                        label="Nama legal perusahaan"
+                                                        label={t('employer.company.legal_company_name')}
                                                         name="legal_name"
                                                         error={
                                                             errors.legal_name
@@ -371,13 +423,13 @@ export default function EmployerCompany({
                                                                 verification?.legal_name ??
                                                                 company.name
                                                             }
-                                                            placeholder="PT Karivia Indonesia"
+                                                            placeholder={t('employer.company.company_name_placeholder')}
                                                         />
                                                     </Field>
 
                                                     <div className="grid gap-4 sm:grid-cols-2">
                                                         <Field
-                                                            label="NIB (Nomor Induk Berusaha)"
+                                                            label={t('employer.company.nib_full')}
                                                             name="nib"
                                                             error={errors.nib}
                                                         >
@@ -391,7 +443,7 @@ export default function EmployerCompany({
                                                             />
                                                         </Field>
                                                         <Field
-                                                            label="NPWP"
+                                                            label={t('employer.company.npwp')}
                                                             name="npwp"
                                                             error={errors.npwp}
                                                         >
@@ -408,8 +460,8 @@ export default function EmployerCompany({
 
                                                     <DocumentUploadField
                                                         name="document"
-                                                        label="Akta / dokumen legalitas"
-                                                        hint="Upload akta pendirian, SK Kemenkumham, atau dokumen legal lainnya. Format PDF/JPG/PNG, maks 5 MB."
+                                                        label={t('employer.company.legal_document')}
+                                                        hint={t('employer.company.legal_document_hint')}
                                                         currentUrl={
                                                             verification?.document_url
                                                         }
@@ -419,20 +471,19 @@ export default function EmployerCompany({
                                                     <Button
                                                         disabled={processing}
                                                     >
-                                                        Kirim untuk Diverifikasi
+                                                        {t('employer.company.submit_verification')}
                                                     </Button>
                                                 </>
                                             )}
                                         </Form>
                                     ) : (
                                         <p className="text-sm text-muted-foreground">
-                                            Belum ada dokumen legalitas yang
-                                            dikirim.{' '}
+                                            {t('employer.company.no_legal_docs')}{' '}
                                             <Link
                                                 href={verificationIndex()}
                                                 className="text-primary underline-offset-4 hover:underline"
                                             >
-                                                Submit verifikasi sekarang
+                                                {t('employer.company.submit_verification_now')}
                                             </Link>
                                         </p>
                                     )}
@@ -445,14 +496,13 @@ export default function EmployerCompany({
                     <div className="space-y-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Status trust</CardTitle>
+                                <CardTitle>{t('employer.company.trust_status')}</CardTitle>
                                 <CardDescription>
-                                    Ringkasan verifikasi dan paket aktif
-                                    perusahaan saat ini.
+                                    {t('employer.company.trust_status_desc')}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <Tile label="Status verifikasi">
+                                <Tile label={t('employer.company.verification_status')}>
                                     <Badge
                                         variant={
                                             company?.verification_status ===
@@ -467,25 +517,25 @@ export default function EmployerCompany({
                                         ) ?? 'unverified'}
                                     </Badge>
                                 </Tile>
-                                <Tile label="Paket aktif">
+                                <Tile label={t('employer.company.active_plan')}>
                                     <span className="text-sm font-medium text-foreground">
                                         {company?.subscription_name ??
-                                            'Belum ada paket aktif'}
+                                            t('employer.company.no_active_plan')}
                                     </span>
                                 </Tile>
                                 {company ? (
                                     <Button variant="outline" asChild>
                                         <Link href={verificationIndex()}>
-                                            Kelola verifikasi
+                                            {t('employer.company.manage_verification')}
                                         </Link>
                                     </Button>
                                 ) : null}
                                 {company?.verification_rejection_reason ? (
-                                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                                        <p className="text-sm font-medium text-amber-800">
-                                            Catatan verifikasi
+                                    <div className="rounded-xl border border-secondary-200 bg-secondary-50 p-4">
+                                        <p className="text-sm font-medium text-secondary-800">
+                                            {t('employer.company.verification_notes')}
                                         </p>
-                                        <p className="mt-2 text-sm text-amber-700">
+                                        <p className="mt-2 text-sm text-secondary-700">
                                             {
                                                 company.verification_rejection_reason
                                             }
@@ -497,20 +547,12 @@ export default function EmployerCompany({
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Checklist onboarding</CardTitle>
+                                <CardTitle>{t('employer.company.onboarding_checklist')}</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3 text-sm text-muted-foreground">
-                                <p>
-                                    1. Isi identitas, industri, dan deskripsi
-                                    perusahaan.
-                                </p>
-                                <p>
-                                    2. Lengkapi website dan lokasi kantor pusat.
-                                </p>
-                                <p>
-                                    3. Simpan profil, lalu lanjut ke lowongan
-                                    pertama.
-                                </p>
+                                <p>{t('employer.company.checklist_1')}</p>
+                                <p>{t('employer.company.checklist_2')}</p>
+                                <p>{t('employer.company.checklist_3')}</p>
                             </CardContent>
                         </Card>
                     </div>
@@ -524,17 +566,20 @@ function Field({
     label,
     name,
     error,
+    hint,
     children,
 }: {
     label: string;
     name: string;
     error?: string;
+    hint?: string;
     children: React.ReactNode;
 }) {
     return (
         <div className="grid gap-2">
             <Label htmlFor={name}>{label}</Label>
             {children}
+            {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
             <InputError message={error} />
         </div>
     );
@@ -570,11 +615,13 @@ function ImageUploadField({
     shape: 'square' | 'wide';
     error?: string;
 }) {
+    const { t } = useTranslate();
     const [preview, setPreview] = useState<string | null>(currentUrl ?? null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+
         if (file) {
             setPreview(URL.createObjectURL(file));
         }
@@ -583,6 +630,7 @@ function ImageUploadField({
     const handleClear = (e: React.MouseEvent) => {
         e.stopPropagation();
         setPreview(null);
+
         if (inputRef.current) {
             inputRef.current.value = '';
         }
@@ -613,7 +661,7 @@ function ImageUploadField({
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                             <Upload className="size-5 text-white" />
                             <span className="text-xs font-medium text-white">
-                                Ganti gambar
+                                {t('employer.company.change_image')}
                             </span>
                         </div>
                         {/* Clear button */}
@@ -621,7 +669,7 @@ function ImageUploadField({
                             type="button"
                             onClick={handleClear}
                             className="absolute top-1.5 right-1.5 z-10 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/80"
-                            title="Hapus gambar"
+                            title={t('employer.company.remove_image')}
                         >
                             <X className="size-3.5" />
                         </button>
@@ -631,11 +679,11 @@ function ImageUploadField({
                         <ImageIcon className={isSquare ? 'size-7' : 'size-8'} />
                         <div className="text-center">
                             <p className="text-sm font-medium">
-                                Klik untuk upload
+                                {t('employer.company.upload_click')}
                             </p>
                             {!isSquare && (
                                 <p className="mt-0.5 text-xs">
-                                    atau drag &amp; drop file ke sini
+                                    {t('employer.company.upload_drag')}
                                 </p>
                             )}
                         </div>
@@ -671,11 +719,13 @@ function DocumentUploadField({
     currentUrl?: string | null;
     error?: string;
 }) {
+    const { t } = useTranslate();
     const [fileName, setFileName] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+
         if (file) {
             setFileName(file.name);
         }
@@ -684,6 +734,7 @@ function DocumentUploadField({
     const handleClear = (e: React.MouseEvent) => {
         e.stopPropagation();
         setFileName(null);
+
         if (inputRef.current) {
             inputRef.current.value = '';
         }
@@ -704,11 +755,11 @@ function DocumentUploadField({
                         </p>
                     ) : currentUrl ? (
                         <p className="truncate text-sm text-muted-foreground">
-                            File sudah ada — klik untuk ganti
+                            {t('employer.company.file_exists')}
                         </p>
                     ) : (
                         <p className="text-sm text-muted-foreground">
-                            Klik untuk upload dokumen
+                            {t('employer.company.upload_document')}
                         </p>
                     )}
                 </div>
@@ -717,7 +768,7 @@ function DocumentUploadField({
                         type="button"
                         onClick={handleClear}
                         className="shrink-0 rounded-full p-1 text-muted-foreground hover:text-foreground"
-                        title="Hapus"
+                        title={t('employer.company.remove')}
                     >
                         <X className="size-4" />
                     </button>
@@ -731,7 +782,7 @@ function DocumentUploadField({
                     className="text-xs text-primary underline-offset-4 hover:underline"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    Lihat dokumen saat ini
+                    {t('employer.company.view_current_doc')}
                 </a>
             )}
             {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
@@ -751,7 +802,7 @@ function DocumentUploadField({
 EmployerCompany.layout = {
     breadcrumbs: [
         {
-            title: 'Profil Perusahaan',
+            title: 'employer.company.breadcrumb',
             href: edit(),
         },
     ],

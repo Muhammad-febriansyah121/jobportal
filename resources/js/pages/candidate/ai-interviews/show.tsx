@@ -1,8 +1,29 @@
-import { Form, Head } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import {
+    Bot,
+    CalendarDays,
+    CheckCircle2,
+    Clock3,
+    Hand,
+    Info,
+    ListChecks,
+    Mic,
+    MicOff,
+    PhoneOff,
+    Radio,
+    RotateCcw,
+    ShieldCheck,
+    Signal,
+    SkipForward,
+    Sparkles,
+    Video,
+    VideoOff,
+    X,
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import CandidateAiInterviewController from '@/actions/App/Http/Controllers/Candidate/CandidateAiInterviewController';
-import Heading from '@/components/heading';
-import { Field, Textarea } from '@/components/candidate/candidate-form';
-import { StatusBadge } from '@/components/candidate/candidate-ui';
+import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -11,20 +32,56 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { index, show } from '@/routes/candidate/ai-interviews';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useTranslate } from '@/hooks/use-translate';
+import { cn } from '@/lib/utils';
+import { feedback, index, show } from '@/routes/candidate/ai-interviews';
 
 type AiInterviewShowProps = {
     session: {
         id: number;
+        application_id: number;
         job_title?: string | null;
         company?: string | null;
+        candidate_name?: string | null;
+        candidate_headline?: string | null;
         status: string;
+        interview_mode?: string | null;
+        interview_language?: 'id' | 'en' | null;
+        scheduled_at?: string | null;
+        duration_minutes?: number | null;
+        meeting_url?: string | null;
+        voice?: string | null;
         started_at?: string | null;
         completed_at?: string | null;
+        candidate_confirmed_at?: string | null;
+        declined_at?: string | null;
+        reschedule_requested_at?: string | null;
+        reschedule_proposed_at?: string | null;
+        reschedule_reason?: string | null;
+        reschedule_status?: string | null;
+        reschedule_reviewed_at?: string | null;
+        reschedule_rejected_reason?: string | null;
+        ai_intro: {
+            assistant_name: string;
+            assistant_role: string;
+            greeting: string;
+        };
+        reschedule_timeline?: Array<{
+            action: string;
+            actor_name?: string | null;
+            scheduled_at?: string | null;
+            reason?: string | null;
+            created_at?: string | null;
+        }>;
+        client_secret_url: string;
         questions: Array<{
             id: number;
             question: string;
             category?: string | null;
+            rubric?: string | null;
+            weight?: number | null;
+            allow_ai_followup?: boolean | null;
             answer_text?: string | null;
             ai_score?: number | null;
             ai_analysis?: string | null;
@@ -37,94 +94,1584 @@ type AiInterviewShowProps = {
     };
 };
 
+type TranscriptItem = {
+    speaker: 'AI' | 'Kandidat';
+    text: string;
+};
+
+type MicPermissionState = 'granted' | 'denied' | 'prompt' | 'unknown';
+type SignalQuality = 'excellent' | 'good' | 'fair' | 'poor' | 'offline';
+const TIMER_EXPIRED_REDIRECT_DELAY_MS = 30_000;
+
+function normalizeQuestionText(value: string): string {
+    return value
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 export default function CandidateAiInterviewShow({
     session,
 }: AiInterviewShowProps) {
+    const { t } = useTranslate();
+    const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+    const localStreamRef = useRef<MediaStream | null>(null);
+    const remoteStreamRef = useRef<MediaStream | null>(null);
+    const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+    const cameraPreviewRef = useRef<HTMLVideoElement | null>(null);
+    const cameraStreamRef = useRef<MediaStream | null>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const micLevelFrameRef = useRef<number | null>(null);
+    const statsIntervalRef = useRef<number | null>(null);
+    const dataChannelRef = useRef<RTCDataChannel | null>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const recordingChunksRef = useRef<Blob[]>([]);
+    const recordingStreamRef = useRef<MediaStream | null>(null);
+    const [hasSentGreeting, setHasSentGreeting] = useState(false);
+    const [consented, setConsented] = useState(false);
+    const [cameraStreamActive, setCameraStreamActive] = useState(false);
+    const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+    const [cameraError, setCameraError] = useState<string | null>(null);
+    const [interviewLanguage, setInterviewLanguage] = useState<'id' | 'en'>(
+        session.interview_language === 'en' ? 'en' : 'id',
+    );
+    const [currentQuestion, setCurrentQuestion] = useState(0);
+    const [connecting, setConnecting] = useState(false);
+    const [connected, setConnected] = useState(false);
+    const [muted, setMuted] = useState(false);
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
+    const [cameraDetected, setCameraDetected] = useState<boolean | null>(null);
+    const [microphoneDetected, setMicrophoneDetected] = useState<
+        boolean | null
+    >(null);
+    const [networkOnline, setNetworkOnline] = useState<boolean>(true);
+    const [micPermission, setMicPermission] =
+        useState<MicPermissionState>('unknown');
+    const [micLevel, setMicLevel] = useState(0);
+    const [signalQuality, setSignalQuality] = useState<SignalQuality>('good');
+    const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
+    const [hasQuestionStarted, setHasQuestionStarted] = useState(false);
+    const [activeAiQuestionText, setActiveAiQuestionText] = useState<
+        string | null
+    >(null);
+    const [timerExpiryNoticeVisible, setTimerExpiryNoticeVisible] =
+        useState(false);
+    const form = useForm({
+        answers: Object.fromEntries(
+            session.questions.map((question) => [
+                question.id,
+                question.answer_text ?? '',
+            ]),
+        ) as Record<number, string>,
+        live_transcript: '',
+    });
+    const rescheduleForm = useForm({
+        proposed_at: '',
+        reason: '',
+    });
+    const activeQuestion = session.questions[currentQuestion];
+    const interviewDurationMinutes = Math.max(
+        1,
+        Number(session.duration_minutes ?? 30),
+    );
+    const interviewDurationSeconds = interviewDurationMinutes * 60;
+    const remainingSeconds = Math.max(
+        interviewDurationSeconds - elapsedSeconds,
+        0,
+    );
+    const hasTimerExpired = remainingSeconds === 0;
+    const hasAutoSubmittedRef = useRef(false);
+    const autoSubmitTimeoutRef = useRef<number | null>(null);
+    const submitInterviewRef = useRef<() => Promise<void>>(async () => {});
+    const normalizedQuestionMap = useMemo(
+        () =>
+            session.questions.map((question, index) => ({
+                index,
+                normalized: normalizeQuestionText(question.question),
+            })),
+        [session.questions],
+    );
+    const isVoiceInterview = (session.interview_mode ?? 'voice') === 'voice';
+    const invitationPending =
+        session.status === 'scheduled' &&
+        !session.candidate_confirmed_at &&
+        !session.started_at &&
+        !session.declined_at;
+
+    const startCameraPreview = useCallback(async () => {
+        if (cameraStreamRef.current) {
+            return;
+        }
+
+        setCameraError(null);
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'user',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                },
+            });
+            cameraStreamRef.current = stream;
+            setCameraStreamActive(true);
+            setCameraStream(stream);
+            setCameraDetected(true);
+
+            if (cameraPreviewRef.current) {
+                cameraPreviewRef.current.srcObject = stream;
+            }
+        } catch {
+            setCameraStreamActive(false);
+            setCameraStream(null);
+            setCameraDetected(false);
+            setCameraError(t('candidate.ai_interview_show.camera_unavailable'));
+        }
+    }, [t]);
+
+    const stopCameraPreview = useCallback(() => {
+        cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+        cameraStreamRef.current = null;
+
+        if (cameraPreviewRef.current) {
+            cameraPreviewRef.current.srcObject = null;
+        }
+
+        setCameraStreamActive(false);
+        setCameraStream(null);
+    }, []);
+
+    const refreshDevices = useCallback(async () => {
+        if (!navigator.mediaDevices?.enumerateDevices) {
+            return;
+        }
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        setCameraDetected(
+            devices.some((device) => device.kind === 'videoinput'),
+        );
+        setMicrophoneDetected(
+            devices.some((device) => device.kind === 'audioinput'),
+        );
+    }, []);
+
+    const stopMicLevelMonitor = () => {
+        if (micLevelFrameRef.current !== null) {
+            cancelAnimationFrame(micLevelFrameRef.current);
+            micLevelFrameRef.current = null;
+        }
+
+        if (audioContextRef.current) {
+            void audioContextRef.current.close();
+            audioContextRef.current = null;
+        }
+
+        setMicLevel(0);
+    };
+
+    const startMicLevelMonitor = (stream: MediaStream) => {
+        stopMicLevelMonitor();
+
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const AudioContextClass =
+            window.AudioContext ||
+            // Safari fallback
+            (
+                window as typeof window & {
+                    webkitAudioContext?: typeof AudioContext;
+                }
+            ).webkitAudioContext;
+
+        if (!AudioContextClass) {
+            return;
+        }
+
+        const audioContext = new AudioContextClass();
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 512;
+
+        const source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+
+        const samples = new Uint8Array(analyser.fftSize);
+
+        const updateLevel = () => {
+            analyser.getByteTimeDomainData(samples);
+
+            let sumSquares = 0;
+
+            for (let index = 0; index < samples.length; index += 1) {
+                const normalized = (samples[index] - 128) / 128;
+                sumSquares += normalized * normalized;
+            }
+
+            const rms = Math.sqrt(sumSquares / samples.length);
+            setMicLevel(Math.min(100, Math.round(rms * 320)));
+
+            micLevelFrameRef.current = requestAnimationFrame(updateLevel);
+        };
+
+        audioContextRef.current = audioContext;
+        micLevelFrameRef.current = requestAnimationFrame(updateLevel);
+    };
+
+    const stopConnectionMonitor = () => {
+        if (statsIntervalRef.current !== null) {
+            window.clearInterval(statsIntervalRef.current);
+            statsIntervalRef.current = null;
+        }
+    };
+
+    const pickRecorderMimeType = (): string | undefined => {
+        if (typeof MediaRecorder === 'undefined') {
+            return undefined;
+        }
+
+        const candidates = [
+            'video/webm;codecs=vp9,opus',
+            'video/webm;codecs=vp8,opus',
+            'video/webm',
+            'video/mp4',
+        ];
+
+        return candidates.find((type) => MediaRecorder.isTypeSupported(type));
+    };
+
+    const startRecording = () => {
+        if (typeof MediaRecorder === 'undefined') {
+            return;
+        }
+
+        if (mediaRecorderRef.current) {
+            return;
+        }
+
+        const videoTrack = cameraStreamRef.current?.getVideoTracks()[0];
+        const audioTrack = localStreamRef.current?.getAudioTracks()[0];
+
+        if (!videoTrack || !audioTrack) {
+            return;
+        }
+
+        const combined = new MediaStream([videoTrack, audioTrack]);
+        const mimeType = pickRecorderMimeType();
+
+        try {
+            const recorder = new MediaRecorder(combined, {
+                mimeType,
+                videoBitsPerSecond: 600_000,
+                audioBitsPerSecond: 64_000,
+            });
+
+            recordingChunksRef.current = [];
+            recordingStreamRef.current = combined;
+            recorder.ondataavailable = (event) => {
+                if (event.data && event.data.size > 0) {
+                    recordingChunksRef.current.push(event.data);
+                }
+            };
+            recorder.start(2000);
+            mediaRecorderRef.current = recorder;
+        } catch {
+            mediaRecorderRef.current = null;
+            recordingStreamRef.current = null;
+            recordingChunksRef.current = [];
+        }
+    };
+
+    const finalizeRecording = (): Promise<Blob | null> => {
+        return new Promise((resolve) => {
+            const recorder = mediaRecorderRef.current;
+
+            if (!recorder) {
+                resolve(null);
+
+                return;
+            }
+
+            const handleStop = () => {
+                const chunks = recordingChunksRef.current;
+                const mimeType = recorder.mimeType || 'video/webm';
+                const blob =
+                    chunks.length > 0
+                        ? new Blob(chunks, { type: mimeType })
+                        : null;
+                recordingChunksRef.current = [];
+                mediaRecorderRef.current = null;
+                recordingStreamRef.current = null;
+                resolve(blob);
+            };
+
+            if (recorder.state === 'inactive') {
+                handleStop();
+
+                return;
+            }
+
+            recorder.addEventListener('stop', handleStop, { once: true });
+
+            try {
+                recorder.stop();
+            } catch {
+                handleStop();
+            }
+        });
+    };
+
+    const uploadRecording = async (blob: Blob): Promise<void> => {
+        const extension = blob.type.includes('mp4') ? 'mp4' : 'webm';
+        const file = new File([blob], `interview-${session.id}.${extension}`, {
+            type: blob.type || 'video/webm',
+        });
+        const formData = new FormData();
+        formData.append('recording', file);
+
+        const response = await fetch(
+            CandidateAiInterviewController.uploadRecording.url(session.id),
+            {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    Accept: 'application/json',
+                    'X-XSRF-TOKEN': csrfToken(),
+                },
+                credentials: 'same-origin',
+            },
+        );
+
+        if (!response.ok) {
+            throw new Error('Upload rekaman gagal.');
+        }
+    };
+
+    const updateSignalQuality = async () => {
+        if (!networkOnline) {
+            setSignalQuality('offline');
+
+            return;
+        }
+
+        const connection = peerConnectionRef.current;
+
+        if (!connection) {
+            setSignalQuality('good');
+
+            return;
+        }
+
+        const stats = await connection.getStats();
+        let roundTripTimeMs: number | null = null;
+
+        stats.forEach((report) => {
+            if (
+                report.type === 'candidate-pair' &&
+                (report as RTCIceCandidatePairStats).state === 'succeeded'
+            ) {
+                const currentRoundTripTime = (
+                    report as RTCIceCandidatePairStats
+                ).currentRoundTripTime;
+
+                if (typeof currentRoundTripTime === 'number') {
+                    roundTripTimeMs = currentRoundTripTime * 1000;
+                }
+            }
+        });
+
+        if (roundTripTimeMs === null) {
+            setSignalQuality('good');
+
+            return;
+        }
+
+        if (roundTripTimeMs < 140) {
+            setSignalQuality('excellent');
+
+            return;
+        }
+
+        if (roundTripTimeMs < 260) {
+            setSignalQuality('good');
+
+            return;
+        }
+
+        if (roundTripTimeMs < 500) {
+            setSignalQuality('fair');
+
+            return;
+        }
+
+        setSignalQuality('poor');
+    };
+
+    const startConnectionMonitor = () => {
+        stopConnectionMonitor();
+
+        void updateSignalQuality();
+        statsIntervalRef.current = window.setInterval(() => {
+            void updateSignalQuality();
+        }, 2000);
+    };
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const handleOnlineState = () => {
+            setNetworkOnline(window.navigator.onLine);
+        };
+
+        handleOnlineState();
+        window.addEventListener('online', handleOnlineState);
+        window.addEventListener('offline', handleOnlineState);
+
+        void refreshDevices();
+        void startCameraPreview();
+
+        let permissionStatus: PermissionStatus | null = null;
+
+        if ('permissions' in navigator) {
+            void navigator.permissions
+                .query({ name: 'microphone' as PermissionName })
+                .then((status) => {
+                    permissionStatus = status;
+                    setMicPermission(status.state as MicPermissionState);
+                    status.onchange = () => {
+                        setMicPermission(status.state as MicPermissionState);
+                    };
+                })
+                .catch(() => {
+                    setMicPermission('unknown');
+                });
+        }
+
+        return () => {
+            window.removeEventListener('online', handleOnlineState);
+            window.removeEventListener('offline', handleOnlineState);
+
+            if (permissionStatus) {
+                permissionStatus.onchange = null;
+            }
+        };
+    }, [refreshDevices, startCameraPreview]);
+
+    useEffect(() => {
+        if (!connected) {
+            return;
+        }
+
+        const interval = window.setInterval(() => {
+            setElapsedSeconds((seconds) => seconds + 1);
+        }, 1000);
+
+        return () => window.clearInterval(interval);
+    }, [connected]);
+
+    useEffect(() => {
+        if (!connected || !hasTimerExpired || hasAutoSubmittedRef.current) {
+            return;
+        }
+
+        hasAutoSubmittedRef.current = true;
+        setTimerExpiryNoticeVisible(true);
+        toast.info(t('candidate.ai_interview_show.time_up_auto_end'));
+        autoSubmitTimeoutRef.current = window.setTimeout(() => {
+            setTimerExpiryNoticeVisible(false);
+            void submitInterviewRef.current();
+        }, TIMER_EXPIRED_REDIRECT_DELAY_MS);
+    }, [connected, hasTimerExpired, t]);
+
+    useEffect(() => {
+        attachRemoteAudio();
+    }, [connected]);
+
+    useEffect(() => {
+        return () => {
+            if (autoSubmitTimeoutRef.current !== null) {
+                window.clearTimeout(autoSubmitTimeoutRef.current);
+                autoSubmitTimeoutRef.current = null;
+            }
+
+            stopConnectionMonitor();
+            stopMicLevelMonitor();
+            stopCameraPreview();
+        };
+    }, [stopCameraPreview]);
+
+    useEffect(() => {
+        if (
+            cameraStreamActive &&
+            cameraPreviewRef.current &&
+            cameraStreamRef.current
+        ) {
+            cameraPreviewRef.current.srcObject = cameraStreamRef.current;
+        }
+    }, [cameraStreamActive]);
+
+    const attachRemoteAudio = () => {
+        if (!remoteAudioRef.current || !remoteStreamRef.current) {
+            return;
+        }
+
+        remoteAudioRef.current.srcObject = remoteStreamRef.current;
+        remoteAudioRef.current.volume = 1;
+
+        void remoteAudioRef.current.play().catch(() => {
+            // Browser may require a subsequent user gesture to start playback.
+        });
+    };
+
+    const updateAnswer = (questionId: number, value: string) => {
+        form.setData('answers', {
+            ...form.data.answers,
+            [questionId]: value,
+        });
+    };
+
+    const confirmInvitation = () => {
+        router.patch(
+            CandidateAiInterviewController.confirm.url(session.id),
+            {},
+            {
+                preserveScroll: true,
+                onError: () => toast.error('Gagal mengonfirmasi undangan.'),
+            },
+        );
+    };
+
+    const declineInvitation = () => {
+        router.patch(
+            CandidateAiInterviewController.decline.url(session.id),
+            {},
+            {
+                preserveScroll: true,
+                onError: () => toast.error('Gagal menolak undangan.'),
+            },
+        );
+    };
+
+    const requestReschedule = () => {
+        rescheduleForm.patch(
+            CandidateAiInterviewController.reschedule.url(session.id),
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    rescheduleForm.reset();
+                    toast.success(
+                        t('candidate.ai_interview_show.reschedule_sent'),
+                    );
+                },
+                onError: () => {
+                    toast.error(
+                        t(
+                            'candidate.ai_interview_show.check_reschedule_detail',
+                        ),
+                    );
+                },
+            },
+        );
+    };
+
+    const startBackendSession = () => {
+        router.patch(
+            CandidateAiInterviewController.start.url(session.id),
+            {
+                interview_language: interviewLanguage,
+            },
+            {
+                preserveScroll: true,
+                onError: () =>
+                    toast.error(t('candidate.ai_interview_show.start_failed')),
+            },
+        );
+    };
+
+    const connectRealtime = async () => {
+        if (!isVoiceInterview) {
+            toast.warning('Sesi ini menggunakan mode teks.');
+
+            return;
+        }
+
+        if (!consented) {
+            toast.warning(
+                t('candidate.ai_interview_show.check_consent_before_start'),
+            );
+
+            return;
+        }
+
+        if (connected || connecting) {
+            return;
+        }
+
+        setConnecting(true);
+        setElapsedSeconds(0);
+        hasAutoSubmittedRef.current = false;
+        setHasQuestionStarted(false);
+        setActiveAiQuestionText(null);
+        startBackendSession();
+
+        try {
+            const secretResponse = await fetch(
+                CandidateAiInterviewController.clientSecret.url(session.id),
+                {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        interview_language: interviewLanguage,
+                    }),
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-XSRF-TOKEN': csrfToken(),
+                    },
+                    credentials: 'same-origin',
+                },
+            );
+
+            const secretPayload = await secretResponse.json();
+
+            if (!secretResponse.ok || !secretPayload.client_secret) {
+                throw new Error(
+                    secretPayload.message ??
+                        'Token voice AI belum bisa dibuat.',
+                );
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+            });
+            localStreamRef.current = stream;
+            setMicPermission('granted');
+            setMicrophoneDetected(true);
+            startMicLevelMonitor(stream);
+
+            const peerConnection = new RTCPeerConnection();
+            peerConnectionRef.current = peerConnection;
+
+            peerConnection.ontrack = (event) => {
+                remoteStreamRef.current = event.streams[0] ?? null;
+                attachRemoteAudio();
+            };
+
+            stream.getTracks().forEach((track) => {
+                peerConnection.addTrack(track, stream);
+            });
+
+            const dataChannel =
+                peerConnection.createDataChannel('karivia-events');
+            dataChannelRef.current = dataChannel;
+            dataChannel.onopen = () => {
+                // Greeting is triggered manually via sendGreeting() — not auto.
+            };
+            dataChannel.onmessage = (event) => {
+                handleRealtimeEvent(String(event.data));
+            };
+
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+
+            const sdpResponse = await fetch(
+                'https://api.openai.com/v1/realtime/calls',
+                {
+                    method: 'POST',
+                    body: offer.sdp,
+                    headers: {
+                        Authorization: `Bearer ${secretPayload.client_secret}`,
+                        'Content-Type': 'application/sdp',
+                    },
+                },
+            );
+
+            if (!sdpResponse.ok) {
+                throw new Error('Koneksi WebRTC OpenAI gagal dibuat.');
+            }
+
+            await peerConnection.setRemoteDescription({
+                type: 'answer',
+                sdp: await sdpResponse.text(),
+            });
+
+            setConnected(true);
+            startConnectionMonitor();
+            startRecording();
+            toast.success('Voice AI terhubung.');
+        } catch (error) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Gagal menghubungkan voice AI.',
+            );
+            stopRealtime();
+        } finally {
+            setConnecting(false);
+        }
+    };
+
+    const sendGreeting = () => {
+        const channel = dataChannelRef.current;
+
+        if (!channel || channel.readyState !== 'open' || hasSentGreeting) {
+            return;
+        }
+
+        channel.send(
+            JSON.stringify({
+                type: 'response.create',
+                response: {
+                    modalities: ['audio', 'text'],
+                },
+            }),
+        );
+        setHasSentGreeting(true);
+    };
+
+    const advanceToNextQuestion = () => {
+        setCurrentQuestion((current) => {
+            const next = Math.min(current + 1, session.questions.length - 1);
+
+            if (next > current) {
+                const nextQuestion = session.questions[next];
+                const channel = dataChannelRef.current;
+
+                if (channel && channel.readyState === 'open') {
+                    const instruction =
+                        interviewLanguage === 'en'
+                            ? `The candidate has indicated they are ready to move on. Please skip the current question and proceed directly to Q${next + 1}: "${nextQuestion?.question ?? ''}". Prefix it with "Q${next + 1}" as instructed.`
+                            : `Kandidat telah menandakan ingin melanjutkan. Lewati pertanyaan saat ini dan langsung tanyakan Q${next + 1}: "${nextQuestion?.question ?? ''}". Awali dengan "Q${next + 1}" sesuai instruksi.`;
+
+                    channel.send(
+                        JSON.stringify({
+                            type: 'conversation.item.create',
+                            item: {
+                                type: 'message',
+                                role: 'user',
+                                content: [
+                                    {
+                                        type: 'input_text',
+                                        text: instruction,
+                                    },
+                                ],
+                            },
+                        }),
+                    );
+                    channel.send(
+                        JSON.stringify({
+                            type: 'response.create',
+                            response: { modalities: ['audio', 'text'] },
+                        }),
+                    );
+                }
+            }
+
+            return next;
+        });
+    };
+
+    const stopRealtime = () => {
+        stopConnectionMonitor();
+        stopMicLevelMonitor();
+        peerConnectionRef.current?.close();
+        peerConnectionRef.current = null;
+        dataChannelRef.current = null;
+        localStreamRef.current?.getTracks().forEach((track) => track.stop());
+        localStreamRef.current = null;
+        remoteAudioRef.current?.pause();
+
+        if (remoteAudioRef.current) {
+            remoteAudioRef.current.srcObject = null;
+        }
+
+        remoteStreamRef.current = null;
+        setConnected(false);
+        setHasSentGreeting(false);
+        setSignalQuality(networkOnline ? 'good' : 'offline');
+        setMuted(false);
+        setHasQuestionStarted(false);
+        setActiveAiQuestionText(null);
+    };
+
+    const toggleMute = () => {
+        const audioTrack = localStreamRef.current?.getAudioTracks()[0];
+
+        if (!audioTrack) {
+            return;
+        }
+
+        audioTrack.enabled = !audioTrack.enabled;
+        setMuted(!audioTrack.enabled);
+    };
+
+    const submitInterview = async () => {
+        if (autoSubmitTimeoutRef.current !== null) {
+            window.clearTimeout(autoSubmitTimeoutRef.current);
+            autoSubmitTimeoutRef.current = null;
+        }
+
+        setTimerExpiryNoticeVisible(false);
+
+        const recordingBlob = await finalizeRecording();
+        stopRealtime();
+
+        if (recordingBlob && recordingBlob.size > 0) {
+            const uploadingToastId = toast.loading(
+                t('candidate.ai_interview_show.uploading_recording'),
+            );
+
+            try {
+                await uploadRecording(recordingBlob);
+                toast.success(
+                    t('candidate.ai_interview_show.recording_saved'),
+                    {
+                        id: uploadingToastId,
+                    },
+                );
+            } catch {
+                toast.error(
+                    'Rekaman gagal diunggah, namun jawaban tetap akan dikirim.',
+                    { id: uploadingToastId },
+                );
+            }
+        }
+
+        form.transform((data) => ({
+            ...data,
+            live_transcript: transcript
+                .map((item) => `${item.speaker}: ${item.text}`)
+                .join('\n'),
+        }));
+        form.patch(CandidateAiInterviewController.answer.url(session.id), {
+            preserveScroll: true,
+            onError: () =>
+                toast.error(
+                    t('candidate.ai_interview_show.check_answers_again'),
+                ),
+        });
+    };
+
+    submitInterviewRef.current = submitInterview;
+
+    const submitAnswers = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        void submitInterview();
+    };
+
+    const handleRealtimeEvent = (rawEvent: string) => {
+        try {
+            const event = JSON.parse(rawEvent);
+
+            if (
+                event.type === 'response.output_audio_transcript.done' &&
+                event.transcript
+            ) {
+                appendTranscript('AI', event.transcript);
+            }
+
+            if (
+                event.type ===
+                    'conversation.item.input_audio_transcription.completed' &&
+                event.transcript
+            ) {
+                appendTranscript('Kandidat', event.transcript);
+            }
+        } catch {
+            // Ignore malformed realtime events from browser extensions/proxies.
+        }
+    };
+
+    const appendTranscript = (
+        speaker: TranscriptItem['speaker'],
+        text: string,
+    ) => {
+        setTranscript((items) => [...items, { speaker, text }]);
+
+        if (speaker !== 'AI') {
+            return;
+        }
+
+        const trimmedText = text.trim();
+        const questionNumberMatch = text.match(/\bQ\s*(\d+)\b/i);
+
+        if (questionNumberMatch) {
+            const questionIndex = Number(questionNumberMatch[1]) - 1;
+
+            if (
+                questionIndex >= 0 &&
+                questionIndex < session.questions.length
+            ) {
+                setHasQuestionStarted(true);
+                setActiveAiQuestionText(
+                    trimmedText.replace(/\bQ\s*\d+\s*[:-]?\s*/i, ''),
+                );
+                setCurrentQuestion((current) =>
+                    questionIndex > current ? questionIndex : current,
+                );
+
+                return;
+            }
+        }
+
+        if (trimmedText.length > 8) {
+            setHasQuestionStarted(true);
+            setActiveAiQuestionText(trimmedText);
+        }
+
+        const normalizedLine = normalizeQuestionText(text);
+
+        if (normalizedLine.length < 12) {
+            return;
+        }
+
+        const matchedQuestion = normalizedQuestionMap.find(
+            (question) =>
+                normalizedLine.includes(question.normalized.slice(0, 24)) ||
+                question.normalized.includes(normalizedLine.slice(0, 24)),
+        );
+
+        if (matchedQuestion) {
+            setHasQuestionStarted(true);
+            setCurrentQuestion((current) =>
+                matchedQuestion.index > current
+                    ? matchedQuestion.index
+                    : current,
+            );
+        }
+    };
+
+    if (invitationPending) {
+        return (
+            <InterviewInvitation
+                session={session}
+                isVoiceInterview={isVoiceInterview}
+                onConfirm={confirmInvitation}
+                onDecline={declineInvitation}
+                rescheduleData={rescheduleForm.data}
+                rescheduleErrors={
+                    rescheduleForm.errors as Record<string, string>
+                }
+                rescheduleProcessing={rescheduleForm.processing}
+                onRescheduleChange={(field, value) =>
+                    rescheduleForm.setData(field, value)
+                }
+                onReschedule={requestReschedule}
+            />
+        );
+    }
+
+    if (session.status === 'completed') {
+        return <CompletedInterviewState session={session} />;
+    }
+
+    if (connected && isVoiceInterview) {
+        return (
+            <ActiveVoiceSession
+                session={session}
+                activeQuestion={activeQuestion}
+                currentQuestion={currentQuestion}
+                remainingSeconds={remainingSeconds}
+                interviewDurationSeconds={interviewDurationSeconds}
+                transcript={transcript}
+                hasQuestionStarted={hasQuestionStarted}
+                hasSentGreeting={hasSentGreeting}
+                activeAiQuestionText={activeAiQuestionText}
+                timerExpiryNoticeVisible={timerExpiryNoticeVisible}
+                muted={muted}
+                formProcessing={form.processing}
+                onNext={() => advanceToNextQuestion()}
+                onMute={toggleMute}
+                onStop={stopRealtime}
+                onGreet={sendGreeting}
+                onSubmit={submitInterview}
+                remoteAudioRef={remoteAudioRef}
+                signalQuality={signalQuality}
+                cameraStream={cameraStream}
+            />
+        );
+    }
+
     return (
         <>
-            <Head title="Simulasi Interview" />
-            <div className="space-y-6 p-4 md:p-6">
-                <Heading
-                    title={session.job_title ?? 'Simulasi Interview'}
-                    description={`${session.company ?? 'Perusahaan'} · ${session.started_at ?? '-'}`}
-                />
-
-                <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Jawaban simulasi</CardTitle>
-                            <CardDescription>
-                                Jawab singkat, spesifik, dan berbasis contoh.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Form
-                                {...CandidateAiInterviewController.answer.form(
-                                    session.id,
+            <Head title={t('candidate.ai_interview_show.preparation_title')} />
+            <div className="min-h-screen bg-slate-50">
+                {/* Hero header */}
+                <div className="relative overflow-hidden bg-linear-to-br from-[#01296A] via-[#013580] to-[#01296A] px-4 pt-8 pb-8 md:px-8 md:pt-10 md:pb-10 lg:px-12">
+                    <div
+                        className="pointer-events-none absolute inset-0 opacity-20"
+                        style={{
+                            backgroundImage:
+                                'radial-gradient(ellipse at 90% 0%, #4f9fff 0%, transparent 55%), radial-gradient(ellipse at 0% 100%, #1e5bbb 0%, transparent 50%)',
+                        }}
+                    />
+                    <div className="relative mx-auto max-w-5xl">
+                        <div className="mb-3 flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold tracking-widest text-white/90 ring-1 ring-white/20">
+                                <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
+                                {t('candidate.ai_interview_show.ai_interview')}
+                            </span>
+                            {session.company && (
+                                <span className="text-sm text-white/50">
+                                    {session.company}
+                                </span>
+                            )}
+                        </div>
+                        <h1 className="text-2xl font-black tracking-tight text-white md:text-3xl lg:text-4xl">
+                            {session.job_title ??
+                                t(
+                                    'candidate.ai_interview_show.preparation_title',
                                 )}
-                                className="space-y-5"
-                            >
-                                {({ processing, errors }) => (
-                                    <>
-                                        {session.questions.map((question) => (
-                                            <Field
-                                                key={question.id}
-                                                label={question.question}
-                                                name={`answers[${question.id}]`}
-                                                error={
-                                                    errors[
-                                                        `answers.${question.id}`
-                                                    ]
+                        </h1>
+                        <div className="mt-3 flex flex-wrap items-center gap-4">
+                            <span className="flex items-center gap-1.5 text-sm text-white/60">
+                                <Clock3 className="size-3.5 text-white/40" />
+                                {session.duration_minutes ?? 30} menit
+                            </span>
+                            <span className="flex items-center gap-1.5 text-sm text-white/60">
+                                {isVoiceInterview ? (
+                                    <Mic className="size-3.5 text-white/40" />
+                                ) : (
+                                    <Bot className="size-3.5 text-white/40" />
+                                )}
+                                {isVoiceInterview
+                                    ? t('candidate.ai_interview_show.voice_ai')
+                                    : t('candidate.ai_interview_show.text_ai')}
+                            </span>
+                            <span className="flex items-center gap-1.5 text-sm text-white/60">
+                                <ListChecks className="size-3.5 text-white/40" />
+                                {t(
+                                    'candidate.ai_interview_show.questions_count',
+                                    { count: session.questions.length },
+                                )}
+                            </span>
+                        </div>
+                        <p className="mt-3 text-sm text-white/50">
+                            {t(
+                                'candidate.ai_interview_show.ensure_devices_ready',
+                            )}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Main content */}
+                <div className="px-4 py-6 md:px-8 md:py-7 lg:px-12">
+                    <div className="mx-auto max-w-5xl">
+                        <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+                            {/* Left column */}
+                            <div className="order-last space-y-4 lg:order-first">
+                                {/* Device checks — compact horizontal bar */}
+                                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                                    <div className="flex flex-wrap items-center gap-x-1 gap-y-2 px-4 py-3">
+                                        <span className="mr-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                                            Status
+                                        </span>
+                                        <DeviceStatusPill
+                                            icon={Video}
+                                            label={t(
+                                                'candidate.ai_interview_show.camera',
+                                            )}
+                                            tone={
+                                                cameraStreamActive
+                                                    ? 'green'
+                                                    : cameraDetected === null
+                                                      ? 'orange'
+                                                      : cameraDetected
+                                                        ? 'orange'
+                                                        : 'red'
+                                            }
+                                            value={
+                                                cameraStreamActive
+                                                    ? 'Aktif'
+                                                    : cameraDetected === null
+                                                      ? 'Memeriksa'
+                                                      : cameraDetected
+                                                        ? 'Terdeteksi'
+                                                        : 'Tidak Ditemukan'
+                                            }
+                                        />
+                                        <DeviceStatusPill
+                                            icon={Mic}
+                                            label={t(
+                                                'candidate.ai_interview_show.microphone',
+                                            )}
+                                            tone={
+                                                micPermission === 'denied'
+                                                    ? 'red'
+                                                    : microphoneDetected ===
+                                                            true ||
+                                                        micPermission ===
+                                                            'granted'
+                                                      ? 'green'
+                                                      : 'orange'
+                                            }
+                                            value={
+                                                micPermission === 'granted'
+                                                    ? micLevel > 10
+                                                        ? 'Aktif'
+                                                        : 'Terhubung'
+                                                    : micPermission === 'denied'
+                                                      ? 'Diblokir'
+                                                      : microphoneDetected ===
+                                                          null
+                                                        ? 'Memeriksa'
+                                                        : microphoneDetected
+                                                          ? 'Terdeteksi'
+                                                          : 'Tidak Ditemukan'
+                                            }
+                                        />
+                                        <DeviceStatusPill
+                                            icon={Radio}
+                                            label={t(
+                                                'candidate.ai_interview_show.internet',
+                                            )}
+                                            tone={
+                                                networkOnline ? 'green' : 'red'
+                                            }
+                                            value={
+                                                networkOnline
+                                                    ? 'Terhubung'
+                                                    : 'Offline'
+                                            }
+                                        />
+                                        <DeviceStatusPill
+                                            icon={Signal}
+                                            label={t(
+                                                'candidate.ai_interview_show.signal',
+                                            )}
+                                            tone={
+                                                signalQuality === 'excellent' ||
+                                                signalQuality === 'good'
+                                                    ? 'green'
+                                                    : signalQuality ===
+                                                        'offline'
+                                                      ? 'red'
+                                                      : 'orange'
+                                            }
+                                            value={
+                                                signalQualityConfig(
+                                                    signalQuality,
+                                                ).label
+                                            }
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Panduan Wawancara */}
+                                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                                    <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
+                                        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-primary-600 to-primary-800 shadow-sm">
+                                            <ShieldCheck className="size-4 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-slate-900">
+                                                {t(
+                                                    'candidate.ai_interview_show.interview_guide',
+                                                )}
+                                            </p>
+                                            <p className="text-[11px] text-slate-400">
+                                                {t(
+                                                    'candidate.ai_interview_show.read_before_start',
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4 p-5">
+                                        {/* AI Greeting */}
+                                        <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-primary-50 to-secondary-50/60 p-4 ring-1 ring-primary-200/60">
+                                            <div className="absolute top-3 right-3 opacity-10">
+                                                <Sparkles className="size-12 text-primary-500" />
+                                            </div>
+                                            <div className="mb-2 flex items-center gap-2">
+                                                <div className="flex size-6 items-center justify-center rounded-full bg-primary-100">
+                                                    <Bot className="size-3.5 text-primary-600" />
+                                                </div>
+                                                <span className="text-[11px] font-bold tracking-wider text-primary-600 uppercase">
+                                                    {t(
+                                                        'candidate.ai_interview_show.ai_opening',
+                                                    )}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm font-semibold text-slate-900">
+                                                {
+                                                    session.ai_intro
+                                                        .assistant_name
+                                                }
+                                            </p>
+                                            <p className="mt-1.5 text-sm leading-6 text-slate-600">
+                                                {session.ai_intro.greeting}
+                                            </p>
+                                        </div>
+
+                                        {/* Instructions */}
+                                        <div className="divide-y divide-gray-100">
+                                            <InstructionRow
+                                                icon={Mic}
+                                                title={t(
+                                                    'candidate.ai_interview_show.speak_clearly',
+                                                )}
+                                                description={t(
+                                                    'candidate.ai_interview_show.speak_clearly_desc',
+                                                )}
+                                            />
+                                            <InstructionRow
+                                                icon={Clock3}
+                                                title={`Durasi ${session.duration_minutes ?? 30} menit`}
+                                                description={t(
+                                                    'candidate.ai_interview_show.duration_desc',
+                                                )}
+                                            />
+                                            <InstructionRow
+                                                icon={Bot}
+                                                title={t(
+                                                    'candidate.ai_interview_show.ai_will_guide',
+                                                )}
+                                                description={t(
+                                                    'candidate.ai_interview_show.ai_will_guide_desc',
+                                                )}
+                                            />
+                                            <InstructionRow
+                                                icon={Info}
+                                                title={`${session.questions.length} pertanyaan tersedia`}
+                                                description={t(
+                                                    'candidate.ai_interview_show.answers_recorded_desc',
+                                                )}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {!isVoiceInterview && (
+                                    <AnswerForm
+                                        session={session}
+                                        isVoiceInterview={false}
+                                        form={form}
+                                        updateAnswer={updateAnswer}
+                                        submitAnswers={submitAnswers}
+                                    />
+                                )}
+                            </div>
+
+                            {/* Sidebar */}
+                            <aside className="order-first space-y-4 lg:order-last">
+                                {/* Camera preview — paling atas */}
+                                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                                    <div className="relative aspect-video bg-slate-950">
+                                        {cameraStreamActive ? (
+                                            <video
+                                                ref={cameraPreviewRef}
+                                                autoPlay
+                                                playsInline
+                                                muted
+                                                className="h-full w-full object-cover"
+                                                style={{
+                                                    transform: 'scaleX(-1)',
+                                                }}
+                                            />
+                                        ) : (
+                                            <div className="flex h-full flex-col items-center justify-center gap-3">
+                                                <div className="flex size-14 items-center justify-center rounded-full bg-slate-800/80 ring-1 ring-white/10">
+                                                    <VideoOff className="size-6 text-slate-400" />
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-xs font-semibold text-slate-300">
+                                                        Kamera belum aktif
+                                                    </p>
+                                                    <p className="mt-0.5 text-[10px] text-slate-500">
+                                                        Aktifkan untuk
+                                                        melanjutkan
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* LIVE badge */}
+                                        {cameraStreamActive && (
+                                            <div className="absolute top-2.5 left-2.5">
+                                                <span className="inline-flex items-center gap-1.5 rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-bold tracking-wider text-white uppercase backdrop-blur-sm">
+                                                    <span className="size-1.5 animate-pulse rounded-full bg-red-500" />
+                                                    LIVE
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* WAJIB badge saat kamera mati */}
+                                        {!cameraStreamActive && (
+                                            <div className="absolute top-2.5 right-2.5">
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-red-500/90 px-2.5 py-0.5 text-[10px] font-bold tracking-wide text-white">
+                                                    DIPERLUKAN
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* Candidate name overlay */}
+                                        {cameraStreamActive &&
+                                            session.candidate_name && (
+                                                <div className="absolute right-0 bottom-0 left-0 bg-linear-to-t from-black/70 to-transparent px-3 py-3">
+                                                    <p className="text-xs font-semibold text-white">
+                                                        {session.candidate_name}
+                                                    </p>
+                                                </div>
+                                            )}
+                                    </div>
+
+                                    <div className="border-t border-gray-100 p-3">
+                                        {cameraError ? (
+                                            <div className="space-y-2">
+                                                <p className="text-xs text-red-600">
+                                                    {cameraError}
+                                                </p>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="w-full"
+                                                    onClick={startCameraPreview}
+                                                >
+                                                    <RotateCcw className="size-3.5" />
+                                                    Coba Lagi
+                                                </Button>
+                                            </div>
+                                        ) : cameraStreamActive ? (
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-1.5 text-xs font-medium text-green-600">
+                                                    <span className="size-2 animate-pulse rounded-full bg-green-500" />
+                                                    Kamera aktif
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    className="text-xs text-slate-400 transition-colors hover:text-red-500"
+                                                    onClick={stopCameraPreview}
+                                                >
+                                                    Matikan
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <Button
+                                                size="sm"
+                                                className="w-full bg-primary-600 hover:bg-primary-700"
+                                                onClick={startCameraPreview}
+                                            >
+                                                <Video className="size-3.5" />
+                                                Aktifkan Kamera
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Candidate + session info */}
+                                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                                    {/* Candidate row */}
+                                    <div className="flex items-center gap-3 px-4 py-3.5">
+                                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-primary-500 to-primary-700 text-sm font-bold text-white shadow-sm">
+                                            {(session.candidate_name ?? 'K')
+                                                .charAt(0)
+                                                .toUpperCase()}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-bold text-slate-800">
+                                                {session.candidate_name ??
+                                                    'Kandidat'}
+                                            </p>
+                                            {session.candidate_headline && (
+                                                <p className="truncate text-xs text-slate-400">
+                                                    {session.candidate_headline}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-600 ring-1 ring-emerald-200">
+                                            <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
+                                            Siap
+                                        </span>
+                                    </div>
+                                    {/* Durasi + Mode — compact row */}
+                                    <div className="grid grid-cols-2 divide-x divide-gray-100 border-t border-gray-100">
+                                        <div className="px-4 py-3">
+                                            <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                                                {t(
+                                                    'candidate.ai_interview_show.duration',
+                                                )}
+                                            </p>
+                                            <p className="mt-0.5 text-lg font-black text-slate-900">
+                                                {session.duration_minutes ?? 30}
+                                                <span className="ml-1 text-xs font-medium text-slate-400">
+                                                    {t(
+                                                        'candidate.ai_interview_show.minutes_short',
+                                                    )}
+                                                </span>
+                                            </p>
+                                        </div>
+                                        <div className="px-4 py-3">
+                                            <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                                                {t(
+                                                    'candidate.ai_interview_show.mode',
+                                                )}
+                                            </p>
+                                            <p className="mt-0.5 text-lg font-black text-slate-900">
+                                                {isVoiceInterview
+                                                    ? t(
+                                                          'candidate.ai_interview_show.voice',
+                                                      )
+                                                    : t(
+                                                          'candidate.ai_interview_show.text',
+                                                      )}
+                                                <span className="ml-1 text-xs font-medium text-slate-400">
+                                                    {t(
+                                                        'candidate.ai_interview_show.ai',
+                                                    )}
+                                                </span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Language selector */}
+                                {isVoiceInterview && (
+                                    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                                        <p className="border-b border-gray-100 px-4 py-3 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                                            Bahasa Interview
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-2 p-3">
+                                            <button
+                                                type="button"
+                                                className={cn(
+                                                    'flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition-all',
+                                                    interviewLanguage === 'id'
+                                                        ? 'border-primary-400 bg-primary-50 ring-1 ring-primary-300/50'
+                                                        : 'border-gray-200 bg-gray-50/60 hover:border-gray-300 hover:bg-white',
+                                                )}
+                                                onClick={() =>
+                                                    setInterviewLanguage('id')
                                                 }
                                             >
-                                                <Textarea
-                                                    name={`answers[${question.id}]`}
-                                                    defaultValue={
-                                                        question.answer_text ??
-                                                        ''
-                                                    }
-                                                    placeholder="Tulis jawaban kamu"
-                                                />
-                                            </Field>
-                                        ))}
-                                        <Button disabled={processing}>
-                                            {processing
-                                                ? 'Menyimpan...'
-                                                : 'Simpan jawaban'}
-                                        </Button>
-                                    </>
+                                                <span className="text-base">
+                                                    🇮🇩
+                                                </span>
+                                                <span>
+                                                    <p
+                                                        className={cn(
+                                                            'text-xs font-bold',
+                                                            interviewLanguage ===
+                                                                'id'
+                                                                ? 'text-primary-700'
+                                                                : 'text-slate-700',
+                                                        )}
+                                                    >
+                                                        Indonesia
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-400">
+                                                        {t(
+                                                            'candidate.ai_interview_show.indonesian_language',
+                                                        )}
+                                                    </p>
+                                                </span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={cn(
+                                                    'flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition-all',
+                                                    interviewLanguage === 'en'
+                                                        ? 'border-primary-400 bg-primary-50 ring-1 ring-primary-300/50'
+                                                        : 'border-gray-200 bg-gray-50/60 hover:border-gray-300 hover:bg-white',
+                                                )}
+                                                onClick={() =>
+                                                    setInterviewLanguage('en')
+                                                }
+                                            >
+                                                <span className="text-base">
+                                                    🇺🇸
+                                                </span>
+                                                <span>
+                                                    <p
+                                                        className={cn(
+                                                            'text-xs font-bold',
+                                                            interviewLanguage ===
+                                                                'en'
+                                                                ? 'text-primary-700'
+                                                                : 'text-slate-700',
+                                                        )}
+                                                    >
+                                                        English
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-400">
+                                                        {t(
+                                                            'candidate.ai_interview_show.in_english',
+                                                        )}
+                                                    </p>
+                                                </span>
+                                            </button>
+                                        </div>
+                                    </div>
                                 )}
-                            </Form>
-                        </CardContent>
-                    </Card>
 
-                    <div className="space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Status</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <StatusBadge status={session.status} />
-                                <p className="text-sm text-muted-foreground">
-                                    Mulai {session.started_at}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                    Selesai {session.completed_at ?? '-'}
-                                </p>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Analisis</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm leading-6 text-muted-foreground">
-                                    {session.analysis?.summary ??
-                                        'Analisis akan muncul setelah jawaban diproses.'}
-                                </p>
-                            </CardContent>
-                        </Card>
+                                {/* Consent + Start */}
+                                {isVoiceInterview && (
+                                    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                                        <div className="p-4">
+                                            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-slate-50 p-3 transition-colors hover:bg-gray-100">
+                                                <Checkbox
+                                                    checked={consented}
+                                                    onCheckedChange={(
+                                                        checked,
+                                                    ) =>
+                                                        setConsented(
+                                                            checked === true,
+                                                        )
+                                                    }
+                                                    className="mt-0.5"
+                                                />
+                                                <span className="text-xs leading-5 text-slate-600">
+                                                    Saya menyetujui perekaman
+                                                    sesi wawancara ini untuk
+                                                    keperluan evaluasi.
+                                                </span>
+                                            </label>
+                                        </div>
+                                        <div className="border-t border-gray-100 p-3">
+                                            <Button
+                                                className={cn(
+                                                    'w-full gap-2 text-base font-bold shadow-sm',
+                                                    consented &&
+                                                        cameraStreamActive &&
+                                                        !connecting
+                                                        ? 'bg-linear-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800'
+                                                        : 'bg-primary-600 hover:bg-primary-700',
+                                                )}
+                                                size="lg"
+                                                disabled={
+                                                    !consented ||
+                                                    !cameraStreamActive ||
+                                                    connecting
+                                                }
+                                                onClick={connectRealtime}
+                                            >
+                                                {connecting ? (
+                                                    <>
+                                                        <RotateCcw className="size-4 animate-spin" />
+                                                        Menghubungkan...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Sparkles className="size-5" />
+                                                        Mulai Wawancara
+                                                    </>
+                                                )}
+                                            </Button>
+                                            {(!consented ||
+                                                !cameraStreamActive) &&
+                                                !connecting && (
+                                                    <p className="mt-2 text-center text-xs text-slate-400">
+                                                        {!cameraStreamActive
+                                                            ? 'Aktifkan kamera untuk melanjutkan'
+                                                            : 'Centang persetujuan untuk melanjutkan'}
+                                                    </p>
+                                                )}
+                                        </div>
+                                    </div>
+                                )}
+                            </aside>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -132,14 +1679,1477 @@ export default function CandidateAiInterviewShow({
     );
 }
 
+function InterviewInvitation({
+    session,
+    isVoiceInterview,
+    onConfirm,
+    onDecline,
+    rescheduleData,
+    rescheduleErrors,
+    rescheduleProcessing,
+    onRescheduleChange,
+    onReschedule,
+}: {
+    session: AiInterviewShowProps['session'];
+    isVoiceInterview: boolean;
+    onConfirm: () => void;
+    onDecline: () => void;
+    rescheduleData: {
+        proposed_at: string;
+        reason: string;
+    };
+    rescheduleErrors: Record<string, string>;
+    rescheduleProcessing: boolean;
+    onRescheduleChange: (
+        field: 'proposed_at' | 'reason',
+        value: string,
+    ) => void;
+    onReschedule: () => void;
+}) {
+    const { t } = useTranslate();
+    const [showRescheduleForm, setShowRescheduleForm] = useState(
+        Boolean(session.reschedule_requested_at),
+    );
+    const [timelineSort, setTimelineSort] = useState<'desc' | 'asc'>(() => {
+        if (typeof window === 'undefined') {
+            return 'desc';
+        }
+
+        const sort = new URLSearchParams(window.location.search).get(
+            'candidate_timeline_sort',
+        );
+
+        return sort === 'asc' || sort === 'desc' ? sort : 'desc';
+    });
+    const [timelineFilter, setTimelineFilter] = useState<
+        'all' | 'requested' | 'approved' | 'rejected'
+    >(() => {
+        if (typeof window === 'undefined') {
+            return 'all';
+        }
+
+        const filter = new URLSearchParams(window.location.search).get(
+            'candidate_timeline_filter',
+        );
+
+        return filter === 'requested' ||
+            filter === 'approved' ||
+            filter === 'rejected'
+            ? filter
+            : 'all';
+    });
+    const timelineEvents = session.reschedule_timeline ?? [];
+    const timelineCounts = {
+        all: timelineEvents.length,
+        requested: timelineEvents.filter(
+            (event) => event.action === 'requested',
+        ).length,
+        approved: timelineEvents.filter((event) => event.action === 'approved')
+            .length,
+        rejected: timelineEvents.filter((event) => event.action === 'rejected')
+            .length,
+    };
+    const filteredTimeline = timelineEvents
+        .filter(
+            (event) =>
+                timelineFilter === 'all' || event.action === timelineFilter,
+        )
+        .slice()
+        .sort((first, second) => {
+            const firstDate = first.created_at
+                ? new Date(first.created_at).getTime()
+                : 0;
+            const secondDate = second.created_at
+                ? new Date(second.created_at).getTime()
+                : 0;
+
+            return timelineSort === 'desc'
+                ? secondDate - firstDate
+                : firstDate - secondDate;
+        });
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        params.set('candidate_timeline_filter', timelineFilter);
+        params.set('candidate_timeline_sort', timelineSort);
+
+        const query = params.toString();
+        const url = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
+
+        window.history.replaceState(window.history.state, '', url);
+    }, [timelineFilter, timelineSort]);
+
+    return (
+        <>
+            <Head title={t('candidate.ai_interview_show.invitation_title')} />
+            <div className="min-h-screen bg-[#f8fafc] px-4 py-6 text-slate-950 md:px-8 lg:px-12">
+                <div className="mx-auto flex max-w-6xl items-center justify-between border-b border-slate-200 pb-5">
+                    <div className="flex items-center gap-3">
+                        <div className="flex size-10 items-center justify-center rounded-xl bg-primary-600 text-white">
+                            <CalendarDays className="size-5" />
+                        </div>
+                        <span className="text-xl font-bold text-primary-600">
+                            Karivia
+                        </span>
+                    </div>
+                    <div className="hidden gap-8 font-medium text-slate-700 md:flex">
+                        <span>{t('candidate.ai_interview_show.nav_jobs')}</span>
+                        <span>
+                            {t(
+                                'candidate.ai_interview_show.nav_my_applications',
+                            )}
+                        </span>
+                        <span>
+                            {t('candidate.ai_interview_show.nav_profile')}
+                        </span>
+                    </div>
+                </div>
+
+                <main className="mx-auto max-w-6xl py-12">
+                    <p className="text-sm font-semibold tracking-[0.35em] text-slate-500 uppercase">
+                        {t(
+                            'candidate.ai_interview_show.my_applications_invitation',
+                        )}
+                    </p>
+                    <h1 className="mt-5 text-5xl font-black tracking-tight md:text-6xl">
+                        {t('candidate.ai_interview_show.invitation_title')}
+                        <span className="text-primary-600">!</span>
+                    </h1>
+                    <p className="mt-5 max-w-3xl text-xl leading-9 text-slate-600">
+                        {t('candidate.ai_interview_show.congrats')},{' '}
+                        {session.candidate_name ??
+                            t('candidate.ai_interview_show.candidate_lower')}
+                        ! {t('candidate.ai_interview_show.selected_for_stage')}{' '}
+                        {isVoiceInterview
+                            ? t('candidate.ai_interview_show.voice_ai_lower')
+                            : t('candidate.ai_interview_show.text_lower')}{' '}
+                        {t('candidate.ai_interview_show.for_position')}{' '}
+                        <strong className="text-slate-900">
+                            {session.job_title}
+                        </strong>
+                        .
+                    </p>
+                    {session.reschedule_status === 'approved' ? (
+                        <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-800">
+                            {t(
+                                'candidate.ai_interview_show.reschedule_approved_at',
+                            )}{' '}
+                            {session.reschedule_reviewed_at ?? '-'}.
+                            {session.reschedule_proposed_at
+                                ? ` ${t('candidate.ai_interview_show.latest_schedule')}: ${session.reschedule_proposed_at}.`
+                                : ''}
+                        </div>
+                    ) : null}
+                    {session.reschedule_status === 'rejected' ? (
+                        <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
+                            {t(
+                                'candidate.ai_interview_show.reschedule_not_approved',
+                            )}
+                            {session.reschedule_rejected_reason
+                                ? ` ${t('candidate.ai_interview_show.recruiter_note')}: ${session.reschedule_rejected_reason}`
+                                : ''}
+                        </div>
+                    ) : null}
+
+                    <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_360px]">
+                        <div className="space-y-7">
+                            <Card className="shadow-sm">
+                                <CardContent className="space-y-6 p-6">
+                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex size-16 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+                                                <Bot className="size-7" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-semibold text-primary-600">
+                                                    {t(
+                                                        'candidate.ai_interview_show.your_recruiter',
+                                                    )}
+                                                </p>
+                                                <h2 className="text-2xl font-bold">
+                                                    {session.company}
+                                                </h2>
+                                                <p className="text-slate-500">
+                                                    {session.job_title}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <Button variant="outline">
+                                            {t(
+                                                'candidate.ai_interview_show.view_company_profile',
+                                            )}
+                                        </Button>
+                                    </div>
+
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <InfoBox
+                                            icon={CalendarDays}
+                                            label={t(
+                                                'candidate.ai_interview_show.date_time',
+                                            )}
+                                            value={session.scheduled_at ?? '-'}
+                                        />
+                                        <InfoBox
+                                            icon={isVoiceInterview ? Mic : Bot}
+                                            label={t(
+                                                'candidate.ai_interview_show.interview_mode',
+                                            )}
+                                            value={
+                                                isVoiceInterview
+                                                    ? t(
+                                                          'candidate.ai_interview_show.voice_ai',
+                                                      )
+                                                    : t(
+                                                          'candidate.ai_interview_show.text_ai',
+                                                      )
+                                            }
+                                            helper={
+                                                isVoiceInterview
+                                                    ? t(
+                                                          'candidate.ai_interview_show.mic_used_after_confirmation',
+                                                      )
+                                                    : t(
+                                                          'candidate.ai_interview_show.no_microphone_needed',
+                                                      )
+                                            }
+                                        />
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border-primary-200 bg-primary-50/70 shadow-sm">
+                                <CardContent className="space-y-6 p-7">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex size-14 items-center justify-center rounded-2xl bg-primary-600 text-white">
+                                            <Sparkles className="size-6" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-3xl font-black">
+                                                {t(
+                                                    'candidate.ai_interview_show.karivia_ai_preparation',
+                                                )}
+                                            </h2>
+                                            <p className="text-slate-600">
+                                                {t(
+                                                    'candidate.ai_interview_show.preparation_recommendation',
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-5">
+                                        {session.questions
+                                            .slice(0, 3)
+                                            .map((question, index) => (
+                                                <PrepItem
+                                                    key={question.id}
+                                                    index={index + 1}
+                                                    title={
+                                                        question.category ??
+                                                        `Pertanyaan ${index + 1}`
+                                                    }
+                                                    description={
+                                                        question.rubric ??
+                                                        question.question
+                                                    }
+                                                />
+                                            ))}
+                                    </div>
+                                    <blockquote className="rounded-2xl border border-primary-200 bg-white/60 p-5 text-primary-700 italic">
+                                        Tetap tenang dan gunakan contoh nyata.
+                                        Karivia AI akan memandu setiap langkah.
+                                    </blockquote>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <aside className="space-y-5">
+                            <Card className="shadow-sm">
+                                <CardHeader>
+                                    <CardTitle>
+                                        {t(
+                                            'candidate.ai_interview_show.attendance_confirmation',
+                                        )}
+                                    </CardTitle>
+                                    <CardDescription>
+                                        {t(
+                                            'candidate.ai_interview_show.confirmation_description',
+                                        )}
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    <Button
+                                        className="w-full bg-primary-600 hover:bg-primary-700"
+                                        size="lg"
+                                        onClick={onConfirm}
+                                    >
+                                        <CheckCircle2 className="size-4" />
+                                        {t(
+                                            'candidate.ai_interview_show.confirm_attendance',
+                                        )}
+                                    </Button>
+                                    <Button
+                                        className="w-full"
+                                        size="lg"
+                                        variant="outline"
+                                        onClick={() =>
+                                            setShowRescheduleForm(
+                                                (value) => !value,
+                                            )
+                                        }
+                                    >
+                                        <Clock3 className="size-4" />
+                                        {t(
+                                            'candidate.ai_interview_show.reschedule',
+                                        )}
+                                    </Button>
+                                    {showRescheduleForm ? (
+                                        <div className="space-y-3 rounded-xl border border-primary-200 bg-primary-50 p-3">
+                                            <label className="space-y-1">
+                                                <span className="text-xs font-semibold text-slate-600">
+                                                    {t(
+                                                        'candidate.ai_interview_show.replacement_schedule',
+                                                    )}
+                                                </span>
+                                                <input
+                                                    className="w-full rounded-lg border border-input bg-white px-3 py-2 text-sm"
+                                                    type="datetime-local"
+                                                    value={
+                                                        rescheduleData.proposed_at
+                                                    }
+                                                    onChange={(event) =>
+                                                        onRescheduleChange(
+                                                            'proposed_at',
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                />
+                                            </label>
+                                            {rescheduleErrors.proposed_at ? (
+                                                <InputError
+                                                    message={
+                                                        rescheduleErrors.proposed_at
+                                                    }
+                                                />
+                                            ) : null}
+                                            <label className="space-y-1">
+                                                <span className="text-xs font-semibold text-slate-600">
+                                                    {t(
+                                                        'candidate.ai_interview_show.reason',
+                                                    )}
+                                                </span>
+                                                <textarea
+                                                    className="min-h-24 w-full rounded-lg border border-input bg-white px-3 py-2 text-sm"
+                                                    value={
+                                                        rescheduleData.reason
+                                                    }
+                                                    onChange={(event) =>
+                                                        onRescheduleChange(
+                                                            'reason',
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    placeholder={t(
+                                                        'candidate.ai_interview_show.reschedule_reason_placeholder',
+                                                    )}
+                                                />
+                                            </label>
+                                            {rescheduleErrors.reason ? (
+                                                <InputError
+                                                    message={
+                                                        rescheduleErrors.reason
+                                                    }
+                                                />
+                                            ) : null}
+                                            <Button
+                                                className="w-full"
+                                                variant="secondary"
+                                                disabled={rescheduleProcessing}
+                                                onClick={onReschedule}
+                                            >
+                                                {rescheduleProcessing
+                                                    ? t(
+                                                          'candidate.ai_interview_show.sending',
+                                                      )
+                                                    : t(
+                                                          'candidate.ai_interview_show.send_reschedule_request',
+                                                      )}
+                                            </Button>
+                                            {session.reschedule_requested_at ? (
+                                                <p className="text-xs text-slate-500">
+                                                    {t(
+                                                        'candidate.ai_interview_show.last_submission',
+                                                    )}{' '}
+                                                    {
+                                                        session.reschedule_requested_at
+                                                    }
+                                                </p>
+                                            ) : null}
+                                        </div>
+                                    ) : null}
+                                    <Button
+                                        className="w-full text-red-600 hover:text-red-700"
+                                        size="lg"
+                                        variant="ghost"
+                                        onClick={onDecline}
+                                    >
+                                        <X className="size-4" />
+                                        {t(
+                                            'candidate.ai_interview_show.decline_invitation',
+                                        )}
+                                    </Button>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="bg-slate-100 shadow-sm">
+                                <CardContent className="p-5">
+                                    <p className="font-bold">
+                                        {t(
+                                            'candidate.ai_interview_show.need_help',
+                                        )}
+                                    </p>
+                                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                                        {t(
+                                            'candidate.ai_interview_show.help_description',
+                                        )}
+                                    </p>
+                                </CardContent>
+                            </Card>
+                            {session.reschedule_timeline &&
+                            session.reschedule_timeline.length > 0 ? (
+                                <Card className="shadow-sm">
+                                    <CardHeader>
+                                        <CardTitle>
+                                            Riwayat Reschedule
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3 text-sm">
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {(
+                                                [
+                                                    [
+                                                        'all',
+                                                        'Semua',
+                                                        timelineCounts.all,
+                                                    ],
+                                                    [
+                                                        'requested',
+                                                        'Requested',
+                                                        timelineCounts.requested,
+                                                    ],
+                                                    [
+                                                        'approved',
+                                                        'Approved',
+                                                        timelineCounts.approved,
+                                                    ],
+                                                    [
+                                                        'rejected',
+                                                        'Rejected',
+                                                        timelineCounts.rejected,
+                                                    ],
+                                                ] as const
+                                            ).map(([value, label, count]) => (
+                                                <button
+                                                    key={value}
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setTimelineFilter(value)
+                                                    }
+                                                    className={cn(
+                                                        'rounded-md border px-2 py-1 text-[11px] font-medium',
+                                                        timelineFilter === value
+                                                            ? 'border-slate-400 bg-slate-900 text-white'
+                                                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100',
+                                                    )}
+                                                >
+                                                    {label} ({count})
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="flex gap-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setTimelineSort('desc')
+                                                }
+                                                className={cn(
+                                                    'rounded-md border px-2 py-1 text-[11px] font-medium',
+                                                    timelineSort === 'desc'
+                                                        ? 'border-slate-400 bg-slate-900 text-white'
+                                                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100',
+                                                )}
+                                            >
+                                                Terbaru
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setTimelineSort('asc')
+                                                }
+                                                className={cn(
+                                                    'rounded-md border px-2 py-1 text-[11px] font-medium',
+                                                    timelineSort === 'asc'
+                                                        ? 'border-slate-400 bg-slate-900 text-white'
+                                                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100',
+                                                )}
+                                            >
+                                                Terlama
+                                            </button>
+                                        </div>
+                                        {filteredTimeline.length > 0 ? (
+                                            filteredTimeline.map(
+                                                (event, index) => (
+                                                    <div
+                                                        key={`${event.action}-${event.created_at ?? index}`}
+                                                        className="rounded-xl border border-slate-200 bg-white p-3"
+                                                    >
+                                                        <p className="font-semibold capitalize">
+                                                            {event.action.replaceAll(
+                                                                '_',
+                                                                ' ',
+                                                            )}
+                                                        </p>
+                                                        <p className="mt-1 text-slate-500">
+                                                            {event.created_at ??
+                                                                '-'}{' '}
+                                                            ·{' '}
+                                                            {event.actor_name ??
+                                                                'Sistem'}
+                                                        </p>
+                                                        {event.scheduled_at ? (
+                                                            <p className="mt-1 text-slate-600">
+                                                                Jadwal:{' '}
+                                                                {
+                                                                    event.scheduled_at
+                                                                }
+                                                            </p>
+                                                        ) : null}
+                                                        {event.reason ? (
+                                                            <p className="mt-1 text-slate-600">
+                                                                Catatan:{' '}
+                                                                {event.reason}
+                                                            </p>
+                                                        ) : null}
+                                                    </div>
+                                                ),
+                                            )
+                                        ) : (
+                                            <p className="rounded-lg border border-dashed border-slate-300 bg-white p-2 text-slate-500">
+                                                Tidak ada event untuk filter
+                                                ini.
+                                            </p>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            ) : null}
+                        </aside>
+                    </div>
+                </main>
+            </div>
+        </>
+    );
+}
+
+function CompletedInterviewState({
+    session,
+}: {
+    session: AiInterviewShowProps['session'];
+}) {
+    const { t } = useTranslate();
+
+    return (
+        <>
+            <Head title={t('candidate.ai_interview_show.completed_title')} />
+            <div className="min-h-screen bg-slate-50 px-4 py-10 md:px-8">
+                <div className="mx-auto max-w-3xl space-y-6">
+                    <Card className="border-primary-200 bg-white shadow-sm">
+                        <CardContent className="space-y-4 p-6 md:p-8">
+                            <p className="text-sm font-semibold tracking-[0.3em] text-primary-600 uppercase">
+                                {t(
+                                    'candidate.ai_interview_show.completed_label',
+                                )}
+                            </p>
+                            <h1 className="text-3xl font-black tracking-tight">
+                                {t(
+                                    'candidate.ai_interview_show.completed_heading',
+                                )}
+                            </h1>
+                            <p className="text-slate-600">
+                                {t(
+                                    'candidate.ai_interview_show.completed_description',
+                                )}
+                            </p>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <Button
+                                    className="w-full bg-primary-600 hover:bg-primary-700"
+                                    asChild
+                                >
+                                    <Link href={feedback(session.id)}>
+                                        {t(
+                                            'candidate.ai_interview_show.view_post_interview_feedback',
+                                        )}
+                                    </Link>
+                                </Button>
+                                <Button
+                                    className="w-full"
+                                    variant="outline"
+                                    asChild
+                                >
+                                    <Link href={index()}>
+                                        {t(
+                                            'candidate.ai_interview_show.back_to_ai_interview',
+                                        )}
+                                    </Link>
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        </>
+    );
+}
+
+function ActiveVoiceSession({
+    session,
+    activeQuestion,
+    currentQuestion,
+    remainingSeconds,
+    interviewDurationSeconds,
+    transcript,
+    hasQuestionStarted,
+    hasSentGreeting,
+    activeAiQuestionText,
+    timerExpiryNoticeVisible,
+    muted,
+    formProcessing,
+    onNext,
+    onMute,
+    onStop,
+    onGreet,
+    onSubmit,
+    remoteAudioRef,
+    signalQuality,
+    cameraStream,
+}: {
+    session: AiInterviewShowProps['session'];
+    activeQuestion?: AiInterviewShowProps['session']['questions'][number];
+    currentQuestion: number;
+    remainingSeconds: number;
+    interviewDurationSeconds: number;
+    transcript: TranscriptItem[];
+    hasQuestionStarted: boolean;
+    hasSentGreeting: boolean;
+    activeAiQuestionText: string | null;
+    timerExpiryNoticeVisible: boolean;
+    muted: boolean;
+    formProcessing: boolean;
+    onNext: () => void;
+    onMute: () => void;
+    onStop: () => void;
+    onGreet: () => void;
+    onSubmit: () => void;
+    remoteAudioRef: React.RefObject<HTMLAudioElement | null>;
+    signalQuality: SignalQuality;
+    cameraStream: MediaStream | null;
+}) {
+    const { branding } = usePage<{
+        branding?: { name?: string; logo_url?: string | null };
+    }>().props;
+    const { t } = useTranslate();
+    const siteLogoUrl = branding?.logo_url ?? null;
+    const siteName = branding?.name ?? 'Karivia';
+
+    const progress = hasQuestionStarted
+        ? Math.round(
+              ((currentQuestion + 1) / Math.max(session.questions.length, 1)) *
+                  100,
+          )
+        : 0;
+    const signal = signalQualityConfig(signalQuality);
+    const [currentClock, setCurrentClock] = useState(() => new Date());
+
+    useEffect(() => {
+        const interval = window.setInterval(() => {
+            setCurrentClock(new Date());
+        }, 1000);
+
+        return () => {
+            window.clearInterval(interval);
+        };
+    }, []);
+
+    /* ref callback — sets srcObject the moment the <video> element mounts,
+       so the stream shows even when cameraStream was already set before render */
+    const cameraVideoCallbackRef = (el: HTMLVideoElement | null) => {
+        if (el) {
+            el.srcObject = cameraStream;
+        }
+    };
+
+    return (
+        <>
+            <Head title={t('candidate.ai_interview_show.session_title')} />
+            <div className="relative flex min-h-screen flex-col overflow-hidden bg-white text-slate-900">
+                {/* Blurred primary color blobs */}
+                <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                    <div className="absolute -top-32 -right-32 size-125 rounded-full bg-primary-400/25 blur-[120px]" />
+                    <div className="absolute -bottom-32 -left-32 size-112.5 rounded-full bg-primary-600/20 blur-[100px]" />
+                    <div className="absolute top-1/2 left-1/3 size-75 -translate-y-1/2 rounded-full bg-primary-300/15 blur-[80px]" />
+                </div>
+
+                {/* Header */}
+                <header className="relative flex items-center gap-3 border-b border-primary-100/60 bg-white/70 px-4 py-2.5 backdrop-blur-md md:px-6">
+                    {/* Branding */}
+                    <div className="flex shrink-0 items-center">
+                        {siteLogoUrl ? (
+                            <img
+                                src={siteLogoUrl}
+                                alt={siteName}
+                                className="h-8 object-contain"
+                            />
+                        ) : (
+                            <div className="flex size-9 items-center justify-center rounded-xl bg-linear-to-br from-primary-500 to-primary-700 shadow-lg shadow-primary-200">
+                                <Bot className="size-4 text-white" />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Progress */}
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                            <div className="flex-1 overflow-hidden rounded-full bg-primary-100">
+                                <div
+                                    className="h-1.5 rounded-full bg-linear-to-r from-primary-500 to-primary-400 transition-all duration-700"
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </div>
+                            {hasQuestionStarted && (
+                                <span className="shrink-0 text-xs font-semibold text-primary-600 tabular-nums">
+                                    {currentQuestion + 1}/
+                                    {session.questions.length}
+                                </span>
+                            )}
+                        </div>
+                        <div className="mt-1.5 flex items-center justify-center gap-2">
+                            {hasQuestionStarted ? (
+                                <>
+                                    <span className="inline-flex items-center rounded-md bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700 capitalize">
+                                        {activeQuestion?.category ??
+                                            'Interview'}
+                                    </span>
+                                    <span className="text-[11px] text-slate-400">
+                                        Pertanyaan {currentQuestion + 1} dari{' '}
+                                        {session.questions.length}
+                                    </span>
+                                </>
+                            ) : (
+                                <span className="text-[11px] text-slate-400">
+                                    {session.ai_intro.assistant_name} sedang
+                                    membuka sesi
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Timer + End */}
+                    <div className="flex shrink-0 items-center gap-2 md:gap-3">
+                        <div className="text-right">
+                            <span className="block font-mono text-sm font-bold text-slate-800 tabular-nums md:text-lg">
+                                {formatDuration(remainingSeconds)}
+                            </span>
+                            <span className="hidden text-[10px] text-slate-400 md:block">
+                                / {formatDuration(interviewDurationSeconds)}
+                            </span>
+                        </div>
+                        <Button
+                            size="sm"
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={onSubmit}
+                            disabled={formProcessing}
+                        >
+                            <PhoneOff className="size-3.5" />
+                            <span className="hidden sm:inline">
+                                {t('candidate.ai_interview_show.end_session')}
+                            </span>
+                            <span className="sm:hidden">
+                                {t('candidate.ai_interview_show.end')}
+                            </span>
+                        </Button>
+                    </div>
+                </header>
+
+                {/* Body */}
+                <div className="relative flex flex-1 flex-col lg:flex-row">
+                    {timerExpiryNoticeVisible && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary-950/40 p-4 backdrop-blur-sm">
+                            <div className="w-full max-w-md rounded-2xl border border-primary-100 bg-white p-6 text-center shadow-2xl">
+                                <p className="text-xs font-bold tracking-[0.2em] text-primary-500 uppercase">
+                                    {t('candidate.ai_interview_show.time_up')}
+                                </p>
+                                <h2 className="mt-2 text-2xl font-black text-slate-900">
+                                    {t(
+                                        'candidate.ai_interview_show.session_will_end_automatically',
+                                    )}
+                                </h2>
+                                <p className="mt-2 text-sm text-slate-600">
+                                    {t(
+                                        'candidate.ai_interview_show.answers_saved_and_redirected',
+                                    )}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Right sidebar — order-1 on mobile so camera is at top */}
+                    <aside className="order-1 flex flex-col gap-3 border-b border-primary-100/60 bg-white/50 p-4 backdrop-blur-sm lg:order-2 lg:w-72 lg:border-b-0 lg:border-l xl:w-80">
+                        {/* Camera feed */}
+                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-slate-950 shadow-lg shadow-primary-200/40">
+                            <div className="relative aspect-video">
+                                <video
+                                    ref={cameraVideoCallbackRef}
+                                    autoPlay
+                                    playsInline
+                                    muted
+                                    className={cn(
+                                        'h-full w-full object-cover',
+                                        !cameraStream && 'hidden',
+                                    )}
+                                    style={{ transform: 'scaleX(-1)' }}
+                                />
+                                {!cameraStream && (
+                                    <div className="flex h-full flex-col items-center justify-center gap-2.5">
+                                        <div className="flex size-12 items-center justify-center rounded-full bg-slate-800 ring-1 ring-white/10">
+                                            <VideoOff className="size-5 text-slate-400" />
+                                        </div>
+                                        <p className="text-[11px] text-slate-400">
+                                            Kamera tidak aktif
+                                        </p>
+                                    </div>
+                                )}
+                                {/* Live badge */}
+                                <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-black/70 px-2.5 py-1 backdrop-blur-sm">
+                                    <span className="size-1.5 animate-pulse rounded-full bg-red-500" />
+                                    <span className="text-[10px] font-bold tracking-wider text-white uppercase">
+                                        Live
+                                    </span>
+                                </div>
+                                {/* Mute indicator */}
+                                {muted && (
+                                    <div className="absolute top-2.5 right-2.5 rounded-full bg-red-600/90 p-1.5 shadow-sm">
+                                        <MicOff className="size-3 text-white" />
+                                    </div>
+                                )}
+                                {/* Name overlay */}
+                                {session.candidate_name && (
+                                    <div className="absolute right-0 bottom-0 left-0 bg-linear-to-t from-black/80 to-transparent px-3 py-3">
+                                        <p className="text-xs font-semibold text-white">
+                                            {session.candidate_name}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Stats row */}
+                        <div className="grid grid-cols-3 gap-2">
+                            <div className="rounded-xl border border-primary-100 bg-white/80 p-2.5 shadow-sm backdrop-blur-sm">
+                                <p className="text-[9px] font-semibold tracking-wider text-slate-400 uppercase">
+                                    Sinyal
+                                </p>
+                                <p
+                                    className={cn(
+                                        'mt-1 flex items-center gap-0.5 text-xs font-bold',
+                                        signal.color,
+                                    )}
+                                >
+                                    <Signal className="size-3" />
+                                    {signal.label}
+                                </p>
+                            </div>
+                            <div className="rounded-xl border border-primary-100 bg-white/80 p-2.5 shadow-sm backdrop-blur-sm">
+                                <p className="text-[9px] font-semibold tracking-wider text-slate-400 uppercase">
+                                    Sisa
+                                </p>
+                                <p className="mt-1 font-mono text-xs font-bold text-slate-900 tabular-nums">
+                                    {formatDuration(remainingSeconds)}
+                                </p>
+                            </div>
+                            <div className="rounded-xl border border-primary-100 bg-white/80 p-2.5 shadow-sm backdrop-blur-sm">
+                                <p className="text-[9px] font-semibold tracking-wider text-slate-400 uppercase">
+                                    Waktu
+                                </p>
+                                <p className="mt-1 font-mono text-xs font-bold text-slate-900 tabular-nums">
+                                    {currentClock.toLocaleTimeString('id-ID', {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                    })}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Controls */}
+                        <div className="grid grid-cols-2 gap-2">
+                            <Button
+                                size="lg"
+                                variant="outline"
+                                className="w-full border-primary-200 bg-white/70 text-slate-700 hover:border-primary-300 hover:bg-white hover:text-slate-900"
+                                disabled={
+                                    currentQuestion ===
+                                    session.questions.length - 1
+                                }
+                                onClick={onNext}
+                            >
+                                <SkipForward className="size-4" />
+                                Lewati
+                            </Button>
+                            <Button
+                                size="lg"
+                                className={cn(
+                                    'w-full',
+                                    muted
+                                        ? 'bg-red-600 hover:bg-red-700'
+                                        : 'bg-linear-to-br from-primary-600 to-primary-700 shadow-md shadow-primary-200 hover:from-primary-500 hover:to-primary-600',
+                                )}
+                                onClick={onMute}
+                            >
+                                {muted ? (
+                                    <MicOff className="size-4" />
+                                ) : (
+                                    <Mic className="size-4" />
+                                )}
+                                {muted ? 'Unmute' : 'Mute'}
+                            </Button>
+                        </div>
+
+                        <button
+                            type="button"
+                            className="w-full rounded-xl py-2 text-sm text-slate-400 transition-colors hover:text-slate-600"
+                            onClick={onStop}
+                        >
+                            Kembali ke Lobby
+                        </button>
+                    </aside>
+
+                    {/* Main area — order-2 on mobile, order-1 on desktop */}
+                    <section className="order-2 flex flex-1 flex-col items-center justify-center gap-6 px-4 py-8 text-center md:px-8 lg:order-1">
+                        {/* Status pill */}
+                        <div
+                            className={cn(
+                                'inline-flex items-center gap-2 rounded-full border px-4 py-1.5 backdrop-blur-sm',
+                                hasQuestionStarted
+                                    ? 'border-primary-200 bg-primary-50/80'
+                                    : hasSentGreeting
+                                      ? 'border-emerald-200 bg-emerald-50/80'
+                                      : 'border-gray-200 bg-white/60',
+                            )}
+                        >
+                            <span
+                                className={cn(
+                                    'size-2 animate-pulse rounded-full',
+                                    hasQuestionStarted
+                                        ? 'bg-primary-500'
+                                        : hasSentGreeting
+                                          ? 'bg-emerald-500'
+                                          : 'bg-slate-400',
+                                )}
+                            />
+                            <span
+                                className={cn(
+                                    'text-[11px] font-bold tracking-widest uppercase',
+                                    hasQuestionStarted
+                                        ? 'text-primary-600'
+                                        : hasSentGreeting
+                                          ? 'text-emerald-600'
+                                          : 'text-slate-500',
+                                )}
+                            >
+                                {hasQuestionStarted
+                                    ? 'AI sedang menanyakan'
+                                    : hasSentGreeting
+                                      ? 'AI sedang memperkenalkan diri'
+                                      : 'Siap — klik Sapa untuk memulai'}
+                            </span>
+                        </div>
+
+                        {/* Bot avatar */}
+                        <div
+                            className="relative flex size-28 items-center justify-center rounded-full md:size-40 lg:size-48"
+                            style={{
+                                background:
+                                    'radial-gradient(circle, rgba(var(--color-primary-400)/0.2) 0%, rgba(var(--color-primary-200)/0.1) 55%, transparent 72%)',
+                            }}
+                        >
+                            {/* Soft glow ring when speaking */}
+                            <div
+                                className={cn(
+                                    'absolute inset-0 rounded-full transition-opacity duration-500',
+                                    hasSentGreeting
+                                        ? 'opacity-100'
+                                        : 'opacity-0',
+                                )}
+                                style={{
+                                    boxShadow:
+                                        '0 0 40px 8px rgba(59,130,246,0.15), 0 0 80px 20px rgba(99,102,241,0.08)',
+                                }}
+                            />
+                            <div className="flex size-20 items-center justify-center rounded-full bg-linear-to-br from-primary-600 to-primary-800 shadow-xl ring-4 shadow-primary-300/50 ring-primary-100 md:size-28 lg:size-36">
+                                <Bot className="size-9 text-white md:size-12 lg:size-16" />
+                            </div>
+                            {/* Voice bars */}
+                            <div className="absolute -bottom-3 flex items-end gap-1">
+                                {[1, 2, 3, 4, 5].map((bar) => (
+                                    <span
+                                        key={bar}
+                                        className={cn(
+                                            'w-1.5 rounded-full',
+                                            hasSentGreeting
+                                                ? 'animate-pulse bg-primary-500'
+                                                : 'bg-primary-200',
+                                        )}
+                                        style={{
+                                            height: `${6 + (bar % 3) * 7}px`,
+                                            animationDelay: `${bar * 100}ms`,
+                                            animationDuration: `${600 + bar * 80}ms`,
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Question / greeting / sapa prompt */}
+                        <div className="w-full max-w-xl px-2 md:max-w-2xl md:px-0">
+                            {hasQuestionStarted ? (
+                                <h1 className="text-xl leading-snug font-black tracking-tight text-slate-900 md:text-3xl lg:text-4xl">
+                                    &ldquo;
+                                    {activeAiQuestionText ??
+                                        activeQuestion?.question}
+                                    &rdquo;
+                                </h1>
+                            ) : hasSentGreeting ? (
+                                <p className="text-base leading-7 text-slate-600 md:text-lg">
+                                    {session.ai_intro.greeting}
+                                </p>
+                            ) : (
+                                <div className="space-y-4">
+                                    <p className="text-base leading-7 text-slate-600 md:text-lg">
+                                        {t(
+                                            'candidate.ai_interview_show.connection_success_click',
+                                        )}{' '}
+                                        <strong className="text-slate-900">
+                                            {t(
+                                                'candidate.ai_interview_show.greet',
+                                            )}
+                                        </strong>{' '}
+                                        {t(
+                                            'candidate.ai_interview_show.connection_success_suffix',
+                                        )}
+                                    </p>
+                                    <Button
+                                        size="lg"
+                                        className="gap-2 bg-linear-to-br from-primary-600 to-primary-700 px-8 py-3 text-base shadow-lg shadow-primary-300/50 hover:from-primary-500 hover:to-primary-600"
+                                        onClick={onGreet}
+                                    >
+                                        <Hand className="size-5" />
+                                        {t(
+                                            'candidate.ai_interview_show.greet_ai_interviewer',
+                                        )}
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Live transcript */}
+                        <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-primary-100 bg-white/70 text-left shadow-sm backdrop-blur-sm md:max-w-2xl">
+                            <div className="flex items-center gap-2 border-b border-primary-100/60 px-4 py-2.5">
+                                <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
+                                <p className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+                                    Live Transcription
+                                </p>
+                            </div>
+                            <div className="min-h-16 p-4">
+                                {transcript.length > 0 ? (
+                                    <div className="space-y-2.5">
+                                        {transcript
+                                            .slice(-3)
+                                            .map((item, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="flex gap-2"
+                                                >
+                                                    <span
+                                                        className={cn(
+                                                            'mt-1 shrink-0 text-[10px] font-bold tracking-widest uppercase',
+                                                            item.speaker ===
+                                                                'AI'
+                                                                ? 'text-primary-500'
+                                                                : 'text-slate-400',
+                                                        )}
+                                                    >
+                                                        {item.speaker}
+                                                    </span>
+                                                    <p className="text-sm leading-6 text-slate-600 italic">
+                                                        {item.text}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm leading-6 text-slate-400 italic">
+                                        Transkrip akan muncul saat sesi
+                                        dimulai...
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <audio ref={remoteAudioRef} autoPlay playsInline />
+            </div>
+        </>
+    );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function DeviceCheck({
+    icon: Icon,
+    label,
+    value,
+    helper,
+    tone = 'orange',
+}: {
+    icon: React.ComponentType<{ className?: string }>;
+    label: string;
+    value: string;
+    helper?: string;
+    tone?: 'green' | 'orange' | 'red';
+}) {
+    const toneConfig = {
+        green: {
+            icon: 'bg-green-50 text-green-600',
+            dot: 'bg-green-500',
+            pill: 'bg-green-50 text-green-700 ring-green-200',
+        },
+        orange: {
+            icon: 'bg-primary-50 text-primary-600',
+            dot: 'bg-primary-400',
+            pill: 'bg-primary-50 text-primary-700 ring-primary-200',
+        },
+        red: {
+            icon: 'bg-red-50 text-red-600',
+            dot: 'bg-red-500',
+            pill: 'bg-red-50 text-red-700 ring-red-200',
+        },
+    }[tone];
+
+    return (
+        <div className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div
+                className={cn(
+                    'flex size-9 items-center justify-center rounded-xl',
+                    toneConfig.icon,
+                )}
+            >
+                <Icon className="size-4" />
+            </div>
+            <div>
+                <p className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+                    {label}
+                </p>
+                <div
+                    className={cn(
+                        'mt-1 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ring-1',
+                        toneConfig.pill,
+                    )}
+                >
+                    <span
+                        className={cn('size-1.5 rounded-full', toneConfig.dot)}
+                    />
+                    {value}
+                </div>
+                {helper ? (
+                    <p className="mt-1 text-[11px] text-slate-400">{helper}</p>
+                ) : null}
+            </div>
+        </div>
+    );
+}
+
+function DeviceStatusPill({
+    icon: Icon,
+    label,
+    value,
+    tone,
+}: {
+    icon: React.ComponentType<{ className?: string }>;
+    label: string;
+    value: string;
+    tone: 'green' | 'orange' | 'red';
+}) {
+    const config = {
+        green: 'bg-green-50 text-green-700 ring-green-200',
+        orange: 'bg-amber-50 text-amber-700 ring-amber-200',
+        red: 'bg-red-50 text-red-700 ring-red-200',
+    }[tone];
+
+    const dotConfig = {
+        green: 'bg-green-500',
+        orange: 'bg-amber-400',
+        red: 'bg-red-500',
+    }[tone];
+
+    return (
+        <span
+            className={cn(
+                'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1',
+                config,
+            )}
+        >
+            <span className={cn('size-1.5 rounded-full', dotConfig)} />
+            <Icon className="size-3 opacity-70" />
+            {label}: {value}
+        </span>
+    );
+}
+
+function signalQualityConfig(quality: SignalQuality): {
+    label: string;
+    color: string;
+} {
+    if (quality === 'excellent') {
+        return { label: 'Sangat Baik', color: 'text-green-600' };
+    }
+
+    if (quality === 'good') {
+        return { label: 'Baik', color: 'text-emerald-600' };
+    }
+
+    if (quality === 'fair') {
+        return { label: 'Cukup', color: 'text-secondary-600' };
+    }
+
+    if (quality === 'poor') {
+        return { label: 'Kurang Stabil', color: 'text-primary-600' };
+    }
+
+    return { label: 'Offline', color: 'text-red-600' };
+}
+
+function InstructionRow({
+    icon: Icon,
+    title,
+    description,
+}: {
+    icon: React.ComponentType<{ className?: string }>;
+    title: string;
+    description: string;
+}) {
+    return (
+        <div className="flex gap-3 py-4 first:pt-0 last:pb-0">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                <Icon className="size-4" />
+            </div>
+            <div>
+                <p className="text-sm font-semibold text-slate-900">{title}</p>
+                <p className="mt-0.5 text-sm leading-6 text-slate-500">
+                    {description}
+                </p>
+            </div>
+        </div>
+    );
+}
+
+function InfoBox({
+    icon: Icon,
+    label,
+    value,
+    helper,
+}: {
+    icon: React.ComponentType<{ className?: string }>;
+    label: string;
+    value: string;
+    helper?: string;
+}) {
+    return (
+        <div className="rounded-2xl bg-slate-50 p-5">
+            <div className="flex items-center gap-3 text-sm font-bold tracking-[0.25em] text-slate-400 uppercase">
+                <Icon className="size-5 text-primary-600" />
+                {label}
+            </div>
+            <p className="mt-4 text-xl font-bold">{value}</p>
+            {helper ? (
+                <p className="mt-2 text-sm text-primary-600">{helper}</p>
+            ) : null}
+        </div>
+    );
+}
+
+function PrepItem({
+    index,
+    title,
+    description,
+}: {
+    index: number;
+    title: string;
+    description: string;
+}) {
+    return (
+        <div className="flex gap-4">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-200 text-sm font-bold text-primary-700">
+                {index}
+            </div>
+            <div>
+                <p className="font-bold capitalize">{title}</p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                    {description}
+                </p>
+            </div>
+        </div>
+    );
+}
+
+function formatDuration(seconds: number): string {
+    const minutes = Math.floor(seconds / 60)
+        .toString()
+        .padStart(2, '0');
+    const remainingSeconds = (seconds % 60).toString().padStart(2, '0');
+
+    return `${minutes}:${remainingSeconds}`;
+}
+
+function csrfToken(): string {
+    return decodeURIComponent(
+        document.cookie
+            .split('; ')
+            .find((row) => row.startsWith('XSRF-TOKEN='))
+            ?.split('=')[1] ?? '',
+    );
+}
+
+function AnswerForm({
+    session,
+    isVoiceInterview,
+    form,
+    updateAnswer,
+    submitAnswers,
+}: {
+    session: AiInterviewShowProps['session'];
+    isVoiceInterview: boolean;
+    form: ReturnType<
+        typeof useForm<{
+            answers: Record<number, string>;
+            live_transcript: string;
+        }>
+    >;
+    updateAnswer: (questionId: number, value: string) => void;
+    submitAnswers: (event: React.FormEvent<HTMLFormElement>) => void;
+}) {
+    const { t } = useTranslate();
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>
+                    {t('candidate.ai_interview_show.answers_per_question')}
+                </CardTitle>
+                <CardDescription>
+                    {isVoiceInterview
+                        ? t(
+                              'candidate.ai_interview_show.voice_answer_description',
+                          )
+                        : t(
+                              'candidate.ai_interview_show.text_answer_description',
+                          )}
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <form className="space-y-5" onSubmit={submitAnswers}>
+                    <div className="rounded-2xl border border-primary-200 bg-primary-50/80 p-4">
+                        <p className="text-xs font-bold tracking-[0.3em] text-primary-600 uppercase">
+                            {t('candidate.ai_interview_show.ai_opening')}
+                        </p>
+                        <p className="mt-3 text-base font-semibold text-slate-900">
+                            {session.ai_intro.assistant_name}
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                            {session.ai_intro.greeting}
+                        </p>
+                    </div>
+                    {session.questions.map((question, questionIndex) => (
+                        <div
+                            key={question.id}
+                            className="rounded-2xl border p-4"
+                        >
+                            <label className="text-sm font-semibold">
+                                {questionIndex + 1}. {question.question}
+                            </label>
+                            <textarea
+                                className="mt-3 min-h-28 w-full rounded-xl border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                value={form.data.answers[question.id] ?? ''}
+                                onChange={(event) =>
+                                    updateAnswer(
+                                        question.id,
+                                        event.target.value,
+                                    )
+                                }
+                                placeholder={t(
+                                    'candidate.ai_interview_show.write_answer_placeholder',
+                                )}
+                            />
+                            <InputError
+                                message={
+                                    (form.errors as Record<string, string>)[
+                                        `answers.${question.id}`
+                                    ]
+                                }
+                            />
+                        </div>
+                    ))}
+
+                    <div className="flex flex-col gap-3 rounded-2xl border bg-muted/20 p-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <p className="font-semibold">
+                                {t(
+                                    'candidate.ai_interview_show.complete_interview',
+                                )}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                                {isVoiceInterview
+                                    ? t(
+                                          'candidate.ai_interview_show.voice_submit_description',
+                                      )
+                                    : t(
+                                          'candidate.ai_interview_show.text_submit_description',
+                                      )}
+                            </p>
+                        </div>
+                        <Button disabled={form.processing}>
+                            <CheckCircle2 className="size-4" />
+                            {form.processing
+                                ? t('candidate.ai_interview_show.sending')
+                                : t(
+                                      'candidate.ai_interview_show.complete_and_submit',
+                                  )}
+                        </Button>
+                    </div>
+                </form>
+            </CardContent>
+        </Card>
+    );
+}
+
 CandidateAiInterviewShow.layout = ({ session }: AiInterviewShowProps) => ({
     breadcrumbs: [
         {
-            title: 'AI Interview',
+            title: 'AI Simulator',
             href: index(),
         },
         {
-            title: session.job_title ?? 'Simulasi',
+            title: session.job_title ?? 'Wawancara',
             href: show(session.id),
         },
     ],

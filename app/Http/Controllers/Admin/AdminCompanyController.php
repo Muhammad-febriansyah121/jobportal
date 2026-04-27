@@ -98,7 +98,7 @@ class AdminCompanyController extends Controller
 
     public function show(Company $company): Response
     {
-        $company->load(['industry:id,name', 'owner:id,name,email', 'latestVerification', 'activeSubscription.pricingPlan:id,name,duration_days']);
+        $company->load(['industry:id,name', 'owner:id,name,email', 'latestVerification', 'activeSubscription.plan:id,name,duration_days']);
 
         $latestAiInsight = AiAuditLog::query()
             ->where('feature', 'admin_company_insight')
@@ -120,6 +120,11 @@ class AdminCompanyController extends Controller
             'backHref' => route('admin.companies.index'),
             'actions' => $this->companyActions($company),
             'aiSummary' => $aiSummary,
+            'hero' => [
+                'name' => $company->name,
+                'logo_url' => $company->logo_url ? asset(ltrim($company->logo_url, '/')) : null,
+                'cover_url' => $company->cover_url ? asset(ltrim($company->cover_url, '/')) : null,
+            ],
             'sections' => [
                 [
                     'title' => 'Profil perusahaan',
@@ -158,7 +163,7 @@ class AdminCompanyController extends Controller
                 [
                     'title' => 'Langganan aktif',
                     'items' => [
-                        ['label' => 'Paket', 'value' => $company->activeSubscription?->pricingPlan?->name ?? 'Tidak ada paket aktif'],
+                        ['label' => 'Paket', 'value' => $company->activeSubscription?->plan?->name ?? 'Tidak ada paket aktif'],
                         ['label' => 'Status', 'value' => $company->activeSubscription ? str($company->activeSubscription->status)->headline()->toString() : '-'],
                         ['label' => 'Mulai', 'value' => $company->activeSubscription?->starts_at?->format('d M Y') ?? '-'],
                         ['label' => 'Berakhir', 'value' => $company->activeSubscription?->ends_at?->format('d M Y') ?? '-'],
@@ -215,11 +220,12 @@ class AdminCompanyController extends Controller
                         ['key' => 'legal_name', 'label' => 'Nama legal'],
                         ['key' => 'nib', 'label' => 'NIB'],
                         ['key' => 'npwp', 'label' => 'NPWP'],
+                        ['key' => 'document_url', 'label' => 'Dokumen'],
                         ['key' => 'status', 'label' => 'Status'],
                         ['key' => 'reviewed_at', 'label' => 'Review'],
                     ],
                     'rows' => CompanyVerification::query()
-                        ->select(['id', 'company_id', 'legal_name', 'nib', 'npwp', 'status', 'reviewed_at'])
+                        ->select(['id', 'company_id', 'legal_name', 'nib', 'npwp', 'document_url', 'status', 'reviewed_at'])
                         ->whereBelongsTo($company)
                         ->latest()
                         ->limit(10)
@@ -229,6 +235,9 @@ class AdminCompanyController extends Controller
                             'legal_name' => $verification->legal_name,
                             'nib' => $verification->nib ?? '-',
                             'npwp' => $verification->npwp ?? '-',
+                            'document_url' => $verification->document_url
+                                ? ['type' => 'link', 'href' => asset(ltrim($verification->document_url, '/')), 'label' => 'Lihat Dokumen']
+                                : '-',
                             'status' => str($verification->status)->headline()->toString(),
                             'reviewed_at' => $verification->reviewed_at?->format('d M Y H:i') ?? '-',
                         ]),
@@ -280,14 +289,14 @@ class AdminCompanyController extends Controller
                     ],
                     'rows' => Subscription::query()
                         ->select(['id', 'company_id', 'pricing_plan_id', 'status', 'starts_at', 'ends_at'])
-                        ->with(['pricingPlan:id,name'])
+                        ->with(['plan:id,name'])
                         ->whereBelongsTo($company)
                         ->latest()
                         ->limit(10)
                         ->get()
                         ->map(fn (Subscription $subscription): array => [
                             'id' => $subscription->id,
-                            'plan' => $subscription->pricingPlan?->name ?? '-',
+                            'plan' => $subscription->plan?->name ?? '-',
                             'status' => str($subscription->status)->headline()->toString(),
                             'starts_at' => $subscription->starts_at?->format('d M Y') ?? '-',
                             'ends_at' => $subscription->ends_at?->format('d M Y') ?? '-',

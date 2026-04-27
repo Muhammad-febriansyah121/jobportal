@@ -1,6 +1,8 @@
-import { Form, Head, Link } from '@inertiajs/react';
-import { type FormComponentRef } from '@inertiajs/core';
-import { type MouseEvent, useEffect, useRef } from 'react';
+import type { FormComponentRef } from '@inertiajs/core';
+import { Form, Head, Link, usePage } from '@inertiajs/react';
+import type { MouseEvent } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -8,12 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Marquee } from '@/components/ui/marquee';
 import { Spinner } from '@/components/ui/spinner';
-import { register } from '@/routes';
+import { useTranslate } from '@/hooks/use-translate';
+import { home, register } from '@/routes';
+import { redirect as googleRedirect } from '@/routes/auth/google';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
-import AppLogoIcon from '@/components/app-logo-icon';
-import { home } from '@/routes';
 
 type Props = {
     status?: string;
@@ -21,13 +24,28 @@ type Props = {
     canRegister: boolean;
     recaptchaSiteKey?: string;
     recaptchaEnabled?: boolean;
+    googleLoginClientId?: string;
 };
+
+const partnerCompanies = [
+    { name: 'Gojek', domain: 'gojek.com' },
+    { name: 'Tokopedia', domain: 'tokopedia.com' },
+    { name: 'Traveloka', domain: 'traveloka.com' },
+    { name: 'Bukalapak', domain: 'bukalapak.com' },
+    { name: 'Shopee', domain: 'shopee.co.id' },
+    { name: 'Grab', domain: 'grab.com' },
+    { name: 'Blibli', domain: 'blibli.com' },
+    { name: 'Ruangguru', domain: 'ruangguru.com' },
+];
 
 declare global {
     interface Window {
         grecaptcha: {
             ready: (callback: () => void) => void;
-            execute: (siteKey: string, options: { action: string }) => Promise<string>;
+            execute: (
+                siteKey: string,
+                options: { action: string },
+            ) => Promise<string>;
         };
     }
 }
@@ -38,12 +56,43 @@ export default function Login({
     canRegister,
     recaptchaSiteKey = '',
     recaptchaEnabled = false,
+    googleLoginClientId = '',
 }: Props) {
+    const {
+        name,
+        branding,
+        errors: pageErrors,
+    } = usePage().props as {
+        name: string;
+        branding?: {
+            name?: string;
+            logo_url?: string | null;
+            login_banner_url?: string | null;
+        };
+        errors?: Record<string, string>;
+    };
+
+    const { t } = useTranslate();
+
+    const siteName = branding?.name ?? name;
+    const siteLogoUrl = branding?.logo_url ?? null;
+    const loginBannerUrl = branding?.login_banner_url ?? null;
     const recaptchaInputRef = useRef<HTMLInputElement>(null);
     const formRef = useRef<FormComponentRef>(null);
 
+    const stats = useMemo(
+        () => [
+            { value: '50K+', label: t('auth.login.stat_jobs') },
+            { value: '10K+', label: t('auth.login.stat_companies') },
+            { value: '500K+', label: t('auth.login.stat_candidates') },
+        ],
+        [t],
+    );
+
     useEffect(() => {
-        if (!recaptchaEnabled || !recaptchaSiteKey) return;
+        if (!recaptchaEnabled || !recaptchaSiteKey) {
+            return;
+        }
 
         const script = document.createElement('script');
         script.src = `https://www.google.com/recaptcha/api.js?render=${recaptchaSiteKey}`;
@@ -58,12 +107,20 @@ export default function Login({
     }, [recaptchaEnabled, recaptchaSiteKey]);
 
     const handleSubmitClick = async (e: MouseEvent<HTMLButtonElement>) => {
-        if (!recaptchaEnabled || !recaptchaSiteKey || !recaptchaInputRef.current) return;
+        if (
+            !recaptchaEnabled ||
+            !recaptchaSiteKey ||
+            !recaptchaInputRef.current
+        ) {
+            return;
+        }
 
         e.preventDefault();
 
         try {
-            await new Promise<void>((resolve) => window.grecaptcha.ready(resolve));
+            await new Promise<void>((resolve) =>
+                window.grecaptcha.ready(resolve),
+            );
             const token = await window.grecaptcha.execute(recaptchaSiteKey, {
                 action: 'login',
             });
@@ -77,111 +134,148 @@ export default function Login({
 
     return (
         <>
-            <Head title="Masuk" />
+            <Head title={t('auth.login.head_title')} />
 
             {/* Full-screen split layout */}
-            <div className="relative grid min-h-dvh lg:grid-cols-2">
+            <div className="relative grid h-dvh overflow-hidden bg-white lg:grid-cols-2">
+                <div className="pointer-events-none absolute -top-32 -left-24 h-80 w-80 rounded-full bg-primary/20 blur-3xl" />
+                <div className="pointer-events-none absolute right-0 bottom-0 h-96 w-96 rounded-full bg-primary/15 blur-3xl" />
+                <div className="pointer-events-none absolute top-1/2 left-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl" />
                 {/* Left panel — brand/illustration */}
-                <div className="relative hidden flex-col overflow-hidden bg-gradient-to-br from-[oklch(0.20_0.05_255)] via-[oklch(0.15_0.03_265)] to-[oklch(0.10_0.02_275)] lg:flex">
-                    {/* Decorative blobs */}
-                    <div className="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
-                    <div className="pointer-events-none absolute -right-20 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-primary/15 blur-3xl" />
-                    <div className="pointer-events-none absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-primary/10 blur-2xl" />
-
-                    {/* Grid overlay */}
+                <div className="relative hidden flex-col overflow-hidden border-r border-primary/10 bg-white lg:flex">
+                    {loginBannerUrl ? (
+                        <div
+                            className="absolute inset-0 bg-cover bg-center"
+                            style={{
+                                backgroundImage: `url(${loginBannerUrl})`,
+                            }}
+                        />
+                    ) : null}
+                    <div className="absolute inset-0 bg-white/75 backdrop-blur-[1px]" />
                     <div
                         className="absolute inset-0 opacity-[0.04]"
                         style={{
                             backgroundImage:
-                                'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
-                            backgroundSize: '40px 40px',
+                                'linear-gradient(rgba(237,106,47,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(237,106,47,0.5) 1px, transparent 1px)',
+                            backgroundSize: '42px 42px',
                         }}
                     />
 
                     {/* Content */}
                     <div className="relative z-10 flex h-full flex-col justify-between p-10">
                         {/* Logo */}
-                        <Link href={home()} className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/20 ring-1 ring-primary/30">
-                                <AppLogoIcon className="size-6 fill-current text-primary" />
+                        <Link href={home()}>
+                            <div className="flex h-20 max-w-[260px] items-center">
+                                {siteLogoUrl ? (
+                                    <img
+                                        src={siteLogoUrl}
+                                        alt={siteName}
+                                        className="h-full w-auto max-w-full object-contain"
+                                    />
+                                ) : (
+                                    <AppLogoIcon className="size-20 fill-current text-primary" />
+                                )}
                             </div>
-                            <span className="text-lg font-semibold tracking-wide text-white">Karivia</span>
                         </Link>
 
                         {/* Hero text */}
                         <div className="space-y-6">
                             <div className="space-y-3">
-                                <span className="inline-block rounded-full bg-primary/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary ring-1 ring-primary/30">
-                                    Platform Karir #1 Indonesia
+                                <span className="inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold tracking-widest text-primary uppercase ring-1 ring-primary/20 backdrop-blur-sm">
+                                    {t('auth.login.platform_badge')}
                                 </span>
-                                <h2 className="text-4xl leading-tight font-bold text-white xl:text-5xl">
-                                    Temukan Karir
+                                <h2 className="text-4xl leading-tight font-bold text-foreground xl:text-5xl">
+                                    {t('auth.login.hero_title_1')}
                                     <br />
-                                    <span className="bg-gradient-to-r from-primary to-orange-300 bg-clip-text text-transparent">
-                                        Impian Kamu
+                                    <span className="text-primary">
+                                        {t('auth.login.hero_title_2')}
                                     </span>
                                 </h2>
-                                <p className="max-w-sm text-sm leading-relaxed text-white/60">
-                                    Bergabunglah dengan ribuan profesional yang telah menemukan peluang karir terbaik melalui Karivia.
+                                <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+                                    {t('auth.login.hero_description', { siteName })}
                                 </p>
                             </div>
 
                             {/* Stats */}
                             <div className="grid grid-cols-3 gap-4">
-                                {[
-                                    { value: '50K+', label: 'Lowongan' },
-                                    { value: '10K+', label: 'Perusahaan' },
-                                    { value: '500K+', label: 'Kandidat' },
-                                ].map((stat) => (
+                                {stats.map((stat) => (
                                     <div
                                         key={stat.label}
-                                        className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10 backdrop-blur-sm"
+                                        className="rounded-xl border border-primary/15 bg-white/70 p-4 shadow-xs backdrop-blur-md"
                                     >
-                                        <p className="text-xl font-bold text-white">{stat.value}</p>
-                                        <p className="mt-0.5 text-xs text-white/50">{stat.label}</p>
+                                        <p className="text-xl font-bold text-foreground">
+                                            {stat.value}
+                                        </p>
+                                        <p className="mt-0.5 text-xs text-muted-foreground">
+                                            {stat.label}
+                                        </p>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Testimonial */}
-                        <div className="rounded-2xl bg-white/5 p-6 ring-1 ring-white/10 backdrop-blur-sm">
-                            <p className="text-sm italic leading-relaxed text-white/70">
-                                "Karivia membantu saya menemukan pekerjaan impian dalam waktu kurang dari 2 minggu. Platform terbaik!"
+                        {/* Partner companies */}
+                        <div className="rounded-2xl border border-primary/15 bg-white/70 p-4 shadow-xs backdrop-blur-md">
+                            <p className="mb-3 text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+                                {t('auth.login.trusted_by')}
                             </p>
-                            <div className="mt-4 flex items-center gap-3">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/30 text-sm font-bold text-white">
-                                    A
-                                </div>
-                                <div>
-                                    <p className="text-sm font-semibold text-white">Andi Saputra</p>
-                                    <p className="text-xs text-white/50">Software Engineer · Jakarta</p>
-                                </div>
-                            </div>
+
+                            <Marquee
+                                pauseOnHover
+                                className="p-0 [--duration:24s] [--gap:0.75rem]"
+                            >
+                                {partnerCompanies.map((company) => (
+                                    <div
+                                        key={company.name}
+                                        className="flex h-11 items-center gap-2.5 rounded-xl border border-primary/15 bg-white/90 px-4 backdrop-blur-sm"
+                                    >
+                                        <img
+                                            src={`https://www.google.com/s2/favicons?domain=${company.domain}&sz=64`}
+                                            alt={company.name}
+                                            className="h-5 w-5 rounded object-contain"
+                                            onError={(e) => {
+                                                (
+                                                    e.currentTarget as HTMLImageElement
+                                                ).style.display = 'none';
+                                            }}
+                                        />
+                                        <span className="text-sm font-semibold tracking-wide text-foreground">
+                                            {company.name}
+                                        </span>
+                                    </div>
+                                ))}
+                            </Marquee>
                         </div>
                     </div>
                 </div>
 
                 {/* Right panel — login form */}
-                <div className="flex flex-col items-center justify-center bg-background px-6 py-12 md:px-12 lg:px-16">
+                <div className="relative z-10 flex flex-col items-center justify-center overflow-y-auto bg-white px-6 py-12 md:px-12 lg:px-16">
                     {/* Mobile logo */}
                     <div className="mb-8 flex w-full max-w-sm flex-col items-center lg:hidden">
-                        <Link href={home()} className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                                <AppLogoIcon className="size-6 fill-current text-primary" />
+                        <Link href={home()}>
+                            <div className="flex h-14 max-w-[220px] items-center justify-center">
+                                {siteLogoUrl ? (
+                                    <img
+                                        src={siteLogoUrl}
+                                        alt={siteName}
+                                        className="h-full w-auto max-w-full object-contain"
+                                    />
+                                ) : (
+                                    <AppLogoIcon className="size-14 fill-current text-primary" />
+                                )}
                             </div>
-                            <span className="text-lg font-semibold">Karivia</span>
                         </Link>
                     </div>
 
-                    <div className="w-full max-w-sm space-y-8">
+                    <div className="w-full max-w-sm space-y-8 rounded-2xl border border-primary/15 bg-white/80 p-6 shadow-xl shadow-primary/10 backdrop-blur-md md:p-8">
                         {/* Header */}
                         <div className="space-y-2">
                             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                                Selamat datang kembali
+                                {t('auth.login.welcome_back')}
                             </h1>
                             <p className="text-sm text-muted-foreground">
-                                Masuk ke akun Karivia kamu untuk melanjutkan
+                                {t('auth.login.subtitle', { siteName })}
                             </p>
                         </div>
 
@@ -193,7 +287,8 @@ export default function Login({
                         )}
 
                         <Form
-                            {...store.form()}
+                            action={store.url()}
+                            method="post"
                             resetOnSuccess={['password']}
                             className="space-y-5"
                             ref={formRef}
@@ -209,8 +304,11 @@ export default function Login({
 
                                     {/* Email */}
                                     <div className="space-y-2">
-                                        <Label htmlFor="email" className="text-sm font-medium">
-                                            Alamat Email
+                                        <Label
+                                            htmlFor="email"
+                                            className="text-sm font-medium"
+                                        >
+                                            {t('auth.login.email_label')}
                                         </Label>
                                         <Input
                                             id="email"
@@ -220,7 +318,7 @@ export default function Login({
                                             autoFocus
                                             tabIndex={1}
                                             autoComplete="email"
-                                            placeholder="kamu@example.com"
+                                            placeholder={t('auth.login.email_placeholder')}
                                             className="h-11 rounded-lg bg-muted/50 transition-shadow focus:ring-2 focus:ring-primary/20"
                                         />
                                         <InputError message={errors.email} />
@@ -229,8 +327,11 @@ export default function Login({
                                     {/* Password */}
                                     <div className="space-y-2">
                                         <div className="flex items-center justify-between">
-                                            <Label htmlFor="password" className="text-sm font-medium">
-                                                Password
+                                            <Label
+                                                htmlFor="password"
+                                                className="text-sm font-medium"
+                                            >
+                                                {t('auth.login.password_label')}
                                             </Label>
                                             {canResetPassword && (
                                                 <TextLink
@@ -238,7 +339,7 @@ export default function Login({
                                                     className="text-xs text-primary hover:underline"
                                                     tabIndex={5}
                                                 >
-                                                    Lupa password?
+                                                    {t('auth.login.forgot_password')}
                                                 </TextLink>
                                             )}
                                         </div>
@@ -248,7 +349,7 @@ export default function Login({
                                             required
                                             tabIndex={2}
                                             autoComplete="current-password"
-                                            placeholder="Masukkan password"
+                                            placeholder={t('auth.login.password_placeholder')}
                                             className="h-11 rounded-lg bg-muted/50 transition-shadow focus:ring-2 focus:ring-primary/20"
                                         />
                                         <InputError message={errors.password} />
@@ -265,7 +366,7 @@ export default function Login({
                                             htmlFor="remember"
                                             className="cursor-pointer text-sm text-muted-foreground"
                                         >
-                                            Ingat saya selama 30 hari
+                                            {t('auth.login.remember_me')}
                                         </Label>
                                     </div>
 
@@ -281,24 +382,57 @@ export default function Login({
                                         {processing ? (
                                             <>
                                                 <Spinner className="mr-2" />
-                                                Masuk...
+                                                {t('auth.login.submitting')}
                                             </>
                                         ) : (
-                                            'Masuk'
+                                            t('auth.login.submit')
                                         )}
                                     </Button>
+
+                                    {googleLoginClientId !== '' && (
+                                        <div className="space-y-3">
+                                            <div className="relative text-center text-xs text-muted-foreground">
+                                                <span className="relative z-10 bg-white px-2">
+                                                    {t('auth.login.divider_or')}
+                                                </span>
+                                                <span className="absolute top-1/2 left-0 w-full -translate-y-1/2 border-t" />
+                                            </div>
+                                            <Button
+                                                asChild
+                                                type="button"
+                                                variant="outline"
+                                                className="h-11 w-full rounded-lg border border-primary/25 font-semibold"
+                                            >
+                                                <a href={googleRedirect().url}>
+                                                    <svg viewBox="0 0 24 24" className="size-5 shrink-0" aria-hidden="true">
+                                                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                                                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                                                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
+                                                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                                                    </svg>
+                                                    {t('auth.login.continue_with_google')}
+                                                </a>
+                                            </Button>
+                                            <InputError
+                                                message={
+                                                    errors.google ??
+                                                    pageErrors?.google
+                                                }
+                                            />
+                                        </div>
+                                    )}
 
                                     {/* reCAPTCHA badge notice */}
                                     {recaptchaEnabled && (
                                         <p className="text-center text-xs text-muted-foreground">
-                                            Dilindungi oleh reCAPTCHA.{' '}
+                                            {t('auth.login.recaptcha_protected')}{' '}
                                             <a
                                                 href="https://policies.google.com/privacy"
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 className="underline underline-offset-2 hover:text-foreground"
                                             >
-                                                Privasi
+                                                {t('auth.login.recaptcha_privacy')}
                                             </a>{' '}
                                             &{' '}
                                             <a
@@ -307,9 +441,9 @@ export default function Login({
                                                 rel="noreferrer"
                                                 className="underline underline-offset-2 hover:text-foreground"
                                             >
-                                                Syarat
+                                                {t('auth.login.recaptcha_terms')}
                                             </a>{' '}
-                                            berlaku.
+                                            {t('auth.login.recaptcha_apply')}
                                         </p>
                                     )}
                                 </>
@@ -318,21 +452,36 @@ export default function Login({
 
                         {/* Register link */}
                         {canRegister && (
-                            <p className="text-center text-sm text-muted-foreground">
-                                Belum punya akun?{' '}
-                                <TextLink
-                                    href={register()}
-                                    tabIndex={6}
-                                    className="font-semibold text-primary hover:underline"
-                                >
-                                    Daftar sekarang
-                                </TextLink>
-                            </p>
+                            <div className="space-y-1.5 text-center">
+                                <p className="text-sm text-muted-foreground">
+                                    {t('auth.login.no_account')}{' '}
+                                    <TextLink
+                                        href={register({
+                                            query: { type: 'candidate' },
+                                        })}
+                                        tabIndex={6}
+                                        className="font-semibold text-primary hover:underline"
+                                    >
+                                        {t('auth.login.register_candidate')}
+                                    </TextLink>
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    {t('auth.login.want_company_register')}{' '}
+                                    <TextLink
+                                        href={register({
+                                            query: { type: 'employer' },
+                                        })}
+                                        className="font-semibold text-primary hover:underline"
+                                    >
+                                        {t('auth.login.click_here')}
+                                    </TextLink>
+                                </p>
+                            </div>
                         )}
 
                         {/* Footer */}
                         <p className="text-center text-xs text-muted-foreground/60">
-                            © {new Date().getFullYear()} Karivia. Hak cipta dilindungi.
+                            © {new Date().getFullYear()} {siteName}. {t('auth.login.copyright')}
                         </p>
                     </div>
                 </div>
@@ -340,5 +489,3 @@ export default function Login({
         </>
     );
 }
-
-

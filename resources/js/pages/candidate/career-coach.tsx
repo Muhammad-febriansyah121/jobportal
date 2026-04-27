@@ -1,7 +1,7 @@
 import { Form, Head } from '@inertiajs/react';
 import CandidateCareerCoachController from '@/actions/App/Http/Controllers/Candidate/CandidateCareerCoachController';
-import Heading from '@/components/heading';
 import { Field, Textarea } from '@/components/candidate/candidate-form';
+import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,6 +12,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useTranslate } from '@/hooks/use-translate';
 import { index } from '@/routes/candidate/career-coach';
 
 type CareerCoachProps = {
@@ -45,22 +46,28 @@ export default function CandidateCareerCoach({
     activeSession,
     recommendations,
 }: CareerCoachProps) {
+    const { t } = useTranslate();
+
     return (
         <>
-            <Head title="Career Coach" />
+            <Head title={t('candidate.career_coach.page_title')} />
             <div className="space-y-6 p-4 md:p-6">
                 <Heading
-                    title="Career Coach"
-                    description="Catat arah karier, pertanyaan, dan rekomendasi pengembangan berikutnya."
+                    title={t('candidate.career_coach.page_title')}
+                    description={t('candidate.career_coach.page_description')}
                 />
 
                 <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
                     <div className="space-y-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Mulai sesi</CardTitle>
+                                <CardTitle>
+                                    {t('candidate.career_coach.start_session')}
+                                </CardTitle>
                                 <CardDescription>
-                                    Beri judul sesi agar mudah dilacak.
+                                    {t(
+                                        'candidate.career_coach.start_session_description',
+                                    )}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -71,17 +78,23 @@ export default function CandidateCareerCoach({
                                     {({ processing, errors }) => (
                                         <>
                                             <Field
-                                                label="Judul"
+                                                label={t(
+                                                    'candidate.career_coach.title_label',
+                                                )}
                                                 name="title"
                                                 error={errors.title}
                                             >
                                                 <Input
                                                     name="title"
-                                                    placeholder="Rencana pindah ke Product Manager"
+                                                    placeholder={t(
+                                                        'candidate.career_coach.title_placeholder',
+                                                    )}
                                                 />
                                             </Field>
                                             <Button disabled={processing}>
-                                                Mulai sesi
+                                                {t(
+                                                    'candidate.career_coach.start_session',
+                                                )}
                                             </Button>
                                         </>
                                     )}
@@ -91,7 +104,9 @@ export default function CandidateCareerCoach({
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Sesi</CardTitle>
+                                <CardTitle>
+                                    {t('candidate.career_coach.sessions')}
+                                </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 {sessions.map((session) => (
@@ -100,7 +115,10 @@ export default function CandidateCareerCoach({
                                         key={session.id}
                                     >
                                         <p className="font-medium">
-                                            {session.title ?? 'Career coaching'}
+                                            {session.title ??
+                                                t(
+                                                    'candidate.career_coach.default_session_title',
+                                                )}
                                         </p>
                                         <p className="text-sm text-muted-foreground">
                                             {session.status} ·{' '}
@@ -116,11 +134,14 @@ export default function CandidateCareerCoach({
                         <Card>
                             <CardHeader>
                                 <CardTitle>
-                                    {activeSession?.title ?? 'Percakapan'}
+                                    {activeSession?.title ??
+                                        t(
+                                            'candidate.career_coach.conversation_title',
+                                        )}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="max-h-[420px] space-y-3 overflow-auto rounded-lg border p-3">
+                                <div className="max-h-105 space-y-3 overflow-auto rounded-lg border p-3">
                                     {activeSession?.messages.length ? (
                                         activeSession.messages.map(
                                             (message) => (
@@ -138,8 +159,9 @@ export default function CandidateCareerCoach({
                                         )
                                     ) : (
                                         <p className="text-sm text-muted-foreground">
-                                            Mulai sesi lalu kirim pertanyaan
-                                            pertama.
+                                            {t(
+                                                'candidate.career_coach.empty_conversation',
+                                            )}
                                         </p>
                                     )}
                                 </div>
@@ -157,17 +179,23 @@ export default function CandidateCareerCoach({
                                                 />
                                             ) : null}
                                             <Field
-                                                label="Pesan"
+                                                label={t(
+                                                    'candidate.career_coach.message_label',
+                                                )}
                                                 name="content"
                                                 error={errors.content}
                                             >
                                                 <Textarea
                                                     name="content"
-                                                    placeholder="Tanya soal skill gap, arah role, atau strategi apply."
+                                                    placeholder={t(
+                                                        'candidate.career_coach.message_placeholder',
+                                                    )}
                                                 />
                                             </Field>
                                             <Button disabled={processing}>
-                                                Kirim pesan
+                                                {t(
+                                                    'candidate.career_coach.send_message',
+                                                )}
                                             </Button>
                                         </>
                                     )}
@@ -177,7 +205,11 @@ export default function CandidateCareerCoach({
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Rekomendasi</CardTitle>
+                                <CardTitle>
+                                    {t(
+                                        'candidate.career_coach.recommendations',
+                                    )}
+                                </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 {recommendations.length ? (
@@ -203,8 +235,9 @@ export default function CandidateCareerCoach({
                                     ))
                                 ) : (
                                     <p className="text-sm text-muted-foreground">
-                                        Rekomendasi akan muncul setelah sesi
-                                        coaching berjalan.
+                                        {t(
+                                            'candidate.career_coach.recommendations_empty',
+                                        )}
                                     </p>
                                 )}
                             </CardContent>

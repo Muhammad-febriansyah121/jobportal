@@ -24,9 +24,9 @@ function Toaster({ ...props }: ToasterProps) {
                     '--error-bg': '#fef2f2',
                     '--error-text': '#b91c1c',
                     '--error-border': '#fca5a5',
-                    '--warning-bg': '#fffbeb',
-                    '--warning-text': '#b45309',
-                    '--warning-border': '#fcd34d',
+                    '--warning-bg': 'var(--secondary-50)',
+                    '--warning-text': 'var(--secondary-700)',
+                    '--warning-border': 'var(--secondary-300)',
                 } as React.CSSProperties
             }
             {...props}

@@ -1,240 +1,124 @@
-import { Form, Head } from '@inertiajs/react';
-import { ShieldCheck } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
+import { Head, useForm } from '@inertiajs/react';
+import { KeyRound } from 'lucide-react';
+import type { FormEvent } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
-import TwoFactorRecoveryCodes from '@/components/two-factor-recovery-codes';
-import TwoFactorSetupModal from '@/components/two-factor-setup-modal';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
+import { useTranslate } from '@/hooks/use-translate';
 import { edit } from '@/routes/security';
-import { disable, enable } from '@/routes/two-factor';
+import { update as updatePassword } from '@/routes/user-password';
 
-type Props = {
-    canManageTwoFactor?: boolean;
-    requiresConfirmation?: boolean;
-    twoFactorEnabled?: boolean;
-};
+export default function Security() {
+    const { t } = useTranslate();
+    const form = useForm({
+        current_password: '',
+        password: '',
+        password_confirmation: '',
+    });
 
-export default function Security({
-    canManageTwoFactor = false,
-    requiresConfirmation = false,
-    twoFactorEnabled = false,
-}: Props) {
-    const passwordInput = useRef<HTMLInputElement>(null);
-    const currentPasswordInput = useRef<HTMLInputElement>(null);
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
 
-    const {
-        qrCodeSvg,
-        hasSetupData,
-        manualSetupKey,
-        clearSetupData,
-        clearTwoFactorAuthData,
-        fetchSetupData,
-        recoveryCodesList,
-        fetchRecoveryCodes,
-        errors,
-    } = useTwoFactorAuth();
-    const [showSetupModal, setShowSetupModal] = useState<boolean>(false);
-    const prevTwoFactorEnabled = useRef(twoFactorEnabled);
-
-    useEffect(() => {
-        if (prevTwoFactorEnabled.current && !twoFactorEnabled) {
-            clearTwoFactorAuthData();
-        }
-
-        prevTwoFactorEnabled.current = twoFactorEnabled;
-    }, [twoFactorEnabled, clearTwoFactorAuthData]);
+        form.transform((data) => ({
+            ...data,
+            _method: 'put',
+        }));
+        form.post(updatePassword().url, {
+            preserveScroll: true,
+            onSuccess: () =>
+                form.reset(
+                    'current_password',
+                    'password',
+                    'password_confirmation',
+                ),
+        });
+    };
 
     return (
         <>
-            <Head title="Security settings" />
+            <Head title={t('settings.security.head_title')} />
 
-            <h1 className="sr-only">Security settings</h1>
-
-            <div className="space-y-6">
+            <div className="space-y-8">
                 <Heading
                     variant="small"
-                    title="Update password"
-                    description="Ensure your account is using a long, random password to stay secure"
+                    title={t('settings.security.title')}
+                    description={t('settings.security.description')}
                 />
 
-                <Form
-                    {...SecurityController.update.form()}
-                    options={{
-                        preserveScroll: true,
-                    }}
-                    resetOnError={[
-                        'password',
-                        'password_confirmation',
-                        'current_password',
-                    ]}
-                    resetOnSuccess
-                    onError={(errors) => {
-                        if (errors.password) {
-                            passwordInput.current?.focus();
-                        }
-
-                        if (errors.current_password) {
-                            currentPasswordInput.current?.focus();
-                        }
-                    }}
-                    className="space-y-6"
-                >
-                    {({ errors, processing }) => (
-                        <>
-                            <div className="grid gap-2">
-                                <Label htmlFor="current_password">
-                                    Current password
-                                </Label>
-
-                                <PasswordInput
-                                    id="current_password"
-                                    ref={currentPasswordInput}
-                                    name="current_password"
-                                    className="mt-1 block w-full"
-                                    autoComplete="current-password"
-                                    placeholder="Current password"
-                                />
-
-                                <InputError message={errors.current_password} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="password">New password</Label>
-
-                                <PasswordInput
-                                    id="password"
-                                    ref={passwordInput}
-                                    name="password"
-                                    className="mt-1 block w-full"
-                                    autoComplete="new-password"
-                                    placeholder="New password"
-                                />
-
-                                <InputError message={errors.password} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="password_confirmation">
-                                    Confirm password
-                                </Label>
-
-                                <PasswordInput
-                                    id="password_confirmation"
-                                    name="password_confirmation"
-                                    className="mt-1 block w-full"
-                                    autoComplete="new-password"
-                                    placeholder="Confirm password"
-                                />
-
-                                <InputError
-                                    message={errors.password_confirmation}
-                                />
-                            </div>
-
-                            <div className="flex items-center gap-4">
-                                <Button
-                                    disabled={processing}
-                                    data-test="update-password-button"
-                                >
-                                    Save password
-                                </Button>
-                            </div>
-                        </>
-                    )}
-                </Form>
-            </div>
-
-            {canManageTwoFactor && (
-                <div className="space-y-6">
-                    <Heading
-                        variant="small"
-                        title="Two-factor authentication"
-                        description="Manage your two-factor authentication settings"
-                    />
-                    {twoFactorEnabled ? (
-                        <div className="flex flex-col items-start justify-start space-y-4">
-                            <p className="text-sm text-muted-foreground">
-                                You will be prompted for a secure, random pin
-                                during login, which you can retrieve from the
-                                TOTP-supported application on your phone.
-                            </p>
-
-                            <div className="relative inline">
-                                <Form {...disable.form()}>
-                                    {({ processing }) => (
-                                        <Button
-                                            variant="destructive"
-                                            type="submit"
-                                            disabled={processing}
-                                        >
-                                            Disable 2FA
-                                        </Button>
-                                    )}
-                                </Form>
-                            </div>
-
-                            <TwoFactorRecoveryCodes
-                                recoveryCodesList={recoveryCodesList}
-                                fetchRecoveryCodes={fetchRecoveryCodes}
-                                errors={errors}
+                <form onSubmit={submit} className="space-y-6">
+                    <section className="grid gap-5 rounded-xl border bg-card p-4 md:p-6">
+                        <div className="grid gap-2">
+                            <Label htmlFor="current_password">
+                                {t('settings.security.current_password_label')}
+                            </Label>
+                            <PasswordInput
+                                id="current_password"
+                                name="current_password"
+                                value={form.data.current_password}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'current_password',
+                                        event.target.value,
+                                    )
+                                }
+                                autoComplete="current-password"
+                                placeholder={t('settings.security.current_password_placeholder')}
+                            />
+                            <InputError
+                                message={form.errors.current_password}
                             />
                         </div>
-                    ) : (
-                        <div className="flex flex-col items-start justify-start space-y-4">
-                            <p className="text-sm text-muted-foreground">
-                                When you enable two-factor authentication, you
-                                will be prompted for a secure pin during login.
-                                This pin can be retrieved from a TOTP-supported
-                                application on your phone.
-                            </p>
 
-                            <div>
-                                {hasSetupData ? (
-                                    <Button
-                                        onClick={() => setShowSetupModal(true)}
-                                    >
-                                        <ShieldCheck />
-                                        Continue setup
-                                    </Button>
-                                ) : (
-                                    <Form
-                                        {...enable.form()}
-                                        onSuccess={() =>
-                                            setShowSetupModal(true)
-                                        }
-                                    >
-                                        {({ processing }) => (
-                                            <Button
-                                                type="submit"
-                                                disabled={processing}
-                                            >
-                                                Enable 2FA
-                                            </Button>
-                                        )}
-                                    </Form>
-                                )}
-                            </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="password">{t('settings.security.new_password_label')}</Label>
+                            <PasswordInput
+                                id="password"
+                                name="password"
+                                value={form.data.password}
+                                onChange={(event) =>
+                                    form.setData('password', event.target.value)
+                                }
+                                autoComplete="new-password"
+                                placeholder={t('settings.security.new_password_placeholder')}
+                            />
+                            <InputError message={form.errors.password} />
                         </div>
-                    )}
 
-                    <TwoFactorSetupModal
-                        isOpen={showSetupModal}
-                        onClose={() => setShowSetupModal(false)}
-                        requiresConfirmation={requiresConfirmation}
-                        twoFactorEnabled={twoFactorEnabled}
-                        qrCodeSvg={qrCodeSvg}
-                        manualSetupKey={manualSetupKey}
-                        clearSetupData={clearSetupData}
-                        fetchSetupData={fetchSetupData}
-                        errors={errors}
-                    />
-                </div>
-            )}
+                        <div className="grid gap-2">
+                            <Label htmlFor="password_confirmation">
+                                {t('settings.security.confirm_password_label')}
+                            </Label>
+                            <PasswordInput
+                                id="password_confirmation"
+                                name="password_confirmation"
+                                value={form.data.password_confirmation}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'password_confirmation',
+                                        event.target.value,
+                                    )
+                                }
+                                autoComplete="new-password"
+                                placeholder={t('settings.security.confirm_password_placeholder')}
+                            />
+                            <InputError
+                                message={form.errors.password_confirmation}
+                            />
+                        </div>
+                    </section>
+
+                    <div className="flex items-center gap-3">
+                        <Button type="submit" disabled={form.processing}>
+                            <KeyRound className="size-4" />
+                            {form.processing
+                                ? t('settings.security.saving')
+                                : t('settings.security.save')}
+                        </Button>
+                    </div>
+                </form>
+            </div>
         </>
     );
 }
@@ -242,7 +126,7 @@ export default function Security({
 Security.layout = {
     breadcrumbs: [
         {
-            title: 'Security settings',
+            title: 'Ganti Password',
             href: edit(),
         },
     ],

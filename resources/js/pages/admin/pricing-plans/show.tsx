@@ -3,7 +3,6 @@ import {
     BriefcaseBusiness,
     CalendarDays,
     Check,
-    Cpu,
     Search,
     Users,
 } from 'lucide-react';
@@ -11,6 +10,7 @@ import type { LucideIcon } from 'lucide-react';
 import { AdminActionList } from '@/components/admin/admin-action';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { Badge } from '@/components/ui/badge';
+import { useTranslate } from '@/hooks/use-translate';
 import type { AdminAction } from '@/types';
 
 type PricingPlanDetail = {
@@ -23,7 +23,6 @@ type PricingPlanDetail = {
     duration_label: string;
     active_jobs_limit: number;
     recruiter_seat_limit: number;
-    ai_screening_quota: number;
     talent_search_quota: number;
     features: string[];
     is_active: boolean;
@@ -47,6 +46,7 @@ export default function PricingPlanShow({
     plan,
     actions = [],
 }: PricingPlanShowProps) {
+    const { t } = useTranslate();
     return (
         <>
             <Head title={title} />
@@ -60,7 +60,7 @@ export default function PricingPlanShow({
 
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex flex-wrap gap-2">
-                        <Badge className="bg-[#f45113] text-white">
+                        <Badge className="bg-[#01296A] text-white">
                             {plan.slug}
                         </Badge>
                         <Badge
@@ -71,10 +71,10 @@ export default function PricingPlanShow({
                             }
                             variant={plan.is_active ? 'default' : 'outline'}
                         >
-                            {plan.is_active ? 'Aktif' : 'Nonaktif'}
+                            {plan.is_active ? t('admin.pricing_plans_show.active') : t('admin.pricing_plans_show.inactive')}
                         </Badge>
                         <Badge variant="outline">
-                            {plan.subscriptions_count} subscription
+                            {plan.subscriptions_count} {t('admin.pricing_plans_show.subscription')}
                         </Badge>
                     </div>
                     <AdminActionList actions={actions} />
@@ -82,8 +82,8 @@ export default function PricingPlanShow({
 
                 <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
                     <section className="rounded-lg border bg-white p-6 shadow-sm">
-                        <p className="text-sm font-semibold text-[#f45113]">
-                            Pricing Plan
+                        <p className="text-sm font-semibold text-[#01296A]">
+                            {t('admin.pricing_plans_show.pricing_plan')}
                         </p>
                         <h1 className="mt-3 text-3xl font-bold tracking-tight">
                             {plan.name}
@@ -92,9 +92,9 @@ export default function PricingPlanShow({
                             {plan.price_label}
                         </p>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            harga paket
+                            {t('admin.pricing_plans_show.price_label')}
                         </p>
-                        <p className="mt-5 inline-flex rounded-md bg-[#fff4ef] px-3 py-2 text-sm font-bold text-[#f45113]">
+                        <p className="mt-5 inline-flex rounded-md bg-[#eaf2ff] px-3 py-2 text-sm font-bold text-[#01296A]">
                             {plan.duration_label}
                         </p>
 
@@ -113,7 +113,7 @@ export default function PricingPlanShow({
                                 ))
                             ) : (
                                 <p className="text-sm text-muted-foreground">
-                                    Belum ada fitur ditulis.
+                                    {t('admin.pricing_plans_show.no_features')}
                                 </p>
                             )}
                         </div>
@@ -123,44 +123,39 @@ export default function PricingPlanShow({
                         <section className="grid gap-4 md:grid-cols-2">
                             <Metric
                                 icon={CalendarDays}
-                                label="Masa Aktif"
+                                label={t('admin.pricing_plans_show.active_period')}
                                 value={plan.duration_days}
-                                suffix="hari"
+                                suffix={t('admin.pricing_plans_show.days')}
                             />
                             <Metric
                                 icon={BriefcaseBusiness}
-                                label="Active Jobs"
+                                label={t('admin.pricing_plans_show.active_jobs')}
                                 value={plan.active_jobs_limit}
                             />
                             <Metric
                                 icon={Users}
-                                label="Recruiter Seat"
+                                label={t('admin.pricing_plans_show.recruiter_seat')}
                                 value={plan.recruiter_seat_limit}
                             />
                             <Metric
-                                icon={Cpu}
-                                label="AI Screening"
-                                value={plan.ai_screening_quota}
-                            />
-                            <Metric
                                 icon={Search}
-                                label="Talent Search"
+                                label={t('admin.pricing_plans_show.talent_search')}
                                 value={plan.talent_search_quota}
                             />
                         </section>
 
                         <section className="rounded-lg border bg-white p-5 shadow-sm">
                             <h2 className="text-lg font-semibold">
-                                Audit Ringkas
+                                {t('admin.pricing_plans_show.brief_audit')}
                             </h2>
                             <dl className="mt-4 grid gap-4 md:grid-cols-3">
-                                <Info label="Dibuat" value={plan.created_at ?? '-'} />
+                                <Info label={t('admin.pricing_plans_show.created_at')} value={plan.created_at ?? '-'} />
                                 <Info
-                                    label="Terakhir update"
+                                    label={t('admin.pricing_plans_show.last_update')}
                                     value={plan.updated_at ?? '-'}
                                 />
                                 <Info
-                                    label="Subscription aktif"
+                                    label={t('admin.pricing_plans_show.active_subscription')}
                                     value={String(plan.subscriptions_count)}
                                 />
                             </dl>
@@ -185,7 +180,7 @@ function Metric({
 }) {
     return (
         <div className="rounded-lg border bg-white p-5 shadow-sm">
-            <span className="flex size-11 items-center justify-center rounded-lg bg-[#fff4ef] text-[#f45113]">
+            <span className="flex size-11 items-center justify-center rounded-lg bg-[#eaf2ff] text-[#01296A]">
                 <Icon className="size-5" />
             </span>
             <p className="mt-4 text-sm font-semibold text-muted-foreground">

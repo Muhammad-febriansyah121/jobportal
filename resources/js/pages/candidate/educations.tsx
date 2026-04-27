@@ -1,8 +1,8 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { Trash2 } from 'lucide-react';
-import Heading from '@/components/heading';
 import { Field } from '@/components/candidate/candidate-form';
 import { EmptyState } from '@/components/candidate/candidate-ui';
+
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -12,6 +12,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useTranslate } from '@/hooks/use-translate';
 import {
     destroy as destroyEducation,
     index,
@@ -34,21 +35,21 @@ export default function CandidateEducations({
 }: {
     educations: Education[];
 }) {
+    const { t } = useTranslate();
+
     return (
         <>
-            <Head title="Pendidikan" />
-            <div className="space-y-6 p-4 md:p-6">
-                <Heading
-                    title="Pendidikan"
-                    description="Kelola riwayat pendidikan formal yang mendukung profil kamu."
-                />
+            <Head title={t('candidate.educations.page_title')} />
+            <div className="space-y-6">
                 <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-                    <EducationForm />
+                    <EducationForm t={t} />
                     <Card>
                         <CardHeader>
-                            <CardTitle>Riwayat pendidikan</CardTitle>
+                            <CardTitle>
+                                {t('candidate.educations.history_title')}
+                            </CardTitle>
                             <CardDescription>
-                                Pendidikan terbaru tampil lebih dulu.
+                                {t('candidate.educations.history_description')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -69,7 +70,9 @@ export default function CandidateEducations({
                                                         '-'}
                                                 </p>
                                                 <p className="text-sm text-muted-foreground">
-                                                    {education.start_year ?? '-'} -{' '}
+                                                    {education.start_year ??
+                                                        '-'}{' '}
+                                                    -{' '}
                                                     {education.end_year ?? '-'}
                                                 </p>
                                             </div>
@@ -86,17 +89,20 @@ export default function CandidateEducations({
                                                     as="button"
                                                 >
                                                     <Trash2 />
-                                                    Hapus
+                                                    {t(
+                                                        'candidate.educations.delete',
+                                                    )}
                                                 </Link>
                                             </Button>
                                         </div>
                                         <details className="mt-4">
                                             <summary className="cursor-pointer text-sm font-medium text-primary">
-                                                Edit pendidikan
+                                                {t('candidate.educations.edit')}
                                             </summary>
                                             <div className="mt-4">
                                                 <EducationForm
                                                     education={education}
+                                                    t={t}
                                                 />
                                             </div>
                                         </details>
@@ -104,8 +110,12 @@ export default function CandidateEducations({
                                 ))
                             ) : (
                                 <EmptyState
-                                    title="Belum ada pendidikan"
-                                    description="Tambahkan pendidikan terakhir atau yang paling relevan."
+                                    title={t(
+                                        'candidate.educations.empty_title',
+                                    )}
+                                    description={t(
+                                        'candidate.educations.empty_description',
+                                    )}
                                 />
                             )}
                         </CardContent>
@@ -116,52 +126,64 @@ export default function CandidateEducations({
     );
 }
 
-function EducationForm({ education }: { education?: Education }) {
+function EducationForm({
+    education,
+    t,
+}: {
+    education?: Education;
+    t: (key: string) => string;
+}) {
     const isEdit = Boolean(education);
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>
-                    {isEdit ? 'Edit pendidikan' : 'Tambah pendidikan'}
+                    {isEdit
+                        ? t('candidate.educations.form_edit_title')
+                        : t('candidate.educations.form_add_title')}
                 </CardTitle>
             </CardHeader>
             <CardContent>
                 <Form
                     {...(isEdit
-                        ? updateEducation.form(
-                              education!.id,
-                          )
+                        ? updateEducation.form(education!.id)
                         : storeEducation.form())}
                     className="space-y-4"
                 >
                     {({ processing, errors }) => (
                         <>
                             <Field
-                                label="Institusi"
+                                label={t('candidate.educations.institution')}
                                 name="institution"
                                 error={errors.institution}
                             >
                                 <Input
                                     name="institution"
                                     defaultValue={education?.institution ?? ''}
-                                    placeholder="Universitas Indonesia"
+                                    placeholder={t(
+                                        'candidate.educations.institution_placeholder',
+                                    )}
                                 />
                             </Field>
                             <div className="grid gap-4 md:grid-cols-2">
                                 <Field
-                                    label="Gelar"
+                                    label={t('candidate.educations.degree')}
                                     name="degree"
                                     error={errors.degree}
                                 >
                                     <Input
                                         name="degree"
                                         defaultValue={education?.degree ?? ''}
-                                        placeholder="S1"
+                                        placeholder={t(
+                                            'candidate.educations.degree_placeholder',
+                                        )}
                                     />
                                 </Field>
                                 <Field
-                                    label="Bidang studi"
+                                    label={t(
+                                        'candidate.educations.field_of_study',
+                                    )}
                                     name="field_of_study"
                                     error={errors.field_of_study}
                                 >
@@ -170,13 +192,15 @@ function EducationForm({ education }: { education?: Education }) {
                                         defaultValue={
                                             education?.field_of_study ?? ''
                                         }
-                                        placeholder="Informatika"
+                                        placeholder={t(
+                                            'candidate.educations.field_of_study_placeholder',
+                                        )}
                                     />
                                 </Field>
                             </div>
                             <div className="grid gap-4 md:grid-cols-3">
                                 <Field
-                                    label="Tahun mulai"
+                                    label={t('candidate.educations.start_year')}
                                     name="start_year"
                                     error={errors.start_year}
                                 >
@@ -186,11 +210,13 @@ function EducationForm({ education }: { education?: Education }) {
                                         defaultValue={
                                             education?.start_year ?? ''
                                         }
-                                        placeholder="2019"
+                                        placeholder={t(
+                                            'candidate.educations.start_year_placeholder',
+                                        )}
                                     />
                                 </Field>
                                 <Field
-                                    label="Tahun selesai"
+                                    label={t('candidate.educations.end_year')}
                                     name="end_year"
                                     error={errors.end_year}
                                 >
@@ -198,11 +224,13 @@ function EducationForm({ education }: { education?: Education }) {
                                         type="number"
                                         name="end_year"
                                         defaultValue={education?.end_year ?? ''}
-                                        placeholder="2023"
+                                        placeholder={t(
+                                            'candidate.educations.end_year_placeholder',
+                                        )}
                                     />
                                 </Field>
                                 <Field
-                                    label="GPA"
+                                    label={t('candidate.educations.gpa')}
                                     name="gpa"
                                     error={errors.gpa}
                                 >
@@ -211,16 +239,20 @@ function EducationForm({ education }: { education?: Education }) {
                                         step="0.01"
                                         name="gpa"
                                         defaultValue={education?.gpa ?? ''}
-                                        placeholder="3.75"
+                                        placeholder={t(
+                                            'candidate.educations.gpa_placeholder',
+                                        )}
                                     />
                                 </Field>
                             </div>
                             <Button disabled={processing}>
                                 {processing
-                                    ? 'Menyimpan...'
+                                    ? t('candidate.form.saving')
                                     : isEdit
-                                      ? 'Simpan perubahan'
-                                      : 'Tambah pendidikan'}
+                                      ? t('candidate.form.save_changes')
+                                      : t(
+                                            'candidate.educations.form_add_button',
+                                        )}
                             </Button>
                         </>
                     )}

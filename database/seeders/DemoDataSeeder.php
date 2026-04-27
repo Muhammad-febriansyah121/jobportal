@@ -40,6 +40,7 @@ use App\Models\UserNotification;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class DemoDataSeeder extends Seeder
@@ -231,8 +232,13 @@ class DemoDataSeeder extends Seeder
                     'is_active' => true,
                     'email_verified_at' => now(),
                     'password' => Hash::make('password'),
+                    'phone' => '+62812'.fake()->numerify('########'),
                 ],
             );
+
+            if ($user->phone === null) {
+                $user->forceFill(['phone' => '+62812'.fake()->numerify('########')])->save();
+            }
 
             CandidateProfile::firstOrCreate(
                 ['user_id' => $user->id],
@@ -260,6 +266,8 @@ class DemoDataSeeder extends Seeder
         $candidates = CandidateProfile::query()->with('user')->orderBy('id')->limit(self::TARGET_CANDIDATES)->get();
 
         $candidates->each(function (CandidateProfile $candidate, int $index) use ($skills): void {
+            $this->ensureDemoCandidateCvExists($candidate);
+
             CandidateCv::firstOrCreate(
                 ['candidate_id' => $candidate->id, 'file_url' => "/storage/demo/cvs/candidate-{$candidate->id}.pdf"],
                 [
@@ -288,6 +296,26 @@ class DemoDataSeeder extends Seeder
         });
 
         return $candidates;
+    }
+
+    private function ensureDemoCandidateCvExists(CandidateProfile $candidate): void
+    {
+        $path = "demo/cvs/candidate-{$candidate->id}.pdf";
+
+        if (Storage::disk('public')->exists($path)) {
+            return;
+        }
+
+        Storage::disk('public')->put($path, $this->demoCandidateCvPdfContent());
+    }
+
+    private function demoCandidateCvPdfContent(): string
+    {
+        // Keep PDF payload deterministic so generated files are always valid.
+        return base64_decode(
+            'JVBERi0xLjQKJUNWQlVJTERFUgoxIDAgb2JqCjw8IC9UeXBlIC9Gb250IC9TdWJ0eXBlIC9UeXBlMSAvQmFzZUZvbnQgL1RpbWVzLVJvbWFuID4+CmVuZG9iagoyIDAgb2JqCjw8IC9UeXBlIC9Gb250IC9TdWJ0eXBlIC9UeXBlMSAvQmFzZUZvbnQgL1RpbWVzLUJvbGQgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL0xlbmd0aCAyOTAgPj4Kc3RyZWFtCkJUIC9GMiAxOC4wMCBUZiAyMjIuNjIgODAwLjAwIFRkIChERU1PIENWIEtBTkRJREFUKSBUaiBFVApCVCAvRjEgMTAuNTAgVGYgMjU2LjU1IDc3Ny4wMCBUZCAoQ2FuZGlkYXRlIElEOiAxKSBUaiBFVApCVCAvRjIgMTIuMDAgVGYgNDguMDAgNzUxLjUwIFRkIChSSU5HS0FTQU4pIFRqIEVUCjAuNiB3IDQ4LjAwIDc0Mi41MCBtIDU0Ny4wMCA3NDIuNTAgbCBTCkJUIC9GMSAxMC41MCBUZiA0OC4wMCA3MjguNTAgVGQgKERva3VtZW4gZGVtbyB1bnR1ayBwZW5ndWppYW4gYXBsaWthc2kgS2FyaXZpYS4pIFRqIEVUCmVuZHN0cmVhbQplbmRvYmoKNCAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0NvdW50IDEgL0tpZHMgWyA2IDAgUiBdID4+CmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9DYXRhbG9nIC9QYWdlcyA0IDAgUiA+PgplbmRvYmoKNiAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDQgMCBSIC9NZWRpYUJveCBbMCAwIDU5NSA4NDJdIC9SZXNvdXJjZXMgPDwgL0ZvbnQgPDwgL0YxIDEgMCBSIC9GMiAyIDAgUiA+PiA+PiAvQ29udGVudHMgMyAwIFIgPj4KZW5kb2JqCnhyZWYKMCA3CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAyMCAwMDAwMCBuIAowMDAwMDAwMDkyIDAwMDAwIG4gCjAwMDAwMDAxNjMgMDAwMDAgbiAKMDAwMDAwMDUwNCAwMDAwMCBuIAowMDAwMDAwNTYzIDAwMDAwIG4gCjAwMDAwMDA2MTIgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA3IC9Sb290IDUgMCBSIC9JbmZvIDw8IC9UaXRsZSAoRGVtbyBDVikgPj4gPj4Kc3RhcnR4cmVmCjc0OAolJUVPRg==',
+            true,
+        ) ?: '';
     }
 
     private function seedAdditionalUsers(): void
@@ -477,7 +505,7 @@ class DemoDataSeeder extends Seeder
                     'rating' => 4 + ($index % 2),
                     'title' => 'Proses rekrutmen responsif',
                     'review' => 'Review demo untuk menguji tampilan reputasi perusahaan.',
-                    'status' => $index % 4 === 0 ? 'pending' : 'published',
+                    'status' => $index % 4 === 0 ? 'pending' : 'approved',
                 ],
             );
         });

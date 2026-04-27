@@ -13,10 +13,21 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'user_id', 'full_name', 'headline', 'bio', 'location_city', 'location_province',
     'expected_salary_min', 'expected_salary_max', 'work_mode_pref', 'availability',
     'preferred_industry_id', 'preferred_role', 'profile_completion', 'ai_cv_summary',
+    'cv_builder_json', 'cv_builder_updated_at', 'ai_token_balance',
+    'cv_builder_quota_balance', 'free_cv_builder_granted_at',
     'linkedin_url', 'github_url', 'portfolio_url',
 ])]
 class CandidateProfile extends Model
 {
+    protected function casts(): array
+    {
+        return [
+            'cv_builder_json' => 'array',
+            'cv_builder_updated_at' => 'datetime',
+            'free_cv_builder_granted_at' => 'datetime',
+        ];
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -84,6 +95,11 @@ class CandidateProfile extends Model
         return $this->hasMany(AiRecommendation::class, 'candidate_id');
     }
 
+    public function talentActions(): HasMany
+    {
+        return $this->hasMany(EmployerTalentCandidate::class, 'candidate_id');
+    }
+
     public function aiInterviewSessions(): HasMany
     {
         return $this->hasMany(AiInterviewSession::class, 'candidate_id');
@@ -107,5 +123,10 @@ class CandidateProfile extends Model
     public function jobViews(): HasMany
     {
         return $this->hasMany(CandidateJobView::class, 'candidate_id');
+    }
+
+    public function walletTransactions(): HasMany
+    {
+        return $this->hasMany(CandidateWalletTransaction::class, 'candidate_id');
     }
 }

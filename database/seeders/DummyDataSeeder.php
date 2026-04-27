@@ -15,6 +15,11 @@ class DummyDataSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call([
+            CandidatePricingMenuSeeder::class,
+            PricingPlanSeeder::class,
+        ]);
+
         Industry::factory()->count(15)->create();
         Skill::factory()->count(30)->create();
         SalaryInsight::factory()->count(50)->create();

@@ -1,171 +1,131 @@
-import { Form, Head } from '@inertiajs/react';
-import { type FormComponentRef } from '@inertiajs/core';
-import { type MouseEvent, useEffect, useRef } from 'react';
-import InputError from '@/components/input-error';
-import PasswordInput from '@/components/password-input';
+import { Head, Link } from '@inertiajs/react';
+import { Building2, CheckCircle2, CircleUserRound, Sparkles } from 'lucide-react';
+import { useMemo } from 'react';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import { login } from '@/routes';
-import { store } from '@/routes/register';
+import { useTranslate } from '@/hooks/use-translate';
+import AuthSimpleLayout from '@/layouts/auth/auth-simple-layout';
+import { login, register } from '@/routes';
 
-declare global {
-    interface Window {
-        grecaptcha: {
-            ready: (callback: () => void) => void;
-            execute: (siteKey: string, options: { action: string }) => Promise<string>;
-        };
-    }
-}
+export default function Register() {
+    const { t } = useTranslate();
 
-type Props = {
-    recaptchaSiteKey?: string;
-    recaptchaEnabled?: boolean;
-};
+    const candidateBenefits = useMemo(
+        () => [
+            t('auth.register.candidate_benefit_1'),
+            t('auth.register.candidate_benefit_2'),
+            t('auth.register.candidate_benefit_3'),
+        ],
+        [t],
+    );
 
-export default function Register({ recaptchaSiteKey = '', recaptchaEnabled = false }: Props) {
-    const recaptchaInputRef = useRef<HTMLInputElement>(null);
-    const formRef = useRef<FormComponentRef>(null);
-
-    useEffect(() => {
-        if (!recaptchaEnabled || !recaptchaSiteKey) return;
-
-        const script = document.createElement('script');
-        script.src = `https://www.google.com/recaptcha/api.js?render=${recaptchaSiteKey}`;
-        script.async = true;
-        document.head.appendChild(script);
-
-        return () => {
-            if (document.head.contains(script)) {
-                document.head.removeChild(script);
-            }
-        };
-    }, [recaptchaEnabled, recaptchaSiteKey]);
-
-    const handleSubmitClick = async (e: MouseEvent<HTMLButtonElement>) => {
-        if (!recaptchaEnabled || !recaptchaSiteKey || !recaptchaInputRef.current) return;
-
-        e.preventDefault();
-
-        try {
-            await new Promise<void>((resolve) => window.grecaptcha.ready(resolve));
-            const token = await window.grecaptcha.execute(recaptchaSiteKey, {
-                action: 'register',
-            });
-            recaptchaInputRef.current.value = token;
-        } catch {
-            recaptchaInputRef.current.value = '';
-        }
-
-        formRef.current?.submit();
-    };
+    const employerBenefits = useMemo(
+        () => [
+            t('auth.register.employer_benefit_1'),
+            t('auth.register.employer_benefit_2'),
+            t('auth.register.employer_benefit_3'),
+        ],
+        [t],
+    );
 
     return (
         <>
-            <Head title="Register" />
-            <Form
-                {...store.form()}
-                resetOnSuccess={['password', 'password_confirmation']}
-                disableWhileProcessing
-                ref={formRef}
-                className="flex flex-col gap-6"
-            >
-                {({ processing, errors }) => (
-                    <>
-                        <div className="grid gap-6">
-                            <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
-                                <Input
-                                    id="name"
-                                    type="text"
-                                    required
-                                    autoFocus
-                                    tabIndex={1}
-                                    autoComplete="name"
-                                    name="name"
-                                    placeholder="Full name"
-                                />
-                                <InputError message={errors.name} className="mt-2" />
+            <Head title={t('auth.register.head_title')} />
+
+            <div className="space-y-6">
+                <div className="grid gap-4 sm:grid-cols-2">
+                    {/* Kandidat card */}
+                    <article className="group relative flex flex-col overflow-hidden rounded-2xl border-2 border-primary/30 bg-linear-to-br from-primary/5 to-white p-5 transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10">
+                        {/* Top accent */}
+                        <div className="absolute top-0 left-0 h-1 w-full bg-linear-to-r from-primary to-blue-400" />
+
+                        {/* Popular badge */}
+                        <span className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase">
+                            <Sparkles className="size-2.5" />
+                            {t('auth.register.popular_badge')}
+                        </span>
+
+                        <div className="mb-4 flex items-center gap-3">
+                            <div className="flex size-11 items-center justify-center rounded-xl bg-primary/15 text-primary shadow-sm">
+                                <CircleUserRound className="size-5" />
                             </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    required
-                                    tabIndex={2}
-                                    autoComplete="email"
-                                    name="email"
-                                    placeholder="email@example.com"
-                                />
-                                <InputError message={errors.email} />
+                            <div>
+                                <h2 className="text-base font-bold text-foreground">{t('auth.register.candidate_title')}</h2>
+                                <p className="text-xs text-muted-foreground">
+                                    {t('auth.register.candidate_subtitle')}
+                                </p>
                             </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="password">Password</Label>
-                                <PasswordInput
-                                    id="password"
-                                    required
-                                    tabIndex={3}
-                                    autoComplete="new-password"
-                                    name="password"
-                                    placeholder="Password"
-                                />
-                                <InputError message={errors.password} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="password_confirmation">
-                                    Confirm password
-                                </Label>
-                                <PasswordInput
-                                    id="password_confirmation"
-                                    required
-                                    tabIndex={4}
-                                    autoComplete="new-password"
-                                    name="password_confirmation"
-                                    placeholder="Confirm password"
-                                />
-                                <InputError message={errors.password_confirmation} />
-                            </div>
-
-                            {recaptchaEnabled && (
-                                <input
-                                    type="hidden"
-                                    ref={recaptchaInputRef}
-                                    name="recaptcha_token"
-                                />
-                            )}
-
-                            <Button
-                                type="submit"
-                                className="mt-2 w-full"
-                                tabIndex={5}
-                                data-test="register-user-button"
-                                onClick={handleSubmitClick}
-                            >
-                                {processing && <Spinner />}
-                                Create account
-                            </Button>
                         </div>
 
-                        <div className="text-center text-sm text-muted-foreground">
-                            Already have an account?{' '}
-                            <TextLink href={login()} tabIndex={6}>
-                                Log in
-                            </TextLink>
+                        <ul className="mb-5 flex-1 space-y-2">
+                            {candidateBenefits.map((item) => (
+                                <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
+                                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" />
+                                    {item}
+                                </li>
+                            ))}
+                        </ul>
+
+                        <Button asChild className="w-full gap-2 font-semibold" data-test="select-candidate-register">
+                            <Link href={register({ query: { type: 'candidate' } })}>
+                                <CircleUserRound className="size-4" />
+                                {t('auth.register.candidate_cta')}
+                            </Link>
+                        </Button>
+                    </article>
+
+                    {/* Perusahaan card */}
+                    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 transition-all hover:border-gray-300 hover:shadow-md">
+                        <div className="mb-4 flex items-center gap-3">
+                            <div className="flex size-11 items-center justify-center rounded-xl bg-slate-100 text-slate-600 shadow-sm">
+                                <Building2 className="size-5" />
+                            </div>
+                            <div>
+                                <h2 className="text-base font-bold text-foreground">{t('auth.register.employer_title')}</h2>
+                                <p className="text-xs text-muted-foreground">
+                                    {t('auth.register.employer_subtitle')}
+                                </p>
+                            </div>
                         </div>
-                    </>
-                )}
-            </Form>
+
+                        <ul className="mb-5 flex-1 space-y-2">
+                            {employerBenefits.map((item) => (
+                                <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
+                                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-slate-400" />
+                                    {item}
+                                </li>
+                            ))}
+                        </ul>
+
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="w-full gap-2 font-semibold"
+                            data-test="select-employer-register"
+                        >
+                            <Link href={register({ query: { type: 'employer' } })}>
+                                <Building2 className="size-4" />
+                                {t('auth.register.employer_cta')}
+                            </Link>
+                        </Button>
+                    </article>
+                </div>
+
+                <p className="text-center text-sm text-muted-foreground">
+                    {t('auth.register.have_account')}{' '}
+                    <TextLink href={login()}>{t('auth.register.sign_in_now')}</TextLink>
+                </p>
+            </div>
         </>
     );
 }
 
-Register.layout = {
-    title: 'Create an account',
-    description: 'Enter your details below to create your account',
-};
+Register.layout = (page: React.ReactElement) => (
+    <AuthSimpleLayout
+        title="Pilih Tipe Akun"
+        description="Daftar sebagai kandidat atau perusahaan sesuai kebutuhanmu."
+        wide
+    >
+        {page}
+    </AuthSimpleLayout>
+);

@@ -9,6 +9,7 @@ type AdminResourceIndexProps = {
     description?: string;
     indexAction: string;
     createAction?: AdminAction;
+    headerActions?: AdminAction[];
     filters?: AdminField[];
     columns: AdminColumn[];
     rows: AdminPaginatedRows;
@@ -20,6 +21,7 @@ export default function AdminResourceIndex({
     description,
     indexAction,
     createAction,
+    headerActions,
     filters,
     columns,
     rows,
@@ -30,7 +32,7 @@ export default function AdminResourceIndex({
             <Head title={title} />
 
             <div className="flex flex-col gap-6 p-6">
-                <AdminPageHeader title={title} description={description} action={createAction} />
+                <AdminPageHeader title={title} description={description} actions={headerActions ?? (createAction ? [createAction] : [])} />
                 <AdminFilterBar fields={filters} indexAction={indexAction} />
                 <AdminDataTable columns={columns} rows={rows} emptyState={emptyState} />
             </div>

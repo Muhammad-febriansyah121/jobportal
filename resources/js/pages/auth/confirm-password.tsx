@@ -4,22 +4,25 @@ import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslate } from '@/hooks/use-translate';
 import { store } from '@/routes/password/confirm';
 
 export default function ConfirmPassword() {
+    const { t } = useTranslate();
+
     return (
         <>
-            <Head title="Confirm password" />
+            <Head title={t('auth.confirm_password.head_title')} />
 
             <Form {...store.form()} resetOnSuccess={['password']}>
                 {({ processing, errors }) => (
                     <div className="space-y-6">
                         <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
+                            <Label htmlFor="password">{t('auth.confirm_password.password_label')}</Label>
                             <PasswordInput
                                 id="password"
                                 name="password"
-                                placeholder="Password"
+                                placeholder={t('auth.confirm_password.password_placeholder')}
                                 autoComplete="current-password"
                                 autoFocus
                             />
@@ -34,7 +37,7 @@ export default function ConfirmPassword() {
                                 data-test="confirm-password-button"
                             >
                                 {processing && <Spinner />}
-                                Confirm password
+                                {t('auth.confirm_password.submit')}
                             </Button>
                         </div>
                     </div>

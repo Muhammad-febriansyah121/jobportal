@@ -1,12 +1,16 @@
 @php
     $siteSettings = \Illuminate\Support\Facades\Cache::remember('site_settings_head', 3600, fn () =>
         \App\Models\Setting::whereIn('key', [
-            'site_name', 'site_favicon_url', 'site_meta_description', 'site_meta_keywords',
+            'site_name', 'site_favicon_url', 'site_logo_url', 'site_meta_description', 'site_meta_keywords',
         ])->pluck('value', 'key')->toArray()
     );
     $siteName = $siteSettings['site_name'] ?? config('app.name');
     $faviconPath = $siteSettings['site_favicon_url'] ?? null;
     $faviconUrl = $faviconPath ? \Illuminate\Support\Facades\Storage::url($faviconPath) : null;
+    $logoPath = $siteSettings['site_logo_url'] ?? null;
+    $ogImageUrl = $logoPath
+        ? \Illuminate\Support\Facades\Storage::url($logoPath)
+        : ($faviconUrl ?? null);
     $metaDescription = $siteSettings['site_meta_description'] ?? null;
     $metaKeywords = $siteSettings['site_meta_keywords'] ?? null;
 @endphp
@@ -23,6 +27,30 @@
 
         @if ($metaKeywords)
             <meta name="keywords" content="{{ $metaKeywords }}">
+        @endif
+
+        {{-- Open Graph --}}
+        <meta property="og:type" content="website">
+        <meta property="og:site_name" content="{{ $siteName }}">
+        <meta property="og:title" content="{{ $siteName }}">
+        @if ($metaDescription)
+            <meta property="og:description" content="{{ $metaDescription }}">
+        @endif
+        @if ($ogImageUrl)
+            <meta property="og:image" content="{{ $ogImageUrl }}">
+            <meta property="og:image:width" content="1200">
+            <meta property="og:image:height" content="630">
+        @endif
+        <meta property="og:url" content="{{ url()->current() }}">
+
+        {{-- Twitter Card --}}
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="{{ $siteName }}">
+        @if ($metaDescription)
+            <meta name="twitter:description" content="{{ $metaDescription }}">
+        @endif
+        @if ($ogImageUrl)
+            <meta name="twitter:image" content="{{ $ogImageUrl }}">
         @endif
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}

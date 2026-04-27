@@ -1,11 +1,8 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { ExternalLink, Trash2 } from 'lucide-react';
-import Heading from '@/components/heading';
-import {
-    DatePickerInput,
-    Field,
-} from '@/components/candidate/candidate-form';
+import { DatePickerInput, Field } from '@/components/candidate/candidate-form';
 import { EmptyState } from '@/components/candidate/candidate-ui';
+import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -15,6 +12,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useTranslate } from '@/hooks/use-translate';
 import {
     destroy as destroyCertification,
     index,
@@ -35,21 +33,27 @@ export default function CandidateCertifications({
 }: {
     certifications: Certification[];
 }) {
+    const { t } = useTranslate();
+
     return (
         <>
-            <Head title="Sertifikasi" />
+            <Head title={t('candidate.certifications.page_title')} />
             <div className="space-y-6 p-4 md:p-6">
                 <Heading
-                    title="Sertifikasi"
-                    description="Kelola sertifikat dan credential link yang memperkuat profil kamu."
+                    title={t('candidate.certifications.heading_title')}
+                    description={t(
+                        'candidate.certifications.heading_description',
+                    )}
                 />
                 <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-                    <CertificationForm />
+                    <CertificationForm t={t} />
                     <Card>
                         <CardHeader>
-                            <CardTitle>Daftar sertifikasi</CardTitle>
+                            <CardTitle>
+                                {t('candidate.certifications.list_title')}
+                            </CardTitle>
                             <CardDescription>
-                                Sertifikasi terbaru tampil di atas.
+                                {t('candidate.certifications.list_description')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -80,7 +84,9 @@ export default function CandidateCertifications({
                                                         target="_blank"
                                                     >
                                                         <ExternalLink className="size-4" />
-                                                        Credential
+                                                        {t(
+                                                            'candidate.certifications.credential',
+                                                        )}
                                                     </a>
                                                 ) : null}
                                             </div>
@@ -97,19 +103,24 @@ export default function CandidateCertifications({
                                                     as="button"
                                                 >
                                                     <Trash2 />
-                                                    Hapus
+                                                    {t(
+                                                        'candidate.certifications.delete',
+                                                    )}
                                                 </Link>
                                             </Button>
                                         </div>
                                         <details className="mt-4">
                                             <summary className="cursor-pointer text-sm font-medium text-primary">
-                                                Edit sertifikasi
+                                                {t(
+                                                    'candidate.certifications.edit',
+                                                )}
                                             </summary>
                                             <div className="mt-4">
                                                 <CertificationForm
                                                     certification={
                                                         certification
                                                     }
+                                                    t={t}
                                                 />
                                             </div>
                                         </details>
@@ -117,8 +128,12 @@ export default function CandidateCertifications({
                                 ))
                             ) : (
                                 <EmptyState
-                                    title="Belum ada sertifikasi"
-                                    description="Tambahkan sertifikat profesional, bootcamp, atau lisensi yang relevan."
+                                    title={t(
+                                        'candidate.certifications.empty_title',
+                                    )}
+                                    description={t(
+                                        'candidate.certifications.empty_description',
+                                    )}
                                 />
                             )}
                         </CardContent>
@@ -131,8 +146,10 @@ export default function CandidateCertifications({
 
 function CertificationForm({
     certification,
+    t,
 }: {
     certification?: Certification;
+    t: (key: string) => string;
 }) {
     const isEdit = Boolean(certification);
 
@@ -140,33 +157,35 @@ function CertificationForm({
         <Card>
             <CardHeader>
                 <CardTitle>
-                    {isEdit ? 'Edit sertifikasi' : 'Tambah sertifikasi'}
+                    {isEdit
+                        ? t('candidate.certifications.form_edit_title')
+                        : t('candidate.certifications.form_add_title')}
                 </CardTitle>
             </CardHeader>
             <CardContent>
                 <Form
                     {...(isEdit
-                        ? updateCertification.form(
-                              certification!.id,
-                          )
+                        ? updateCertification.form(certification!.id)
                         : storeCertification.form())}
                     className="space-y-4"
                 >
                     {({ processing, errors }) => (
                         <>
                             <Field
-                                label="Nama sertifikasi"
+                                label={t('candidate.certifications.name')}
                                 name="name"
                                 error={errors.name}
                             >
                                 <Input
                                     name="name"
                                     defaultValue={certification?.name ?? ''}
-                                    placeholder="AWS Certified Cloud Practitioner"
+                                    placeholder={t(
+                                        'candidate.certifications.name_placeholder',
+                                    )}
                                 />
                             </Field>
                             <Field
-                                label="Penerbit"
+                                label={t('candidate.certifications.issuer')}
                                 name="issuing_org"
                                 error={errors.issuing_org}
                             >
@@ -175,22 +194,28 @@ function CertificationForm({
                                     defaultValue={
                                         certification?.issuing_org ?? ''
                                     }
-                                    placeholder="Amazon Web Services"
+                                    placeholder={t(
+                                        'candidate.certifications.issuer_placeholder',
+                                    )}
                                 />
                             </Field>
                             <Field
-                                label="Tanggal terbit"
+                                label={t('candidate.certifications.issue_date')}
                                 name="issue_date"
                                 error={errors.issue_date}
                             >
                                 <DatePickerInput
                                     name="issue_date"
                                     defaultValue={certification?.issue_date}
-                                    placeholder="Pilih tanggal terbit"
+                                    placeholder={t(
+                                        'candidate.certifications.issue_date_placeholder',
+                                    )}
                                 />
                             </Field>
                             <Field
-                                label="Credential URL"
+                                label={t(
+                                    'candidate.certifications.credential_url',
+                                )}
                                 name="credential_url"
                                 error={errors.credential_url}
                             >
@@ -199,15 +224,19 @@ function CertificationForm({
                                     defaultValue={
                                         certification?.credential_url ?? ''
                                     }
-                                    placeholder="https://..."
+                                    placeholder={t(
+                                        'candidate.certifications.credential_url_placeholder',
+                                    )}
                                 />
                             </Field>
                             <Button disabled={processing}>
                                 {processing
-                                    ? 'Menyimpan...'
+                                    ? t('candidate.form.saving')
                                     : isEdit
-                                      ? 'Simpan perubahan'
-                                      : 'Tambah sertifikasi'}
+                                      ? t('candidate.form.save_changes')
+                                      : t(
+                                            'candidate.certifications.form_add_button',
+                                        )}
                             </Button>
                         </>
                     )}

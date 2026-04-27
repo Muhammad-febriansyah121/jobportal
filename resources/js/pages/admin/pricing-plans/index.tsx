@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { AdminDataTable } from '@/components/admin/admin-data-table';
 import { AdminFilterBar } from '@/components/admin/admin-filter-bar';
 import { Button } from '@/components/ui/button';
+import { useTranslate } from '@/hooks/use-translate';
 import type { AdminColumn, AdminField, AdminPaginatedRows } from '@/types';
 
 type PricingPlanIndexProps = {
@@ -26,6 +27,7 @@ export default function PricingPlanIndex({
     rows,
     emptyState,
 }: PricingPlanIndexProps) {
+    const { t } = useTranslate();
     return (
         <>
             <Head title={title} />
@@ -42,10 +44,10 @@ export default function PricingPlanIndex({
                             </p>
                         ) : null}
                     </div>
-                    <Button asChild className="bg-[#f45113] hover:bg-[#d94710]">
+                    <Button asChild className="bg-[#01296A] hover:bg-[#001D4D]">
                         <Link href={createHref} prefetch>
                             <Plus />
-                            Tambah Paket
+                            {t('admin.pricing_plans_index.add_plan')}
                         </Link>
                     </Button>
                 </div>

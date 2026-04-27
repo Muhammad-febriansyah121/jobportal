@@ -32,6 +32,8 @@ class EmployerCompanyController extends Controller
                 'logo_url' => $company->logo_url,
                 'cover_url' => $company->cover_url,
                 'description' => $company->description,
+                'culture' => $company->culture,
+                'benefits' => $company->benefits,
                 'company_size' => $company->company_size,
                 'website' => $company->website,
                 'hq_city' => $company->hq_city,

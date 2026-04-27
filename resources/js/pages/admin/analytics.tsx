@@ -1,12 +1,36 @@
 import { Head } from '@inertiajs/react';
-import { Activity, Bot, ClipboardList, CreditCard } from 'lucide-react';
+import type { ApexOptions } from 'apexcharts';
+import {
+    Activity,
+    Briefcase,
+    CreditCard,
+    ShieldCheck,
+    TrendingUp,
+    Users,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import ReactApexChart from 'react-apexcharts';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 
-type SeriesPoint = {
-    month: string;
-    total: number;
-};
+type SeriesPoint = { month: string; total: number };
 
 type AnalyticsProps = {
+    totals: {
+        users: number;
+        companies: number;
+        verified_companies: number;
+        jobs_live: number;
+        applications_month: number;
+        active_subscriptions: number;
+        verification_queue: number;
+        pending_payments: number;
+    };
     series: Record<string, SeriesPoint[]>;
     revenueSeries: SeriesPoint[];
     summary: {
@@ -15,82 +39,799 @@ type AnalyticsProps = {
         report_pending: number;
         ai_failed: number;
     };
+    applicationFunnel: Record<string, number>;
+    userRoles: Record<string, number>;
+    jobsByStatus: Record<string, number>;
+    jobsByWorkMode: Record<string, number>;
+    topIndustries: Array<{ name: string; total: number }>;
+    subscriptionsByPlan: Array<{
+        id: number;
+        name: string;
+        price: number;
+        active_count: number;
+        revenue: number | null;
+    }>;
+    aiByFeature: Array<{
+        feature: string;
+        total: number;
+        success: number;
+        failed: number;
+        success_rate: number;
+    }>;
 };
 
-const labels: Record<string, string> = {
-    users: 'Growth user',
-    companies: 'Growth company',
-    candidates: 'Growth candidate',
-    jobs: 'Job posted',
-    applications: 'Application volume',
-    reports: 'Report metrics',
-    aiUsage: 'AI usage metrics',
+const C = {
+    primary: '#1E4D96',
+    blue: '#3B82F6',
+    violet: '#8B5CF6',
+    indigo: '#6366F1',
+    emerald: '#10B981',
+    green: '#059669',
+    amber: '#F59E0B',
+    rose: '#F43F5E',
+    sky: '#0EA5E9',
+    gray: '#9CA3AF',
+    red: '#EF4444',
+} as const;
+
+const PALETTE = [
+    C.primary,
+    C.blue,
+    C.violet,
+    C.emerald,
+    C.amber,
+    C.rose,
+    C.sky,
+    C.indigo,
+    C.green,
+    C.gray,
+];
+
+const BASE_CHART = {
+    toolbar: { show: false },
+    zoom: { enabled: false },
+    fontFamily: 'inherit',
+    animations: { enabled: true, speed: 500 },
 };
 
-export default function AdminAnalytics({ series, revenueSeries, summary }: AnalyticsProps) {
-    const cards = [
-        { label: 'Conversion apply', value: `${summary.conversion_apply}%`, icon: Activity },
-        { label: 'Subscription revenue', value: `Rp ${summary.subscription_revenue.toLocaleString('id-ID')}`, icon: CreditCard },
-        { label: 'Report pending', value: summary.report_pending.toLocaleString('id-ID'), icon: ClipboardList },
-        { label: 'AI failed', value: summary.ai_failed.toLocaleString('id-ID'), icon: Bot },
+function fmtMonth(value: string): string {
+    const [year, month] = value.split('-');
+    if (!year || !month) return value;
+    const d = new Date(Date.UTC(Number(year), Number(month) - 1, 1));
+    if (Number.isNaN(d.getTime())) return value;
+    return new Intl.DateTimeFormat('id-ID', {
+        month: 'short',
+        timeZone: 'UTC',
+    }).format(d);
+}
+
+function fmtLabel(value: string): string {
+    return value
+        .replaceAll('_', ' ')
+        .split(' ')
+        .filter(Boolean)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+}
+
+function fmtIDR(value: number): string {
+    if (value >= 1_000_000_000)
+        return `Rp ${(value / 1_000_000_000).toFixed(1)}M`;
+    if (value >= 1_000_000) return `Rp ${(value / 1_000_000).toFixed(1)}jt`;
+    if (value >= 1_000) return `Rp ${(value / 1_000).toFixed(0)}rb`;
+    return `Rp ${value.toLocaleString('id-ID')}`;
+}
+
+function Empty({ height = 200 }: { height?: number }) {
+    return (
+        <div
+            className="flex items-center justify-center text-sm text-muted-foreground"
+            style={{ height }}
+        >
+            Belum ada data.
+        </div>
+    );
+}
+
+function KpiCard({
+    label,
+    value,
+    icon: Icon,
+    accent,
+    iconBg,
+    iconColor,
+}: {
+    label: string;
+    value: string;
+    icon: LucideIcon;
+    accent: string;
+    iconBg: string;
+    iconColor: string;
+}) {
+    return (
+        <Card className="overflow-hidden border shadow-sm">
+            <div className={`h-1 w-full ${accent}`} />
+            <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-medium uppercase leading-tight tracking-wide text-muted-foreground">
+                            {label}
+                        </p>
+                        <p className="mt-2 text-2xl font-bold tabular-nums leading-none">
+                            {value}
+                        </p>
+                    </div>
+                    <div className={`shrink-0 rounded-xl p-2.5 ${iconBg}`}>
+                        <Icon className={`size-5 ${iconColor}`} />
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+export default function AdminAnalytics({
+    totals,
+    series,
+    revenueSeries,
+    summary,
+    applicationFunnel,
+    jobsByWorkMode,
+    topIndustries,
+    subscriptionsByPlan,
+    aiByFeature,
+}: AnalyticsProps) {
+    const mrr = subscriptionsByPlan.reduce(
+        (s, p) => s + p.price * p.active_count,
+        0,
+    );
+
+    const kpiCards = [
+        {
+            label: 'Total User',
+            value: totals.users.toLocaleString('id-ID'),
+            icon: Users,
+            accent: 'bg-blue-500',
+            iconBg: 'bg-blue-50',
+            iconColor: 'text-blue-600',
+        },
+        {
+            label: 'Lowongan Live',
+            value: totals.jobs_live.toLocaleString('id-ID'),
+            icon: Briefcase,
+            accent: 'bg-violet-500',
+            iconBg: 'bg-violet-50',
+            iconColor: 'text-violet-600',
+        },
+        {
+            label: 'Lamaran Bulan Ini',
+            value: totals.applications_month.toLocaleString('id-ID'),
+            icon: Activity,
+            accent: 'bg-emerald-500',
+            iconBg: 'bg-emerald-50',
+            iconColor: 'text-emerald-600',
+        },
+        {
+            label: 'Revenue Total',
+            value: fmtIDR(summary.subscription_revenue),
+            icon: CreditCard,
+            accent: 'bg-amber-500',
+            iconBg: 'bg-amber-50',
+            iconColor: 'text-amber-600',
+        },
+        {
+            label: 'Subscription Aktif',
+            value: totals.active_subscriptions.toLocaleString('id-ID'),
+            icon: TrendingUp,
+            accent: 'bg-sky-500',
+            iconBg: 'bg-sky-50',
+            iconColor: 'text-sky-600',
+        },
+        {
+            label: 'Antrian Verifikasi',
+            value: totals.verification_queue.toLocaleString('id-ID'),
+            icon: ShieldCheck,
+            accent: 'bg-rose-500',
+            iconBg: 'bg-rose-50',
+            iconColor: 'text-rose-600',
+        },
+    ];
+
+    // ── Growth chart ──
+    const growthMonths = (series.users ?? []).map((p) => fmtMonth(p.month));
+    const growthOptions: ApexOptions = {
+        chart: { ...BASE_CHART, type: 'area' },
+        colors: [C.primary, C.violet, C.emerald],
+        fill: {
+            type: 'gradient',
+            gradient: { shadeIntensity: 1, opacityFrom: 0.2, opacityTo: 0.02 },
+        },
+        stroke: { curve: 'smooth', width: 2.5 },
+        xaxis: {
+            categories: growthMonths,
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+            labels: { style: { fontSize: '11px' } },
+        },
+        yaxis: { labels: { style: { fontSize: '11px' } } },
+        grid: { borderColor: '#f1f5f9', strokeDashArray: 3 },
+        legend: {
+            position: 'top',
+            horizontalAlign: 'right',
+            fontSize: '12px',
+            markers: { size: 5 },
+        },
+        tooltip: { shared: true, intersect: false, theme: 'light' },
+        dataLabels: { enabled: false },
+    };
+
+    // ── Revenue chart ──
+    const revenueOptions: ApexOptions = {
+        chart: { ...BASE_CHART, type: 'area' },
+        colors: [C.emerald],
+        fill: {
+            type: 'gradient',
+            gradient: { shadeIntensity: 1, opacityFrom: 0.25, opacityTo: 0.02 },
+        },
+        stroke: { curve: 'smooth', width: 2.5 },
+        xaxis: {
+            categories: revenueSeries.map((p) => fmtMonth(p.month)),
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+            labels: { style: { fontSize: '11px' } },
+        },
+        yaxis: {
+            labels: {
+                style: { fontSize: '11px' },
+                formatter: (v) => fmtIDR(v),
+            },
+        },
+        grid: { borderColor: '#f1f5f9', strokeDashArray: 3 },
+        tooltip: {
+            theme: 'light',
+            y: { formatter: (v) => `Rp ${v.toLocaleString('id-ID')}` },
+        },
+        dataLabels: { enabled: false },
+    };
+
+    // ── Subscription donut ──
+    const subData = subscriptionsByPlan.map((p) => p.active_count);
+    const subDonutOptions: ApexOptions = {
+        chart: { ...BASE_CHART, type: 'donut' },
+        labels: subscriptionsByPlan.map((p) => p.name),
+        colors: PALETTE,
+        legend: { position: 'bottom', fontSize: '12px' },
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '72%',
+                    labels: {
+                        show: true,
+                        total: {
+                            show: true,
+                            label: 'Aktif',
+                            fontSize: '11px',
+                            color: '#6b7280',
+                            formatter: () => `${totals.active_subscriptions}`,
+                        },
+                        value: { fontSize: '22px', fontWeight: '700' },
+                    },
+                },
+            },
+        },
+        dataLabels: { enabled: false },
+        tooltip: { theme: 'light', y: { formatter: (v) => `${v} subscriber` } },
+    };
+
+    // ── Application funnel (column) ──
+    const funnelOrder = [
+        'applied',
+        'screened',
+        'shortlisted',
+        'interview',
+        'offer',
+        'hired',
+    ];
+    const funnelLabelMap: Record<string, string> = {
+        applied: 'Melamar',
+        screened: 'Seleksi',
+        shortlisted: 'Shortlist',
+        interview: 'Interview',
+        offer: 'Penawaran',
+        hired: 'Diterima',
+    };
+    const funnelOptions: ApexOptions = {
+        chart: { ...BASE_CHART, type: 'bar' },
+        plotOptions: {
+            bar: { distributed: true, borderRadius: 6, columnWidth: '55%' },
+        },
+        colors: [C.blue, C.violet, C.indigo, C.sky, C.emerald, C.green],
+        dataLabels: {
+            enabled: true,
+            formatter: (v) => (Number(v) === 0 ? '' : `${v}`),
+            style: {
+                fontSize: '11px',
+                fontWeight: '600',
+                colors: ['#fff'],
+            },
+            dropShadow: { enabled: false },
+        },
+        xaxis: {
+            categories: funnelOrder.map((k) => funnelLabelMap[k] ?? k),
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+            labels: { style: { fontSize: '11px' } },
+        },
+        yaxis: { labels: { style: { fontSize: '11px' } } },
+        grid: { borderColor: '#f1f5f9', strokeDashArray: 3 },
+        legend: { show: false },
+        tooltip: { theme: 'light', y: { formatter: (v) => `${v} pelamar` } },
+    };
+
+    // ── Status distribution donut ──
+    const statusColorMap: Record<string, string> = {
+        applied: C.blue,
+        screened: C.violet,
+        shortlisted: C.indigo,
+        interview: C.sky,
+        offer: C.emerald,
+        hired: C.green,
+        rejected: C.red,
+        withdrawn: C.gray,
+    };
+    const statusLabelMap: Record<string, string> = {
+        applied: 'Melamar',
+        screened: 'Seleksi',
+        shortlisted: 'Shortlist',
+        interview: 'Interview',
+        offer: 'Penawaran',
+        hired: 'Diterima',
+        rejected: 'Ditolak',
+        withdrawn: 'Undur Diri',
+    };
+    const statusEntries = Object.entries(applicationFunnel).filter(
+        ([, v]) => v > 0,
+    );
+    const statusDonutOptions: ApexOptions = {
+        chart: { ...BASE_CHART, type: 'donut' },
+        labels: statusEntries.map(([k]) => statusLabelMap[k] ?? k),
+        colors: statusEntries.map(([k]) => statusColorMap[k] ?? C.primary),
+        legend: { position: 'bottom', fontSize: '11px' },
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '68%',
+                    labels: {
+                        show: true,
+                        total: {
+                            show: true,
+                            label: 'Total',
+                            fontSize: '11px',
+                            color: '#6b7280',
+                        },
+                        value: { fontSize: '22px', fontWeight: '700' },
+                    },
+                },
+            },
+        },
+        dataLabels: { enabled: false },
+        tooltip: { theme: 'light', y: { formatter: (v) => `${v} lamaran` } },
+    };
+
+    // ── Top industries (horizontal bar) ──
+    const industries = topIndustries.slice(0, 10);
+    const industryOptions: ApexOptions = {
+        chart: { ...BASE_CHART, type: 'bar' },
+        plotOptions: {
+            bar: { horizontal: true, borderRadius: 4, barHeight: '65%' },
+        },
+        colors: [C.primary],
+        dataLabels: {
+            enabled: true,
+            formatter: (v) => (Number(v) === 0 ? '' : `${v}`),
+            style: { fontSize: '11px', colors: ['#fff'] },
+            dropShadow: { enabled: false },
+        },
+        xaxis: {
+            categories: industries.map((i) => i.name),
+            labels: { show: false },
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+        },
+        yaxis: { labels: { style: { fontSize: '11px' } } },
+        grid: { show: false },
+        tooltip: { theme: 'light', y: { formatter: (v) => `${v} lowongan` } },
+    };
+
+    // ── Work mode pie ──
+    const workModeMap: Record<string, string> = {
+        remote: 'Remote',
+        hybrid: 'Hybrid',
+        onsite: 'Onsite',
+    };
+    const workModeEntries = Object.entries(jobsByWorkMode).filter(
+        ([, v]) => v > 0,
+    );
+    const workModeOptions: ApexOptions = {
+        chart: { ...BASE_CHART, type: 'pie' },
+        labels: workModeEntries.map(([k]) => workModeMap[k] ?? k),
+        colors: [C.violet, C.sky, C.primary],
+        legend: { position: 'bottom', fontSize: '12px' },
+        dataLabels: {
+            enabled: true,
+            formatter: (v) => `${Number(v).toFixed(0)}%`,
+        },
+        tooltip: { theme: 'light', y: { formatter: (v) => `${v} lowongan` } },
+    };
+
+    // ── AI stacked bar ──
+    const aiOptions: ApexOptions = {
+        chart: { ...BASE_CHART, type: 'bar', stacked: true },
+        plotOptions: { bar: { borderRadius: 4, columnWidth: '50%' } },
+        colors: [C.emerald, C.red],
+        dataLabels: { enabled: false },
+        xaxis: {
+            categories: aiByFeature.map((f) => fmtLabel(f.feature)),
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+            labels: { style: { fontSize: '11px' }, rotate: -15 },
+        },
+        yaxis: { labels: { style: { fontSize: '11px' } } },
+        grid: { borderColor: '#f1f5f9', strokeDashArray: 3 },
+        legend: {
+            position: 'top',
+            horizontalAlign: 'right',
+            fontSize: '12px',
+            markers: { size: 5 },
+        },
+        tooltip: { theme: 'light', shared: true, intersect: false },
+    };
+
+    const metricRows = [
+        {
+            label: 'Conversion Rate (view → apply)',
+            value: `${summary.conversion_apply}%`,
+            color: '',
+        },
+        {
+            label: 'Perusahaan Terverifikasi',
+            value: totals.verified_companies.toLocaleString('id-ID'),
+            color: '',
+        },
+        {
+            label: 'Report Pending',
+            value: `${summary.report_pending}`,
+            color: 'text-amber-600',
+        },
+        {
+            label: 'AI Gagal',
+            value: `${summary.ai_failed}`,
+            color: 'text-rose-600',
+        },
+        {
+            label: 'Payment Pending',
+            value: `${totals.pending_payments}`,
+            color: 'text-amber-600',
+        },
     ];
 
     return (
         <>
             <Head title="Platform Analytics" />
 
-            <div className="flex flex-col gap-6 p-6">
+            <div className="flex flex-col gap-6 p-4 sm:p-6">
+                {/* Header */}
                 <div className="border-b pb-5">
-                    <h1 className="text-2xl font-semibold tracking-normal">Platform Analytics</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">
+                        Platform Analytics
+                    </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Growth, conversion apply, report metrics, AI usage, dan revenue subscription.
+                        Ringkasan performa platform — pertumbuhan, revenue,
+                        rekrutmen, dan penggunaan AI.
                     </p>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {cards.map((card) => (
-                        <div className="rounded-md border bg-background p-4" key={card.label}>
-                            <div className="flex items-center justify-between gap-3">
-                                <p className="text-sm text-muted-foreground">{card.label}</p>
-                                <card.icon className="size-5 text-[#ED6A2F]" />
-                            </div>
-                            <p className="mt-3 text-2xl font-semibold">{card.value}</p>
-                        </div>
+                {/* KPI Cards */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+                    {kpiCards.map((c) => (
+                        <KpiCard key={c.label} {...c} />
                     ))}
                 </div>
 
-                <div className="grid gap-6 xl:grid-cols-2">
-                    {Object.entries(series).map(([key, points]) => (
-                        <SeriesPanel key={key} title={labels[key] ?? key} points={points} />
-                    ))}
-                    <SeriesPanel title="Subscription revenue" points={revenueSeries} currency />
+                {/* Platform Growth */}
+                <Card className="shadow-sm">
+                    <CardHeader className="pb-0">
+                        <CardTitle className="text-sm font-semibold">
+                            Platform Growth
+                        </CardTitle>
+                        <CardDescription>
+                            Pertumbuhan user, lowongan, dan lamaran selama 6
+                            bulan terakhir.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-2">
+                        <ReactApexChart
+                            type="area"
+                            series={[
+                                {
+                                    name: 'User',
+                                    data: (series.users ?? []).map(
+                                        (p) => p.total,
+                                    ),
+                                },
+                                {
+                                    name: 'Lowongan',
+                                    data: (series.jobs ?? []).map(
+                                        (p) => p.total,
+                                    ),
+                                },
+                                {
+                                    name: 'Lamaran',
+                                    data: (series.applications ?? []).map(
+                                        (p) => p.total,
+                                    ),
+                                },
+                            ]}
+                            options={growthOptions}
+                            height={280}
+                        />
+                    </CardContent>
+                </Card>
+
+                {/* Revenue + Subscription */}
+                <div className="grid gap-6 lg:grid-cols-2">
+                    <Card className="shadow-sm">
+                        <CardHeader className="pb-0">
+                            <div className="flex items-start justify-between gap-2">
+                                <div>
+                                    <CardTitle className="text-sm font-semibold">
+                                        Revenue Trend
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Pendapatan 6 bulan terakhir.
+                                    </CardDescription>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                                        Total
+                                    </p>
+                                    <p className="text-base font-bold text-emerald-600">
+                                        Rp{' '}
+                                        {summary.subscription_revenue.toLocaleString(
+                                            'id-ID',
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="pt-2">
+                            {revenueSeries.every((p) => p.total === 0) ? (
+                                <Empty height={220} />
+                            ) : (
+                                <ReactApexChart
+                                    type="area"
+                                    series={[
+                                        {
+                                            name: 'Revenue',
+                                            data: revenueSeries.map(
+                                                (p) => p.total,
+                                            ),
+                                        },
+                                    ]}
+                                    options={revenueOptions}
+                                    height={220}
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-sm">
+                        <CardHeader className="pb-0">
+                            <div className="flex items-start justify-between gap-2">
+                                <div>
+                                    <CardTitle className="text-sm font-semibold">
+                                        Subscription per Plan
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Distribusi subscriber aktif per paket.
+                                    </CardDescription>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                                        Est. MRR
+                                    </p>
+                                    <p className="text-base font-bold text-[#1E4D96]">
+                                        Rp {mrr.toLocaleString('id-ID')}
+                                    </p>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="pt-2">
+                            {subData.every((v) => v === 0) ? (
+                                <Empty height={220} />
+                            ) : (
+                                <ReactApexChart
+                                    type="donut"
+                                    series={subData}
+                                    options={subDonutOptions}
+                                    height={220}
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
+
+                {/* Application Funnel + Status */}
+                <div className="grid gap-6 lg:grid-cols-2">
+                    <Card className="shadow-sm">
+                        <CardHeader className="pb-0">
+                            <CardTitle className="text-sm font-semibold">
+                                Application Funnel
+                            </CardTitle>
+                            <CardDescription>
+                                Jumlah pelamar di setiap tahap rekrutmen.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-2">
+                            <ReactApexChart
+                                type="bar"
+                                series={[
+                                    {
+                                        name: 'Pelamar',
+                                        data: funnelOrder.map(
+                                            (k) =>
+                                                applicationFunnel[k] ?? 0,
+                                        ),
+                                    },
+                                ]}
+                                options={funnelOptions}
+                                height={250}
+                            />
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-sm">
+                        <CardHeader className="pb-0">
+                            <CardTitle className="text-sm font-semibold">
+                                Distribusi Status Lamaran
+                            </CardTitle>
+                            <CardDescription>
+                                Persentase lamaran berdasarkan status
+                                keseluruhan.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-2">
+                            {statusEntries.length === 0 ? (
+                                <Empty height={250} />
+                            ) : (
+                                <ReactApexChart
+                                    type="donut"
+                                    series={statusEntries.map(([, v]) => v)}
+                                    options={statusDonutOptions}
+                                    height={250}
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Industries + Work Mode */}
+                <div className="grid gap-6 lg:grid-cols-2">
+                    <Card className="shadow-sm">
+                        <CardHeader className="pb-0">
+                            <CardTitle className="text-sm font-semibold">
+                                Top 10 Industri
+                            </CardTitle>
+                            <CardDescription>
+                                Industri dengan lowongan published terbanyak.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-2">
+                            {industries.length === 0 ? (
+                                <Empty height={300} />
+                            ) : (
+                                <ReactApexChart
+                                    type="bar"
+                                    series={[
+                                        {
+                                            name: 'Lowongan',
+                                            data: industries.map(
+                                                (i) => i.total,
+                                            ),
+                                        },
+                                    ]}
+                                    options={industryOptions}
+                                    height={industries.length * 38 + 24}
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <div className="flex flex-col gap-6">
+                        <Card className="shadow-sm">
+                            <CardHeader className="pb-0">
+                                <CardTitle className="text-sm font-semibold">
+                                    Mode Kerja
+                                </CardTitle>
+                                <CardDescription>
+                                    Distribusi lowongan berdasarkan tipe kerja.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="pt-2">
+                                {workModeEntries.length === 0 ? (
+                                    <Empty height={200} />
+                                ) : (
+                                    <ReactApexChart
+                                        type="pie"
+                                        series={workModeEntries.map(
+                                            ([, v]) => v,
+                                        )}
+                                        options={workModeOptions}
+                                        height={200}
+                                    />
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-semibold">
+                                    Metrik Kunci
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3 pt-0">
+                                {metricRows.map((row) => (
+                                    <div
+                                        key={row.label}
+                                        className="flex items-center justify-between gap-2 text-sm"
+                                    >
+                                        <span className="text-muted-foreground">
+                                            {row.label}
+                                        </span>
+                                        <span
+                                            className={`font-semibold tabular-nums ${row.color}`}
+                                        >
+                                            {row.value}
+                                        </span>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+
+                {/* AI Feature Usage */}
+                {aiByFeature.length > 0 && (
+                    <Card className="shadow-sm">
+                        <CardHeader className="pb-0">
+                            <CardTitle className="text-sm font-semibold">
+                                AI Feature Usage
+                            </CardTitle>
+                            <CardDescription>
+                                Perbandingan request sukses dan gagal per fitur
+                                AI.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-2">
+                            <ReactApexChart
+                                type="bar"
+                                series={[
+                                    {
+                                        name: 'Sukses',
+                                        data: aiByFeature.map((f) => f.success),
+                                    },
+                                    {
+                                        name: 'Gagal',
+                                        data: aiByFeature.map((f) => f.failed),
+                                    },
+                                ]}
+                                options={aiOptions}
+                                height={300}
+                            />
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </>
-    );
-}
-
-function SeriesPanel({ title, points, currency = false }: { title: string; points: SeriesPoint[]; currency?: boolean }) {
-    const max = Math.max(1, ...points.map((point) => point.total));
-
-    return (
-        <section className="space-y-4 rounded-md border bg-background p-4">
-            <h2 className="text-lg font-semibold">{title}</h2>
-            <div className="space-y-3">
-                {points.map((point) => (
-                    <div className="grid gap-2" key={`${title}-${point.month}`}>
-                        <div className="flex items-center justify-between gap-3 text-sm">
-                            <span>{point.month}</span>
-                            <span className="font-medium">
-                                {currency ? `Rp ${point.total.toLocaleString('id-ID')}` : point.total.toLocaleString('id-ID')}
-                            </span>
-                        </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-muted">
-                            <div className="h-full bg-[#ED6A2F]" style={{ width: `${(point.total / max) * 100}%` }} />
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </section>
     );
 }

@@ -1,5 +1,4 @@
 import { useForm } from '@inertiajs/react';
-import { toast } from 'sonner';
 import {
     Bold,
     ImagePlus,
@@ -15,10 +14,12 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslate } from '@/hooks/use-translate';
 import { cn } from '@/lib/utils';
 
 export type CareerResourceFormValue = {
@@ -55,6 +56,7 @@ export function CareerResourceForm({
     resource?: CareerResourceFormValue;
     typeOptions: ResourceTypeOption[];
 }) {
+    const { t } = useTranslate();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const objectUrlRef = useRef<string | null>(null);
     const [selectedPreviewUrl, setSelectedPreviewUrl] = useState<string | null>(
@@ -83,7 +85,7 @@ export function CareerResourceForm({
             forceFormData: true,
             preserveScroll: true,
             onError: () => {
-                toast.error('Periksa kembali data career resource.');
+                toast.error(t('admin.career_resources_form.error_review'));
             },
         });
     }
@@ -110,21 +112,21 @@ export function CareerResourceForm({
                 <section className="rounded-lg border bg-white p-5 shadow-sm">
                     <div className="grid gap-5 md:grid-cols-2">
                         <div className="grid gap-2 md:col-span-2">
-                            <Label htmlFor="title">Judul</Label>
+                            <Label htmlFor="title">{t('admin.career_resources_form.title')}</Label>
                             <Input
                                 id="title"
                                 value={form.data.title}
                                 onChange={(event) =>
                                     form.setData('title', event.target.value)
                                 }
-                                placeholder="Contoh: Cara Menjawab Pertanyaan Gaji"
+                                placeholder={t('admin.career_resources_form.placeholder_title')}
                                 required
                             />
                             <InputError message={form.errors.title} />
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="type">Type</Label>
+                            <Label htmlFor="type">{t('admin.career_resources_form.type')}</Label>
                             <select
                                 id="type"
                                 value={form.data.type}
@@ -147,14 +149,14 @@ export function CareerResourceForm({
                         </div>
 
                         <div className="grid gap-2 md:col-span-2">
-                            <Label htmlFor="category">Kategori</Label>
+                            <Label htmlFor="category">{t('admin.career_resources_form.category')}</Label>
                             <Input
                                 id="category"
                                 value={form.data.category}
                                 onChange={(event) =>
                                     form.setData('category', event.target.value)
                                 }
-                                placeholder="Contoh: Karir Strategi"
+                                placeholder={t('admin.career_resources_form.placeholder_category')}
                             />
                             <InputError message={form.errors.category} />
                         </div>
@@ -164,11 +166,10 @@ export function CareerResourceForm({
                 <section className="rounded-lg border bg-white p-5 shadow-sm">
                     <div className="mb-4">
                         <h2 className="text-lg font-semibold">
-                            Isi Artikel
+                            {t('admin.career_resources_form.article_content')}
                         </h2>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Gunakan toolbar untuk membuat konten lebih mudah
-                            dibaca.
+                            {t('admin.career_resources_form.toolbar_hint')}
                         </p>
                     </div>
                     <RichEditor
@@ -182,9 +183,9 @@ export function CareerResourceForm({
             <aside className="space-y-6">
                 <section className="rounded-lg border bg-white p-5 shadow-sm">
                     <div className="mb-4">
-                        <h2 className="text-lg font-semibold">Thumbnail</h2>
+                        <h2 className="text-lg font-semibold">{t('admin.career_resources_form.thumbnail')}</h2>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            PNG, JPG, atau WebP. Maksimal 4 MB.
+                            {t('admin.career_resources_form.thumbnail_hint')}
                         </p>
                     </div>
 
@@ -192,7 +193,7 @@ export function CareerResourceForm({
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         className={cn(
-                            'group relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-lg border border-dashed border-[#f5b299] bg-[#fff8f4] text-left transition hover:border-[#f45113]',
+                            'group relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-lg border border-dashed border-[#d6e0f5] bg-[#eff4ff] text-left transition hover:border-[#01296A]',
                             previewUrl && 'border-solid bg-white',
                         )}
                     >
@@ -204,20 +205,20 @@ export function CareerResourceForm({
                                     className="h-full w-full object-cover"
                                 />
                                 <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-sm font-bold text-white opacity-0 transition group-hover:opacity-100">
-                                    Ganti Thumbnail
+                                    {t('admin.career_resources_form.change_thumbnail')}
                                 </span>
                             </>
                         ) : (
                             <span className="grid place-items-center gap-3 text-center">
-                                <span className="flex size-12 items-center justify-center rounded-lg bg-[#f45113] text-white">
+                                <span className="flex size-12 items-center justify-center rounded-lg bg-[#01296A] text-white">
                                     <ImagePlus className="size-5" />
                                 </span>
                                 <span>
                                     <span className="block text-sm font-bold text-[#1f2937]">
-                                        Upload thumbnail
+                                        {t('admin.career_resources_form.upload_thumbnail')}
                                     </span>
                                     <span className="mt-1 block text-xs font-medium text-[#8490a3]">
-                                        Klik untuk memilih gambar
+                                        {t('admin.career_resources_form.click_to_select')}
                                     </span>
                                 </span>
                             </span>
@@ -242,7 +243,7 @@ export function CareerResourceForm({
                             onClick={() => fileInputRef.current?.click()}
                         >
                             <ImagePlus />
-                            Pilih Gambar
+                            {t('admin.career_resources_form.choose_image')}
                         </Button>
                         {form.data.thumbnail ? (
                             <Button
@@ -262,32 +263,31 @@ export function CareerResourceForm({
                 </section>
 
                 <section className="rounded-lg border bg-white p-5 shadow-sm">
-                    <h2 className="text-lg font-semibold">Publikasi</h2>
+                    <h2 className="text-lg font-semibold">{t('admin.career_resources_form.publication')}</h2>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Simpan dulu sebagai draft, lalu publish dari halaman
-                        detail.
+                        {t('admin.career_resources_form.publication_hint')}
                     </p>
                     {form.progress ? (
                         <div className="mt-4">
                             <div className="h-2 overflow-hidden rounded-full bg-[#f4f7fa]">
                                 <div
-                                    className="h-full rounded-full bg-[#f45113]"
+                                    className="h-full rounded-full bg-[#01296A]"
                                     style={{
                                         width: `${form.progress.percentage}%`,
                                     }}
                                 />
                             </div>
                             <p className="mt-2 text-xs font-semibold text-muted-foreground">
-                                Upload {form.progress.percentage}%
+                                {t('admin.career_resources_form.upload')} {form.progress.percentage}%
                             </p>
                         </div>
                     ) : null}
                     <Button
                         type="submit"
-                        className="mt-5 w-full bg-[#f45113] hover:bg-[#d94710]"
+                        className="mt-5 w-full bg-[#01296A] hover:bg-[#001D4D]"
                         disabled={form.processing}
                     >
-                        {form.processing ? 'Menyimpan...' : 'Simpan Resource'}
+                        {form.processing ? t('admin.career_resources_form.saving') : t('admin.career_resources_form.save_resource')}
                     </Button>
                 </section>
             </aside>
@@ -369,7 +369,7 @@ function RichEditor({
                 onInput={(event) =>
                     onChange(event.currentTarget.innerHTML)
                 }
-                className="min-h-[360px] rounded-lg border bg-white px-4 py-3 text-sm leading-7 outline-none prose-headings:font-bold focus-visible:border-[#f45113] focus-visible:ring-[3px] focus-visible:ring-[#f45113]/15 [&_blockquote]:border-l-4 [&_blockquote]:border-[#f45113] [&_blockquote]:bg-[#fff8f4] [&_blockquote]:px-4 [&_blockquote]:py-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6"
+                className="min-h-[360px] rounded-lg border bg-white px-4 py-3 text-sm leading-7 outline-none prose-headings:font-bold focus-visible:border-[#01296A] focus-visible:ring-[3px] focus-visible:ring-[#01296A]/15 [&_blockquote]:border-l-4 [&_blockquote]:border-[#01296A] [&_blockquote]:bg-[#eff4ff] [&_blockquote]:px-4 [&_blockquote]:py-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6"
             />
             <InputError message={error} />
         </div>

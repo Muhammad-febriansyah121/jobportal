@@ -161,7 +161,6 @@ class AdminPricingPlanController extends Controller
             'duration_days' => $validated['duration_days'],
             'active_jobs_limit' => $validated['active_jobs_limit'],
             'recruiter_seat_limit' => $validated['recruiter_seat_limit'],
-            'ai_screening_quota' => $validated['ai_screening_quota'],
             'talent_search_quota' => $validated['talent_search_quota'],
             'features_json' => collect(preg_split('/\r\n|\r|\n/', (string) ($validated['features'] ?? '')))
                 ->map(fn (string $feature): string => trim($feature))
@@ -199,9 +198,12 @@ class AdminPricingPlanController extends Controller
             'duration_label' => $this->durationLabel((int) $plan->duration_days),
             'active_jobs_limit' => (int) $plan->active_jobs_limit,
             'recruiter_seat_limit' => (int) $plan->recruiter_seat_limit,
-            'ai_screening_quota' => (int) $plan->ai_screening_quota,
             'talent_search_quota' => (int) $plan->talent_search_quota,
-            'features' => $plan->features_json ?? [],
+            'features' => collect($plan->normalizedFeatures())
+                ->filter(fn (array $feature): bool => $feature['included'])
+                ->map(fn (array $feature): string => $feature['label'])
+                ->values()
+                ->all(),
             'is_active' => (bool) $plan->is_active,
             'subscriptions_count' => (int) ($plan->subscriptions_count ?? 0),
             'created_at' => $plan->created_at?->format('d M Y H:i'),

@@ -27,6 +27,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTranslate } from '@/hooks/use-translate';
+import { useMemo } from 'react';
 import { edit as companyEdit } from '@/routes/employer/company';
 
 type Overview = {
@@ -82,20 +84,11 @@ const STATUS_COLORS: Record<string, string> = {
     applied: 'bg-blue-400',
     screened: 'bg-indigo-400',
     shortlisted: 'bg-violet-400',
-    interview: 'bg-amber-400',
-    offer: 'bg-orange-400',
+    interview: 'bg-secondary-400',
+    offer: 'bg-primary-400',
     hired: 'bg-green-500',
     rejected: 'bg-red-400',
     withdrawn: 'bg-gray-400',
-};
-
-const JOB_STATUS_LABELS: Record<string, string> = {
-    published: 'Aktif',
-    draft: 'Draft',
-    closed: 'Ditutup',
-    pending_review: 'Review',
-    suspended: 'Ditangguhkan',
-    rejected: 'Ditolak',
 };
 
 export default function EmployerAnalytics({
@@ -106,27 +99,38 @@ export default function EmployerAnalytics({
     applicationsTrend,
     viewsTrend,
 }: AnalyticsProps) {
+    const { t } = useTranslate();
+    const JOB_STATUS_LABELS = useMemo<Record<string, string>>(
+        () => ({
+            published: t('employer.analytics.status_published'),
+            draft: t('employer.analytics.status_draft'),
+            closed: t('employer.analytics.status_closed'),
+            pending_review: t('employer.analytics.status_pending_review'),
+            suspended: t('employer.analytics.status_suspended'),
+            rejected: t('employer.analytics.status_rejected'),
+        }),
+        [t],
+    );
     if (!hasCompany) {
         return (
             <>
-                <Head title="Analytics" />
+                <Head title={t('employer.analytics.title')} />
                 <div className="space-y-6 p-4 md:p-6">
                     <Heading
-                        title="Analytics"
-                        description="Pantau performa lowongan, sumber kandidat, dan SLA rekrutmen."
+                        title={t('employer.analytics.title')}
+                        description={t('employer.analytics.description_short')}
                     />
-                    <Card className="border-orange-200 bg-orange-50/80">
+                    <Card className="border-primary-200 bg-primary-50/80">
                         <CardHeader>
-                            <CardTitle>Perusahaan belum disiapkan</CardTitle>
+                            <CardTitle>{t('employer.analytics.company_not_ready')}</CardTitle>
                             <CardDescription>
-                                Lengkapi profil perusahaan lebih dulu untuk
-                                melihat analytics rekrutmen.
+                                {t('employer.analytics.complete_company_first')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Button asChild>
                                 <Link href={companyEdit()}>
-                                    Mulai onboarding perusahaan
+                                    {t('employer.analytics.start_company_onboarding')}
                                 </Link>
                             </Button>
                         </CardContent>
@@ -149,46 +153,46 @@ export default function EmployerAnalytics({
 
     return (
         <>
-            <Head title="Analytics" />
+            <Head title={t('employer.analytics.title')} />
 
             <div className="space-y-6 p-4 md:p-6">
                 <Heading
-                    title="Analytics"
-                    description="Pantau performa lowongan, sumber kandidat, dan SLA rekrutmen — 30 hari terakhir."
+                    title={t('employer.analytics.title')}
+                    description={t('employer.analytics.description_long')}
                 />
 
                 {/* Overview cards */}
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <MetricCard
                         icon={<Users className="size-5" />}
-                        label="Total Pelamar"
+                        label={t('employer.analytics.metric_total_applicants')}
                         value={ov.total_applications}
                     />
                     <MetricCard
                         icon={
                             <CheckCircle2 className="size-5 text-green-500" />
                         }
-                        label="Kandidat Hired"
+                        label={t('employer.analytics.metric_hired_candidates')}
                         value={ov.hired_count}
                     />
                     <MetricCard
                         icon={<Eye className="size-5" />}
-                        label="Views Lowongan (30h)"
+                        label={t('employer.analytics.metric_job_views_30d')}
                         value={ov.total_views_30d.toLocaleString('id-ID')}
                     />
                     <MetricCard
                         icon={<MousePointerClick className="size-5" />}
-                        label="Klik Apply (30h)"
+                        label={t('employer.analytics.metric_apply_clicks_30d')}
                         value={ov.total_clicks_30d.toLocaleString('id-ID')}
                     />
                     <MetricCard
                         icon={<Percent className="size-5" />}
-                        label="Conversion Rate (30h)"
+                        label={t('employer.analytics.metric_conversion_rate_30d')}
                         value={`${ov.conversion_rate_30d}%`}
                     />
                     <MetricCard
                         icon={<BarChart2 className="size-5" />}
-                        label="Avg AI Fit Score"
+                        label={t('employer.analytics.metric_avg_fit_score')}
                         value={
                             ov.avg_fit_score !== null
                                 ? `${ov.avg_fit_score}/100`
@@ -197,16 +201,16 @@ export default function EmployerAnalytics({
                     />
                     <MetricCard
                         icon={<Clock className="size-5" />}
-                        label="Median Respon"
+                        label={t('employer.analytics.metric_median_response')}
                         value={
                             ov.median_response_hours !== null
-                                ? `${ov.median_response_hours} jam`
+                                ? `${ov.median_response_hours} ${t('employer.analytics.hours')}`
                                 : '-'
                         }
                     />
                     <MetricCard
                         icon={<TrendingUp className="size-5" />}
-                        label="Response Rate"
+                        label={t('employer.analytics.metric_response_rate')}
                         value={
                             ov.response_rate !== null
                                 ? `${ov.response_rate}%`
@@ -219,15 +223,15 @@ export default function EmployerAnalytics({
                     {/* Pipeline funnel */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Pipeline Kandidat</CardTitle>
+                            <CardTitle>{t('employer.analytics.candidate_selection')}</CardTitle>
                             <CardDescription>
-                                Distribusi pelamar per tahap rekrutmen.
+                                {t('employer.analytics.candidate_selection_desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             {pipeline.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">
-                                    Belum ada data pipeline.
+                                    {t('employer.analytics.no_selection_data')}
                                 </p>
                             ) : (
                                 pipeline.map((stage) => (
@@ -271,15 +275,15 @@ export default function EmployerAnalytics({
                     {/* Applications trend */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Tren Lamaran (30 Hari)</CardTitle>
+                            <CardTitle>{t('employer.analytics.application_trend_30d')}</CardTitle>
                             <CardDescription>
-                                Jumlah lamaran masuk per hari.
+                                {t('employer.analytics.application_trend_desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             {applicationsTrend.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">
-                                    Belum ada lamaran dalam 30 hari terakhir.
+                                    {t('employer.analytics.no_apps_30d')}
                                 </p>
                             ) : (
                                 <TrendChart
@@ -299,10 +303,9 @@ export default function EmployerAnalytics({
                 {viewsTrend.length > 0 && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Views & Klik (30 Hari)</CardTitle>
+                            <CardTitle>{t('employer.analytics.views_clicks_30d')}</CardTitle>
                             <CardDescription>
-                                Perbandingan views lowongan vs klik apply per
-                                hari.
+                                {t('employer.analytics.views_clicks_desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -326,20 +329,20 @@ export default function EmployerAnalytics({
                                                     />
                                                 </div>
                                                 <span className="w-12 shrink-0 text-right text-xs text-muted-foreground">
-                                                    {point.views} views
+                                                    {point.views} {t('employer.analytics.views_lc')}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                                                     <div
-                                                        className="h-full rounded-full bg-orange-400"
+                                                        className="h-full rounded-full bg-primary-400"
                                                         style={{
                                                             width: `${(point.clicks / viewTrendMax) * 100}%`,
                                                         }}
                                                     />
                                                 </div>
                                                 <span className="w-12 shrink-0 text-right text-xs text-muted-foreground">
-                                                    {point.clicks} klik
+                                                    {point.clicks} {t('employer.analytics.clicks_lc')}
                                                 </span>
                                             </div>
                                         </div>
@@ -349,11 +352,11 @@ export default function EmployerAnalytics({
                             <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1.5">
                                     <span className="inline-block size-2 rounded-full bg-indigo-400" />
-                                    Views
+                                    {t('employer.analytics.views')}
                                 </span>
                                 <span className="flex items-center gap-1.5">
-                                    <span className="inline-block size-2 rounded-full bg-orange-400" />
-                                    Klik Apply
+                                    <span className="inline-block size-2 rounded-full bg-primary-400" />
+                                    {t('employer.analytics.apply_clicks')}
                                 </span>
                             </div>
                         </CardContent>
@@ -365,80 +368,81 @@ export default function EmployerAnalytics({
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <BriefcaseBusiness className="size-5" />
-                            Performa Lowongan
+                            {t('employer.analytics.job_performance')}
                         </CardTitle>
                         <CardDescription>
-                            Lowongan diurutkan berdasarkan jumlah pelamar
-                            terbanyak.
+                            {t('employer.analytics.job_performance_desc')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="p-0">
                         {topJobs.length === 0 ? (
                             <p className="px-6 py-4 text-sm text-muted-foreground">
-                                Belum ada lowongan yang dipublikasikan.
+                                {t('employer.analytics.no_published_jobs')}
                             </p>
                         ) : (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Judul</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead className="text-right">
-                                            Pelamar
-                                        </TableHead>
-                                        <TableHead className="text-right">
-                                            Hired
-                                        </TableHead>
-                                        <TableHead className="text-right">
-                                            Views
-                                        </TableHead>
-                                        <TableHead className="text-right">
-                                            Klik
-                                        </TableHead>
-                                        <TableHead className="text-right">
-                                            CTR
-                                        </TableHead>
-                                        <TableHead>Terbit</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {topJobs.map((job) => (
-                                        <TableRow key={job.id}>
-                                            <TableCell className="font-medium">
-                                                {job.title}
-                                            </TableCell>
-                                            <TableCell>
-                                                <StatusPill
-                                                    status={job.status}
-                                                    label={
-                                                        JOB_STATUS_LABELS[
-                                                            job.status
-                                                        ] ?? job.status
-                                                    }
-                                                />
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                {job.applications_count}
-                                            </TableCell>
-                                            <TableCell className="text-right font-medium text-green-600">
-                                                {job.hired_count}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                {job.views_total}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                {job.clicks_total}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                {job.conversion_rate}%
-                                            </TableCell>
-                                            <TableCell className="text-muted-foreground">
-                                                {job.published_at}
-                                            </TableCell>
+                            <div className="overflow-x-auto">
+                                <Table className="min-w-160">
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>{t('employer.analytics.col_title')}</TableHead>
+                                            <TableHead>{t('employer.analytics.col_status')}</TableHead>
+                                            <TableHead className="text-right">
+                                                {t('employer.analytics.col_applicants')}
+                                            </TableHead>
+                                            <TableHead className="text-right">
+                                                {t('employer.analytics.col_hired')}
+                                            </TableHead>
+                                            <TableHead className="text-right">
+                                                {t('employer.analytics.col_views')}
+                                            </TableHead>
+                                            <TableHead className="text-right">
+                                                {t('employer.analytics.col_clicks')}
+                                            </TableHead>
+                                            <TableHead className="text-right">
+                                                {t('employer.analytics.col_ctr')}
+                                            </TableHead>
+                                            <TableHead>{t('employer.analytics.col_published')}</TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {topJobs.map((job) => (
+                                            <TableRow key={job.id}>
+                                                <TableCell className="font-medium">
+                                                    {job.title}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <StatusPill
+                                                        status={job.status}
+                                                        label={
+                                                            JOB_STATUS_LABELS[
+                                                                job.status
+                                                            ] ?? job.status
+                                                        }
+                                                    />
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    {job.applications_count}
+                                                </TableCell>
+                                                <TableCell className="text-right font-medium text-green-600">
+                                                    {job.hired_count}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    {job.views_total}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    {job.clicks_total}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    {job.conversion_rate}%
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground">
+                                                    {job.published_at}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
                         )}
                     </CardContent>
                 </Card>
@@ -514,6 +518,7 @@ function StatusPill({ status, label }: { status: string; label: string }) {
         suspended: 'bg-red-100 text-red-700',
         rejected: 'bg-red-100 text-red-700',
     };
+
     return (
         <span
             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colors[status] ?? 'bg-gray-100 text-gray-600'}`}
@@ -525,5 +530,6 @@ function StatusPill({ status, label }: { status: string; label: string }) {
 
 function formatDay(dayStr: string): string {
     const d = new Date(dayStr);
+
     return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
 }

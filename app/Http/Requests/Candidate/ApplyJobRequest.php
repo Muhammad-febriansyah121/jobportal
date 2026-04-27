@@ -23,7 +23,7 @@ class ApplyJobRequest extends FormRequest
     {
         return [
             'candidate_cv_id' => ['nullable', 'integer', 'exists:candidate_cvs,id'],
-            'cover_letter' => ['nullable', 'string', 'max:5000'],
+            'cover_letter' => ['nullable', 'string', 'min:100', 'max:5000'],
             'screening_answers' => ['nullable', 'array'],
             'screening_answers.*' => ['nullable', 'string', 'max:2000'],
         ];

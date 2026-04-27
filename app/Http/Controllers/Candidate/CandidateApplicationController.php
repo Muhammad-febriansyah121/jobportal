@@ -2,16 +2,19 @@
 
 namespace App\Http\Controllers\Candidate;
 
+use App\Actions\Candidate\PredictItJobAcceptance;
 use App\Actions\Candidate\ResolveCandidateProfile;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Candidate\ApplyJobRequest;
 use App\Jobs\ComputeCandidateIntentJob;
+use App\Models\AiInterviewSession;
 use App\Models\AiMatchScore;
 use App\Models\Application;
 use App\Models\ApplicationStatusHistory;
 use App\Models\JobListing;
 use App\Models\JobListingAnalytic;
-use App\Models\UserNotification;
+use App\Models\User;
+use App\Services\UserNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -49,8 +52,12 @@ class CandidateApplicationController extends Controller
         ]);
     }
 
-    public function store(ApplyJobRequest $request, JobListing $jobListing, ResolveCandidateProfile $resolveCandidateProfile): RedirectResponse
-    {
+    public function store(
+        ApplyJobRequest $request,
+        JobListing $jobListing,
+        ResolveCandidateProfile $resolveCandidateProfile,
+        PredictItJobAcceptance $predictItJobAcceptance,
+    ): RedirectResponse {
         abort_unless($jobListing->status === 'published', 404);
 
         $candidate = $resolveCandidateProfile->handle($request->user());
@@ -79,6 +86,9 @@ class CandidateApplicationController extends Controller
             ->where('candidate_id', $candidate->id)
             ->where('job_listing_id', $jobListing->id)
             ->first();
+        $predictedChance = $matchScore?->overall_score === null
+            ? $predictItJobAcceptance->handle($jobListing, $candidate)
+            : null;
 
         $application = $candidate->applications()->create([
             'job_listing_id' => $jobListing->id,
@@ -86,7 +96,7 @@ class CandidateApplicationController extends Controller
             'status' => 'applied',
             'cover_letter' => $data['cover_letter'] ?? null,
             'screening_answers_json' => $screeningAnswers,
-            'ai_fit_score' => $matchScore?->overall_score,
+            'ai_fit_score' => $matchScore?->overall_score ?? $predictedChance['percentage'] ?? null,
             'ai_skill_match' => [
                 'matched_skills' => $matchScore?->matched_skills ?? [],
                 'missing_skills' => $matchScore?->missing_skills ?? [],
@@ -119,6 +129,7 @@ class CandidateApplicationController extends Controller
             'jobListing.company:id,name,is_verified',
             'statusHistories.changer:id,name',
             'interviews' => fn ($query) => $query->latest('scheduled_at'),
+            'aiInterviewSessions' => fn ($query) => $query->latest('scheduled_at'),
         ]);
 
         return Inertia::render('candidate/applications/show', [
@@ -158,6 +169,18 @@ class CandidateApplicationController extends Controller
                         'mode' => $interview->mode,
                         'location_url' => $interview->location_url,
                         'status' => $interview->status,
+                    ]),
+                'ai_interviews' => $application->aiInterviewSessions
+                    ->map(fn (AiInterviewSession $session): array => [
+                        'id' => $session->id,
+                        'status' => $session->status,
+                        'interview_mode' => $session->interview_mode ?? 'voice',
+                        'scheduled_at' => $session->scheduled_at?->format('d M Y H:i'),
+                        'duration_minutes' => $session->duration_minutes,
+                        'meeting_url' => $session->meeting_url,
+                        'candidate_confirmed_at' => $session->candidate_confirmed_at?->format('d M Y H:i'),
+                        'started_at' => $session->started_at?->format('d M Y H:i'),
+                        'completed_at' => $session->completed_at?->format('d M Y H:i'),
                     ]),
             ],
         ]);
@@ -199,17 +222,23 @@ class CandidateApplicationController extends Controller
 
     private function notifyEmployer(JobListing $jobListing, Application $application): void
     {
-        UserNotification::create([
-            'user_id' => $jobListing->company?->owner_id ?? $jobListing->created_by,
-            'type' => 'application_submitted',
-            'title' => 'Lamaran baru masuk',
-            'message' => 'Ada lamaran baru untuk '.$jobListing->title.'.',
-            'data_json' => [
+        $recipientId = $jobListing->company?->owner_id ?? $jobListing->created_by;
+        $recipient = User::query()->find($recipientId);
+
+        if ($recipient === null) {
+            return;
+        }
+
+        app(UserNotificationService::class)->sendToUser(
+            $recipient,
+            'application_submitted',
+            'Lamaran baru masuk',
+            'Ada lamaran baru untuk '.$jobListing->title.'.',
+            [
                 'application_id' => $application->id,
                 'job_listing_id' => $jobListing->id,
             ],
-            'is_read' => false,
-        ]);
+        );
     }
 
     private function recordStatus(Application $application, ?string $fromStatus, string $toStatus, int $userId, ?string $note = null): void
@@ -231,10 +260,10 @@ class CandidateApplicationController extends Controller
     {
         return [
             'applied' => 'Terkirim',
-            'screened' => 'Screening',
-            'shortlisted' => 'Shortlist',
-            'interview' => 'Interview',
-            'offer' => 'Offer',
+            'screened' => 'Seleksi Awal',
+            'shortlisted' => 'Terpilih',
+            'interview' => 'Wawancara',
+            'offer' => 'Penawaran',
             'hired' => 'Diterima',
             'rejected' => 'Ditolak',
             'withdrawn' => 'Ditarik',

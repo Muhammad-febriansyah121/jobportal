@@ -13,6 +13,12 @@ class SettingSeeder extends Seeder
             ['key' => 'recaptcha_site_key', 'value' => ''],
             ['key' => 'recaptcha_secret_key', 'value' => ''],
             ['key' => 'recaptcha_enabled', 'value' => 'false'],
+            ['key' => 'ai_model', 'value' => 'gpt-5'],
+            ['key' => 'whatsapp_gateway_url', 'value' => ''],
+            ['key' => 'whatsapp_gateway_api_key', 'value' => ''],
+            ['key' => 'whatsapp_gateway_default_session_id', 'value' => ''],
+            ['key' => 'whatsapp_gateway_connect_timeout', 'value' => '3'],
+            ['key' => 'whatsapp_gateway_timeout', 'value' => '10'],
             ['key' => 'pakasir_project', 'value' => 'jobportal'],
             ['key' => 'pakasir_api_key', 'value' => ''],
         ];

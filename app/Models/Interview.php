@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['application_id', 'scheduled_by', 'scheduled_at', 'mode', 'location_url', 'status'])]
+#[Fillable(['application_id', 'scheduled_by', 'scheduled_at', 'duration_minutes', 'mode', 'location_url', 'notes', 'status'])]
 class Interview extends Model
 {
     public function application(): BelongsTo

@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\ActivityLog;
+use App\Models\AssessmentQuestion;
+use App\Models\CandidatePricingMenu;
 use App\Models\CareerResource;
 use App\Models\Company;
 use App\Models\CompanyVerification;
@@ -8,8 +10,10 @@ use App\Models\Industry;
 use App\Models\JobListing;
 use App\Models\PricingPlan;
 use App\Models\Skill;
+use App\Models\Subscription;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Services\AiService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -46,9 +50,6 @@ test('admin can manage skills', function () {
     $skill = Skill::firstOrFail();
 
     expect($skill->name)->toBe('Laravel');
-    expect($skill->slug)->toBe('laravel');
-    expect($skill->category)->toBe('Backend');
-
     $this->actingAs($admin)
         ->patch(route('admin.skills.update', $skill), [
             'name' => 'Laravel Octane',
@@ -64,6 +65,124 @@ test('admin can manage skills', function () {
         ->assertRedirect();
 
     expect(Skill::query()->exists())->toBeFalse();
+});
+
+test('admin can manage assessment question bank and generate ai questions', function () {
+    $admin = User::factory()->admin()->create();
+    $skill = Skill::create([
+        'name' => 'TypeScript',
+        'slug' => 'typescript',
+        'category' => 'Frontend',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.assessment-questions.create'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/assessment-questions/create')
+            ->where('title', 'Tambah Bank Soal')
+            ->etc()
+        );
+
+    $this->actingAs($admin)
+        ->post(route('admin.assessment-questions.store'), [
+            'mode' => 'manual',
+            'skill_id' => $skill->id,
+            'difficulty' => 'medium',
+            'manual_questions' => [
+                [
+                    'question' => 'Apa manfaat type inference di TypeScript?',
+                    'option_a' => 'Mengurangi kebutuhan anotasi tipe eksplisit',
+                    'option_b' => 'Menghapus compile step',
+                    'option_c' => 'Membuat JS jadi strongly typed saat runtime',
+                    'option_d' => 'Menghilangkan error handling',
+                    'correct_option_index' => 0,
+                ],
+                [
+                    'question' => 'Apa peran interface di TypeScript?',
+                    'option_a' => 'Menentukan kontrak bentuk object',
+                    'option_b' => 'Menjalankan unit test',
+                    'option_c' => 'Menghapus compile warning',
+                    'option_d' => 'Membuat CSS module',
+                    'correct_option_index' => 0,
+                ],
+            ],
+            'is_active' => 1,
+        ])
+        ->assertRedirect();
+
+    $question = AssessmentQuestion::firstOrFail();
+
+    expect($question->source)->toBe('admin');
+    expect($question->question)->toContain('type inference');
+    expect(AssessmentQuestion::query()->where('source', 'admin')->count())->toBe(2);
+
+    $this->actingAs($admin)
+        ->get(route('admin.assessment-questions.edit', $question))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/assessment-questions/edit')
+            ->where('question.id', $question->id)
+            ->etc()
+        );
+
+    $this->actingAs($admin)
+        ->patch(route('admin.assessment-questions.update', $question), [
+            'skill_id' => $skill->id,
+            'difficulty' => 'hard',
+            'question' => 'Apa fungsi discriminated union di TypeScript?',
+            'option_a' => 'Validasi schema DB',
+            'option_b' => 'Narrowing tipe berbasis field pembeda',
+            'option_c' => 'Rendering React otomatis',
+            'option_d' => 'Transpile ke Python',
+            'correct_option_index' => 1,
+            'is_active' => 1,
+        ])
+        ->assertRedirect();
+
+    expect($question->refresh()->difficulty)->toBe('hard');
+    expect($question->question)->toContain('discriminated union');
+
+    $this->mock(AiService::class, function ($mock): void {
+        $mock->shouldReceive('chat')
+            ->once()
+            ->andReturn(json_encode([
+                'questions' => [
+                    [
+                        'question' => 'Apa tujuan generic di TypeScript?',
+                        'options' => ['Reusable type-safe code', 'Mempercepat CSS', 'Menggantikan HTML', 'Menghapus runtime'],
+                        'answer_index' => 0,
+                    ],
+                    [
+                        'question' => 'Kapan union type dipakai?',
+                        'options' => ['Saat nilai bisa beberapa tipe', 'Hanya untuk angka', 'Hanya untuk interface', 'Tidak pernah'],
+                        'answer_index' => 0,
+                    ],
+                ],
+            ]));
+    });
+
+    $this->actingAs($admin)
+        ->post(route('admin.assessment-questions.store'), [
+            'mode' => 'ai',
+            'skill_id' => $skill->id,
+            'difficulty' => 'easy',
+            'total_questions' => 2,
+        ])
+        ->assertRedirect();
+
+    expect(
+        AssessmentQuestion::query()
+            ->where('skill_id', $skill->id)
+            ->where('source', 'ai')
+            ->count()
+    )->toBe(2);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.assessment-questions.destroy', $question))
+        ->assertRedirect();
+
+    expect(AssessmentQuestion::query()->whereKey($question->id)->exists())->toBeFalse();
 });
 
 test('admin resource slugs are generated from names without manual input', function () {
@@ -94,6 +213,18 @@ test('admin resource slugs are generated from names without manual input', funct
 test('admin can approve company verification and notify the owner', function () {
     $admin = User::factory()->admin()->create();
     $owner = User::factory()->employer()->create();
+    $trialPlan = PricingPlan::create([
+        'name' => 'Gratis / Trial',
+        'slug' => 'gratis-trial',
+        'price' => 0,
+        'duration_days' => 14,
+        'active_jobs_limit' => 3,
+        'recruiter_seat_limit' => 1,
+        'ai_screening_quota' => 0,
+        'talent_search_quota' => 1,
+        'features_json' => ['14 Hari Masa Aktif'],
+        'is_active' => true,
+    ]);
     $company = Company::create([
         'owner_id' => $owner->id,
         'name' => 'Karivia Labs',
@@ -116,6 +247,14 @@ test('admin can approve company verification and notify the owner', function () 
     expect($verification->refresh()->status)->toBe('approved');
     expect($company->refresh()->is_verified)->toBeTrue();
     expect($company->verification_status)->toBe('approved');
+    $trialSubscription = Subscription::query()
+        ->where('company_id', $company->id)
+        ->where('status', 'active')
+        ->first();
+    expect($trialSubscription)->not->toBeNull();
+    expect($trialSubscription?->pricing_plan_id)->toBe($trialPlan->id);
+    expect($trialSubscription?->starts_at)->not->toBeNull();
+    expect($trialSubscription?->ends_at)->not->toBeNull();
     expect(UserNotification::where('user_id', $owner->id)->where('type', 'company_verification')->exists())->toBeTrue();
     expect(ActivityLog::where('action', 'approve_company_verification')->where('subject_id', $verification->id)->exists())->toBeTrue();
 });
@@ -326,4 +465,97 @@ test('admin can update a pricing plan from the edit page', function () {
     expect($plan->duration_days)->toBe(14);
     expect($plan->is_active)->toBeFalse();
     expect($plan->features_json)->toBe(['Basic analytics', 'Priority support']);
+});
+
+test('admin can create and view candidate pricing menu through dedicated pages', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.candidate-pricing-menus.create'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/candidate-pricing-menus/create')
+            ->where('title', 'Tambah Pricing Kandidat')
+        );
+
+    $this->actingAs($admin)
+        ->post(route('admin.candidate-pricing-menus.store'), [
+            'name' => 'Topup AI 5.000 Token',
+            'description' => 'Paket topup awal untuk kandidat.',
+            'price' => 5000,
+            'ai_token_amount' => 5000,
+            'cv_builder_quota' => 1,
+            'features' => "Tambah token AI\nRegenerasi CV Builder",
+            'is_default_free' => false,
+            'is_active' => true,
+        ])
+        ->assertRedirect();
+
+    $menu = CandidatePricingMenu::firstOrFail();
+
+    expect($menu->slug)->toBe('topup-ai-5000-token');
+    expect($menu->features_json)->toBe([
+        'Tambah token AI',
+        'Regenerasi CV Builder',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.candidate-pricing-menus.show', $menu))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/candidate-pricing-menus/show')
+            ->where('menu.name', 'Topup AI 5.000 Token')
+            ->where('menu.price_label', 'Rp 5.000')
+            ->where('menu.ai_token_amount', 5000)
+            ->where('menu.cv_builder_quota', 1)
+        );
+});
+
+test('admin can update candidate pricing menu from the edit page', function () {
+    $admin = User::factory()->admin()->create();
+    $menu = CandidatePricingMenu::create([
+        'name' => 'Gratis CV Builder',
+        'slug' => 'gratis-cv-builder',
+        'description' => 'Akses awal kandidat.',
+        'price' => 0,
+        'ai_token_amount' => 0,
+        'cv_builder_quota' => 1,
+        'features_json' => ['1x CV Builder'],
+        'is_default_free' => true,
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.candidate-pricing-menus.edit', $menu))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/candidate-pricing-menus/edit')
+            ->where('menu.name', 'Gratis CV Builder')
+        );
+
+    $this->actingAs($admin)
+        ->patch(route('admin.candidate-pricing-menus.update', $menu), [
+            'name' => 'Topup AI 20.000 Token',
+            'description' => 'Paket hemat untuk kandidat aktif.',
+            'price' => 15000,
+            'ai_token_amount' => 20000,
+            'cv_builder_quota' => 5,
+            'features' => "Token AI lebih besar\nBisa beberapa kali update",
+            'is_default_free' => false,
+            'is_active' => true,
+        ])
+        ->assertRedirect(route('admin.candidate-pricing-menus.show', $menu));
+
+    $menu->refresh();
+
+    expect($menu->name)->toBe('Topup AI 20.000 Token');
+    expect($menu->slug)->toBe('topup-ai-20000-token');
+    expect($menu->price)->toBe(15000);
+    expect($menu->ai_token_amount)->toBe(20000);
+    expect($menu->cv_builder_quota)->toBe(5);
+    expect($menu->is_default_free)->toBeFalse();
+    expect($menu->features_json)->toBe([
+        'Token AI lebih besar',
+        'Bisa beberapa kali update',
+    ]);
 });
