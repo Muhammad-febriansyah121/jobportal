@@ -51,7 +51,15 @@
       "Bash(git -C /Applications/laravel/jobportal stash)",
       "Bash([ -d \"resources/js/routes/$route\" ])",
       "Bash([ -f \"resources/js/routes/$route.ts\" ])",
-      "Bash(git ls-tree *)"
+      "Bash(git ls-tree *)",
+      "Bash(git fsck *)",
+      "Bash(git checkout *)",
+      "Read(//private/tmp/**)",
+      "Bash(sed -E 's/^\\([a-z]+\\\\.[a-z_]+\\).*/\\\\1/' /tmp/missing.txt)",
+      "Bash(sort -u comm -23 /tmp/used_keys.txt /tmp/en_keys.txt wc -l /tmp/still_missing.txt echo \"---\" echo \"Still missing \\(if any\\):\" head -10 /tmp/still_missing.txt)",
+      "Bash(sort -u wc -l /tmp/used_keys2.txt echo \"---\" python3 -c \"import json; print\\('\\\\n'.join\\(json.load\\(open\\('lang/en.json'\\)\\).keys\\(\\)\\)\\)\")",
+      "Bash(sort -u comm -23 /tmp/used_keys2.txt /tmp/en_keys2.txt wc -l /tmp/still_missing2.txt echo \"still missing\" echo \"---\" cat /tmp/still_missing2.txt)",
+      "Bash(sort -u wc -l /tmp/used_keys3.txt echo \"---\" comm -23 /tmp/used_keys3.txt /tmp/en_keys2.txt wc -l /tmp/still_missing3.txt echo \"still missing\" diff /tmp/still_missing2.txt /tmp/still_missing3.txt)"
     ]
   },
   "enableAllProjectMcpServers": true,
