@@ -48,7 +48,10 @@
       "WebFetch(domain:dealls.com)",
       "Bash(composer show *)",
       "Bash(awk -F/ '{print $4}')",
-      "Bash(git -C /Applications/laravel/jobportal stash)"
+      "Bash(git -C /Applications/laravel/jobportal stash)",
+      "Bash([ -d \"resources/js/routes/$route\" ])",
+      "Bash([ -f \"resources/js/routes/$route.ts\" ])",
+      "Bash(git ls-tree *)"
     ]
   },
   "enableAllProjectMcpServers": true,

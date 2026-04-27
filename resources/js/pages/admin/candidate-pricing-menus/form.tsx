@@ -1,0 +1,403 @@
+import { useForm } from '@inertiajs/react';
+import { Check, Plus, Trash2 } from 'lucide-react';
+import type { FormEvent } from 'react';
+import { toast } from 'sonner';
+import InputError from '@/components/input-error';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+
+export type CandidatePricingMenuValue = {
+    id?: number;
+    name: string;
+    description?: string | null;
+    price: number;
+    ai_token_amount: number;
+    cv_builder_quota: number;
+    features: string[];
+    is_default_free: boolean;
+    is_active: boolean;
+};
+
+type CandidatePricingMenuFormData = {
+    _method?: 'patch';
+    name: string;
+    description: string;
+    price: number;
+    ai_token_amount: number;
+    cv_builder_quota: number;
+    features: string;
+    is_default_free: boolean;
+    is_active: boolean;
+};
+
+const defaultFeatures = [
+    '1x CV Builder tambahan',
+    'Token AI untuk optimasi CV',
+    'Bisa dipakai setelah paket gratis habis',
+];
+
+export function CandidatePricingMenuForm({
+    action,
+    method = 'post',
+    menu,
+}: {
+    action: string;
+    method?: 'patch' | 'post';
+    menu?: CandidatePricingMenuValue;
+}) {
+    const initialFeatures = menu?.features?.length
+        ? menu.features
+        : defaultFeatures;
+    const form = useForm<CandidatePricingMenuFormData>({
+        ...(method === 'patch' ? { _method: 'patch' as const } : {}),
+        name: menu?.name ?? '',
+        description: menu?.description ?? '',
+        price: menu?.price ?? 0,
+        ai_token_amount: menu?.ai_token_amount ?? 0,
+        cv_builder_quota: menu?.cv_builder_quota ?? 1,
+        features: initialFeatures.join('\n'),
+        is_default_free: menu?.is_default_free ?? false,
+        is_active: menu?.is_active ?? true,
+    });
+    const features = splitFeatures(form.data.features);
+
+    function submit(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+
+        form.post(action, {
+            preserveScroll: true,
+            onError: () => {
+                toast.error('Periksa kembali data pricing kandidat.');
+            },
+        });
+    }
+
+    function updateNumber(
+        field: 'ai_token_amount' | 'cv_builder_quota' | 'price',
+        value: string,
+    ) {
+        form.setData(field, Number(value.replace(/\D/g, '')) || 0);
+    }
+
+    function updateFeature(index: number, value: string) {
+        const next = [...features];
+        next[index] = value;
+        form.setData('features', next.join('\n'));
+    }
+
+    function removeFeature(index: number) {
+        form.setData(
+            'features',
+            features.filter((_, featureIndex) => featureIndex !== index).join('\n'),
+        );
+    }
+
+    function addFeature() {
+        form.setData('features', [...features, ''].join('\n'));
+    }
+
+    function toggleDefaultFree(checked: boolean) {
+        form.setData('is_default_free', checked);
+
+        if (checked) {
+            form.setData('price', 0);
+        }
+    }
+
+    return (
+        <form onSubmit={submit} className="grid gap-6 xl:grid-cols-[1fr_360px]">
+            <div className="space-y-6">
+                <section className="rounded-lg border bg-white p-5 shadow-sm">
+                    <div className="mb-5">
+                        <h2 className="text-lg font-semibold">Informasi Paket</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Nama paket kandidat, harga topup, dan status publikasi.
+                        </p>
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <div className="grid gap-2 md:col-span-2">
+                            <Label htmlFor="name">Nama Paket</Label>
+                            <Input
+                                id="name"
+                                value={form.data.name}
+                                onChange={(event) =>
+                                    form.setData('name', event.target.value)
+                                }
+                                placeholder="Contoh: Topup AI 5.000 Token"
+                                required
+                            />
+                            <InputError message={form.errors.name} />
+                        </div>
+
+                        <div className="grid gap-2 md:col-span-2">
+                            <Label htmlFor="description">Deskripsi</Label>
+                            <Textarea
+                                id="description"
+                                value={form.data.description}
+                                onChange={(event) =>
+                                    form.setData('description', event.target.value)
+                                }
+                                placeholder="Jelaskan kegunaan paket ini untuk kandidat."
+                                rows={4}
+                            />
+                            <InputError message={form.errors.description} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="price">Harga</Label>
+                            <Input
+                                id="price"
+                                inputMode="numeric"
+                                value={formatRupiah(form.data.price)}
+                                onChange={(event) =>
+                                    updateNumber('price', event.target.value)
+                                }
+                                placeholder="Rp 0"
+                                disabled={form.data.is_default_free}
+                            />
+                            <InputError message={form.errors.price} />
+                        </div>
+
+                        <label className="flex items-center gap-3 rounded-lg border bg-[#f8fafc] px-4 py-3">
+                            <Checkbox
+                                checked={form.data.is_default_free}
+                                onCheckedChange={(checked) =>
+                                    toggleDefaultFree(Boolean(checked))
+                                }
+                            />
+                            <span>
+                                <span className="block text-sm font-semibold">
+                                    Paket gratis default
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                    Dipakai untuk akses CV Builder pertama kandidat.
+                                </span>
+                            </span>
+                        </label>
+                        <InputError message={form.errors.is_default_free} />
+
+                        <label className="md:col-span-2 flex items-center gap-3 rounded-lg border bg-[#f8fafc] px-4 py-3">
+                            <Checkbox
+                                checked={form.data.is_active}
+                                onCheckedChange={(checked) =>
+                                    form.setData('is_active', Boolean(checked))
+                                }
+                            />
+                            <span>
+                                <span className="block text-sm font-semibold">
+                                    Paket aktif
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                    Paket bisa ditampilkan di flow pricing kandidat.
+                                </span>
+                            </span>
+                        </label>
+                        <InputError message={form.errors.is_active} />
+                    </div>
+                </section>
+
+                <section className="rounded-lg border bg-white p-5 shadow-sm">
+                    <div className="mb-5">
+                        <h2 className="text-lg font-semibold">Kuota Paket</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Tentukan jumlah token AI dan kuota penggunaan CV Builder.
+                        </p>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <NumberField
+                            id="ai_token_amount"
+                            label="Jumlah token AI"
+                            value={form.data.ai_token_amount}
+                            error={form.errors.ai_token_amount}
+                            onChange={(value) => updateNumber('ai_token_amount', value)}
+                        />
+                        <NumberField
+                            id="cv_builder_quota"
+                            label="Kuota CV Builder"
+                            value={form.data.cv_builder_quota}
+                            error={form.errors.cv_builder_quota}
+                            onChange={(value) => updateNumber('cv_builder_quota', value)}
+                        />
+                    </div>
+                </section>
+
+                <section className="rounded-lg border bg-white p-5 shadow-sm">
+                    <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                            <h2 className="text-lg font-semibold">Benefit Paket</h2>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Tulis satu benefit per baris agar tampil jelas di halaman pricing.
+                            </p>
+                        </div>
+                        <Button type="button" variant="outline" onClick={addFeature}>
+                            <Plus />
+                            Tambah Benefit
+                        </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                        {features.map((feature, index) => (
+                            <div className="flex gap-2" key={index}>
+                                <Input
+                                    value={feature}
+                                    onChange={(event) =>
+                                        updateFeature(index, event.target.value)
+                                    }
+                                    placeholder="Contoh: 1x CV Builder tambahan"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => removeFeature(index)}
+                                    disabled={features.length === 1}
+                                >
+                                    <Trash2 />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                    <InputError message={form.errors.features} className="mt-2" />
+                </section>
+            </div>
+
+            <aside className="space-y-6">
+                <section className="rounded-lg border bg-white p-5 shadow-sm">
+                    <div className="flex items-center justify-between gap-3">
+                        <h2 className="text-lg font-semibold">Preview Paket</h2>
+                        <Badge
+                            className={
+                                form.data.is_active
+                                    ? 'bg-emerald-600 text-white'
+                                    : ''
+                            }
+                            variant={form.data.is_active ? 'default' : 'outline'}
+                        >
+                            {form.data.is_active ? 'Aktif' : 'Nonaktif'}
+                        </Badge>
+                    </div>
+
+                    <div className="mt-5 rounded-lg border bg-[#eff4ff] p-4">
+                        <p className="text-sm font-semibold text-[#01296A]">
+                            {form.data.name || 'Nama Paket Kandidat'}
+                        </p>
+                        <p className="mt-3 text-3xl font-bold tracking-tight">
+                            {formatRupiah(form.data.price)}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            harga paket
+                        </p>
+                        <p className="mt-4 rounded-md bg-white px-3 py-2 text-sm font-bold text-[#01296A]">
+                            {form.data.is_default_free
+                                ? 'Paket Gratis Default'
+                                : 'Paket Topup'}
+                        </p>
+                    </div>
+
+                    <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
+                        <Quota
+                            label="Token AI"
+                            value={formatNumber(form.data.ai_token_amount)}
+                        />
+                        <Quota
+                            label="Kuota CV Builder"
+                            value={formatNumber(form.data.cv_builder_quota)}
+                        />
+                    </dl>
+
+                    <div className="mt-5 space-y-2">
+                        {features.filter(Boolean).map((feature) => (
+                            <div className="flex items-start gap-2 text-sm" key={feature}>
+                                <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                                    <Check className="size-3" />
+                                </span>
+                                <span>{feature}</span>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                <section className="rounded-lg border bg-white p-5 shadow-sm">
+                    <h2 className="text-lg font-semibold">Simpan Perubahan</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Setelah tersimpan, notifikasi Sonner akan muncul otomatis.
+                    </p>
+                    <Button
+                        type="submit"
+                        className="mt-5 w-full bg-[#01296A] hover:bg-[#001D4D]"
+                        disabled={form.processing}
+                    >
+                        {form.processing ? 'Menyimpan...' : 'Simpan Paket'}
+                    </Button>
+                </section>
+            </aside>
+        </form>
+    );
+}
+
+function NumberField({
+    id,
+    label,
+    value,
+    error,
+    onChange,
+}: {
+    id: string;
+    label: string;
+    value: number;
+    error?: string;
+    onChange: (value: string) => void;
+}) {
+    return (
+        <div className="grid gap-2">
+            <Label htmlFor={id}>{label}</Label>
+            <Input
+                id={id}
+                inputMode="numeric"
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+                placeholder="0"
+            />
+            <InputError message={error} />
+        </div>
+    );
+}
+
+function Quota({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="rounded-lg border bg-white p-3">
+            <dt className="text-xs font-semibold text-muted-foreground">
+                {label}
+            </dt>
+            <dd className="mt-1 text-lg font-bold">{value}</dd>
+        </div>
+    );
+}
+
+function splitFeatures(value: string): string[] {
+    const features = value.split('\n');
+
+    return features.length ? features : [''];
+}
+
+function formatRupiah(value: number): string {
+    if (!value) {
+        return 'Rp 0';
+    }
+
+    return new Intl.NumberFormat('id-ID', {
+        currency: 'IDR',
+        maximumFractionDigits: 0,
+        style: 'currency',
+    }).format(value);
+}
+
+function formatNumber(value: number): string {
+    return new Intl.NumberFormat('id-ID').format(value || 0);
+}

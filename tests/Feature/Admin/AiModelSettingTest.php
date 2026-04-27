@@ -1,0 +1,61 @@
+<?php
+
+use App\Models\Setting;
+use App\Models\User;
+use App\Services\AiService;
+use Illuminate\Support\Facades\Http;
+
+test('admin can save ai model in web settings', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.settings.update'), [
+            'ai_model' => 'gpt-5',
+            'ai_api_key' => 'test-key',
+        ])
+        ->assertRedirect();
+
+    expect(Setting::get('ai_model'))->toBe('gpt-5');
+});
+
+test('admin can save whatsapp gateway settings in web settings', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->post(route('admin.settings.update'), [
+            'whatsapp_gateway_url' => 'http://127.0.0.1:3000',
+            'whatsapp_gateway_api_key' => 'wa-key',
+            'whatsapp_gateway_default_session_id' => 'session-default-001',
+            'whatsapp_gateway_connect_timeout' => 4,
+            'whatsapp_gateway_timeout' => 12,
+        ])
+        ->assertRedirect();
+
+    expect(Setting::get('whatsapp_gateway_url'))->toBe('http://127.0.0.1:3000');
+    expect(Setting::get('whatsapp_gateway_api_key'))->toBe('wa-key');
+    expect(Setting::get('whatsapp_gateway_default_session_id'))->toBe('session-default-001');
+    expect(Setting::get('whatsapp_gateway_connect_timeout'))->toBe('4');
+    expect(Setting::get('whatsapp_gateway_timeout'))->toBe('12');
+});
+
+test('ai service uses ai model from settings', function () {
+    Setting::set('ai_api_key', 'test-key');
+    Setting::set('ai_model', 'gpt-5');
+
+    Http::fake([
+        '*' => Http::response([
+            'choices' => [
+                ['message' => ['content' => 'ok']],
+            ],
+        ]),
+    ]);
+
+    $aiService = app(AiService::class);
+    $aiService->chat([
+        ['role' => 'user', 'content' => 'Halo'],
+    ]);
+
+    Http::assertSent(function ($request) {
+        return $request->data()['model'] === 'gpt-5';
+    });
+});
