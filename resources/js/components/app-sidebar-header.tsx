@@ -1,5 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Bell, LogOut, Search, UserRound } from 'lucide-react';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -93,6 +94,12 @@ export function AppSidebarHeader({
             </div>
 
             <div className="flex items-center justify-between gap-4 md:justify-end">
+                <LanguageSwitcher
+                    align="end"
+                    variant="inline"
+                    triggerClassName="h-11 rounded-lg bg-[#f4f7fa] text-[#4b5565] hover:bg-[#eaf2ff] hover:text-[#01296A]"
+                />
+
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button

@@ -59,7 +59,11 @@
       "Bash(sort -u comm -23 /tmp/used_keys.txt /tmp/en_keys.txt wc -l /tmp/still_missing.txt echo \"---\" echo \"Still missing \\(if any\\):\" head -10 /tmp/still_missing.txt)",
       "Bash(sort -u wc -l /tmp/used_keys2.txt echo \"---\" python3 -c \"import json; print\\('\\\\n'.join\\(json.load\\(open\\('lang/en.json'\\)\\).keys\\(\\)\\)\\)\")",
       "Bash(sort -u comm -23 /tmp/used_keys2.txt /tmp/en_keys2.txt wc -l /tmp/still_missing2.txt echo \"still missing\" echo \"---\" cat /tmp/still_missing2.txt)",
-      "Bash(sort -u wc -l /tmp/used_keys3.txt echo \"---\" comm -23 /tmp/used_keys3.txt /tmp/en_keys2.txt wc -l /tmp/still_missing3.txt echo \"still missing\" diff /tmp/still_missing2.txt /tmp/still_missing3.txt)"
+      "Bash(sort -u wc -l /tmp/used_keys3.txt echo \"---\" comm -23 /tmp/used_keys3.txt /tmp/en_keys2.txt wc -l /tmp/still_missing3.txt echo \"still missing\" diff /tmp/still_missing2.txt /tmp/still_missing3.txt)",
+      "Bash(sort -u comm -23 /tmp/dash_keys.txt /tmp/en_keys.txt)",
+      "Bash(sort -u echo \"\" echo \"Count:\" grep -hoE \"candidate\\\\.dashboard\\\\.[a-z0-9_]+\" resources/js/pages/candidate/dashboard.tsx)",
+      "Bash(sort -u wc -l /tmp/all_keys.txt)",
+      "Bash(sort -u comm -23 /tmp/trans_candidates.txt /tmp/en_keys.txt wc -l /tmp/missing_all.txt)"
     ]
   },
   "enableAllProjectMcpServers": true,

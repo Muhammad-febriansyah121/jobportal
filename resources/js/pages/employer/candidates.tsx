@@ -1597,6 +1597,14 @@ function CandidateRow({
         application.interview?.status === 'scheduled' ||
         application.interview?.status === 'rescheduled';
 
+    const AI_INTERVIEW_STATUS_LABELS: Record<string, string> = {
+        pending: t('employer.candidates.ai_pending'),
+        scheduled: t('employer.candidates.ai_scheduled'),
+        in_progress: t('employer.candidates.ai_in_progress'),
+        completed: t('employer.candidates.ai_completed'),
+        cancelled: t('employer.candidates.ai_cancelled'),
+    };
+
     return (
         <article
             className={cn(
