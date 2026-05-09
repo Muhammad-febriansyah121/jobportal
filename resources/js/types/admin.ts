@@ -1,12 +1,14 @@
 export type AdminOption = {
     value: string;
     label: string;
+    parent?: string;
 };
 
 export type AdminField = {
     name: string;
     label: string;
     type:
+        | 'cascading-select'
         | 'checkbox'
         | 'currency'
         | 'date'
@@ -22,6 +24,7 @@ export type AdminField = {
     required?: boolean;
     min?: number;
     max?: number;
+    dependsOn?: string;
 };
 
 export type AdminAction = {

@@ -59,7 +59,6 @@ class SalaryInsightCsvImporter
         DB::transaction(function () use (&$summary, $datasetDate, $groups, $publishedAt, $sourceName): void {
             foreach ($groups as $group) {
                 $existing = SalaryInsight::query()
-                    ->whereNull('company_id')
                     ->where('job_title', $group['job_title'])
                     ->where('location_city', $group['location_city'])
                     ->where('industry_id', $group['industry_id'])
@@ -72,8 +71,10 @@ class SalaryInsightCsvImporter
                     'source_name' => $sourceName,
                     'dataset_date' => $datasetDate,
                     'salary_min' => $group['salary_min'],
-                    'salary_median' => $group['salary_median'],
                     'salary_max' => $group['salary_max'],
+                    'qualification' => $group['qualification'],
+                    'experience_min_years' => $group['experience_min_years'],
+                    'experience_max_years' => $group['experience_max_years'],
                     'source_count' => $group['source_count'],
                 ];
 
@@ -90,7 +91,6 @@ class SalaryInsightCsvImporter
 
                 SalaryInsight::query()->create([
                     ...$payload,
-                    'company_id' => null,
                     'published_at' => $publishedAt,
                 ]);
 
@@ -103,7 +103,7 @@ class SalaryInsightCsvImporter
 
     /**
      * @param  array<string, int>  $industryIdsByName
-     * @return array{total_rows:int,skipped_rows:int,valid_rows:array<int, array{job_title:string,location_city:?string,industry_id:?int,salary_min:int,salary_median:int,salary_max:int,source_count:int}>}
+     * @return array{total_rows:int,skipped_rows:int,valid_rows:array<int, array{job_title:string,location_city:?string,industry_id:?int,salary_min:int,salary_max:int,qualification:?string,experience_min_years:?int,experience_max_years:?int,source_count:int}>}
      */
     private function readRows(string $filePath, array &$industryIdsByName): array
     {
@@ -174,7 +174,7 @@ class SalaryInsightCsvImporter
      * @param  array<int, string>  $headers
      * @param  array<int, mixed>  $row
      * @param  array<string, int>  $industryIdsByName
-     * @return array{job_title:string,location_city:?string,industry_id:?int,salary_min:int,salary_median:int,salary_max:int,source_count:int}|null
+     * @return array{job_title:string,location_city:?string,industry_id:?int,salary_min:int,salary_max:int,qualification:?string,experience_min_years:?int,experience_max_years:?int,source_count:int}|null
      */
     private function mapRowToRecord(array $headers, array $row, array &$industryIdsByName): ?array
     {
@@ -196,34 +196,40 @@ class SalaryInsightCsvImporter
         [$rangeMin, $rangeMax] = $this->parseSalaryRange($this->pick($assoc, ['gaji', 'salary_range']));
 
         $salaryMin = $this->parseMoney($this->pick($assoc, ['salary_min', 'min_salary', 'gaji_min'])) ?? $rangeMin;
-        $salaryMedian = $this->parseMoney($this->pick($assoc, ['salary_median', 'median_salary', 'gaji_median', 'median_gaji']));
         $salaryMax = $this->parseMoney($this->pick($assoc, ['salary_max', 'max_salary', 'gaji_max'])) ?? $rangeMax;
 
-        if ($salaryMin === null && $salaryMedian === null && $salaryMax === null) {
+        if ($salaryMin === null && $salaryMax === null) {
             return null;
         }
 
-        $salaryMin ??= $salaryMedian ?? $salaryMax;
-        $salaryMax ??= $salaryMedian ?? $salaryMin;
+        $salaryMin ??= $salaryMax;
+        $salaryMax ??= $salaryMin;
 
         if ($salaryMin > $salaryMax) {
             [$salaryMin, $salaryMax] = [$salaryMax, $salaryMin];
         }
-
-        $salaryMedian ??= (int) floor(($salaryMin + $salaryMax) / 2);
 
         $industryName = $this->cleanText($this->pick($assoc, ['industry_name', 'industry', 'industri', 'sector', 'sektor']));
         $industryId = $this->resolveIndustryId($industryName, $industryIdsByName);
 
         $sourceCount = $this->parseMoney($this->pick($assoc, ['source_count', 'sources', 'jumlah_sumber']));
 
+        $qualification = $this->normalizeQualification($this->pick($assoc, ['qualification', 'kualifikasi', 'pendidikan']));
+        [$experienceMin, $experienceMax] = $this->parseExperienceRange(
+            $this->pick($assoc, ['experience', 'experience_years', 'pengalaman', 'pengalaman_tahun']),
+            $this->pick($assoc, ['experience_min_years', 'experience_min', 'pengalaman_min']),
+            $this->pick($assoc, ['experience_max_years', 'experience_max', 'pengalaman_max']),
+        );
+
         return [
             'job_title' => Str::title($jobTitle),
             'location_city' => $locationCity !== null ? Str::title($locationCity) : null,
             'industry_id' => $industryId,
             'salary_min' => $salaryMin,
-            'salary_median' => $salaryMedian,
             'salary_max' => $salaryMax,
+            'qualification' => $qualification,
+            'experience_min_years' => $experienceMin,
+            'experience_max_years' => $experienceMax,
             'source_count' => max(1, $sourceCount ?? 1),
         ];
     }
@@ -316,6 +322,52 @@ class SalaryInsightCsvImporter
         return [$numbers[0], $numbers[count($numbers) - 1]];
     }
 
+    private function normalizeQualification(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = Str::of((string) $value)->lower()->squish()->toString();
+
+        return match (true) {
+            $normalized === '' => null,
+            str_contains($normalized, 'sma'), str_contains($normalized, 'smk') => 'sma',
+            str_contains($normalized, 'd3') => 'd3',
+            str_contains($normalized, 's1') => 's1',
+            str_contains($normalized, 's2') => 's2',
+            str_contains($normalized, 's3') => 's3',
+            default => null,
+        };
+    }
+
+    /**
+     * @return array{0:?int,1:?int}
+     */
+    private function parseExperienceRange(mixed $rawRange, mixed $rawMin, mixed $rawMax): array
+    {
+        $min = $this->parseMoney($rawMin);
+        $max = $this->parseMoney($rawMax);
+
+        if ($min === null && $max === null && is_string($rawRange) && $rawRange !== '') {
+            $matches = [];
+            preg_match_all('/\d+/', $rawRange, $matches);
+            $numbers = array_map(fn (string $n): int => (int) $n, $matches[0] ?? []);
+
+            if ($numbers !== []) {
+                sort($numbers);
+                $min = $numbers[0];
+                $max = $numbers[count($numbers) - 1];
+            }
+        }
+
+        if ($min !== null && $max !== null && $min > $max) {
+            [$min, $max] = [$max, $min];
+        }
+
+        return [$min, $max];
+    }
+
     /**
      * @param  array<string, int>  $industryIdsByName
      */
@@ -349,8 +401,8 @@ class SalaryInsightCsvImporter
     }
 
     /**
-     * @param  array<int, array{job_title:string,location_city:?string,industry_id:?int,salary_min:int,salary_median:int,salary_max:int,source_count:int}>  $rows
-     * @return array<int, array{job_title:string,location_city:?string,industry_id:?int,salary_min:int,salary_median:int,salary_max:int,source_count:int}>
+     * @param  array<int, array{job_title:string,location_city:?string,industry_id:?int,salary_min:int,salary_max:int,qualification:?string,experience_min_years:?int,experience_max_years:?int,source_count:int}>  $rows
+     * @return array<int, array{job_title:string,location_city:?string,industry_id:?int,salary_min:int,salary_max:int,qualification:?string,experience_min_years:?int,experience_max_years:?int,source_count:int}>
      */
     private function aggregate(array $rows): array
     {
@@ -370,37 +422,33 @@ class SalaryInsightCsvImporter
                     'industry_id' => $row['industry_id'],
                     'salary_min' => $row['salary_min'],
                     'salary_max' => $row['salary_max'],
+                    'qualification' => $row['qualification'],
+                    'experience_min_years' => $row['experience_min_years'],
+                    'experience_max_years' => $row['experience_max_years'],
                     'source_count' => 0,
-                    'medians' => [],
                 ];
             }
 
             $groups[$key]['salary_min'] = min($groups[$key]['salary_min'], $row['salary_min']);
             $groups[$key]['salary_max'] = max($groups[$key]['salary_max'], $row['salary_max']);
+            $groups[$key]['qualification'] ??= $row['qualification'];
+
+            if ($row['experience_min_years'] !== null) {
+                $groups[$key]['experience_min_years'] = $groups[$key]['experience_min_years'] === null
+                    ? $row['experience_min_years']
+                    : min($groups[$key]['experience_min_years'], $row['experience_min_years']);
+            }
+
+            if ($row['experience_max_years'] !== null) {
+                $groups[$key]['experience_max_years'] = $groups[$key]['experience_max_years'] === null
+                    ? $row['experience_max_years']
+                    : max($groups[$key]['experience_max_years'], $row['experience_max_years']);
+            }
+
             $groups[$key]['source_count'] += $row['source_count'];
-            $groups[$key]['medians'][] = $row['salary_median'];
         }
 
-        return array_values(array_map(function (array $group): array {
-            $medians = $group['medians'];
-            sort($medians);
-            $count = count($medians);
-            $middleIndex = (int) floor($count / 2);
-
-            $salaryMedian = $count % 2 === 0
-                ? (int) floor(($medians[$middleIndex - 1] + $medians[$middleIndex]) / 2)
-                : $medians[$middleIndex];
-
-            return [
-                'job_title' => $group['job_title'],
-                'location_city' => $group['location_city'],
-                'industry_id' => $group['industry_id'],
-                'salary_min' => $group['salary_min'],
-                'salary_median' => $salaryMedian,
-                'salary_max' => $group['salary_max'],
-                'source_count' => $group['source_count'],
-            ];
-        }, $groups));
+        return array_values($groups);
     }
 
     private function isValidDate(string $date): bool

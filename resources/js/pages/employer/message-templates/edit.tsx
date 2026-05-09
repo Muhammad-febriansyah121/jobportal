@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Textarea } from '@/components/ui/textarea';
+import { useTranslate } from '@/hooks/use-translate';
 import { index as indexRoute } from '@/routes/employer/message-templates';
 
 type Channel = 'whatsapp' | 'email';
@@ -33,6 +34,7 @@ type Props = {
 };
 
 export default function EmployerMessageTemplatesEdit({ template }: Props) {
+    const { t } = useTranslate();
     const form = useForm<{
         name: string;
         channel: Channel;
@@ -54,10 +56,10 @@ export default function EmployerMessageTemplatesEdit({ template }: Props) {
         form.patch(EmployerMessageTemplateController.update.url(template.id), {
             preserveScroll: true,
             onSuccess: () => {
-                toast.success('Template berhasil diperbarui.');
+                toast.success(t('employer.message_templates_form.edit_toast_success'));
             },
             onError: () => {
-                toast.error('Periksa form, ada isian yang belum sesuai.');
+                toast.error(t('employer.message_templates_form.edit_toast_error'));
             },
         });
     };
@@ -71,20 +73,20 @@ export default function EmployerMessageTemplatesEdit({ template }: Props) {
                     <Button asChild variant="outline" size="sm">
                         <Link href={indexRoute().url}>
                             <ArrowLeft className="size-4" />
-                            Kembali
+                            {t('employer.message_templates_form.btn_back')}
                         </Link>
                     </Button>
                 </div>
 
                 <Heading
-                    title="Edit Template Pesan"
-                    description={`Mengubah template "${template.name}".`}
+                    title={t('employer.message_templates_form.edit_heading_title')}
+                    description={t('employer.message_templates_form.edit_heading_desc', { name: template.name })}
                 />
 
                 <form onSubmit={submit} className="space-y-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Detail template</CardTitle>
+                            <CardTitle>{t('employer.message_templates_form.card_title')}</CardTitle>
                             <CardDescription>
                                 Variabel didukung:{' '}
                                 <code className="font-mono">{'{nama}'}</code>,{' '}
@@ -97,7 +99,7 @@ export default function EmployerMessageTemplatesEdit({ template }: Props) {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="name">Nama template</Label>
+                                <Label htmlFor="name">{t('employer.message_templates_form.label_name')}</Label>
                                 <Input
                                     id="name"
                                     value={form.data.name}
@@ -110,7 +112,7 @@ export default function EmployerMessageTemplatesEdit({ template }: Props) {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Channel</Label>
+                                <Label>{t('employer.message_templates_form.label_channel')}</Label>
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     <label
                                         className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 ${form.data.channel === 'whatsapp' ? 'border-primary-500 bg-primary-50/50' : 'border-border'}`}
@@ -132,10 +134,10 @@ export default function EmployerMessageTemplatesEdit({ template }: Props) {
                                         />
                                         <div>
                                             <p className="font-medium">
-                                                WhatsApp
+                                                {t('employer.message_templates_form.wa_label')}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
-                                                Untuk pesan singkat ke nomor WA.
+                                                {t('employer.message_templates_form.wa_desc')}
                                             </p>
                                         </div>
                                     </label>
@@ -155,10 +157,9 @@ export default function EmployerMessageTemplatesEdit({ template }: Props) {
                                             className="mt-1"
                                         />
                                         <div>
-                                            <p className="font-medium">Email</p>
+                                            <p className="font-medium">{t('employer.message_templates_form.email_label')}</p>
                                             <p className="text-xs text-muted-foreground">
-                                                Untuk pesan formal dengan
-                                                subject.
+                                                {t('employer.message_templates_form.email_desc')}
                                             </p>
                                         </div>
                                     </label>
@@ -169,7 +170,7 @@ export default function EmployerMessageTemplatesEdit({ template }: Props) {
                             {form.data.channel === 'email' ? (
                                 <div className="space-y-2">
                                     <Label htmlFor="subject">
-                                        Subject email
+                                        {t('employer.message_templates_form.label_subject')}
                                     </Label>
                                     <Input
                                         id="subject"
@@ -187,7 +188,7 @@ export default function EmployerMessageTemplatesEdit({ template }: Props) {
                             ) : null}
 
                             <div className="space-y-2">
-                                <Label htmlFor="body">Isi pesan</Label>
+                                <Label htmlFor="body">{t('employer.message_templates_form.label_body')}</Label>
                                 <RichTextEditor
                                     value={form.data.body}
                                     onChange={(html) =>
@@ -196,15 +197,11 @@ export default function EmployerMessageTemplatesEdit({ template }: Props) {
                                     minHeightClass="min-h-48"
                                 />
                                 <InputError message={form.errors.body} />
-                                <p className="text-xs text-muted-foreground">
-                                    Untuk Email dikirim sebagai HTML, untuk
-                                    WhatsApp dikonversi ke format WA.
-                                </p>
                             </div>
 
                             <div className="space-y-2">
                                 <Label htmlFor="description">
-                                    Catatan internal
+                                    {t('employer.message_templates_form.label_notes')}
                                 </Label>
                                 <Textarea
                                     id="description"
@@ -233,20 +230,20 @@ export default function EmployerMessageTemplatesEdit({ template }: Props) {
                                         )
                                     }
                                 />
-                                Template aktif (bisa dipilih saat broadcast)
+                                {t('employer.message_templates_form.label_activate_edit')}
                             </label>
                         </CardContent>
                     </Card>
 
                     <div className="flex items-center justify-end gap-2">
                         <Button type="button" variant="outline" asChild>
-                            <Link href={indexRoute().url}>Batal</Link>
+                            <Link href={indexRoute().url}>{t('employer.message_templates_form.btn_cancel')}</Link>
                         </Button>
                         <Button type="submit" disabled={form.processing}>
                             <Save className="size-4" />
                             {form.processing
-                                ? 'Menyimpan...'
-                                : 'Simpan perubahan'}
+                                ? t('employer.message_templates_form.btn_saving')
+                                : t('employer.message_templates_form.btn_save_changes')}
                         </Button>
                     </div>
                 </form>

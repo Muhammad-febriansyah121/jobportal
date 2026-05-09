@@ -12,7 +12,7 @@ import {
     X,
 } from 'lucide-react';
 import type { ComponentType, SVGProps } from 'react';
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import InputError from '@/components/input-error';
 import { useTranslate } from '@/hooks/use-translate';
 import {
@@ -153,8 +153,8 @@ function FormDialogAction({
                     {action.label}
                 </Button>
             </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
+            <DialogContent className="flex max-h-[90vh] flex-col gap-0 p-0 sm:max-w-3xl">
+                <DialogHeader className="border-b px-6 py-4">
                     <DialogTitle>{action.label}</DialogTitle>
                     <DialogDescription>
                         {t('admin.components.admin_action.dialog_description')}
@@ -189,6 +189,43 @@ function ActionForm({
         | 'put';
     const hasFileField = (action.fields ?? []).some((field) => field.type === 'file');
 
+    const isDialog = mode === 'dialog';
+
+    const dependedFieldNames = useMemo(() => {
+        const set = new Set<string>();
+        action.fields?.forEach((field) => {
+            if (field.dependsOn) {
+                set.add(field.dependsOn);
+            }
+        });
+
+        return set;
+    }, [action.fields]);
+
+    const initialFieldValues = useMemo(() => {
+        const map: Record<string, string> = {};
+        action.fields?.forEach((field) => {
+            if (dependedFieldNames.has(field.name)) {
+                map[field.name] = String(field.value ?? '');
+            }
+        });
+
+        return map;
+    }, [action.fields, dependedFieldNames]);
+
+    const [fieldValues, setFieldValues] = useState<Record<string, string>>(initialFieldValues);
+
+    const handleFieldChange = useCallback(
+        (name: string, value: string) => {
+            if (!dependedFieldNames.has(name)) {
+                return;
+            }
+
+            setFieldValues((prev) => (prev[name] === value ? prev : { ...prev, [name]: value }));
+        },
+        [dependedFieldNames],
+    );
+
     return (
         <Form
             action={action.href}
@@ -197,17 +234,34 @@ function ActionForm({
             options={{ preserveScroll: true }}
             resetOnSuccess
             onSuccess={onSuccess}
-            className="space-y-4"
+            className={isDialog ? 'flex min-h-0 flex-1 flex-col' : 'space-y-4'}
         >
             {({ errors, processing }) => (
                 <>
-                    {action.fields?.map((field) => (
-                        <AdminFormField
-                            field={field}
-                            errors={errors as Record<string, string>}
-                            key={field.name}
-                        />
-                    ))}
+                    {isDialog ? (
+                        <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto px-6 py-5 sm:grid-cols-2">
+                            {action.fields?.map((field) => (
+                                <AdminFormField
+                                    field={field}
+                                    errors={errors as Record<string, string>}
+                                    key={field.name}
+                                    fullWidth={shouldSpanFullWidth(field)}
+                                    parentValue={field.dependsOn ? fieldValues[field.dependsOn] ?? '' : undefined}
+                                    onValueChange={handleFieldChange}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        action.fields?.map((field) => (
+                            <AdminFormField
+                                field={field}
+                                errors={errors as Record<string, string>}
+                                key={field.name}
+                                parentValue={field.dependsOn ? fieldValues[field.dependsOn] ?? '' : undefined}
+                                onValueChange={handleFieldChange}
+                            />
+                        ))
+                    )}
 
                     {mode === 'confirm' ? (
                         <AlertDialogFooter>
@@ -222,7 +276,7 @@ function ActionForm({
                             </Button>
                         </AlertDialogFooter>
                     ) : (
-                        <DialogFooter>
+                        <DialogFooter className="border-t bg-muted/30 px-6 py-4">
                             <Button
                                 type="submit"
                                 variant={action.variant ?? 'default'}
@@ -239,19 +293,30 @@ function ActionForm({
     );
 }
 
+function shouldSpanFullWidth(field: AdminField): boolean {
+    return ['textarea', 'file', 'checkbox'].includes(field.type);
+}
+
 function AdminFormField({
     field,
     errors,
+    fullWidth = false,
+    parentValue,
+    onValueChange,
 }: {
     field: AdminField;
     errors: Record<string, string>;
+    fullWidth?: boolean;
+    parentValue?: string;
+    onValueChange?: (name: string, value: string) => void;
 }) {
     const { t } = useTranslate();
     const placeholder = field.placeholder ?? defaultPlaceholder(field, t);
+    const spanClass = fullWidth ? 'sm:col-span-2' : '';
 
     if (field.type === 'checkbox') {
         return (
-            <div className="flex items-center gap-2">
+            <div className={cn('flex items-center gap-2', spanClass)}>
                 <input
                     id={field.name}
                     name={field.name}
@@ -267,7 +332,7 @@ function AdminFormField({
     }
 
     return (
-        <div className="grid gap-2">
+        <div className={cn('grid gap-2', spanClass)}>
             <Label htmlFor={field.name}>{field.label}</Label>
             {field.type === 'textarea' ? (
                 <textarea
@@ -278,6 +343,12 @@ function AdminFormField({
                     required={field.required}
                     className="min-h-28 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 />
+            ) : field.type === 'cascading-select' ? (
+                <CascadingSelectField
+                    field={field}
+                    parentValue={parentValue ?? ''}
+                    placeholder={placeholder}
+                />
             ) : field.type === 'select' ? (
                 <select
                     id={field.name}
@@ -285,6 +356,7 @@ function AdminFormField({
                     defaultValue={String(field.value ?? '')}
                     required={field.required}
                     aria-label={placeholder}
+                    onChange={(event) => onValueChange?.(field.name, event.target.value)}
                     className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
                     {(field.options ?? []).map((option) => (
@@ -322,6 +394,62 @@ function AdminFormField({
 }
 
 type FieldDefaultPlaceholderTranslator = (key: string, replacements?: Record<string, string | number>) => string;
+
+function CascadingSelectField({
+    field,
+    parentValue,
+    placeholder,
+}: {
+    field: AdminField;
+    parentValue: string;
+    placeholder: string;
+}) {
+    const allOptions = field.options ?? [];
+    const placeholderOption = allOptions.find((option) => option.value === '');
+    const filteredOptions = useMemo(
+        () =>
+            allOptions.filter(
+                (option) => option.value !== '' && option.parent === parentValue,
+            ),
+        [allOptions, parentValue],
+    );
+    const initialValue = String(field.value ?? '');
+    const [value, setValue] = useState(initialValue);
+
+    useEffect(() => {
+        if (!parentValue) {
+            setValue('');
+
+            return;
+        }
+
+        if (value && !filteredOptions.some((option) => option.value === value)) {
+            setValue('');
+        }
+    }, [parentValue, filteredOptions, value]);
+
+    const isDisabled = !parentValue;
+
+    return (
+        <select
+            id={field.name}
+            name={field.name}
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            required={field.required}
+            disabled={isDisabled}
+            aria-label={placeholder}
+            className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+            <option value="">{placeholderOption?.label ?? placeholder}</option>
+            {filteredOptions.map((option) => (
+                <option value={option.value} key={option.value}>
+                    {option.label}
+                </option>
+            ))}
+        </select>
+    );
+}
 
 function DatePickerField({
     field,
@@ -399,7 +527,7 @@ function defaultPlaceholder(field: AdminField, t: FieldDefaultPlaceholderTransla
         return t('admin.components.admin_action.placeholder_select', { label: field.label });
     }
 
-    if (field.type === 'select') {
+    if (field.type === 'select' || field.type === 'cascading-select') {
         return t('admin.components.admin_action.placeholder_select', { label: field.label });
     }
 
@@ -415,7 +543,6 @@ function isCurrencyField(field: AdminField): boolean {
         'amount',
         'price',
         'salary_max',
-        'salary_median',
         'salary_min',
     ].includes(field.name);
 }

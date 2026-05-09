@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { BookOpen, FileText, PlayCircle, LayoutTemplate } from 'lucide-react';
 import { PaginationLinks } from '@/components/candidate/candidate-ui';
 import Heading from '@/components/heading';
+import { useTranslate } from '@/hooks/use-translate';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,13 +17,6 @@ const TYPE_ICONS: Record<
     video: PlayCircle,
     template: LayoutTemplate,
     guide: BookOpen,
-};
-
-const TYPE_LABELS: Record<string, string> = {
-    article: 'Artikel',
-    video: 'Video',
-    template: 'Template',
-    guide: 'Panduan',
 };
 
 type Resource = {
@@ -54,6 +48,15 @@ export default function CandidateCareerResourceIndex({
     types,
     categories,
 }: IndexProps) {
+    const { t } = useTranslate();
+
+    const typeLabels: Record<string, string> = {
+        article: t('candidate.career_resources.type_article'),
+        video: t('candidate.career_resources.type_video'),
+        template: t('candidate.career_resources.type_template'),
+        guide: t('candidate.career_resources.type_guide'),
+    };
+
     function filter(key: string, value: string) {
         router.get(
             index.url(),
@@ -68,12 +71,12 @@ export default function CandidateCareerResourceIndex({
 
     return (
         <>
-            <Head title="Tips Karir & Artikel" />
+            <Head title={t('candidate.career_resources.title')} />
 
             <div className="space-y-6 p-4 md:p-6">
                 <Heading
-                    title="Tips Karir & Artikel"
-                    description="Panduan, artikel, dan video untuk membantu perjalanan kariermu."
+                    title={t('candidate.career_resources.title')}
+                    description={t('candidate.career_resources.description')}
                 />
 
                 {/* Filters */}
@@ -87,7 +90,7 @@ export default function CandidateCareerResourceIndex({
                             }
                             onClick={() => filter('type', type)}
                         >
-                            {TYPE_LABELS[type] ?? type}
+                            {typeLabels[type] ?? type}
                         </Button>
                     ))}
                     {categories.map((cat) => (
@@ -109,7 +112,7 @@ export default function CandidateCareerResourceIndex({
                 {/* Grid */}
                 {resources.data.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                        Tidak ada konten ditemukan.
+                        {t('candidate.career_resources.empty')}
                     </p>
                 ) : (
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -129,6 +132,13 @@ export default function CandidateCareerResourceIndex({
 }
 
 function ResourceCard({ resource }: { resource: Resource }) {
+    const { t } = useTranslate();
+    const typeLabels: Record<string, string> = {
+        article: t('candidate.career_resources.type_article'),
+        video: t('candidate.career_resources.type_video'),
+        template: t('candidate.career_resources.type_template'),
+        guide: t('candidate.career_resources.type_guide'),
+    };
     const Icon = TYPE_ICONS[resource.type] ?? BookOpen;
 
     return (
@@ -149,7 +159,7 @@ function ResourceCard({ resource }: { resource: Resource }) {
                 >
                     <Badge className="bg-white/20 text-white backdrop-blur-sm hover:bg-white/20">
                         <Icon className="size-3" />
-                        {TYPE_LABELS[resource.type] ?? resource.type}
+                        {typeLabels[resource.type] ?? resource.type}
                     </Badge>
                 </div>
                 <CardContent className="p-4">

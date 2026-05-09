@@ -25,12 +25,15 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { useInitials } from '@/hooks/use-initials';
+import { useTranslate } from '@/hooks/use-translate';
+import { formatAvailability } from '@/lib/availability';
 import { cn } from '@/lib/utils';
 import { index as talentPoolIndex } from '@/routes/employer/talent-pool';
 import {
     contact as talentSearchContact,
     index as talentSearchIndex,
     save as talentSearchSave,
+    show as talentSearchShow,
     shortlist as talentSearchShortlist,
     unsave as talentSearchUnsave,
     unshortlist as talentSearchUnshortlist,
@@ -44,7 +47,6 @@ type Option = {
 type TalentCandidate = {
     id: number;
     name: string;
-    email: string | null;
     avatar_url: string | null;
     headline: string;
     location: string;
@@ -65,6 +67,19 @@ type TalentCandidate = {
         years_exp: number | null;
         verified: boolean;
     }>;
+    experiences: Array<{
+        job_title: string | null;
+        company_name: string | null;
+        start_date: string | null;
+        end_date: string | null;
+        is_current: boolean;
+    }>;
+    educations: Array<{
+        institution: string | null;
+        degree: string | null;
+        field_of_study: string | null;
+        end_year: number | null;
+    }>;
 };
 
 type TalentSearchProps = {
@@ -81,6 +96,7 @@ type TalentSearchProps = {
         availability?: string;
         sort?: string;
         saved_only?: string;
+        pool?: 'all' | 'saved' | 'shortlisted';
     };
     filterOptions: {
         skills: Option[];
@@ -101,6 +117,8 @@ type TalentSearchProps = {
     };
     totalCandidates: number;
     savedCandidatesCount: number;
+    shortlistedCount: number;
+    poolTotalCount: number;
     viewMode: 'all' | 'saved';
 };
 
@@ -128,10 +146,11 @@ const experienceOptions: Option[] = [
 
 const availabilityOptions: Option[] = [
     { value: '', label: 'Ketersediaan' },
-    { value: 'immediate', label: 'Segera tersedia' },
-    { value: '2 weeks notice', label: '2 minggu notice' },
-    { value: '1 month notice', label: '1 bulan notice' },
-    { value: 'passive', label: 'Pasif mencari' },
+    { value: 'none', label: 'Siap mulai sekarang' },
+    { value: 'lt_1_month', label: 'Kurang dari 1 bulan' },
+    { value: '1_month', label: '1 Bulan' },
+    { value: '2_months', label: '2 Bulan' },
+    { value: 'gt_2_months', label: 'Lebih dari 2 bulan' },
 ];
 
 export default function EmployerTalentSearch({
@@ -142,8 +161,11 @@ export default function EmployerTalentSearch({
     candidates,
     totalCandidates,
     savedCandidatesCount,
+    shortlistedCount,
+    poolTotalCount,
     viewMode,
 }: TalentSearchProps) {
+    const { t } = useTranslate();
     const formRef = useRef<HTMLFormElement>(null);
     const listingRoute =
         viewMode === 'saved' ? talentPoolIndex : talentSearchIndex;
@@ -155,6 +177,7 @@ export default function EmployerTalentSearch({
         experience: filters.experience ?? '',
         availability: filters.availability ?? '',
         sort: filters.sort ?? 'match',
+        pool: filters.pool ?? 'all',
     };
 
     function buildPayload(
@@ -238,7 +261,7 @@ export default function EmployerTalentSearch({
                             href={talentSearchIndex({ query: currentQuery })}
                             preserveScroll
                         >
-                            Semua Kandidat
+                            {t('employer.talent_search.all_candidates')}
                         </Link>
                         <Link
                             className={cn(
@@ -250,9 +273,47 @@ export default function EmployerTalentSearch({
                             href={talentPoolIndex({ query: currentQuery })}
                             preserveScroll
                         >
-                            Talent Pool ({savedCandidatesCount})
+                            Talent Pool ({poolTotalCount})
                         </Link>
                     </div>
+
+                    {viewMode === 'saved' ? (
+                        <div className="inline-flex flex-wrap gap-1.5">
+                            {(
+                                [
+                                    { v: 'all', label: 'Semua', count: poolTotalCount },
+                                    { v: 'saved', label: 'Tersimpan', count: savedCandidatesCount },
+                                    { v: 'shortlisted', label: 'Shortlisted', count: shortlistedCount },
+                                ] as const
+                            ).map((opt) => {
+                                const active = (filters.pool ?? 'all') === opt.v;
+
+                                return (
+                                    <Link
+                                        key={opt.v}
+                                        href={talentPoolIndex({ query: { ...currentQuery, pool: opt.v } })}
+                                        preserveScroll
+                                        className={cn(
+                                            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition',
+                                            active
+                                                ? 'border-primary-300 bg-primary-50 text-primary-700'
+                                                : 'border-zinc-200 bg-white text-zinc-600 hover:border-primary-200 hover:text-primary-700',
+                                        )}
+                                    >
+                                        {opt.label}
+                                        <span
+                                            className={cn(
+                                                'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold',
+                                                active ? 'bg-primary-600 text-white' : 'bg-zinc-100 text-zinc-700',
+                                            )}
+                                        >
+                                            {opt.count}
+                                        </span>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    ) : null}
 
                     <form
                         className="space-y-5"
@@ -334,7 +395,7 @@ export default function EmployerTalentSearch({
                                 className="rounded-lg"
                                 variant="secondary"
                             >
-                                <Link href={listingRoute()}>Reset Filter</Link>
+                                <Link href={listingRoute()}>{t('employer.talent_search.reset_filter')}</Link>
                             </Button>
                             <input
                                 type="hidden"
@@ -417,14 +478,15 @@ export default function EmployerTalentSearch({
 }
 
 function CandidateCard({ candidate }: { candidate: TalentCandidate }) {
+    const { t } = useTranslate();
     const getInitials = useInitials();
-    const availabilityTone = candidate.availability
-        .toLowerCase()
-        .includes('immediate')
-        ? 'text-green-700'
-        : candidate.availability.toLowerCase().includes('notice')
-          ? 'text-secondary-700'
-          : 'text-slate-600';
+    const availabilityTone =
+        candidate.availability === 'none'
+            ? 'text-green-700'
+            : candidate.availability
+              ? 'text-secondary-700'
+              : 'text-slate-600';
+    const availabilityLabel = formatAvailability(candidate.availability, t);
 
     return (
         <article className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
@@ -481,6 +543,75 @@ function CandidateCard({ candidate }: { candidate: TalentCandidate }) {
                             )}
                         </div>
 
+                        {candidate.experiences.length > 0 ? (
+                            <div className="mt-4 space-y-1.5 rounded-lg border border-slate-100 bg-slate-50/60 p-3">
+                                <p className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+                                    Pengalaman
+                                </p>
+                                {candidate.experiences.map((exp, index) => (
+                                    <p
+                                        key={`${exp.job_title}-${index}`}
+                                        className="text-sm text-slate-700"
+                                    >
+                                        <span className="font-semibold">
+                                            {exp.job_title || '-'}
+                                        </span>
+                                        {exp.company_name ? (
+                                            <span className="text-slate-500">
+                                                {' '}
+                                                · {exp.company_name}
+                                            </span>
+                                        ) : null}
+                                        {exp.start_date ? (
+                                            <span className="text-xs text-slate-400">
+                                                {' '}
+                                                ({exp.start_date} -{' '}
+                                                {exp.is_current
+                                                    ? 'Sekarang'
+                                                    : exp.end_date || '-'})
+                                            </span>
+                                        ) : null}
+                                    </p>
+                                ))}
+                            </div>
+                        ) : null}
+
+                        {candidate.educations.length > 0 ? (
+                            <div className="mt-2 space-y-1.5 rounded-lg border border-slate-100 bg-slate-50/60 p-3">
+                                <p className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+                                    Pendidikan
+                                </p>
+                                {candidate.educations.map((edu, index) => (
+                                    <p
+                                        key={`${edu.institution}-${index}`}
+                                        className="text-sm text-slate-700"
+                                    >
+                                        <span className="font-semibold">
+                                            {edu.degree || '-'}
+                                        </span>
+                                        {edu.field_of_study ? (
+                                            <span className="text-slate-500">
+                                                {' '}
+                                                · {edu.field_of_study}
+                                            </span>
+                                        ) : null}
+                                        {edu.institution ? (
+                                            <span className="text-slate-500">
+                                                {' '}
+                                                — {edu.institution}
+                                            </span>
+                                        ) : null}
+                                        {edu.end_year ? (
+                                            <span className="text-xs text-slate-400">
+                                                {' '}
+                                                ({edu.end_year})
+                                            </span>
+                                        ) : null}
+                                    </p>
+                                ))}
+                            </div>
+                        ) : null}
+
                         <div className="mt-5 flex flex-wrap gap-x-7 gap-y-3 text-sm text-slate-500">
                             <TalentMeta
                                 icon={MapPin}
@@ -501,7 +632,7 @@ function CandidateCard({ candidate }: { candidate: TalentCandidate }) {
                                         ? CalendarCheck
                                         : Clock3
                                 }
-                                text={candidate.availability}
+                                text={availabilityLabel}
                             />
                         </div>
                         {candidate.match_reason ? (
@@ -516,6 +647,14 @@ function CandidateCard({ candidate }: { candidate: TalentCandidate }) {
                 </div>
 
                 <div className="grid w-full gap-3 sm:w-40">
+                    <Button
+                        asChild
+                        className="rounded-lg bg-primary-600 hover:bg-primary-700"
+                    >
+                        <Link href={talentSearchShow(candidate.id)}>
+                            Lihat Detail
+                        </Link>
+                    </Button>
                     {candidate.is_shortlisted ? (
                         <Button
                             asChild
@@ -534,7 +673,8 @@ function CandidateCard({ candidate }: { candidate: TalentCandidate }) {
                     ) : (
                         <Button
                             asChild
-                            className="rounded-lg bg-primary-600 hover:bg-primary-700"
+                            className="rounded-lg border-primary-200 text-primary-700 hover:bg-primary-50"
+                            variant="outline"
                         >
                             <Link
                                 as="button"

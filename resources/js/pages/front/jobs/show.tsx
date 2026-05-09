@@ -23,9 +23,9 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import HomeLayout from '@/layouts/front/home-layout';
+import { useTranslate } from '@/hooks/use-translate';
 import { cn } from '@/lib/utils';
 import { login, register } from '@/routes';
-import { index as aiInterviewIndex } from '@/routes/candidate/ai-interviews';
 import { show as showCandidateJob } from '@/routes/candidate/jobs';
 import { index as jobsIndex, show as jobShow } from '@/routes/jobs';
 
@@ -121,6 +121,7 @@ function splitListText(value?: string | null): string[] {
 }
 
 export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
+    const { t } = useTranslate();
     const { auth } = usePage<FrontJobPageProps>().props;
     const isCandidate = auth?.user?.role === 'candidate';
     const [activeTab, setActiveTab] = useState<'deskripsi' | 'tanggung-jawab' | 'kualifikasi'>('deskripsi');
@@ -139,9 +140,9 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
 
     const slaDays = job.response_sla_hours ? Math.ceil(job.response_sla_hours / 24) : null;
     const integrityLabel =
-        (job.integrity_score ?? 0) >= 90 ? 'Sangat Terpercaya'
-        : (job.integrity_score ?? 0) >= 70 ? 'Terpercaya'
-        : 'Perlu Diverifikasi';
+        (job.integrity_score ?? 0) >= 90 ? t('front.jobs.show.integrity_very_trusted')
+        : (job.integrity_score ?? 0) >= 70 ? t('front.jobs.show.integrity_trusted')
+        : t('front.jobs.show.integrity_unverified');
     const integrityColor =
         (job.integrity_score ?? 0) >= 90 ? 'text-emerald-600'
         : (job.integrity_score ?? 0) >= 70 ? 'text-secondary-600'
@@ -191,7 +192,7 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                     <nav className="mb-6 flex items-center gap-1.5 text-sm text-slate-500">
                         <Link href={jobsIndex().url} className="flex items-center gap-1 transition hover:text-primary-600">
                             <ArrowLeft className="size-3.5" />
-                            Lowongan
+                            {t('front.jobs.show.breadcrumb_jobs')}
                         </Link>
                         <ChevronRight className="size-3.5 text-slate-300" />
                         {job.company && (
@@ -218,12 +219,12 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                 <h1 className="text-3xl font-bold tracking-tight text-slate-900">{job.title}</h1>
                                 {job.is_anonymous ? (
                                     <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
-                                        Anonim
+                                        {t('front.jobs.card_anonymous_badge')}
                                     </span>
                                 ) : job.company_verified ? (
                                     <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
                                         <CheckCircle2 className="size-3.5" />
-                                        Terverifikasi
+                                        {t('front.jobs.show.company_verified')}
                                     </span>
                                 ) : null}
                             </div>
@@ -232,7 +233,7 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                 {job.is_anonymous ? (
                                     <span className="flex items-center gap-1.5 text-sm italic text-slate-400">
                                         <Building2 className="size-4 text-slate-300" />
-                                        Perusahaan Anonim
+                                        {t('front.jobs.card_company_anonymous')}
                                     </span>
                                 ) : job.company ? (
                                     <span className="flex items-center gap-1.5 font-semibold text-slate-700">
@@ -273,49 +274,27 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                 >
                                     <LogIn className="size-4" />
                                     {isCandidate
-                                        ? 'Lamar Sekarang'
-                                        : 'Login untuk Melamar'}
+                                        ? t('front.jobs.show.apply_now')
+                                        : t('front.jobs.show.login_to_apply')}
                                 </Link>
                                 <Link
                                     href={loginCandidateJobUrl}
                                     className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-primary-300 hover:text-primary-600"
                                 >
                                     <Bookmark className="size-4" />
-                                    Simpan
+                                    {t('front.jobs.show.save')}
                                 </Link>
-                                {isCandidate &&
-                                job.has_applied &&
-                                job.ai_interview_application_id ? (
-                                    <Link
-                                        href={aiInterviewIndex({
-                                            query: {
-                                                application_id:
-                                                    job.ai_interview_application_id,
-                                                interview_mode: 'text',
-                                                interview_language: 'id',
-                                                interview_focus: 'mixed',
-                                                candidate_level: 'junior',
-                                                question_count: 5,
-                                                duration_minutes: 30,
-                                            },
-                                        }).url}
-                                        className="inline-flex h-11 items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 text-sm font-semibold text-primary-700 transition hover:border-primary-300 hover:bg-primary-100"
-                                    >
-                                        <Star className="size-4" />
-                                        Latihan Interview AI
-                                    </Link>
-                                ) : null}
                                 <button
                                     type="button"
                                     onClick={() => void handleShare()}
                                     className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-primary-300 hover:text-primary-600"
                                 >
                                     <Link2 className="size-4" />
-                                    {shareState === 'copied' ? 'Link Tersalin' : 'Bagikan'}
+                                    {shareState === 'copied' ? t('front.jobs.card_share_copied') : t('front.jobs.card_share')}
                                 </button>
                                 {job.closes_at && (
                                     <span className="ml-auto text-xs text-slate-400">
-                                        Ditutup: {job.closes_at}
+                                        {t('front.jobs.show.closes_at', { date: job.closes_at })}
                                     </span>
                                 )}
                             </div>
@@ -334,13 +313,13 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                             {/* Stats */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                                    <p className="text-xs font-medium text-slate-400">Gaji Bulanan</p>
+                                    <p className="text-xs font-medium text-slate-400">{t('front.jobs.show.salary_label')}</p>
                                     <p className="mt-1 text-lg font-bold text-primary-600">{job.salary_range}</p>
-                                    <p className="mt-0.5 text-xs text-slate-400">Termasuk tunjangan &amp; asuransi</p>
+                                    <p className="mt-0.5 text-xs text-slate-400">{t('front.jobs.show.salary_hint')}</p>
                                 </div>
                                 {job.integrity_score ? (
                                     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                                        <p className="text-xs font-medium text-slate-400">Skor Integritas</p>
+                                        <p className="text-xs font-medium text-slate-400">{t('front.jobs.show.integrity_score_label')}</p>
                                         <p className={cn('mt-1 text-lg font-bold', integrityColor)}>{job.integrity_score}/100</p>
                                         <p className="mt-0.5 text-xs text-slate-400">{integrityLabel}</p>
                                     </div>
@@ -361,7 +340,7 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                                     : 'border-transparent text-slate-500 hover:text-slate-800',
                                             )}
                                         >
-                                            {tab === 'deskripsi' ? 'Deskripsi' : tab === 'tanggung-jawab' ? 'Tanggung Jawab' : 'Kualifikasi'}
+                                            {tab === 'deskripsi' ? t('front.jobs.show.tab_description') : tab === 'tanggung-jawab' ? t('front.jobs.show.tab_responsibilities') : t('front.jobs.show.tab_qualifications')}
                                         </button>
                                     ))}
                                 </div>
@@ -369,11 +348,11 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                 <div className="p-6">
                                     {activeTab === 'deskripsi' && (
                                         <div className="space-y-6">
-                                            <Section title="Tentang Pekerjaan" icon={FileText}>
-                                                <p className="whitespace-pre-line text-sm leading-7 text-slate-600">{job.description}</p>
+                                            <Section title={t('front.jobs.show.section_about_job')} icon={FileText}>
+                                                <RichContent text={job.description} />
                                             </Section>
                                             {job.skills.length > 0 && (
-                                                <Section title="Skill yang Diperlukan" icon={BadgeCheck}>
+                                                <Section title={t('front.jobs.show.section_required_skills')} icon={BadgeCheck}>
                                                     <div className="flex flex-wrap gap-2">
                                                         {job.skills.map((s) => (
                                                             <span key={s.id} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
@@ -384,31 +363,31 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                                 </Section>
                                             )}
                                             {job.benefits && (
-                                                <Section title="Benefit Posisi" icon={Zap}>
+                                                <Section title={t('front.jobs.show.section_position_benefits')} icon={Zap}>
                                                     <BulletList text={job.benefits} />
                                                 </Section>
                                             )}
                                         </div>
                                     )}
                                     {activeTab === 'tanggung-jawab' && (
-                                        <Section title="Tanggung Jawab Utama" icon={Target}>
-                                            {job.responsibilities ? <BulletList text={job.responsibilities} /> : <p className="text-sm text-slate-400">Tidak ada informasi.</p>}
+                                        <Section title={t('front.jobs.show.section_main_responsibilities')} icon={Target}>
+                                            {job.responsibilities ? <BulletList text={job.responsibilities} /> : <p className="text-sm text-slate-400">{t('front.jobs.no_info')}</p>}
                                         </Section>
                                     )}
                                     {activeTab === 'kualifikasi' && (
                                         <div className="space-y-6">
                                             {job.required_qualifications && (
-                                                <Section title="Kualifikasi Wajib" icon={BadgeCheck}>
+                                                <Section title={t('front.jobs.show.section_required_qualifications')} icon={BadgeCheck}>
                                                     <BulletList text={job.required_qualifications} />
                                                 </Section>
                                             )}
                                             {job.preferred_qualifications && (
-                                                <Section title="Kualifikasi Tambahan" icon={Star}>
+                                                <Section title={t('front.jobs.show.section_preferred_qualifications')} icon={Star}>
                                                     <BulletList text={job.preferred_qualifications} />
                                                 </Section>
                                             )}
                                             {!job.required_qualifications && !job.preferred_qualifications && (
-                                                <p className="text-sm text-slate-400">Tidak ada informasi.</p>
+                                                <p className="text-sm text-slate-400">{t('front.jobs.no_info')}</p>
                                             )}
                                         </div>
                                     )}
@@ -420,7 +399,7 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                                     <div className="mb-4 flex items-center gap-2">
                                         <Milestone className="size-4 text-primary-600" />
-                                        <h3 className="text-sm font-bold text-slate-800">Alur Rekrutmen</h3>
+                                        <h3 className="text-sm font-bold text-slate-800">{t('front.jobs.show.recruitment_stages_title')}</h3>
                                     </div>
                                     <div className="flex items-start overflow-x-auto">
                                         {job.ai_insight.recruitment_stages.map((stage, i) => (
@@ -444,17 +423,17 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
 
                             {/* Bottom CTA */}
                             <div className="rounded-2xl border border-primary-200 bg-primary-50 p-6 text-center">
-                                <p className="text-sm font-semibold text-slate-800">Tertarik dengan posisi ini?</p>
-                                <p className="mt-1 text-xs text-slate-500">Login atau daftar gratis untuk melamar dan melacak status lamaran kamu.</p>
+                                <p className="text-sm font-semibold text-slate-800">{t('front.jobs.show.cta_title')}</p>
+                                <p className="mt-1 text-xs text-slate-500">{t('front.jobs.show.cta_subtitle')}</p>
                                 <div className="mt-4 flex justify-center gap-3">
                                     <Link href={applyCtaUrl} className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary-600 px-6 text-sm font-bold text-white shadow-sm transition hover:bg-primary-700">
                                         <LogIn className="size-4" />
                                         {isCandidate
-                                            ? 'Lamar Sekarang'
-                                            : 'Login & Lamar'}
+                                            ? t('front.jobs.show.apply_now')
+                                            : t('front.jobs.show.login_and_apply')}
                                     </Link>
                                     <Link href={register().url} className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-primary-300 hover:text-primary-600">
-                                        Daftar Gratis
+                                        {t('front.jobs.show.register_free')}
                                     </Link>
                                 </div>
                             </div>
@@ -466,18 +445,17 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                 <div className="rounded-2xl border border-primary-200 bg-primary-50/60 p-4">
                                     <div className="flex items-center gap-2">
                                         <Zap className="size-4 text-primary-500" />
-                                        <p className="text-sm font-bold text-slate-800">Respon Cepat</p>
+                                        <p className="text-sm font-bold text-slate-800">{t('front.jobs.show.quick_response_title')}</p>
                                     </div>
                                     <p className="mt-2 text-xs leading-5 text-slate-600">
-                                        Rekruter berkomitmen memproses lamaran dalam waktu maksimal{' '}
-                                        <strong className="text-slate-800">{slaDays} hari kerja</strong>.
+                                        {t('front.jobs.show.quick_response_text', { days: slaDays })}
                                     </p>
                                 </div>
                             )}
 
                             {similarJobs.length > 0 && (
                                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                                    <h3 className="mb-3 text-sm font-bold text-slate-800">Pekerjaan Serupa</h3>
+                                    <h3 className="mb-3 text-sm font-bold text-slate-800">{t('front.jobs.show.similar_jobs_title')}</h3>
                                     <div className="space-y-1">
                                         {similarJobs.map((sj) => (
                                             <Link key={sj.id} href={jobShow(sj.slug)} className="-mx-1 flex items-center gap-3 rounded-xl p-2 transition hover:bg-slate-50">
@@ -486,7 +464,7 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                                 </div>
                                                 <div className="min-w-0 flex-1">
                                                     <p className="truncate text-xs font-semibold text-slate-800">{sj.title}</p>
-                                                    <p className="truncate text-[11px] text-slate-500">{sj.is_anonymous ? 'Perusahaan Anonim' : sj.company}{sj.location ? ` · ${sj.location}` : ''}</p>
+                                                    <p className="truncate text-[11px] text-slate-500">{sj.is_anonymous ? t('front.jobs.card_company_anonymous') : sj.company}{sj.location ? ` · ${sj.location}` : ''}</p>
                                                     <p className="text-[11px] font-bold text-primary-600">{sj.salary_range}</p>
                                                 </div>
                                             </Link>
@@ -494,20 +472,20 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                     </div>
                                     <Link href={jobsIndex().url} className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 transition hover:border-primary-300 hover:text-primary-600">
                                         <BriefcaseBusiness className="size-3.5" />
-                                        Lihat Semua Lowongan
+                                        {t('front.jobs.see_all')}
                                     </Link>
                                 </div>
                             )}
 
                             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                                 <div className="mb-3 flex items-center gap-1.5">
-                                    <h3 className="text-sm font-bold text-slate-800">Tentang {job.is_anonymous ? 'Perusahaan' : (job.company ?? 'Perusahaan')}</h3>
+                                    <h3 className="text-sm font-bold text-slate-800">{t('front.jobs.show.about_company_title', { company: job.is_anonymous ? t('front.jobs.card_company_fallback') : (job.company ?? t('front.jobs.card_company_fallback')) })}</h3>
                                     {!job.is_anonymous && job.company_verified && <Shield className="size-3.5 text-emerald-500" />}
                                 </div>
                                 {job.is_anonymous ? (
                                     <div className="rounded-lg bg-amber-50 p-3 text-center">
-                                        <p className="text-xs font-medium text-amber-700">Identitas perusahaan disembunyikan</p>
-                                        <p className="mt-0.5 text-[11px] text-amber-600">Akan terungkap jika Anda di-shortlist</p>
+                                        <p className="text-xs font-medium text-amber-700">{t('front.jobs.show.anonymous_identity_hidden')}</p>
+                                        <p className="mt-0.5 text-[11px] text-amber-600">{t('front.jobs.show.anonymous_reveal_shortlist')}</p>
                                     </div>
                                 ) : null}
                                 {!job.is_anonymous && job.company_description && (
@@ -515,7 +493,7 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                 )}
                                 {!job.is_anonymous && companyCultureItems.length > 0 && (
                                     <div className="mt-3 rounded-lg bg-slate-50 p-2.5">
-                                        <p className="text-[10px] font-semibold text-slate-400">Budaya Kerja</p>
+                                        <p className="text-[10px] font-semibold text-slate-400">{t('front.jobs.show.company_culture_label')}</p>
                                         <ul className="mt-1 space-y-1">
                                             {companyCultureItems.slice(0, 3).map((item) => (
                                                 <li key={item} className="truncate text-[11px] text-slate-600">
@@ -527,7 +505,7 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                 )}
                                 {!job.is_anonymous && companyBenefitItems.length > 0 && (
                                     <div className="mt-2 rounded-lg bg-slate-50 p-2.5">
-                                        <p className="text-[10px] font-semibold text-slate-400">Benefit Perusahaan</p>
+                                        <p className="text-[10px] font-semibold text-slate-400">{t('front.jobs.show.company_benefits_label')}</p>
                                         <ul className="mt-1 space-y-1">
                                             {companyBenefitItems.slice(0, 3).map((item) => (
                                                 <li key={item} className="truncate text-[11px] text-slate-600">
@@ -537,11 +515,11 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                         </ul>
                                     </div>
                                 )}
-                                {!job.is_anonymous && (job.company_size || job.company_industry || job.company_trust_score != null || job.company_response_rate != null) && (
+                                {!job.is_anonymous && (job.company_size || job.company_industry || job.company_response_rate != null) && (
                                     <div className="mt-3 grid grid-cols-2 gap-2">
                                         {job.company_size && (
                                             <div className="rounded-lg bg-slate-50 p-2.5">
-                                                <p className="text-[10px] text-slate-400">Karyawan</p>
+                                                <p className="text-[10px] text-slate-400">{t('front.jobs.show.company_employees_label')}</p>
                                                 <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-slate-700">
                                                     <Users className="size-3 text-slate-400" />{job.company_size}
                                                 </p>
@@ -549,19 +527,13 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                         )}
                                         {job.company_industry && (
                                             <div className="rounded-lg bg-slate-50 p-2.5">
-                                                <p className="text-[10px] text-slate-400">Industri</p>
+                                                <p className="text-[10px] text-slate-400">{t('front.jobs.show.company_industry_label')}</p>
                                                 <p className="mt-0.5 text-xs font-semibold text-slate-700 leading-snug">{job.company_industry}</p>
-                                            </div>
-                                        )}
-                                        {job.company_trust_score != null && (
-                                            <div className="rounded-lg bg-slate-50 p-2.5">
-                                                <p className="text-[10px] text-slate-400">Trust Score</p>
-                                                <p className="mt-0.5 text-xs font-semibold text-slate-700">{job.company_trust_score}/100</p>
                                             </div>
                                         )}
                                         {job.company_response_rate != null && (
                                             <div className="rounded-lg bg-slate-50 p-2.5">
-                                                <p className="text-[10px] text-slate-400">Response Rate</p>
+                                                <p className="text-[10px] text-slate-400">{t('front.jobs.show.company_response_rate_label')}</p>
                                                 <p className="mt-0.5 text-xs font-semibold text-slate-700">{job.company_response_rate}%</p>
                                             </div>
                                         )}
@@ -570,7 +542,7 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                 {job.company_slug && (
                                     <Link href={`/companies/${job.company_slug}`} className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 transition hover:border-primary-300 hover:text-primary-600">
                                         <Globe className="size-3.5" />
-                                        Kunjungi Profil
+                                        {t('front.jobs.show.visit_profile')}
                                         <ExternalLink className="size-3" />
                                     </Link>
                                 )}
@@ -595,8 +567,20 @@ function Section({ title, icon: Icon, children }: { title: string; icon: React.C
     );
 }
 
-function BulletList({ text }: { text: string }) {
-    const lines = text.split('\n').map((l) => l.trim().replace(/^[-•*]\s*/, '')).filter(Boolean);
+function RichContent({ text }: { text: string }) {
+    const normalized = text.trim();
+    const hasHtmlTags = /<[a-z][^>]*>/i.test(normalized);
+
+    if (hasHtmlTags) {
+        return (
+            <div
+                className="prose prose-sm max-w-none text-sm leading-7 text-slate-600 [&_h1]:mt-0 [&_h1]:mb-3 [&_h1]:text-base [&_h1]:font-bold [&_h1]:text-slate-800 [&_h2]:mt-0 [&_h2]:mb-3 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-slate-800 [&_h3]:mt-0 [&_h3]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-slate-800 [&_li]:my-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_strong]:font-semibold [&_strong]:text-slate-800 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5"
+                dangerouslySetInnerHTML={{ __html: normalized }}
+            />
+        );
+    }
+
+    const lines = normalized.split('\n').map((l) => l.trim().replace(/^[-•*]\s*/, '')).filter(Boolean);
 
     return (
         <ul className="space-y-2">
@@ -608,4 +592,8 @@ function BulletList({ text }: { text: string }) {
             ))}
         </ul>
     );
+}
+
+function BulletList({ text }: { text: string }) {
+    return <RichContent text={text} />;
 }

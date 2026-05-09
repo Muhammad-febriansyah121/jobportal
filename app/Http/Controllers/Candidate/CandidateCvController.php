@@ -239,6 +239,7 @@ class CandidateCvController extends Controller
             'output_json' => $builderData,
             'model_name' => $this->ai->modelName(),
             'status' => is_array($output) ? 'success' : 'fallback',
+            ...$this->ai->tokenUsage(),
         ]);
 
         Inertia::flash('toast', [

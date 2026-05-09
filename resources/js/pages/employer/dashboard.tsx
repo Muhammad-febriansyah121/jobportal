@@ -290,15 +290,21 @@ export default function EmployerDashboard({
                                 </div>
                                 <div className="space-y-2">
                                     <h1 className="text-2xl font-bold">
-                                        {t('employer.dashboard.complete_company_profile')}
+                                        {t(
+                                            'employer.dashboard.complete_company_profile',
+                                        )}
                                     </h1>
                                     <p className="text-sm text-muted-foreground">
-                                        {t('employer.dashboard.complete_company_profile_desc')}
+                                        {t(
+                                            'employer.dashboard.complete_company_profile_desc',
+                                        )}
                                     </p>
                                 </div>
                                 <Button asChild size="lg">
                                     <Link href={companyEdit().url}>
-                                        {t('employer.dashboard.start_onboarding')}
+                                        {t(
+                                            'employer.dashboard.start_onboarding',
+                                        )}
                                         <ArrowRight className="size-4" />
                                     </Link>
                                 </Button>
@@ -343,9 +349,7 @@ export default function EmployerDashboard({
 
                     {hasUrgentToday ? (
                         <div className="grid gap-4 lg:grid-cols-2">
-                            <TodayInterviewsCard
-                                interviews={todayInterviews}
-                            />
+                            <TodayInterviewsCard interviews={todayInterviews} />
                             <ActionItemsCard items={actionItems} />
                         </div>
                     ) : null}
@@ -355,7 +359,9 @@ export default function EmployerDashboard({
                     <SectionHeader
                         icon={Filter}
                         title={t('employer.dashboard.application_progress')}
-                        subtitle={t('employer.dashboard.application_progress_subtitle')}
+                        subtitle={t(
+                            'employer.dashboard.application_progress_subtitle',
+                        )}
                     />
 
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -367,7 +373,9 @@ export default function EmployerDashboard({
                             )}
                             hint={
                                 metrics.needs_response.overdue > 0
-                                    ? t('employer.dashboard.kpi_overdue_sla', { count: metrics.needs_response.overdue })
+                                    ? t('employer.dashboard.kpi_overdue_sla', {
+                                          count: metrics.needs_response.overdue,
+                                      })
                                     : t('employer.dashboard.kpi_all_on_target')
                             }
                             tone={
@@ -387,7 +395,13 @@ export default function EmployerDashboard({
                             )}
                             hint={
                                 metrics.interviews_week.today > 0
-                                    ? t('employer.dashboard.kpi_scheduled_today', { count: metrics.interviews_week.today })
+                                    ? t(
+                                          'employer.dashboard.kpi_scheduled_today',
+                                          {
+                                              count: metrics.interviews_week
+                                                  .today,
+                                          },
+                                      )
                                     : t('employer.dashboard.kpi_none_today')
                             }
                             tone="blue"
@@ -398,7 +412,13 @@ export default function EmployerDashboard({
                             value={`${metrics.hire_rate_30d.rate}%`}
                             hint={
                                 metrics.hire_rate_30d.delta === 0
-                                    ? t('employer.dashboard.kpi_stable_vs_prev', { value: metrics.hire_rate_30d.previous })
+                                    ? t(
+                                          'employer.dashboard.kpi_stable_vs_prev',
+                                          {
+                                              value: metrics.hire_rate_30d
+                                                  .previous,
+                                          },
+                                      )
                                     : `${metrics.hire_rate_30d.delta > 0 ? '↑' : '↓'} ${Math.abs(metrics.hire_rate_30d.delta)}% ${t('employer.dashboard.kpi_vs_prev_period')}`
                             }
                             tone={
@@ -411,20 +431,27 @@ export default function EmployerDashboard({
                         />
                         <KpiCard
                             icon={FileText}
-                            label={t('employer.dashboard.kpi_applications_week')}
+                            label={t(
+                                'employer.dashboard.kpi_applications_week',
+                            )}
                             value={metrics.applications_week.count.toLocaleString(
                                 'id-ID',
                             )}
                             hint={
                                 metrics.applications_week.delta === null
-                                    ? t('employer.dashboard.kpi_total_last_week', { value: metrics.applications_week.previous })
+                                    ? t(
+                                          'employer.dashboard.kpi_total_last_week',
+                                          {
+                                              value: metrics.applications_week
+                                                  .previous,
+                                          },
+                                      )
                                     : `${metrics.applications_week.delta > 0 ? '↑' : metrics.applications_week.delta < 0 ? '↓' : '='} ${Math.abs(metrics.applications_week.delta)}% ${t('employer.dashboard.kpi_vs_last_week')}`
                             }
                             tone={
                                 (metrics.applications_week.delta ?? 0) > 0
                                     ? 'emerald'
-                                    : (metrics.applications_week.delta ?? 0) <
-                                        0
+                                    : (metrics.applications_week.delta ?? 0) < 0
                                       ? 'amber'
                                       : 'violet'
                             }
@@ -441,7 +468,9 @@ export default function EmployerDashboard({
                                 icon={Flame}
                                 tone="positive"
                                 title={t('employer.dashboard.top_candidates')}
-                                subtitle={t('employer.dashboard.top_candidates_subtitle')}
+                                subtitle={t(
+                                    'employer.dashboard.top_candidates_subtitle',
+                                )}
                             />
                             <div className="grid gap-3 md:grid-cols-3">
                                 {shortlistedCandidates.map((candidate) => (
@@ -457,7 +486,9 @@ export default function EmployerDashboard({
                     <SectionHeader
                         icon={LineChart}
                         title={t('employer.dashboard.performance_insight')}
-                        subtitle={t('employer.dashboard.performance_insight_subtitle')}
+                        subtitle={t(
+                            'employer.dashboard.performance_insight_subtitle',
+                        )}
                     />
 
                     <PerformanceTabs
@@ -503,7 +534,7 @@ function HeroBar({
                     <p className="text-xs font-semibold tracking-[0.2em] text-white/70 uppercase">
                         {greeting}
                     </p>
-                    <h1 className="text-2xl font-bold leading-tight md:text-3xl">
+                    <h1 className="text-2xl leading-tight font-bold md:text-3xl">
                         {company.name}
                     </h1>
                     <div className="flex flex-wrap gap-2">
@@ -520,7 +551,9 @@ function HeroBar({
                                 className="h-7 border-white/30 bg-white/10 text-white hover:bg-white/20"
                             >
                                 <Link href={verificationIndex().url}>
-                                    {t('employer.dashboard.complete_verification')}
+                                    {t(
+                                        'employer.dashboard.complete_verification',
+                                    )}
                                 </Link>
                             </Button>
                         )}
@@ -653,7 +686,9 @@ function SubscriptionAlertBanner({
                 </div>
             </div>
             <Button asChild size="sm" variant="outline">
-                <Link href={billingIndex().url}>{t('employer.dashboard.view_billing')}</Link>
+                <Link href={billingIndex().url}>
+                    {t('employer.dashboard.view_billing')}
+                </Link>
             </Button>
         </div>
     );
@@ -674,17 +709,22 @@ function SlaAlertBanner({
                         {t('employer.dashboard.sla_deadline_passed')}
                     </p>
                     <p className="text-xs leading-5 text-rose-900/85">
-                        {alert.candidate_name ?? t('employer.dashboard.candidate_label')} {t('employer.dashboard.for_position')}{' '}
+                        {alert.candidate_name ??
+                            t('employer.dashboard.candidate_label')}{' '}
+                        {t('employer.dashboard.for_position')}{' '}
                         <span className="font-semibold">
                             {alert.job_title ?? '—'}
                         </span>{' '}
-                        {t('employer.dashboard.already')} {alert.applied_at ?? '—'} (SLA{' '}
-                        {alert.sla_hours ?? '—'} {t('employer.dashboard.hours')}).
+                        {t('employer.dashboard.already')}{' '}
+                        {alert.applied_at ?? '—'} (SLA {alert.sla_hours ?? '—'}{' '}
+                        {t('employer.dashboard.hours')}).
                     </p>
                 </div>
             </div>
             <Button asChild size="sm" className="bg-rose-600 hover:bg-rose-700">
-                <Link href={candidatesIndex().url}>{t('employer.dashboard.review_applications')}</Link>
+                <Link href={candidatesIndex().url}>
+                    {t('employer.dashboard.review_applications')}
+                </Link>
             </Button>
         </div>
     );
@@ -717,7 +757,7 @@ function SectionHeader({
                 <Icon className="size-4" />
             </span>
             <div>
-                <h2 className="text-base font-bold leading-tight">{title}</h2>
+                <h2 className="text-base leading-tight font-bold">{title}</h2>
                 {subtitle ? (
                     <p className="text-xs text-muted-foreground">{subtitle}</p>
                 ) : null}
@@ -758,7 +798,7 @@ function TodayInterviewsCard({
                                 )}
                             </span>
                             <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium leading-tight">
+                                <p className="text-sm leading-tight font-medium">
                                     {iv.candidate_name}
                                 </p>
                                 <p className="truncate text-xs text-muted-foreground">
@@ -796,11 +836,7 @@ function TodayInterviewsCard({
     );
 }
 
-function ActionItemsCard({
-    items,
-}: {
-    items: DashboardProps['actionItems'];
-}) {
+function ActionItemsCard({ items }: { items: DashboardProps['actionItems'] }) {
     const { t } = useTranslate();
     const visible = items.filter((item) => item.count > 0);
     return (
@@ -923,7 +959,7 @@ function KpiCard({
             <div>
                 <p
                     className={cn(
-                        'text-2xl font-bold leading-tight',
+                        'text-2xl leading-tight font-bold',
                         valueTone,
                     )}
                 >
@@ -940,7 +976,9 @@ function KpiCard({
     if (href) {
         return (
             <Link href={href}>
-                <Card className="h-full transition hover:shadow-md">{inner}</Card>
+                <Card className="h-full transition hover:shadow-md">
+                    {inner}
+                </Card>
             </Link>
         );
     }
@@ -995,7 +1033,13 @@ function PipelineFunnelCard({
         legend: { show: false },
         xaxis: {
             categories: funnel.map((s) => s.label),
-            labels: { style: { fontSize: '11px', fontWeight: '500', colors: ['#6b7280'] } },
+            labels: {
+                style: {
+                    fontSize: '11px',
+                    fontWeight: '500',
+                    colors: ['#6b7280'],
+                },
+            },
             axisBorder: { show: false },
             axisTicks: { show: false },
         },
@@ -1006,7 +1050,8 @@ function PipelineFunnelCard({
         tooltip: {
             y: {
                 formatter: (val, opts) => {
-                    if (!opts) return `${val} ${t('employer.dashboard.applicants')}`;
+                    if (!opts)
+                        return `${val} ${t('employer.dashboard.applicants')}`;
                     const stage = funnel[opts.dataPointIndex];
                     let text = `${val} ${t('employer.dashboard.applicants')}`;
                     if (
@@ -1038,7 +1083,12 @@ function PipelineFunnelCard({
             <CardContent className="-mx-2">
                 <ReactApexChart
                     type="bar"
-                    series={[{ name: t('employer.dashboard.applicants'), data: funnel.map((s) => s.total) }]}
+                    series={[
+                        {
+                            name: t('employer.dashboard.applicants'),
+                            data: funnel.map((s) => s.total),
+                        },
+                    ]}
                     options={options}
                     height={funnel.length * 52 + 20}
                 />
@@ -1073,7 +1123,7 @@ function ShortlistedCard({
                         {initials || '?'}
                     </span>
                     <div className="min-w-0 flex-1">
-                        <p className="truncate font-semibold leading-tight">
+                        <p className="truncate leading-tight font-semibold">
                             {candidate.name}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
@@ -1092,12 +1142,7 @@ function ShortlistedCard({
                         </span>
                     </p>
                 ) : null}
-                <Button
-                    asChild
-                    size="sm"
-                    variant="outline"
-                    className="w-full"
-                >
+                <Button asChild size="sm" variant="outline" className="w-full">
                     <Link href={`/employer/candidates/${candidate.id}`}>
                         {t('employer.dashboard.view_profile')}
                         <ArrowRight className="size-3.5" />
@@ -1130,7 +1175,11 @@ function PerformanceTabs({
     return (
         <Tabs defaultValue="trend" className="space-y-4">
             <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto bg-muted/40 p-1">
-                <PerfTab value="trend" icon={LineChart} label={t('employer.dashboard.tab_application_trend')} />
+                <PerfTab
+                    value="trend"
+                    icon={LineChart}
+                    label={t('employer.dashboard.tab_application_trend')}
+                />
                 <PerfTab
                     value="jobs"
                     icon={BriefcaseBusiness}
@@ -1299,23 +1348,22 @@ function TopJobsCard({ jobs }: { jobs: DashboardProps['topJobs'] }) {
             <CardContent className="space-y-2">
                 {jobs.length > 0 ? (
                     jobs.map((job, index) => (
-                        <div
-                            key={job.id}
-                            className="rounded-lg border p-3"
-                        >
+                        <div key={job.id} className="rounded-lg border p-3">
                             <div className="flex items-start justify-between gap-2">
                                 <div className="flex items-start gap-2">
                                     <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold">
                                         #{index + 1}
                                     </span>
                                     <div>
-                                        <p className="font-medium leading-tight">
+                                        <p className="leading-tight font-medium">
                                             {job.title}
                                         </p>
                                         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
                                             <span>
                                                 {job.applications_count}{' '}
-                                                {t('employer.dashboard.applications')}
+                                                {t(
+                                                    'employer.dashboard.applications',
+                                                )}
                                             </span>
                                             {job.recent_applications_count >
                                             0 ? (
@@ -1327,7 +1375,9 @@ function TopJobsCard({ jobs }: { jobs: DashboardProps['topJobs'] }) {
                                                     {
                                                         job.recent_applications_count
                                                     }{' '}
-                                                    {t('employer.dashboard.this_week')}
+                                                    {t(
+                                                        'employer.dashboard.this_week',
+                                                    )}
                                                 </Badge>
                                             ) : null}
                                             {job.is_stagnant ? (
@@ -1335,7 +1385,9 @@ function TopJobsCard({ jobs }: { jobs: DashboardProps['topJobs'] }) {
                                                     variant="outline"
                                                     className="text-[10px] text-amber-700"
                                                 >
-                                                    {t('employer.dashboard.stagnant')}
+                                                    {t(
+                                                        'employer.dashboard.stagnant',
+                                                    )}
                                                 </Badge>
                                             ) : null}
                                         </div>
@@ -1360,11 +1412,7 @@ function TopJobsCard({ jobs }: { jobs: DashboardProps['topJobs'] }) {
     );
 }
 
-function TopSkillsCard({
-    skills,
-}: {
-    skills: DashboardProps['topSkills'];
-}) {
+function TopSkillsCard({ skills }: { skills: DashboardProps['topSkills'] }) {
     const { t } = useTranslate();
     return (
         <Card>
@@ -1382,7 +1430,8 @@ function TopSkillsCard({
                                     {skill.name}
                                 </span>
                                 <span className="text-muted-foreground">
-                                    {skill.total} {t('employer.dashboard.candidates_lc')}
+                                    {skill.total}{' '}
+                                    {t('employer.dashboard.candidates_lc')}
                                 </span>
                             </div>
                             <div className="h-2 overflow-hidden rounded-full bg-muted/40">
@@ -1406,11 +1455,7 @@ function TopSkillsCard({
     );
 }
 
-function SourceRoiCard({
-    items,
-}: {
-    items: DashboardProps['sourceRoi'];
-}) {
+function SourceRoiCard({ items }: { items: DashboardProps['sourceRoi'] }) {
     const { t } = useTranslate();
     return (
         <Card>
@@ -1424,11 +1469,21 @@ function SourceRoiCard({
                     <table className="w-full min-w-[480px] text-sm">
                         <thead className="text-[10px] tracking-wider text-muted-foreground uppercase">
                             <tr className="border-b">
-                                <th className="py-2 text-left">{t('employer.dashboard.source')}</th>
-                                <th className="py-2 text-right">{t('employer.dashboard.apply')}</th>
-                                <th className="py-2 text-right">{t('employer.dashboard.progress')}</th>
-                                <th className="py-2 text-right">{t('employer.dashboard.hire')}</th>
-                                <th className="py-2 text-right">{t('employer.dashboard.hire_percent')}</th>
+                                <th className="py-2 text-left">
+                                    {t('employer.dashboard.source')}
+                                </th>
+                                <th className="py-2 text-right">
+                                    {t('employer.dashboard.apply')}
+                                </th>
+                                <th className="py-2 text-right">
+                                    {t('employer.dashboard.progress')}
+                                </th>
+                                <th className="py-2 text-right">
+                                    {t('employer.dashboard.hire')}
+                                </th>
+                                <th className="py-2 text-right">
+                                    {t('employer.dashboard.hire_percent')}
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1521,7 +1576,8 @@ function RecruiterLeaderboardCard({
                                         {member.name}
                                     </p>
                                     <span className="shrink-0 text-xs font-semibold">
-                                        {member.total_actions} {t('employer.dashboard.actions')}
+                                        {member.total_actions}{' '}
+                                        {t('employer.dashboard.actions')}
                                     </span>
                                 </div>
                                 <div className="h-1.5 overflow-hidden rounded-full bg-muted/40">
@@ -1597,7 +1653,8 @@ function ColdTalentPoolCard({
                                     className="mt-1 text-[10px] text-amber-700"
                                 >
                                     <Snowflake className="size-3" />
-                                    {talent.days_cold} {t('employer.dashboard.days_not_contacted')}
+                                    {talent.days_cold}{' '}
+                                    {t('employer.dashboard.days_not_contacted')}
                                 </Badge>
                             </div>
                         </div>
@@ -1613,11 +1670,7 @@ function ColdTalentPoolCard({
     );
 }
 
-function RecentJobsCard({
-    jobs,
-}: {
-    jobs: DashboardProps['recentJobs'];
-}) {
+function RecentJobsCard({ jobs }: { jobs: DashboardProps['recentJobs'] }) {
     const { t } = useTranslate();
     return (
         <Card>
@@ -1627,7 +1680,9 @@ function RecentJobsCard({
                     {t('employer.dashboard.recent_jobs')}
                 </CardTitle>
                 <Button asChild size="sm" variant="ghost">
-                    <Link href={jobsIndex().url}>{t('employer.dashboard.all')}</Link>
+                    <Link href={jobsIndex().url}>
+                        {t('employer.dashboard.all')}
+                    </Link>
                 </Button>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -1643,7 +1698,8 @@ function RecentJobsCard({
                                     {job.title}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    {job.applications_count} {t('employer.dashboard.applications')} ·{' '}
+                                    {job.applications_count}{' '}
+                                    {t('employer.dashboard.applications')} ·{' '}
                                     {job.published_at}
                                 </p>
                             </div>
@@ -1686,7 +1742,7 @@ function RecentActivitiesCard({
                             {visible.map((activity) => (
                                 <li key={activity.id} className="relative">
                                     <span
-                                        className="absolute -left-[1.4rem] top-1.5 size-2.5 rounded-full bg-[#01296A]"
+                                        className="absolute top-1.5 -left-[1.4rem] size-2.5 rounded-full bg-[#01296A]"
                                         aria-hidden
                                     />
                                     <p className="text-sm leading-tight">
@@ -1709,7 +1765,10 @@ function RecentActivitiesCard({
                             >
                                 {open
                                     ? t('employer.dashboard.show_less')
-                                    : t('employer.dashboard.show_more_activities', { count: activities.length - 4 })}
+                                    : t(
+                                          'employer.dashboard.show_more_activities',
+                                          { count: activities.length - 4 },
+                                      )}
                                 <ChevronDown
                                     className={cn(
                                         'size-3 transition',

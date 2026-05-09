@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslate } from '@/hooks/use-translate';
 
 type AdminWhatsAppPageProps = {
     gatewayConfigured: boolean;
@@ -39,14 +40,14 @@ type AdminWhatsAppPageProps = {
     } | null;
 };
 
-function stateBadge(state?: string | null) {
+function stateBadge(state?: string | null, t?: any) {
     const value = (state ?? '').toUpperCase();
 
     if (value === 'CONNECTED' || value === 'READY') {
         return (
             <Badge className="border-green-200 bg-green-50 text-green-700">
                 <CheckCircle2 className="mr-1 size-3.5" />
-                Terhubung
+                {t('admin.whatsapp.badge.connected')}
             </Badge>
         );
     }
@@ -55,7 +56,7 @@ function stateBadge(state?: string | null) {
         return (
             <Badge className="border-secondary-200 bg-secondary-50 text-secondary-700">
                 <RefreshCcw className="mr-1 size-3.5" />
-                Menunggu Scan
+                {t('admin.whatsapp.badge.waiting_qr')}
             </Badge>
         );
     }
@@ -66,7 +67,7 @@ function stateBadge(state?: string | null) {
                 variant="outline"
                 className="border-border text-muted-foreground"
             >
-                Belum ada sesi
+                {t('admin.whatsapp.badge.no_session')}
             </Badge>
         );
     }
@@ -94,6 +95,7 @@ export default function AdminWhatsApp({
     sessionId: initialSessionId,
     session,
 }: AdminWhatsAppPageProps) {
+    const { t } = useTranslate();
     const connectForm = useForm({
         label: session?.label ?? 'Admin Karivia',
     });
@@ -111,8 +113,6 @@ export default function AdminWhatsApp({
         2500,
         {
             only: ['session', 'gatewayConfigured', 'sessionId'],
-            preserveScroll: true,
-            preserveState: true,
         },
         {
             autoStart: Boolean(sessionId && !isConnected),
@@ -157,12 +157,12 @@ export default function AdminWhatsApp({
 
     return (
         <>
-            <Head title="WhatsApp Admin" />
+            <Head title={t('admin.whatsapp.title')} />
 
             <div className="space-y-6 p-4 md:p-6">
                 <Heading
-                    title="WhatsApp Admin"
-                    description="Kelola sesi WhatsApp default untuk notifikasi sistem — termasuk notifikasi lupa password."
+                    title={t('admin.whatsapp.title')}
+                    description={t('admin.whatsapp.subtitle')}
                 />
 
                 {!gatewayConfigured ? (
@@ -171,15 +171,14 @@ export default function AdminWhatsApp({
                             <AlertCircle className="mt-0.5 size-5 text-red-600" />
                             <div>
                                 <p className="text-sm font-semibold text-red-800">
-                                    Gateway WhatsApp belum dikonfigurasi.
+                                    {t('admin.whatsapp.gateway_not_configured')}
                                 </p>
                                 <p className="mt-1 text-sm text-red-700">
-                                    Isi konfigurasi gateway di Pengaturan Web
-                                    (tab AI) untuk{' '}
+                                    {t('admin.whatsapp.gateway_not_configured_hint_1')}
                                     <code className="rounded bg-red-100 px-1 text-xs">
                                         whatsapp_gateway_url
-                                    </code>{' '}
-                                    dan{' '}
+                                    </code>
+                                    {t('admin.whatsapp.gateway_not_configured_hint_2')}
                                     <code className="rounded bg-red-100 px-1 text-xs">
                                         whatsapp_gateway_api_key
                                     </code>
@@ -195,13 +194,10 @@ export default function AdminWhatsApp({
                         <CheckCircle2 className="mt-0.5 size-5 text-primary" />
                         <div>
                             <p className="text-sm font-semibold text-primary">
-                                Notifikasi Lupa Password via WhatsApp
+                                {t('admin.whatsapp.forgot_password_title')}
                             </p>
                             <p className="mt-1 text-sm text-primary/80">
-                                Sesi ini digunakan sebagai gateway default untuk
-                                mengirimkan link reset password ke nomor
-                                WhatsApp yang diisi pengguna di halaman lupa
-                                password.
+                                {t('admin.whatsapp.forgot_password_desc')}
                             </p>
                         </div>
                     </CardContent>
@@ -210,37 +206,35 @@ export default function AdminWhatsApp({
                 <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Test & Info Sesi</CardTitle>
+                            <CardTitle>{t('admin.whatsapp.test_info_title')}</CardTitle>
                             <CardDescription>
-                                Kirim pesan test ke nomor tertentu menggunakan
-                                sesi default ini.
+                                {t('admin.whatsapp.test_info_desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-5">
                             <div className="space-y-2">
                                 <Label htmlFor="session-id-display">
-                                    Session ID Default
+                                    {t('admin.whatsapp.session_id_label')}
                                 </Label>
                                 <Input
                                     id="session-id-display"
                                     value={sessionId}
                                     readOnly
-                                    placeholder="Belum ada sesi terhubung"
+                                    placeholder={t('admin.whatsapp.no_session_placeholder')}
                                     className="font-mono text-sm"
                                 />
                                 <p className="text-xs text-muted-foreground">
-                                    Session ID ini diambil dari pengaturan{' '}
+                                    {t('admin.whatsapp.session_id_hint_1')}
                                     <code className="rounded bg-muted px-1 text-xs">
                                         whatsapp_gateway_default_session_id
                                     </code>
-                                    . Membuat sesi baru di bawah akan
-                                    memperbarui nilai ini secara otomatis.
+                                    {t('admin.whatsapp.session_id_hint_2')}
                                 </p>
                             </div>
 
                             <div className="space-y-2">
                                 <Label htmlFor="test-phone">
-                                    Nomor uji koneksi
+                                    {t('admin.whatsapp.test_phone_label')}
                                 </Label>
                                 <Input
                                     id="test-phone"
@@ -251,14 +245,13 @@ export default function AdminWhatsApp({
                                             e.target.value,
                                         )
                                     }
-                                    placeholder="Contoh: 628123456789"
+                                    placeholder={t('admin.whatsapp.test_phone_placeholder')}
                                 />
                                 <InputError
                                     message={testForm.errors.phone_number}
                                 />
                                 <p className="text-xs text-muted-foreground">
-                                    Isi nomor WhatsApp yang ingin menerima pesan
-                                    test dari sesi ini.
+                                    {t('admin.whatsapp.test_phone_hint')}
                                 </p>
                             </div>
 
@@ -275,17 +268,16 @@ export default function AdminWhatsApp({
                                 }
                             >
                                 <Send className="size-4" />
-                                Test Kirim Pesan
+                                {t('admin.whatsapp.test_send_btn')}
                             </Button>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Status sesi gateway</CardTitle>
+                            <CardTitle>{t('admin.whatsapp.status_title')}</CardTitle>
                             <CardDescription>
-                                Buat sesi baru, reconnect, atau putuskan sesi
-                                default.
+                                {t('admin.whatsapp.status_desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-5">
@@ -293,11 +285,10 @@ export default function AdminWhatsApp({
                                 <div className="rounded-lg border border-border p-4">
                                     <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
                                         <QrCode className="size-4" />
-                                        Scan QR untuk menyambungkan perangkat
+                                        {t('admin.whatsapp.scan_qr_title')}
                                     </p>
                                     <p className="mb-3 text-xs text-muted-foreground">
-                                        Jika WhatsApp menolak tautan perangkat,
-                                        tunggu QR diperbarui lalu scan ulang.
+                                        {t('admin.whatsapp.scan_qr_desc')}
                                     </p>
                                     <img
                                         src={qrCodeUrl}
@@ -310,10 +301,10 @@ export default function AdminWhatsApp({
                             <div className="flex items-center justify-between rounded-lg border border-border bg-white/60 p-4">
                                 <div>
                                     <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-                                        Status saat ini
+                                        {t('admin.whatsapp.current_status')}
                                     </p>
                                     <div className="mt-2">
-                                        {stateBadge(session?.state)}
+                                        {stateBadge(session?.state, t)}
                                     </div>
                                 </div>
                                 {session?.id ? (
@@ -338,7 +329,7 @@ export default function AdminWhatsApp({
                             >
                                 <div className="space-y-2">
                                     <Label htmlFor="session-label">
-                                        Label sesi
+                                        {t('admin.whatsapp.session_label')}
                                     </Label>
                                     <Input
                                         id="session-label"
@@ -349,16 +340,14 @@ export default function AdminWhatsApp({
                                                 e.target.value,
                                             )
                                         }
-                                        placeholder="Contoh: Admin Karivia"
+                                        placeholder={t('admin.whatsapp.session_label_placeholder')}
                                     />
                                     <InputError
                                         message={connectForm.errors.label}
                                     />
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    Setelah klik tombol di bawah, scan QR dari
-                                    WhatsApp di ponsel. Session ID default akan
-                                    diperbarui otomatis.
+                                    {t('admin.whatsapp.session_label_hint')}
                                 </p>
                                 <Button
                                     type="submit"
@@ -369,7 +358,7 @@ export default function AdminWhatsApp({
                                     className="w-full"
                                 >
                                     <Link2 className="size-4" />
-                                    Buat / Hubungkan Sesi Baru
+                                    {t('admin.whatsapp.connect_btn')}
                                 </Button>
                             </form>
 
@@ -382,7 +371,7 @@ export default function AdminWhatsApp({
                                     className="w-full"
                                 >
                                     <RefreshCcw className="size-4" />
-                                    Reconnect
+                                    {t('admin.whatsapp.reconnect_btn')}
                                 </Button>
                                 <Button
                                     type="button"
@@ -392,13 +381,13 @@ export default function AdminWhatsApp({
                                     className="w-full border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
                                 >
                                     <Unlink2 className="size-4" />
-                                    Putuskan Sesi
+                                    {t('admin.whatsapp.disconnect_btn')}
                                 </Button>
                             </div>
 
                             {isConnected && session?.phone_number ? (
                                 <p className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                                    Session aktif di nomor{' '}
+                                    {t('admin.whatsapp.session_active')}
                                     {session.phone_number}.
                                 </p>
                             ) : null}

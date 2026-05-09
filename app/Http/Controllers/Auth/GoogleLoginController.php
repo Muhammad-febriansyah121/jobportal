@@ -194,7 +194,14 @@ class GoogleLoginController extends Controller
         Auth::login($user, $remember);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard'));
+        $target = match ($user->role) {
+            'candidate' => route('candidate.dashboard'),
+            'employer' => route('employer.dashboard'),
+            'admin' => route('admin.dashboard'),
+            default => route('dashboard'),
+        };
+
+        return redirect()->intended($target);
     }
 
     private function validationMessage(ValidationException $exception): string

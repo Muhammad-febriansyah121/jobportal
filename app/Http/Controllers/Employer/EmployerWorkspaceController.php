@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Employer;
 
 use App\Actions\Employer\GenerateTalentSearchRecommendations;
+use App\Actions\Employer\MatchCandidateToCompanyJobs;
 use App\Actions\Employer\ResolveEmployerCompany;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\CandidateProfile;
+use App\Models\Company;
 use App\Models\Conversation;
 use App\Models\EmployerTalentCandidate;
 use App\Models\GoogleCalendarToken;
@@ -327,6 +329,195 @@ class EmployerWorkspaceController extends Controller
         );
     }
 
+    public function showTalent(
+        Request $request,
+        CandidateProfile $candidateProfile,
+        ResolveEmployerCompany $resolveEmployerCompany,
+    ): Response {
+        $company = $resolveEmployerCompany->handle($request->user());
+
+        $candidateProfile->load([
+            'user:id,name,email,phone,avatar_url',
+            'preferredIndustry:id,name',
+            'skills:id,name',
+            'experiences' => fn ($query) => $query
+                ->orderByDesc('is_current')
+                ->orderByDesc('start_date'),
+            'educations' => fn ($query) => $query
+                ->orderByDesc('end_year')
+                ->orderByDesc('start_year'),
+            'certifications' => fn ($query) => $query->orderByDesc('issue_date'),
+            'primaryCv',
+        ]);
+
+        $companyJobIds = $company
+            ? JobListing::query()->whereBelongsTo($company)->pluck('id')->all()
+            : [];
+
+        $aiMatchScore = $candidateProfile->aiMatchScores()
+            ->when($companyJobIds !== [], fn ($query) => $query->whereIn('job_listing_id', $companyJobIds))
+            ->latest('computed_at')
+            ->first();
+
+        $talentAction = $company
+            ? EmployerTalentCandidate::query()
+                ->where('company_id', $company->id)
+                ->where('candidate_id', $candidateProfile->id)
+                ->first()
+            : null;
+
+        $conversationId = null;
+        if ($company !== null) {
+            $conversationId = Conversation::query()
+                ->where('company_id', $company->id)
+                ->where('candidate_id', $candidateProfile->id)
+                ->whereNull('application_id')
+                ->value('id');
+        }
+
+        $totalYears = 0.0;
+        foreach ($candidateProfile->experiences as $experience) {
+            $start = $experience->start_date;
+
+            if (! $start) {
+                continue;
+            }
+
+            $end = $experience->is_current
+                ? now()
+                : ($experience->end_date ?? now());
+
+            $totalYears += max(0.0, (float) $start->diffInMonths($end)) / 12;
+        }
+
+        return Inertia::render('employer/talent-search/show', [
+            'company' => $company ? [
+                'id' => $company->id,
+                'name' => $company->name,
+            ] : null,
+            'candidate' => [
+                'id' => $candidateProfile->id,
+                'name' => $candidateProfile->full_name ?? $candidateProfile->user?->name ?? 'Kandidat',
+                'avatar_url' => $candidateProfile->user?->avatar_url,
+                'headline' => $candidateProfile->headline ?? $candidateProfile->preferred_role ?? 'Kandidat Karivia',
+                'bio' => $candidateProfile->bio,
+                'location' => collect([$candidateProfile->location_city, $candidateProfile->location_province])->filter()->join(', '),
+                'preferred_role' => $candidateProfile->preferred_role,
+                'preferred_industry' => $candidateProfile->preferredIndustry?->name,
+                'salary_range' => $this->salaryRange($candidateProfile->expected_salary_min, $candidateProfile->expected_salary_max),
+                'availability' => $candidateProfile->availability ?? '-',
+                'work_mode_pref' => $candidateProfile->work_mode_pref
+                    ? str($candidateProfile->work_mode_pref)->headline()->toString()
+                    : '-',
+                'profile_completion' => $candidateProfile->profile_completion,
+                'years_total_experience' => round($totalYears, 1),
+                'match_score' => $aiMatchScore?->overall_score
+                    ? (int) round((float) $aiMatchScore->overall_score)
+                    : null,
+                'match_reason' => $aiMatchScore?->explanation,
+                'skills' => $candidateProfile->skills->map(fn ($skill): array => [
+                    'name' => $skill->name,
+                    'years_exp' => $skill->pivot->years_exp ?? null,
+                    'proficiency' => $skill->pivot->proficiency ?? null,
+                    'verified' => filled($skill->pivot->verified_at ?? null),
+                ])->values(),
+                'experiences' => $candidateProfile->experiences->map(fn ($experience): array => [
+                    'job_title' => $experience->job_title,
+                    'company_name' => $experience->company_name,
+                    'location' => $experience->location,
+                    'description' => $experience->description,
+                    'start_date' => $experience->start_date?->format('M Y'),
+                    'end_date' => $experience->is_current ? null : $experience->end_date?->format('M Y'),
+                    'is_current' => (bool) $experience->is_current,
+                ])->values(),
+                'educations' => $candidateProfile->educations->map(fn ($education): array => [
+                    'institution' => $education->institution,
+                    'degree' => $education->degree,
+                    'field_of_study' => $education->field_of_study,
+                    'start_year' => $education->start_year,
+                    'end_year' => $education->end_year,
+                    'gpa' => $education->gpa,
+                ])->values(),
+                'certifications' => $candidateProfile->certifications->map(fn ($certification): array => [
+                    'name' => $certification->name,
+                    'issuing_org' => $certification->issuing_org,
+                    'issue_date' => $certification->issue_date?->format('M Y'),
+                    'credential_url' => $certification->credential_url,
+                ])->values(),
+                'is_saved' => $talentAction?->saved_at !== null,
+                'is_shortlisted' => $talentAction?->shortlisted_at !== null,
+                'is_unlocked' => $talentAction?->unlocked_at !== null,
+                'unlocked_at' => $talentAction?->unlocked_at?->format('d M Y H:i'),
+                'email' => $talentAction?->unlocked_at !== null ? $candidateProfile->user?->email : null,
+                'phone' => $talentAction?->unlocked_at !== null ? $candidateProfile->user?->phone : null,
+                'cv' => $talentAction?->unlocked_at !== null && $candidateProfile->primaryCv ? [
+                    'id' => $candidateProfile->primaryCv->id,
+                    'file_url' => $candidateProfile->primaryCv->file_url,
+                    'uploaded_at' => $candidateProfile->primaryCv->uploaded_at?->format('d M Y'),
+                ] : null,
+                'conversation_id' => $conversationId,
+            ],
+            'invitationQuota' => $this->buildInvitationQuota($company),
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildInvitationQuota(?Company $company): array
+    {
+        if ($company === null) {
+            return ['limit' => 0, 'used' => 0, 'remaining' => 0];
+        }
+
+        $activeSubscription = $company->activeSubscription()->with('plan:id,talent_search_quota')->first();
+        $limit = (int) ($activeSubscription?->plan?->talent_search_quota ?? 0);
+        $used = EmployerTalentCandidate::query()
+            ->where('company_id', $company->id)
+            ->whereNotNull('unlocked_at')
+            ->count();
+
+        return [
+            'limit' => $limit,
+            'used' => $used,
+            'remaining' => max(0, $limit - $used),
+        ];
+    }
+
+    public function matchTalent(
+        Request $request,
+        CandidateProfile $candidateProfile,
+        ResolveEmployerCompany $resolveEmployerCompany,
+        MatchCandidateToCompanyJobs $matchCandidateToCompanyJobs,
+    ): Response|RedirectResponse {
+        $company = $resolveEmployerCompany->handle($request->user());
+
+        if ($company === null) {
+            Inertia::flash('toast', ['type' => 'warning', 'message' => 'Lengkapi profil perusahaan dulu sebelum job matching.']);
+
+            return to_route('employer.company.edit');
+        }
+
+        $matches = $matchCandidateToCompanyJobs->handle($company, $candidateProfile);
+
+        $candidateProfile->load(['user:id,name,avatar_url', 'skills:id,name']);
+
+        return Inertia::render('employer/talent-search/match', [
+            'company' => [
+                'id' => $company->id,
+                'name' => $company->name,
+            ],
+            'candidate' => [
+                'id' => $candidateProfile->id,
+                'name' => $candidateProfile->full_name ?? $candidateProfile->user?->name ?? 'Kandidat',
+                'avatar_url' => $candidateProfile->user?->avatar_url,
+                'headline' => $candidateProfile->headline ?? $candidateProfile->preferred_role ?? 'Kandidat Karivia',
+                'skills' => $candidateProfile->skills->pluck('name')->values(),
+            ],
+            'matches' => $matches,
+        ]);
+    }
+
     private function renderTalentSearchPage(
         Request $request,
         ResolveEmployerCompany $resolveEmployerCompany,
@@ -341,6 +532,11 @@ class EmployerWorkspaceController extends Controller
         $experience = $request->string('experience')->toString();
         $availability = $request->string('availability')->toString();
         $sort = $request->string('sort', 'match')->toString();
+        $poolFilter = $savedOnly
+            ? in_array($request->string('pool')->toString(), ['saved', 'shortlisted'], true)
+                ? $request->string('pool')->toString()
+                : 'all'
+            : 'all';
         $companyJobIds = $company
             ? JobListing::query()->whereBelongsTo($company)->pluck('id')->all()
             : [];
@@ -354,6 +550,7 @@ class EmployerWorkspaceController extends Controller
             'availability' => $availability,
             'sort' => $sort,
             'saved_only' => $savedOnly ? '1' : '',
+            'pool' => $poolFilter,
         ];
 
         $candidates = CandidateProfile::query()
@@ -372,8 +569,16 @@ class EmployerWorkspaceController extends Controller
                 'profile_completion',
             ])
             ->with([
-                'user:id,name,email,avatar_url',
+                'user:id,name,avatar_url',
                 'skills:id,name',
+                'experiences' => fn ($query) => $query
+                    ->orderByDesc('is_current')
+                    ->orderByDesc('start_date')
+                    ->limit(3),
+                'educations' => fn ($query) => $query
+                    ->orderByDesc('end_year')
+                    ->orderByDesc('start_year')
+                    ->limit(2),
                 'applications:id,candidate_id,status,created_at',
                 'aiMatchScores' => fn ($query) => $query
                     ->when($companyJobIds !== [], fn ($query) => $query->whereIn('job_listing_id', $companyJobIds))
@@ -406,7 +611,15 @@ class EmployerWorkspaceController extends Controller
                     'talentActions',
                     fn ($talentActionQuery) => $talentActionQuery
                         ->where('company_id', $company->id)
-                        ->whereNotNull('saved_at')
+                        ->where(function ($q) use ($poolFilter): void {
+                            if ($poolFilter === 'saved') {
+                                $q->whereNotNull('saved_at');
+                            } elseif ($poolFilter === 'shortlisted') {
+                                $q->whereNotNull('shortlisted_at');
+                            } else {
+                                $q->whereNotNull('saved_at')->orWhereNotNull('shortlisted_at');
+                            }
+                        })
                 )
             )
             ->when($savedOnly && $company === null, fn ($query) => $query->whereRaw('1 = 0'))
@@ -434,34 +647,61 @@ class EmployerWorkspaceController extends Controller
                 ->pluck('id', 'candidate_id');
         }
 
-        $rankedCandidates = $generateTalentSearchRecommendations->handle(
-            $request->user(),
-            $filters,
-            $candidates->getCollection()->map(function (CandidateProfile $candidate) use ($search, $talentActions, $conversations): array {
-                /** @var EmployerTalentCandidate|null $action */
-                $action = $talentActions->get($candidate->id);
+        $candidateRows = $candidates->getCollection()->map(function (CandidateProfile $candidate) use ($search, $talentActions, $conversations): array {
+            /** @var EmployerTalentCandidate|null $action */
+            $action = $talentActions->get($candidate->id);
 
-                return $this->talentRow(
-                    $candidate,
-                    $search,
-                    $action?->saved_at !== null,
-                    $action?->shortlisted_at !== null,
-                    $conversations->has($candidate->id)
-                        ? (int) $conversations->get($candidate->id)
-                        : null
-                );
-            })
-        );
+            return $this->talentRow(
+                $candidate,
+                $search,
+                $action?->saved_at !== null,
+                $action?->shortlisted_at !== null,
+                $conversations->has($candidate->id)
+                    ? (int) $conversations->get($candidate->id)
+                    : null
+            );
+        });
+
+        $hasActiveFilter = $search !== ''
+            || $skillId !== null
+            || $location !== ''
+            || $salary !== ''
+            || $experience !== ''
+            || $availability !== '';
+
+        $rankedCandidates = $hasActiveFilter
+            ? $generateTalentSearchRecommendations->handle(
+                $request->user(),
+                $filters,
+                $candidateRows
+            )
+            : $candidateRows
+                ->map(fn (array $row): array => $row + [
+                    'match_source' => $row['match_source'] ?? 'computed',
+                    'match_reason' => $row['match_reason'] ?? null,
+                ])
+                ->sortByDesc('match_score')
+                ->values();
 
         $candidates->setCollection($rankedCandidates);
 
-        $savedCandidatesCount = $company === null
-            ? 0
-            : EmployerTalentCandidate::query()
+        $savedCandidatesCount = 0;
+        $shortlistedCount = 0;
+        $poolTotalCount = 0;
+
+        if ($company !== null) {
+            $poolStats = EmployerTalentCandidate::query()
                 ->where('company_id', $company->id)
-                ->whereNotNull('saved_at')
-                ->distinct('candidate_id')
-                ->count('candidate_id');
+                ->where(fn ($q) => $q->whereNotNull('saved_at')->orWhereNotNull('shortlisted_at'))
+                ->selectRaw('COUNT(DISTINCT candidate_id) as total, '
+                    .'SUM(CASE WHEN saved_at IS NOT NULL THEN 1 ELSE 0 END) as saved_count, '
+                    .'SUM(CASE WHEN shortlisted_at IS NOT NULL THEN 1 ELSE 0 END) as shortlisted_count')
+                ->first();
+
+            $savedCandidatesCount = (int) ($poolStats->saved_count ?? 0);
+            $shortlistedCount = (int) ($poolStats->shortlisted_count ?? 0);
+            $poolTotalCount = (int) ($poolStats->total ?? 0);
+        }
 
         return Inertia::render('employer/talent-search', [
             'company' => $company ? [
@@ -495,6 +735,8 @@ class EmployerWorkspaceController extends Controller
             'candidates' => $candidates,
             'totalCandidates' => CandidateProfile::count(),
             'savedCandidatesCount' => $savedCandidatesCount,
+            'shortlistedCount' => $shortlistedCount,
+            'poolTotalCount' => $poolTotalCount,
             'viewMode' => $savedOnly ? 'saved' : 'all',
         ]);
     }
@@ -548,10 +790,32 @@ class EmployerWorkspaceController extends Controller
             ])
             ->values();
 
+        $experiences = $candidate->experiences
+            ->map(fn ($experience): array => [
+                'job_title' => $experience->job_title,
+                'company_name' => $experience->company_name,
+                'start_date' => $experience->start_date?->format('M Y'),
+                'end_date' => $experience->is_current
+                    ? null
+                    : $experience->end_date?->format('M Y'),
+                'is_current' => (bool) $experience->is_current,
+            ])
+            ->values()
+            ->all();
+
+        $educations = $candidate->educations
+            ->map(fn ($education): array => [
+                'institution' => $education->institution,
+                'degree' => $education->degree,
+                'field_of_study' => $education->field_of_study,
+                'end_year' => $education->end_year,
+            ])
+            ->values()
+            ->all();
+
         return [
             'id' => $candidate->id,
             'name' => $candidate->full_name ?? $candidate->user?->name ?? 'Kandidat',
-            'email' => $candidate->user?->email,
             'avatar_url' => $candidate->user?->avatar_url,
             'headline' => $candidate->headline ?? $candidate->preferred_role ?? 'Kandidat Karivia',
             'location' => collect([$candidate->location_city, $candidate->location_province])->filter()->join(', '),
@@ -565,6 +829,8 @@ class EmployerWorkspaceController extends Controller
             'match_source' => $aiScore > 0 ? 'ai_match_score' : 'computed',
             'match_reason' => $candidate->aiMatchScores->first()?->explanation,
             'skills' => $skills->take(5)->all(),
+            'experiences' => $experiences,
+            'educations' => $educations,
             'is_saved' => $isSaved,
             'is_shortlisted' => $isShortlisted,
             'conversation_id' => $conversationId,

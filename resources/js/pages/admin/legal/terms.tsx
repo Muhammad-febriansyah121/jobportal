@@ -7,6 +7,7 @@ import { RichEditor } from '@/components/rich-editor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslate } from '@/hooks/use-translate';
 import { update as termsUpdate } from '@/routes/admin/legal/terms';
 import { edit as adminSettings } from '@/routes/admin/settings';
 
@@ -16,6 +17,7 @@ type TermsProps = {
 };
 
 export default function AdminLegalTerms({ terms_title, terms_content }: TermsProps) {
+    const { t } = useTranslate();
     const form = useForm({
         terms_title,
         terms_content,
@@ -26,18 +28,18 @@ export default function AdminLegalTerms({ terms_title, terms_content }: TermsPro
 
         form.post(termsUpdate().url, {
             preserveScroll: true,
-            onError: () => toast.error('Periksa kembali data yang diisi.'),
+            onError: () => toast.error(t('admin.legal_terms.error_toast')),
         });
     }
 
     return (
         <>
-            <Head title="Syarat & Ketentuan" />
+            <Head title={t('admin.legal_terms.page_title')} />
 
             <div className="flex flex-col gap-6 p-6">
                 <AdminPageHeader
-                    title="Syarat & Ketentuan"
-                    description="Kelola konten halaman Syarat & Ketentuan yang tampil ke publik."
+                    title={t('admin.legal_terms.page_title')}
+                    description={t('admin.legal_terms.description')}
                     backHref={adminSettings().url}
                 />
 
@@ -48,15 +50,15 @@ export default function AdminLegalTerms({ terms_title, terms_content }: TermsPro
                         <section className="rounded-xl border bg-white p-6 shadow-sm">
                             <div className="mb-4 flex items-center gap-2 border-b pb-4">
                                 <FileText className="size-4 text-primary" />
-                                <h2 className="text-sm font-semibold text-gray-700">Informasi Halaman</h2>
+                                <h2 className="text-sm font-semibold text-gray-700">{t('admin.legal_terms.section_info')}</h2>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="terms_title">Judul Halaman</Label>
+                                <Label htmlFor="terms_title">{t('admin.legal_terms.label_title')}</Label>
                                 <Input
                                     id="terms_title"
                                     value={form.data.terms_title}
                                     onChange={(e) => form.setData('terms_title', e.target.value)}
-                                    placeholder="Syarat & Ketentuan Penggunaan"
+                                    placeholder={t('admin.legal_terms.placeholder_title')}
                                 />
                                 <InputError message={form.errors.terms_title} />
                             </div>
@@ -66,13 +68,13 @@ export default function AdminLegalTerms({ terms_title, terms_content }: TermsPro
                         <section className="rounded-xl border bg-white p-6 shadow-sm">
                             <div className="mb-4 flex items-center gap-2 border-b pb-4">
                                 <FileText className="size-4 text-primary" />
-                                <h2 className="text-sm font-semibold text-gray-700">Isi Konten</h2>
+                                <h2 className="text-sm font-semibold text-gray-700">{t('admin.legal_terms.section_content')}</h2>
                             </div>
                             <RichEditor
                                 value={form.data.terms_content}
                                 onChange={(val) => form.setData('terms_content', val)}
                                 error={form.errors.terms_content}
-                                placeholder="Tulis isi Syarat & Ketentuan di sini..."
+                                placeholder={t('admin.legal_terms.placeholder_content')}
                                 minHeight="520px"
                             />
                         </section>
@@ -81,11 +83,10 @@ export default function AdminLegalTerms({ terms_title, terms_content }: TermsPro
                     {/* Sidebar */}
                     <aside className="space-y-4">
                         <section className="rounded-xl border bg-white p-5 shadow-sm">
-                            <h3 className="mb-4 text-sm font-semibold text-gray-700">Publikasi</h3>
+                            <h3 className="mb-4 text-sm font-semibold text-gray-700">{t('admin.legal_terms.section_publish')}</h3>
 
                             <div className="mb-4 rounded-lg bg-secondary-50 p-3 text-xs text-secondary-700">
-                                Perubahan akan langsung tampil di halaman publik{' '}
-                                <span className="font-semibold">/terms</span> setelah disimpan.
+                                {t('admin.legal_terms.publish_hint', { page: '/terms' })}
                             </div>
 
                             <Button
@@ -94,24 +95,24 @@ export default function AdminLegalTerms({ terms_title, terms_content }: TermsPro
                                 disabled={form.processing}
                             >
                                 <Save className="size-4" />
-                                {form.processing ? 'Menyimpan...' : 'Simpan Perubahan'}
+                                {form.processing ? t('admin.legal_terms.saving') : t('admin.legal_terms.save')}
                             </Button>
                         </section>
 
                         <section className="rounded-xl border bg-white p-5 shadow-sm">
-                            <h3 className="mb-3 text-sm font-semibold text-gray-700">Tips Penulisan</h3>
+                            <h3 className="mb-3 text-sm font-semibold text-gray-700">{t('admin.legal_terms.tips_title')}</h3>
                             <ul className="space-y-2 text-xs text-gray-500">
                                 <li className="flex items-start gap-1.5">
                                     <span className="mt-0.5 text-primary">•</span>
-                                    Gunakan heading (H2) untuk setiap section utama.
+                                    {t('admin.legal_terms.tip_1')}
                                 </li>
                                 <li className="flex items-start gap-1.5">
                                     <span className="mt-0.5 text-primary">•</span>
-                                    Gunakan bullet list untuk daftar larangan atau ketentuan.
+                                    {t('admin.legal_terms.tip_2')}
                                 </li>
                                 <li className="flex items-start gap-1.5">
                                     <span className="mt-0.5 text-primary">•</span>
-                                    Cantumkan tanggal terakhir diperbarui di awal konten.
+                                    {t('admin.legal_terms.tip_3')}
                                 </li>
                             </ul>
                         </section>

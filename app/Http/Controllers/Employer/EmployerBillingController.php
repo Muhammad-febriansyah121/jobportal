@@ -93,6 +93,12 @@ class EmployerBillingController extends Controller
             }
         }
 
+        $hasClaimedTrial = $company !== null
+            ? $company->subscriptions()
+                ->whereHas('plan', fn ($query) => $query->where('is_trial', true))
+                ->exists()
+            : false;
+
         $plans = PricingPlan::query()
             ->where('is_active', true)
             ->orderBy('price')
@@ -108,6 +114,8 @@ class EmployerBillingController extends Controller
                 'ai_screening_quota' => $plan->ai_screening_quota,
                 'talent_search_quota' => $plan->talent_search_quota,
                 'features' => $plan->normalizedFeatures(),
+                'is_trial' => (bool) $plan->is_trial,
+                'trial_claimable' => (bool) $plan->is_trial && ! $hasClaimedTrial,
             ])
             ->all();
 
@@ -117,6 +125,7 @@ class EmployerBillingController extends Controller
             'payments' => $payments,
             'plans' => $plans,
             'hasCompany' => $company !== null,
+            'hasClaimedTrial' => $hasClaimedTrial,
         ]);
     }
 }

@@ -18,6 +18,7 @@ import {
 import { motion } from 'motion/react';
 import { useRef, useState } from 'react';
 import HomeLayout from '@/layouts/front/home-layout';
+import { useTranslate } from '@/hooks/use-translate';
 import { login, register } from '@/routes';
 import type { Auth } from '@/types';
 
@@ -29,28 +30,18 @@ const fadeUp = (delay = 0) => ({
     transition: { duration: 0.6, delay, ease },
 });
 
-const ANALYSIS_FEATURES = [
-    { icon: BarChart3, color: 'bg-blue-50 text-blue-600', label: 'ATS Score', desc: 'Skor kompatibilitas dengan sistem pelacak lamaran kerja perusahaan.' },
-    { icon: Target, color: 'bg-emerald-50 text-emerald-600', label: 'Keyword Match', desc: 'Analisis kata kunci yang relevan dengan posisi yang Anda lamar.' },
-    { icon: Lightbulb, color: 'bg-amber-50 text-amber-600', label: 'Saran Perbaikan', desc: 'Rekomendasi spesifik untuk meningkatkan kekuatan CV Anda.' },
-    { icon: Brain, color: 'bg-violet-50 text-violet-600', label: 'Behavioral Insight', desc: 'Analisis tone dan gaya penulisan CV Anda secara mendalam.' },
-    { icon: ShieldCheck, color: 'bg-rose-50 text-rose-600', label: 'Deteksi Kelemahan', desc: 'Temukan celah dan kekurangan yang perlu diperbaiki sebelum melamar.' },
-    { icon: Zap, color: 'bg-orange-50 text-orange-600', label: 'Analisis Instan', desc: 'Hasil analisis lengkap dalam hitungan detik, tanpa antrean.' },
-];
-
-const STEPS = [
-    { n: '01', title: 'Upload CV', desc: 'Unggah file CV Anda dalam format PDF atau DOCX. Privasi Anda terjamin.' },
-    { n: '02', title: 'AI Menganalisis', desc: 'Sistem AI kami memproses dan mengevaluasi setiap bagian CV secara menyeluruh.' },
-    { n: '03', title: 'Terima Laporan', desc: 'Dapatkan laporan lengkap dengan skor, kelemahan, dan saran perbaikan konkret.' },
-];
-
-const TESTIMONIALS = [
-    { name: 'Rafi A.', role: 'Software Engineer', company: 'Tokopedia', text: 'ATS Score saya naik dari 62 ke 89 setelah menerapkan saran dari AI Analyzer. Langsung dipanggil interview!' },
-    { name: 'Sari M.', role: 'Product Manager', company: 'Gojek', text: 'Fitur keyword match sangat membantu saya menyesuaikan CV dengan job description secara presisi.' },
-    { name: 'Budi P.', role: 'Data Analyst', company: 'Traveloka', text: 'Deteksi kelemahan CV membuka mata saya. Format dan konten yang saya kira sudah bagus ternyata perlu banyak perbaikan.' },
+const ANALYSIS_FEATURE_ICONS = [
+    { icon: BarChart3, color: 'bg-blue-50 text-blue-600', labelKey: 'front.cv_analyzer.feature_ats_label', descKey: 'front.cv_analyzer.feature_ats_desc' },
+    { icon: Target, color: 'bg-emerald-50 text-emerald-600', labelKey: 'front.cv_analyzer.feature_keyword_label', descKey: 'front.cv_analyzer.feature_keyword_desc' },
+    { icon: Lightbulb, color: 'bg-amber-50 text-amber-600', labelKey: 'front.cv_analyzer.feature_improvement_label', descKey: 'front.cv_analyzer.feature_improvement_desc' },
+    { icon: Brain, color: 'bg-violet-50 text-violet-600', labelKey: 'front.cv_analyzer.feature_behavioral_label', descKey: 'front.cv_analyzer.feature_behavioral_desc' },
+    { icon: ShieldCheck, color: 'bg-rose-50 text-rose-600', labelKey: 'front.cv_analyzer.feature_weakness_label', descKey: 'front.cv_analyzer.feature_weakness_desc' },
+    { icon: Zap, color: 'bg-orange-50 text-orange-600', labelKey: 'front.cv_analyzer.feature_instant_label', descKey: 'front.cv_analyzer.feature_instant_desc' },
 ];
 
 function PageHeader() {
+    const { t } = useTranslate();
+
     return (
         <div className="relative overflow-hidden bg-white pb-16 pt-20">
             {/* bg dots */}
@@ -70,24 +61,28 @@ function PageHeader() {
             <div className="relative mx-auto max-w-4xl px-4 text-center">
                 <motion.div {...fadeUp(0)} className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5">
                     <Sparkles className="size-3.5 text-primary" />
-                    <span className="text-[11px] font-semibold tracking-widest text-primary uppercase">AI-Powered CV Review</span>
+                    <span className="text-[11px] font-semibold tracking-widest text-primary uppercase">{t('front.cv_analyzer.hero_badge')}</span>
                 </motion.div>
 
                 <motion.h1 {...fadeUp(0.08)} className="text-4xl font-extrabold leading-tight tracking-tight text-gray-900 sm:text-5xl md:text-[3.25rem]">
-                    Analisis CV Anda{' '}
+                    {t('front.cv_analyzer.hero_title_prefix')}{' '}
                     <span className="bg-linear-to-r from-primary to-blue-500 bg-clip-text text-transparent">
-                        Secara Instan
+                        {t('front.cv_analyzer.hero_title_highlight')}
                     </span>
                 </motion.h1>
 
                 <motion.p {...fadeUp(0.16)} className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-gray-500">
-                    Tingkatkan peluang diterima kerja dengan laporan analisis CV berbasis AI. Dapatkan ATS score, deteksi kelemahan, keyword match, dan saran perbaikan konkret dalam hitungan detik.
+                    {t('front.cv_analyzer.hero_subtitle')}
                 </motion.p>
 
                 <motion.div {...fadeUp(0.24)} className="mt-7 flex flex-wrap items-center justify-center gap-3">
-                    {['✓ Gratis & Cepat', '✓ Privasi Terjamin', '✓ Tanpa Registrasi*'].map((item) => (
+                    {[
+                        t('front.cv_analyzer.tag_free_fast'),
+                        t('front.cv_analyzer.tag_privacy'),
+                        t('front.cv_analyzer.tag_no_register'),
+                    ].map((item) => (
                         <span key={item} className="rounded-full bg-gray-100 px-3.5 py-1 text-xs font-medium text-gray-600">
-                            {item}
+                            ✓ {item}
                         </span>
                     ))}
                 </motion.div>
@@ -97,6 +92,7 @@ function PageHeader() {
 }
 
 function UploadCard() {
+    const { t } = useTranslate();
     const { auth } = usePage<{ auth: Auth }>().props;
     const [dragging, setDragging] = useState(false);
     const [fileName, setFileName] = useState<string | null>(null);
@@ -126,8 +122,8 @@ function UploadCard() {
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-1 rounded-t-3xl bg-linear-to-r from-primary to-blue-400" />
 
                 <div className="mb-6 text-center">
-                    <h2 className="text-xl font-bold text-gray-900">Upload CV Anda</h2>
-                    <p className="mt-1.5 text-sm text-gray-500">Mendukung format PDF & DOCX, maks. 5MB</p>
+                    <h2 className="text-xl font-bold text-gray-900">{t('front.cv_analyzer.upload_title')}</h2>
+                    <p className="mt-1.5 text-sm text-gray-500">{t('front.cv_analyzer.upload_desc')}</p>
                 </div>
 
                 {/* dropzone */}
@@ -159,14 +155,14 @@ function UploadCard() {
                             </div>
                             <div className="text-center">
                                 <p className="text-sm font-semibold text-emerald-700">{fileName}</p>
-                                <p className="mt-1 text-xs text-emerald-500">File siap dianalisis</p>
+                                <p className="mt-1 text-xs text-emerald-500">{t('front.cv_analyzer.file_ready')}</p>
                             </div>
                             <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); setFileName(null); }}
                                 className="text-xs text-gray-400 underline hover:text-gray-600"
                             >
-                                Ganti file
+                                {t('front.cv_analyzer.btn_change')}
                             </button>
                         </>
                     ) : (
@@ -176,9 +172,9 @@ function UploadCard() {
                             </div>
                             <div className="text-center">
                                 <p className="text-sm font-semibold text-gray-700">
-                                    {dragging ? 'Lepaskan file di sini' : 'Drag & drop CV Anda'}
+                                    {dragging ? t('front.cv_analyzer.drop_active') : t('front.cv_analyzer.drop_idle')}
                                 </p>
-                                <p className="mt-1 text-xs text-gray-400">atau klik untuk memilih file</p>
+                                <p className="mt-1 text-xs text-gray-400">{t('front.cv_analyzer.drop_hint')}</p>
                             </div>
                             <div className="flex gap-2">
                                 {['PDF', 'DOCX'].map((fmt) => (
@@ -198,14 +194,14 @@ function UploadCard() {
                         className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-primary/25 transition hover:bg-primary/90"
                     >
                         <ScanSearch className="size-4" />
-                        Analisis CV Sekarang
+                        {t('front.cv_analyzer.btn_analyze')}
                     </Link>
                     {!auth?.user && (
                         <Link
                             href={register.url()}
                             className="flex items-center justify-center gap-1.5 rounded-2xl border border-gray-200 px-5 py-3.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
                         >
-                            Daftar Gratis
+                            {t('front.cv_analyzer.btn_register')}
                             <ArrowRight className="size-3.5" />
                         </Link>
                     )}
@@ -214,7 +210,7 @@ function UploadCard() {
                 {!auth?.user && (
                     <p className="mt-4 flex items-start gap-1.5 text-[11px] text-gray-400">
                         <AlertCircle className="mt-px size-3 shrink-0" />
-                        *Analisis penuh memerlukan akun. Daftar gratis untuk melihat laporan lengkap.
+                        {t('front.cv_analyzer.guest_note')}
                     </p>
                 )}
             </div>
@@ -223,9 +219,29 @@ function UploadCard() {
 }
 
 export default function CvAnalyzerPage() {
+    const { t } = useTranslate();
+
+    const analysisFeatures = ANALYSIS_FEATURE_ICONS.map((feat) => ({
+        ...feat,
+        label: t(feat.labelKey),
+        desc: t(feat.descKey),
+    }));
+
+    const steps = [
+        { n: '01', title: t('front.cv_analyzer.step1_title'), desc: t('front.cv_analyzer.step1_desc') },
+        { n: '02', title: t('front.cv_analyzer.step2_title'), desc: t('front.cv_analyzer.step2_desc') },
+        { n: '03', title: t('front.cv_analyzer.step3_title'), desc: t('front.cv_analyzer.step3_desc') },
+    ];
+
+    const testimonials = [
+        { name: 'Rafi A.', role: 'Software Engineer', company: 'Tokopedia', text: 'ATS Score saya naik dari 62 ke 89 setelah menerapkan saran dari AI Analyzer. Langsung dipanggil interview!' },
+        { name: 'Sari M.', role: 'Product Manager', company: 'Gojek', text: 'Fitur keyword match sangat membantu saya menyesuaikan CV dengan job description secara presisi.' },
+        { name: 'Budi P.', role: 'Data Analyst', company: 'Traveloka', text: 'Deteksi kelemahan CV membuka mata saya. Format dan konten yang saya kira sudah bagus ternyata perlu banyak perbaikan.' },
+    ];
+
     return (
         <HomeLayout>
-            <Head title="AI CV Analyzer — Analisis CV Otomatis dengan AI" />
+            <Head title={t('front.cv_analyzer.page_title')} />
 
             {/* ── Page Header ── */}
             <PageHeader />
@@ -239,16 +255,16 @@ export default function CvAnalyzerPage() {
             <section className="bg-white px-4 py-20">
                 <div className="mx-auto max-w-5xl">
                     <motion.div {...fadeUp()} className="mb-12 text-center">
-                        <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Apa yang Dianalisis AI?</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('front.cv_analyzer.section_what_title')}</h2>
                         <p className="mx-auto mt-3 max-w-xl text-sm text-gray-500">
-                            Sistem AI kami mengevaluasi 6 dimensi kritis yang menentukan apakah CV Anda lolos seleksi rekruter.
+                            {t('front.cv_analyzer.section_what_desc')}
                         </p>
                     </motion.div>
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {ANALYSIS_FEATURES.map((feat, i) => (
+                        {analysisFeatures.map((feat, i) => (
                             <motion.div
-                                key={feat.label}
+                                key={feat.labelKey}
                                 {...fadeUp(i * 0.07)}
                                 className="flex gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
                             >
@@ -269,15 +285,15 @@ export default function CvAnalyzerPage() {
             <section className="bg-gray-50/60 px-4 py-20">
                 <div className="mx-auto max-w-4xl">
                     <motion.div {...fadeUp()} className="mb-12 text-center">
-                        <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Cara Kerjanya</h2>
-                        <p className="mt-3 text-sm text-gray-500">3 langkah sederhana untuk CV yang lebih kuat</p>
+                        <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('front.cv_analyzer.section_how_title')}</h2>
+                        <p className="mt-3 text-sm text-gray-500">{t('front.cv_analyzer.section_how_desc')}</p>
                     </motion.div>
 
                     <div className="relative grid grid-cols-1 gap-10 sm:grid-cols-3">
                         {/* Connector */}
                         <div className="pointer-events-none absolute top-5 left-[calc(16.67%+1.25rem)] hidden w-[calc(66.67%-2.5rem)] border-t-2 border-dashed border-gray-200 sm:block" />
 
-                        {STEPS.map((step, i) => (
+                        {steps.map((step, i) => (
                             <motion.div key={step.n} {...fadeUp(i * 0.1)} className="flex flex-col items-center text-center sm:items-start sm:text-left">
                                 <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white shadow-md shadow-primary/25">
                                     {step.n}
@@ -294,8 +310,8 @@ export default function CvAnalyzerPage() {
             <section className="bg-white px-4 py-20">
                 <div className="mx-auto max-w-5xl">
                     <motion.div {...fadeUp()} className="mb-12 text-center">
-                        <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Contoh Laporan Analisis</h2>
-                        <p className="mt-3 text-sm text-gray-500">Ini yang akan Anda dapatkan setelah CV dianalisis</p>
+                        <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('front.cv_analyzer.section_sample_title')}</h2>
+                        <p className="mt-3 text-sm text-gray-500">{t('front.cv_analyzer.section_sample_desc')}</p>
                     </motion.div>
 
                     <motion.div {...fadeUp(0.1)} className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-xl shadow-gray-100/80">
@@ -306,19 +322,19 @@ export default function CvAnalyzerPage() {
                                     <FileText className="size-4 text-primary" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-semibold text-gray-900">CV Analysis Report</p>
+                                    <p className="text-sm font-semibold text-gray-900">{t('front.cv_analyzer.report_title')}</p>
                                     <p className="text-[11px] text-gray-400">Muhammad Febrian · Software Engineer</p>
                                 </div>
                             </div>
                             <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-600 ring-1 ring-emerald-200 ring-inset">
-                                Selesai
+                                {t('front.cv_analyzer.report_done')}
                             </span>
                         </div>
 
                         <div className="grid grid-cols-1 divide-y divide-gray-100 lg:grid-cols-3 lg:divide-x lg:divide-y-0">
                             {/* ATS Score */}
                             <div className="p-6">
-                                <p className="mb-4 text-xs font-semibold tracking-widest text-gray-400 uppercase">ATS Score</p>
+                                <p className="mb-4 text-xs font-semibold tracking-widest text-gray-400 uppercase">{t('front.cv_analyzer.report_ats_score_label')}</p>
                                 <div className="flex items-end gap-1">
                                     <span className="text-5xl font-black text-primary">87</span>
                                     <span className="mb-1.5 text-lg font-medium text-gray-400">/100</span>
@@ -326,7 +342,7 @@ export default function CvAnalyzerPage() {
                                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-100">
                                     <div className="h-full rounded-full bg-linear-to-r from-primary to-blue-400" style={{ width: '87%' }} />
                                 </div>
-                                <p className="mt-2 text-xs text-gray-500">Di atas rata-rata (68/100)</p>
+                                <p className="mt-2 text-xs text-gray-500">{t('front.cv_analyzer.report_above_avg', { avg: 68 })}</p>
 
                                 <div className="mt-4 space-y-2">
                                     {[
@@ -349,7 +365,7 @@ export default function CvAnalyzerPage() {
 
                             {/* Strengths & Weaknesses */}
                             <div className="p-6">
-                                <p className="mb-4 text-xs font-semibold tracking-widest text-gray-400 uppercase">Temuan Utama</p>
+                                <p className="mb-4 text-xs font-semibold tracking-widest text-gray-400 uppercase">{t('front.cv_analyzer.report_findings')}</p>
                                 <div className="space-y-2.5">
                                     {[
                                         { type: 'good', text: 'Pengalaman kerja terdeskripsi dengan pencapaian kuantitatif' },
@@ -374,7 +390,7 @@ export default function CvAnalyzerPage() {
 
                             {/* Recommendations */}
                             <div className="p-6">
-                                <p className="mb-4 text-xs font-semibold tracking-widest text-gray-400 uppercase">Rekomendasi AI</p>
+                                <p className="mb-4 text-xs font-semibold tracking-widest text-gray-400 uppercase">{t('front.cv_analyzer.report_ai_recommendations')}</p>
                                 <div className="space-y-3">
                                     {[
                                         { icon: Lightbulb, color: 'text-amber-500 bg-amber-50', tip: 'Tambahkan summary yang menonjolkan value unik Anda dalam 3 kalimat.' },
@@ -391,8 +407,8 @@ export default function CvAnalyzerPage() {
                                 </div>
 
                                 <div className="mt-5 rounded-xl bg-primary p-3.5 text-center">
-                                    <p className="text-xs font-semibold text-white">Lihat laporan lengkap</p>
-                                    <p className="mt-0.5 text-[11px] text-white/70">Login untuk akses semua insight</p>
+                                    <p className="text-xs font-semibold text-white">{t('front.cv_analyzer.btn_full_report')}</p>
+                                    <p className="mt-0.5 text-[11px] text-white/70">{t('front.cv_analyzer.login_hint')}</p>
                                 </div>
                             </div>
                         </div>
@@ -404,14 +420,14 @@ export default function CvAnalyzerPage() {
             <section className="bg-gray-50/60 px-4 py-20">
                 <div className="mx-auto max-w-5xl">
                     <motion.div {...fadeUp()} className="mb-12 text-center">
-                        <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Apa Kata Mereka?</h2>
-                        <p className="mt-3 text-sm text-gray-500">Ribuan kandidat sudah meningkatkan CV mereka</p>
+                        <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('front.cv_analyzer.section_testimonials_title')}</h2>
+                        <p className="mt-3 text-sm text-gray-500">{t('front.cv_analyzer.section_testimonials_desc')}</p>
                     </motion.div>
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                        {TESTIMONIALS.map((t, i) => (
+                        {testimonials.map((testimonial, i) => (
                             <motion.div
-                                key={t.name}
+                                key={testimonial.name}
                                 {...fadeUp(i * 0.08)}
                                 className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
                             >
@@ -422,14 +438,14 @@ export default function CvAnalyzerPage() {
                                         </svg>
                                     ))}
                                 </div>
-                                <p className="flex-1 text-sm leading-relaxed text-gray-600">"{t.text}"</p>
+                                <p className="flex-1 text-sm leading-relaxed text-gray-600">"{testimonial.text}"</p>
                                 <div className="flex items-center gap-3 border-t border-gray-100 pt-3">
                                     <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                                        {t.name[0]}
+                                        {testimonial.name[0]}
                                     </div>
                                     <div>
-                                        <p className="text-xs font-semibold text-gray-900">{t.name}</p>
-                                        <p className="text-[11px] text-gray-400">{t.role} · {t.company}</p>
+                                        <p className="text-xs font-semibold text-gray-900">{testimonial.name}</p>
+                                        <p className="text-[11px] text-gray-400">{testimonial.role} · {testimonial.company}</p>
                                     </div>
                                 </div>
                             </motion.div>
@@ -450,15 +466,15 @@ export default function CvAnalyzerPage() {
 
                         <div className="relative">
                             <span className="inline-block rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-widest text-white/80 uppercase">
-                                Mulai Sekarang
+                                {t('front.cv_analyzer.cta_badge')}
                             </span>
                             <h2 className="mt-5 text-3xl font-extrabold text-white sm:text-4xl">
-                                CV Anda Sudah Optimal?
+                                {t('front.cv_analyzer.cta_title_1')}
                                 <br />
-                                <span className="text-primary-400">Buktikan dengan AI.</span>
+                                <span className="text-primary-400">{t('front.cv_analyzer.cta_title_2')}</span>
                             </h2>
                             <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-gray-300">
-                                Gratis untuk dicoba. Daftar dan dapatkan analisis CV pertama Anda dalam 30 detik.
+                                {t('front.cv_analyzer.cta_desc')}
                             </p>
                             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                                 <Link
@@ -466,13 +482,13 @@ export default function CvAnalyzerPage() {
                                     className="inline-flex items-center gap-2 rounded-full bg-primary px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/30 transition hover:bg-primary/90"
                                 >
                                     <ScanSearch className="size-4" />
-                                    Analisis CV Gratis
+                                    {t('front.cv_analyzer.cta_btn_analyze')}
                                 </Link>
                                 <Link
                                     href={login.url()}
                                     className="inline-flex items-center gap-1.5 rounded-full border border-white/20 px-6 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10"
                                 >
-                                    Sudah punya akun? Masuk →
+                                    {t('front.cv_analyzer.cta_btn_login')}
                                 </Link>
                             </div>
                         </div>

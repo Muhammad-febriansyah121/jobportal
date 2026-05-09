@@ -37,6 +37,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { useTranslate } from '@/hooks/use-translate';
 import {
     lamaran,
     pengguna,
@@ -95,11 +96,11 @@ function buildExportUrl(
     return qs ? `${base}?${qs}` : base;
 }
 
-function shortMonth(ym: string): string {
+function shortMonth(ym: string, t: any): string {
     const [y, m] = ym.split('-');
     const months = [
-        'Jan','Feb','Mar','Apr','Mei','Jun',
-        'Jul','Ags','Sep','Okt','Nov','Des',
+        t('admin.reports.months.jan'), t('admin.reports.months.feb'), t('admin.reports.months.mar'), t('admin.reports.months.apr'), t('admin.reports.months.may'), t('admin.reports.months.jun'),
+        t('admin.reports.months.jul'), t('admin.reports.months.aug'), t('admin.reports.months.sep'), t('admin.reports.months.oct'), t('admin.reports.months.nov'), t('admin.reports.months.dec'),
     ];
     return `${months[parseInt(m) - 1]} ${y.slice(2)}`;
 }
@@ -122,6 +123,7 @@ const BASE: ApexOptions['chart'] = {
 };
 
 function RevenueAreaChart({ points }: { points: Point[] }) {
+    const { t } = useTranslate();
     const options: ApexOptions = {
         chart: { ...BASE, type: 'area', id: 'revenue-area' },
         stroke: { curve: 'smooth', width: 2.5 },
@@ -136,7 +138,7 @@ function RevenueAreaChart({ points }: { points: Point[] }) {
         },
         colors: [C.primary],
         xaxis: {
-            categories: points.map((p) => shortMonth(p.month)),
+            categories: points.map((p) => shortMonth(p.month, t)),
             labels: { style: { fontSize: '11px', colors: C.slate } },
             axisBorder: { show: false },
             axisTicks: { show: false },
@@ -153,7 +155,7 @@ function RevenueAreaChart({ points }: { points: Point[] }) {
         grid: { borderColor: '#f1f5f9', strokeDashArray: 4 },
         dataLabels: { enabled: false },
     };
-    const series = [{ name: 'Revenue', data: points.map((p) => p.total) }];
+    const series = [{ name: t('admin.reports.charts.legend_total'), data: points.map((p) => p.total) }];
     return (
         <ReactApexChart
             options={options}
@@ -173,7 +175,8 @@ function GrowthBarChart({
     userSeries: Point[];
     applicationSeries: Point[];
 }) {
-    const categories = companySeries.map((p) => shortMonth(p.month));
+    const { t } = useTranslate();
+    const categories = companySeries.map((p) => shortMonth(p.month, t));
     const options: ApexOptions = {
         chart: { ...BASE, type: 'bar', id: 'growth-bar', stacked: false },
         colors: [C.primary, C.emerald, C.amber],
@@ -199,9 +202,9 @@ function GrowthBarChart({
         tooltip: { shared: true, intersect: false },
     };
     const series = [
-        { name: 'Perusahaan', data: companySeries.map((p) => p.total) },
-        { name: 'Pengguna', data: userSeries.map((p) => p.total) },
-        { name: 'Lamaran', data: applicationSeries.map((p) => p.total) },
+        { name: t('admin.reports.charts.legend_company'), data: companySeries.map((p) => p.total) },
+        { name: t('admin.reports.charts.legend_user'), data: userSeries.map((p) => p.total) },
+        { name: t('admin.reports.charts.legend_application'), data: applicationSeries.map((p) => p.total) },
     ];
     return (
         <ReactApexChart
@@ -218,6 +221,7 @@ function RevenueByPlanDonut({
 }: {
     data: Array<{ plan: string; total: number; count: number }>;
 }) {
+    const { t } = useTranslate();
     const total = data.reduce((s, d) => s + d.total, 0);
     const options: ApexOptions = {
         chart: { ...BASE, type: 'donut', id: 'plan-donut' },
@@ -231,7 +235,7 @@ function RevenueByPlanDonut({
                         show: true,
                         total: {
                             show: true,
-                            label: 'Total',
+                            label: t('admin.reports.charts.legend_total'),
                             formatter: () => fmtIDR(total),
                             fontSize: '13px',
                             fontWeight: 600,
@@ -260,6 +264,7 @@ function PaymentStatusDonut({
 }: {
     data: Array<{ status: string; count: number; amount: number }>;
 }) {
+    const { t } = useTranslate();
     const options: ApexOptions = {
         chart: { ...BASE, type: 'donut', id: 'status-donut' },
         colors: [C.emerald, C.amber, C.rose, C.slate],
@@ -272,7 +277,7 @@ function PaymentStatusDonut({
                         show: true,
                         total: {
                             show: true,
-                            label: 'Transaksi',
+                            label: t('admin.reports.charts.legend_transactions'),
                             formatter: () =>
                                 String(data.reduce((s, d) => s + d.count, 0)),
                             fontSize: '13px',
@@ -298,6 +303,7 @@ function PaymentStatusDonut({
 }
 
 export default function AdminLaporan({
+
     summary,
     revenueSeries,
     companySeries,
@@ -308,17 +314,18 @@ export default function AdminLaporan({
     topCompaniesByRevenue,
     subscriptionStats,
 }: LaporanProps) {
+    const { t } = useTranslate();
     const kpis = [
         {
-            label: 'Total Revenue',
+            label: t('admin.reports.kpi.total_revenue'),
             value: fmtIDR(summary.revenue_total),
-            sub: 'Semua waktu',
+            sub: t('admin.reports.kpi.all_time'),
             icon: TrendingUp,
             color: 'text-primary',
             bg: 'bg-primary/8',
         },
         {
-            label: 'Revenue 30 Hari',
+            label: t('admin.reports.kpi.revenue_30_days'),
             value: fmtIDR(summary.revenue_30d),
             sub: `${summary.revenue_count_30d} transaksi`,
             icon: CreditCard,
@@ -326,7 +333,7 @@ export default function AdminLaporan({
             bg: 'bg-emerald-50',
         },
         {
-            label: 'Subscription Aktif',
+            label: t('admin.reports.kpi.active_subscriptions'),
             value: summary.active_subscriptions.toLocaleString(),
             sub: `${subscriptionStats.expired} expired · ${subscriptionStats.cancelled} batal`,
             icon: Building2,
@@ -334,25 +341,25 @@ export default function AdminLaporan({
             bg: 'bg-blue-50',
         },
         {
-            label: 'Pengguna Baru',
+            label: t('admin.reports.kpi.new_users'),
             value: summary.users_30d.toLocaleString(),
-            sub: '30 hari terakhir',
+            sub: t('admin.reports.kpi.last_30_days'),
             icon: Users,
             color: 'text-violet-600',
             bg: 'bg-violet-50',
         },
         {
-            label: 'Perusahaan Baru',
+            label: t('admin.reports.kpi.new_companies'),
             value: summary.companies_30d.toLocaleString(),
-            sub: '30 hari terakhir',
+            sub: t('admin.reports.kpi.last_30_days'),
             icon: Building2,
             color: 'text-amber-600',
             bg: 'bg-amber-50',
         },
         {
-            label: 'Lamaran Baru',
+            label: t('admin.reports.kpi.new_applications'),
             value: summary.applications_30d.toLocaleString(),
-            sub: '30 hari terakhir',
+            sub: t('admin.reports.kpi.last_30_days'),
             icon: Activity,
             color: 'text-rose-600',
             bg: 'bg-rose-50',
@@ -361,7 +368,7 @@ export default function AdminLaporan({
 
     return (
         <>
-            <Head title="Laporan & Analitik" />
+            <Head title={t('admin.reports.title')} />
             <div className="flex flex-col gap-6 p-4 sm:p-6">
                 {/* Header */}
                 <div className="flex items-center gap-3 border-b pb-5">
@@ -370,10 +377,10 @@ export default function AdminLaporan({
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">
-                            Laporan & Analitik
+                            {t('admin.reports.title')}
                         </h1>
                         <p className="mt-0.5 text-sm text-muted-foreground">
-                            Pantau perkembangan platform dan export data ke Excel.
+                            {t('admin.reports.subtitle')}
                         </p>
                     </div>
                 </div>
@@ -407,9 +414,9 @@ export default function AdminLaporan({
                 <div className="grid gap-4 lg:grid-cols-3">
                     <Card className="lg:col-span-2">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-base">Tren Revenue</CardTitle>
+                            <CardTitle className="text-base">{t('admin.reports.charts.revenue_trend')}</CardTitle>
                             <CardDescription className="text-xs">
-                                12 bulan terakhir
+                                {t('admin.reports.charts.last_12_months')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="-mx-2">
@@ -419,9 +426,9 @@ export default function AdminLaporan({
 
                     <Card>
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-base">Revenue per Paket</CardTitle>
+                            <CardTitle className="text-base">{t('admin.reports.charts.revenue_per_plan')}</CardTitle>
                             <CardDescription className="text-xs">
-                                Distribusi berdasarkan pricing plan
+                                {t('admin.reports.charts.revenue_per_plan_desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -439,10 +446,10 @@ export default function AdminLaporan({
                     <Card className="lg:col-span-2">
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base">
-                                Pertumbuhan Platform
+                                {t('admin.reports.charts.platform_growth')}
                             </CardTitle>
                             <CardDescription className="text-xs">
-                                Perusahaan, pengguna, dan lamaran baru per bulan (12 bulan)
+                                {t('admin.reports.charts.platform_growth_desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="-mx-2">
@@ -456,9 +463,9 @@ export default function AdminLaporan({
 
                     <Card>
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-base">Status Pembayaran</CardTitle>
+                            <CardTitle className="text-base">{t('admin.reports.charts.payment_status')}</CardTitle>
                             <CardDescription className="text-xs">
-                                Distribusi status transaksi
+                                {t('admin.reports.charts.payment_status_desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -476,10 +483,10 @@ export default function AdminLaporan({
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base">
-                                Top 10 Perusahaan by Revenue
+                                {t('admin.reports.top_companies.title')}
                             </CardTitle>
                             <CardDescription className="text-xs">
-                                Peringkat berdasarkan total pembayaran
+                                {t('admin.reports.top_companies.desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="p-0">
@@ -488,19 +495,19 @@ export default function AdminLaporan({
                                     <thead>
                                         <tr className="border-b bg-slate-50 text-xs text-muted-foreground dark:bg-muted/30">
                                             <th className="px-4 py-2.5 text-left font-medium">
-                                                #
+                                                {t('admin.reports.top_companies.th_hash')}
                                             </th>
                                             <th className="px-4 py-2.5 text-left font-medium">
-                                                Perusahaan
+                                                {t('admin.reports.top_companies.th_company')}
                                             </th>
                                             <th className="px-4 py-2.5 text-left font-medium">
-                                                Kota
+                                                {t('admin.reports.top_companies.th_city')}
                                             </th>
                                             <th className="px-4 py-2.5 text-right font-medium">
-                                                Transaksi
+                                                {t('admin.reports.top_companies.th_transactions')}
                                             </th>
                                             <th className="px-4 py-2.5 text-right font-medium">
-                                                Total Revenue
+                                                {t('admin.reports.top_companies.th_total_revenue')}
                                             </th>
                                         </tr>
                                     </thead>
@@ -557,9 +564,9 @@ export default function AdminLaporan({
                             <Download className="size-4 text-primary" />
                         </div>
                         <div>
-                            <h2 className="text-base font-semibold">Export Data</h2>
+                            <h2 className="text-base font-semibold">{t('admin.reports.export.title')}</h2>
                             <p className="text-xs text-muted-foreground">
-                                Atur filter lalu klik tombol untuk download file Excel
+                                {t('admin.reports.export.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -576,9 +583,9 @@ export default function AdminLaporan({
                 <div className="flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-700">
                     <Building2 className="mt-0.5 size-4 shrink-0" />
                     <p>
-                        File Excel langsung terdownload. Kosongkan filter untuk export semua data.
-                        Laporan Pengguna menghasilkan file dengan{' '}
-                        <span className="font-semibold">2 sheet</span>: Data User dan Data Perusahaan.
+                        {t('admin.reports.export.footer_1')}
+                        {t('admin.reports.export.footer_2')}{' '}
+                        <span className="font-semibold">{t('admin.reports.export.footer_sheet')}</span>{t('admin.reports.export.footer_3')}
                     </p>
                 </div>
             </div>
@@ -589,6 +596,7 @@ export default function AdminLaporan({
 /* ─── Export Card Components ─── */
 
 function RevenueExportCard() {
+    const { t } = useTranslate();
     const [start, setStart] = useState('');
     const [end, setEnd] = useState('');
     const [status, setStatus] = useState('');
@@ -603,8 +611,8 @@ function RevenueExportCard() {
             iconBg="bg-emerald-100"
             iconColor="text-emerald-600"
             icon={TrendingUp}
-            title="Revenue & Transaksi"
-            desc="Pembayaran & subscription perusahaan"
+            title={t('admin.reports.export.revenue.title')}
+            desc={t('admin.reports.export.revenue.desc')}
             href={href}
             btnClass="bg-emerald-600 hover:bg-emerald-700 text-white"
         >
@@ -615,22 +623,23 @@ function RevenueExportCard() {
                 onEndChange={setEnd}
             />
             <FilterSelect
-                label="Filter Status Pembayaran"
+                label={t('admin.reports.export.revenue.filter_label')}
                 value={status}
                 onChange={setStatus}
                 options={[
-                    { value: 'paid', label: '✓ Paid — pembayaran berhasil' },
-                    { value: 'pending', label: '⏳ Pending — menunggu konfirmasi' },
-                    { value: 'failed', label: '✗ Failed — pembayaran gagal' },
-                    { value: 'refunded', label: '↩ Refunded — sudah direfund' },
+                    { value: 'paid', label: t('admin.reports.export.revenue.status_paid') },
+                    { value: 'pending', label: t('admin.reports.export.revenue.status_pending') },
+                    { value: 'failed', label: t('admin.reports.export.revenue.status_failed') },
+                    { value: 'refunded', label: t('admin.reports.export.revenue.status_refunded') },
                 ]}
-                placeholder="Semua status (default)"
+                placeholder={t('admin.reports.export.filter_all_status')}
             />
         </ExportCard>
     );
 }
 
 function LamaranExportCard() {
+    const { t } = useTranslate();
     const [start, setStart] = useState('');
     const [end, setEnd] = useState('');
     const [status, setStatus] = useState('');
@@ -645,8 +654,8 @@ function LamaranExportCard() {
             iconBg="bg-violet-100"
             iconColor="text-violet-600"
             icon={Activity}
-            title="Lamaran Kandidat"
-            desc="Aktivitas lamaran kerja kandidat"
+            title={t('admin.reports.export.applications.title')}
+            desc={t('admin.reports.export.applications.desc')}
             href={href}
             btnClass="bg-violet-600 hover:bg-violet-700 text-white"
         >
@@ -657,26 +666,27 @@ function LamaranExportCard() {
                 onEndChange={setEnd}
             />
             <FilterSelect
-                label="Filter Status Lamaran"
+                label={t('admin.reports.export.applications.filter_label')}
                 value={status}
                 onChange={setStatus}
                 options={[
-                    { value: 'applied', label: 'Melamar' },
-                    { value: 'screened', label: 'Seleksi Awal' },
-                    { value: 'shortlisted', label: 'Shortlist' },
-                    { value: 'interview', label: 'Interview' },
-                    { value: 'offer', label: 'Penawaran' },
-                    { value: 'hired', label: 'Diterima' },
-                    { value: 'rejected', label: 'Ditolak' },
-                    { value: 'withdrawn', label: 'Undur Diri' },
+                    { value: 'applied', label: t('admin.reports.export.applications.status_applied') },
+                    { value: 'screened', label: t('admin.reports.export.applications.status_screened') },
+                    { value: 'shortlisted', label: t('admin.reports.export.applications.status_shortlisted') },
+                    { value: 'interview', label: t('admin.reports.export.applications.status_interview') },
+                    { value: 'offer', label: t('admin.reports.export.applications.status_offer') },
+                    { value: 'hired', label: t('admin.reports.export.applications.status_hired') },
+                    { value: 'rejected', label: t('admin.reports.export.applications.status_rejected') },
+                    { value: 'withdrawn', label: t('admin.reports.export.applications.status_withdrawn') },
                 ]}
-                placeholder="Semua status (default)"
+                placeholder={t('admin.reports.export.filter_all_status')}
             />
         </ExportCard>
     );
 }
 
 function PenggunaExportCard() {
+    const { t } = useTranslate();
     const [start, setStart] = useState('');
     const [end, setEnd] = useState('');
     const [role, setRole] = useState('');
@@ -691,8 +701,8 @@ function PenggunaExportCard() {
             iconBg="bg-amber-100"
             iconColor="text-amber-600"
             icon={Users}
-            title="Pengguna & Perusahaan"
-            desc="File Excel dengan 2 sheet"
+            title={t('admin.reports.export.users.title')}
+            desc={t('admin.reports.export.users.desc')}
             href={href}
             btnClass="bg-amber-500 hover:bg-amber-600 text-white"
             multiSheet
@@ -704,21 +714,22 @@ function PenggunaExportCard() {
                 onEndChange={setEnd}
             />
             <FilterSelect
-                label="Filter Role Pengguna"
+                label={t('admin.reports.export.users.filter_label')}
                 value={role}
                 onChange={setRole}
                 options={[
-                    { value: 'candidate', label: 'Kandidat' },
-                    { value: 'employer', label: 'Employer' },
-                    { value: 'mentor', label: 'Mentor' },
+                    { value: 'candidate', label: t('admin.reports.export.users.role_candidate') },
+                    { value: 'employer', label: t('admin.reports.export.users.role_employer') },
+                    { value: 'mentor', label: t('admin.reports.export.users.role_mentor') },
                 ]}
-                placeholder="Semua role (default)"
+                placeholder={t('admin.reports.export.users.filter_all_roles')}
             />
         </ExportCard>
     );
 }
 
 function SubscriptionExportCard() {
+    const { t } = useTranslate();
     const [start, setStart] = useState('');
     const [end, setEnd] = useState('');
     const [status, setStatus] = useState('');
@@ -733,8 +744,8 @@ function SubscriptionExportCard() {
             iconBg="bg-primary/10"
             iconColor="text-primary"
             icon={CreditCard}
-            title="Subscription"
-            desc="Data langganan aktif & histori"
+            title={t('admin.reports.export.subscription.title')}
+            desc={t('admin.reports.export.subscription.desc')}
             href={href}
             btnClass="bg-primary hover:bg-primary/90 text-white"
         >
@@ -745,15 +756,15 @@ function SubscriptionExportCard() {
                 onEndChange={setEnd}
             />
             <FilterSelect
-                label="Filter Status Subscription"
+                label={t('admin.reports.export.subscription.filter_label')}
                 value={status}
                 onChange={setStatus}
                 options={[
-                    { value: 'active', label: '✓ Aktif — sedang berjalan' },
-                    { value: 'expired', label: '⏰ Expired — sudah berakhir' },
-                    { value: 'cancelled', label: '✗ Dibatalkan' },
+                    { value: 'active', label: t('admin.reports.export.subscription.status_active') },
+                    { value: 'expired', label: t('admin.reports.export.subscription.status_expired') },
+                    { value: 'cancelled', label: t('admin.reports.export.subscription.status_cancelled') },
                 ]}
-                placeholder="Semua status (default)"
+                placeholder={t('admin.reports.export.filter_all_status')}
             />
         </ExportCard>
     );
@@ -784,6 +795,7 @@ function ExportCard({
     multiSheet?: boolean;
     children: React.ReactNode;
 }) {
+    const { t } = useTranslate();
     return (
         <Card className="flex flex-col overflow-hidden border shadow-sm">
             <div className={`h-1 w-full ${accentColor}`} />
@@ -805,7 +817,7 @@ function ExportCard({
                                 variant="secondary"
                                 className="mt-1.5 text-[10px]"
                             >
-                                2 sheet
+                                {t('admin.reports.export.footer_sheet')}
                             </Badge>
                         )}
                     </div>
@@ -819,7 +831,7 @@ function ExportCard({
                     <a href={href} download>
                         <Button className={`w-full gap-2 ${btnClass}`}>
                             <Download className="size-4" />
-                            Download Excel
+                            {t('admin.reports.export.download_btn')}
                         </Button>
                     </a>
                 </div>
@@ -839,20 +851,21 @@ function DateRangePicker({
     onStartChange: (v: string) => void;
     onEndChange: (v: string) => void;
 }) {
+    const { t } = useTranslate();
     return (
         <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Rentang Tanggal</Label>
+            <Label className="text-xs font-medium">{t('admin.reports.export.date_range')}</Label>
             <div className="flex flex-col gap-2">
                 <DatePicker
                     value={start}
                     onChange={onStartChange}
-                    placeholder="Tanggal mulai"
+                    placeholder={t('admin.reports.export.date_start')}
                     maxDate={end ? parseLocalDate(end) : undefined}
                 />
                 <DatePicker
                     value={end}
                     onChange={onEndChange}
-                    placeholder="Tanggal akhir"
+                    placeholder={t('admin.reports.export.date_end')}
                     minDate={start ? parseLocalDate(start) : undefined}
                 />
             </div>
@@ -866,7 +879,7 @@ function DateRangePicker({
                     className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
                 >
                     <X className="size-3" />
-                    Hapus filter tanggal
+                    {t('admin.reports.export.clear_date')}
                 </button>
             )}
         </div>
@@ -886,6 +899,7 @@ function DatePicker({
     minDate?: Date;
     maxDate?: Date;
 }) {
+    const { t } = useTranslate();
     const [open, setOpen] = useState(false);
     const selected = value ? parseLocalDate(value) : undefined;
 
@@ -902,7 +916,7 @@ function DatePicker({
                     )}
                 >
                     <CalendarIcon className="size-3.5 shrink-0 text-muted-foreground" />
-                    {value ? formatDateDisplay(value) : placeholder}
+                    {value ? formatDateDisplay(value, t) : placeholder}
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -969,9 +983,10 @@ function FilterSelect({
 }
 
 function EmptyChart() {
+    const { t } = useTranslate();
     return (
         <div className="flex h-[260px] items-center justify-center text-sm text-muted-foreground">
-            Belum ada data
+            {t('admin.reports.charts.no_data')}
         </div>
     );
 }
@@ -991,8 +1006,11 @@ function toIsoDate(date: Date): string {
     ].join('-');
 }
 
-function formatDateDisplay(iso: string): string {
+function formatDateDisplay(iso: string, t: any): string {
     const [y, m, d] = iso.split('-').map(Number);
-    const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+    const months = [
+        t('admin.reports.months.jan'), t('admin.reports.months.feb'), t('admin.reports.months.mar'), t('admin.reports.months.apr'), t('admin.reports.months.may'), t('admin.reports.months.jun'),
+        t('admin.reports.months.jul'), t('admin.reports.months.aug'), t('admin.reports.months.sep'), t('admin.reports.months.oct'), t('admin.reports.months.nov'), t('admin.reports.months.dec'),
+    ];
     return `${d} ${months[m - 1]} ${y}`;
 }

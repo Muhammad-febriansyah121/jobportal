@@ -1,4 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import { useTranslate } from '@/hooks/use-translate';
 import {
     type ColumnDef,
     type ExpandedState,
@@ -102,26 +103,30 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 function StatusBadge({ status }: { status: string }) {
+    const { t } = useTranslate();
+
     if (status === 'approved')
         return (
             <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
-                Disetujui
+                {t('admin.company_reviews_index.badge_approved')}
             </Badge>
         );
     if (status === 'rejected')
         return (
             <Badge className="border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">
-                Ditolak
+                {t('admin.company_reviews_index.badge_rejected')}
             </Badge>
         );
     return (
         <Badge className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400">
-            Menunggu
+            {t('admin.company_reviews_index.badge_pending')}
         </Badge>
     );
 }
 
 function ApproveButton({ review }: { review: Review }) {
+    const { t } = useTranslate();
+
     return (
         <Button
             size="sm"
@@ -129,12 +134,13 @@ function ApproveButton({ review }: { review: Review }) {
             onClick={() => router.patch(approve(review.id).url, {}, { preserveScroll: true })}
         >
             <Check className="size-3" />
-            Setujui
+            {t('admin.company_reviews_index.approve_btn')}
         </Button>
     );
 }
 
 function RejectButton({ review }: { review: Review }) {
+    const { t } = useTranslate();
     const [open, setOpen] = useState(false);
     const form = useForm<{ rejection_reason: string }>({ rejection_reason: '' });
 
@@ -157,30 +163,30 @@ function RejectButton({ review }: { review: Review }) {
                     className="h-8 gap-1.5 border-red-200 px-3 text-xs text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/20"
                 >
                     <X className="size-3" />
-                    Tolak
+                    {t('admin.company_reviews_index.reject_btn')}
                 </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Tolak ulasan?</AlertDialogTitle>
+                    <AlertDialogTitle>{t('admin.company_reviews_index.reject_dialog_title')}</AlertDialogTitle>
                     <AlertDialogDescription>
-                        Ulasan tidak akan tampil publik. Alasan penolakan bersifat opsional.
+                        {t('admin.company_reviews_index.reject_dialog_desc')}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <Textarea
                     rows={3}
                     value={form.data.rejection_reason}
                     onChange={(e) => form.setData('rejection_reason', e.target.value)}
-                    placeholder="Mis: bahasa kasar, fitnah, di luar konteks..."
+                    placeholder={t('admin.company_reviews_index.reject_placeholder')}
                 />
                 <AlertDialogFooter>
-                    <AlertDialogCancel disabled={form.processing}>Batal</AlertDialogCancel>
+                    <AlertDialogCancel disabled={form.processing}>{t('admin.company_reviews_index.cancel')}</AlertDialogCancel>
                     <AlertDialogAction
                         onClick={submit}
                         disabled={form.processing}
                         className="bg-red-600 text-white hover:bg-red-700"
                     >
-                        {form.processing ? 'Menolak...' : 'Tolak ulasan'}
+                        {form.processing ? t('admin.company_reviews_index.rejecting') : t('admin.company_reviews_index.reject_confirm')}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
@@ -188,7 +194,7 @@ function RejectButton({ review }: { review: Review }) {
     );
 }
 
-function buildColumns(tab: string): ColumnDef<Review>[] {
+function buildColumns(tab: string, t: (key: string) => string): ColumnDef<Review>[] {
     const isFlaggedTab = tab === 'flagged';
     const isHistoryTab = tab === 'history';
     const showActions = tab !== 'history';
@@ -215,7 +221,7 @@ function buildColumns(tab: string): ColumnDef<Review>[] {
         },
         {
             id: 'company',
-            header: 'Perusahaan',
+            header: t('admin.company_reviews_index.col_company'),
             cell: ({ row }) => {
                 const { company } = row.original;
                 return (
@@ -239,7 +245,7 @@ function buildColumns(tab: string): ColumnDef<Review>[] {
         },
         {
             id: 'candidate',
-            header: 'Kandidat',
+            header: t('admin.company_reviews_index.col_candidate'),
             cell: ({ row }) => (
                 <div className="space-y-0.5">
                     <p className="text-sm font-medium">{row.original.candidate.name}</p>
@@ -251,7 +257,7 @@ function buildColumns(tab: string): ColumnDef<Review>[] {
         },
         {
             accessorKey: 'rating',
-            header: 'Rating',
+            header: t('admin.company_reviews_index.col_rating'),
             cell: ({ row }) => (
                 <div className="space-y-0.5">
                     <StarRating rating={row.original.rating} />
@@ -263,7 +269,7 @@ function buildColumns(tab: string): ColumnDef<Review>[] {
         },
         {
             id: 'content',
-            header: 'Judul / Ulasan',
+            header: t('admin.company_reviews_index.col_content'),
             cell: ({ row }) => (
                 <div className="max-w-xs space-y-0.5">
                     {row.original.title && (
@@ -287,19 +293,19 @@ function buildColumns(tab: string): ColumnDef<Review>[] {
                 return (
                     <Badge className="gap-1 border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-400">
                         <Flag className="size-3" />
-                        Dilaporkan
+                        {t('admin.company_reviews_index.col_flagged')}
                     </Badge>
                 );
             },
         },
         {
             accessorKey: 'status',
-            header: 'Status',
+            header: t('admin.company_reviews_index.col_status'),
             cell: ({ row }) => <StatusBadge status={row.original.status} />,
         },
         {
             id: 'date',
-            header: isFlaggedTab ? 'Dilaporkan' : isHistoryTab ? 'Ditinjau' : 'Dikirim',
+            header: isFlaggedTab ? t('admin.company_reviews_index.col_date_flagged') : isHistoryTab ? t('admin.company_reviews_index.col_date_reviewed') : t('admin.company_reviews_index.col_date_submitted'),
             cell: ({ row }) => {
                 const date = isFlaggedTab
                     ? row.original.flagged_at
@@ -329,6 +335,8 @@ function buildColumns(tab: string): ColumnDef<Review>[] {
 }
 
 function ExpandedDetail({ review }: { review: Review }) {
+    const { t } = useTranslate();
+
     return (
         <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/80 p-4 text-sm dark:border-slate-700 dark:bg-slate-900/40">
             {(review.title || review.review) && (
@@ -351,13 +359,13 @@ function ExpandedDetail({ review }: { review: Review }) {
                     <Flag className="mt-0.5 size-4 shrink-0 text-orange-500" />
                     <div className="space-y-1">
                         <p className="text-xs font-semibold uppercase tracking-wide text-orange-700 dark:text-orange-400">
-                            Laporan dari employer
+                            {t('admin.company_reviews_index.flag_from_employer')}
                         </p>
                         <p className="text-sm text-orange-900 dark:text-orange-300">
                             {review.flag_reason}
                         </p>
                         <p className="text-xs text-orange-600 dark:text-orange-500">
-                            Dilaporkan {review.flagged_at} oleh {review.flagged_by ?? '-'}
+                            {t('admin.company_reviews_index.flag_reported_at', { date: review.flagged_at ?? '-', name: review.flagged_by ?? '-' })}
                         </p>
                     </div>
                 </div>
@@ -368,7 +376,7 @@ function ExpandedDetail({ review }: { review: Review }) {
                     <MessageCircle className="mt-0.5 size-4 shrink-0 text-blue-500" />
                     <div className="space-y-1">
                         <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-400">
-                            Balasan employer
+                            {t('admin.company_reviews_index.employer_reply')}
                         </p>
                         <p className="whitespace-pre-wrap text-sm text-blue-900 dark:text-blue-300">
                             {review.employer_reply}
@@ -395,9 +403,9 @@ function ExpandedDetail({ review }: { review: Review }) {
                         ) : (
                             <X className="size-3" />
                         )}
-                        {review.status === 'approved' ? 'Disetujui' : 'Ditolak'}
+                        {review.status === 'approved' ? t('admin.company_reviews_index.badge_approved') : t('admin.company_reviews_index.badge_rejected')}
                     </span>
-                    <span>oleh {review.reviewer_name ?? '-'} · {review.reviewed_at ?? '-'}</span>
+                    <span>{t('admin.company_reviews_index.reviewed_by', { name: review.reviewer_name ?? '-', date: review.reviewed_at ?? '-' })}</span>
                     {review.rejection_reason && (
                         <span className="italic">— {review.rejection_reason}</span>
                     )}
@@ -415,9 +423,10 @@ export default function AdminCompanyReviewsIndex({
     reviews,
     counts,
 }: IndexProps) {
+    const { t } = useTranslate();
     const [searchValue, setSearchValue] = useState(search);
     const [expanded, setExpanded] = useState<ExpandedState>({});
-    const columns = buildColumns(tab);
+    const columns = buildColumns(tab, t);
 
     const table = useReactTable({
         data: reviews.data,
@@ -448,7 +457,7 @@ export default function AdminCompanyReviewsIndex({
     const TAB_CONFIG = [
         {
             value: 'pending',
-            label: 'Menunggu',
+            label: t('admin.company_reviews_index.tab_pending'),
             count: counts.pending,
             icon: Clock,
             activeColor: 'border-amber-500 text-amber-700 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400',
@@ -456,7 +465,7 @@ export default function AdminCompanyReviewsIndex({
         },
         {
             value: 'flagged',
-            label: 'Dilaporkan',
+            label: t('admin.company_reviews_index.tab_flagged'),
             count: counts.flagged,
             icon: Flag,
             activeColor: 'border-orange-500 text-orange-700 bg-orange-50 dark:bg-orange-950/20 dark:text-orange-400',
@@ -464,7 +473,7 @@ export default function AdminCompanyReviewsIndex({
         },
         {
             value: 'history',
-            label: 'Riwayat',
+            label: t('admin.company_reviews_index.tab_history'),
             count: counts.history,
             icon: History,
             activeColor: 'border-primary text-primary bg-primary/5',
@@ -474,14 +483,14 @@ export default function AdminCompanyReviewsIndex({
 
     return (
         <>
-            <Head title="Moderasi Ulasan Perusahaan" />
+            <Head title={t('admin.company_reviews_index.page_title')} />
 
             <div className="space-y-6 p-4 md:p-6">
                 {/* Header */}
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl font-bold tracking-tight">Moderasi Ulasan Perusahaan</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">{t('admin.company_reviews_index.page_title')}</h1>
                     <p className="text-sm text-muted-foreground">
-                        Tinjau ulasan masuk, setujui yang valid, atau tolak yang melanggar pedoman.
+                        {t('admin.company_reviews_index.description')}
                     </p>
                 </div>
 
@@ -533,7 +542,7 @@ export default function AdminCompanyReviewsIndex({
                                     {TAB_CONFIG.find((c) => c.value === tab)?.label}
                                 </span>
                                 <Badge variant="secondary" className="tabular-nums">
-                                    {reviews.data.length} ditampilkan
+                                    {t('admin.company_reviews_index.count_shown', { n: String(reviews.data.length) })}
                                 </Badge>
                             </div>
                             <div className="ml-auto flex items-center gap-2">
@@ -542,13 +551,13 @@ export default function AdminCompanyReviewsIndex({
                                     <Input
                                         value={searchValue}
                                         onChange={(e) => setSearchValue(e.target.value)}
-                                        placeholder="Cari perusahaan, kandidat, judul..."
+                                        placeholder={t('admin.company_reviews_index.search_placeholder')}
                                         className="h-8 w-64 pl-8 text-sm"
                                     />
                                 </div>
                                 <Button type="submit" size="sm" className="h-8 gap-1.5 px-3 text-xs">
                                     <Search className="size-3" />
-                                    Cari
+                                    {t('admin.company_reviews_index.search_btn')}
                                 </Button>
                                 {search && (
                                     <Button
@@ -560,7 +569,7 @@ export default function AdminCompanyReviewsIndex({
                                     >
                                         <Link href={adminCompanyReviewsIndex({ query: { tab } }).url}>
                                             <RotateCcw className="size-3" />
-                                            Reset
+                                            {t('admin.company_reviews_index.reset_btn')}
                                         </Link>
                                     </Button>
                                 )}
@@ -637,7 +646,7 @@ export default function AdminCompanyReviewsIndex({
                                             >
                                                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                                                     <Star className="size-8 opacity-20" />
-                                                    <p className="text-sm">Tidak ada ulasan di tab ini.</p>
+                                                    <p className="text-sm">{t('admin.company_reviews_index.empty_state')}</p>
                                                 </div>
                                             </TableCell>
                                         </TableRow>

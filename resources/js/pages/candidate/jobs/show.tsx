@@ -12,7 +12,6 @@ import {
     Lightbulb,
     MapPin,
     Shield,
-    Sparkles,
     Star,
     Target,
     Zap,
@@ -35,7 +34,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslate } from '@/hooks/use-translate';
 import { cn } from '@/lib/utils';
-import { index as aiInterviewIndex } from '@/routes/candidate/ai-interviews';
 import { save, show, unsave } from '@/routes/candidate/jobs';
 
 type JobShowProps = {
@@ -160,7 +158,7 @@ export default function CandidateJobShow({ job, similarJobs }: JobShowProps) {
 
             <div className="space-y-5 p-4 md:p-6">
                 {/* Job Header */}
-                <Card>
+                <Card className="overflow-hidden border-primary-100 bg-linear-to-br from-primary-50/50 via-white to-white">
                     <CardContent className="pt-5 pb-5">
                         <div className="flex gap-4">
                             <Avatar className="size-16 shrink-0 rounded-xl">
@@ -278,30 +276,6 @@ export default function CandidateJobShow({ job, similarJobs }: JobShowProps) {
                                     ? t('candidate.jobs_show.link_copied')
                                     : t('candidate.jobs_show.share')}
                             </Button>
-                            {job.has_applied &&
-                            job.ai_interview_application_id ? (
-                                <Button asChild variant="secondary">
-                                    <Link
-                                        href={aiInterviewIndex({
-                                            query: {
-                                                application_id:
-                                                    job.ai_interview_application_id,
-                                                interview_mode: 'text',
-                                                interview_language: 'id',
-                                                interview_focus: 'mixed',
-                                                candidate_level: 'junior',
-                                                question_count: 5,
-                                                duration_minutes: 30,
-                                            },
-                                        })}
-                                    >
-                                        <Sparkles />
-                                        {t(
-                                            'candidate.jobs_show.ai_interview_practice',
-                                        )}
-                                    </Link>
-                                </Button>
-                            ) : null}
                         </div>
                     </CardContent>
                 </Card>
@@ -311,14 +285,19 @@ export default function CandidateJobShow({ job, similarJobs }: JobShowProps) {
                     <div className="space-y-5">
                         {/* Stats */}
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <Card>
+                            <Card className="border-primary-100">
                                 <CardContent className="pt-4 pb-4">
-                                    <p className="text-xs text-muted-foreground">
-                                        {t(
-                                            'candidate.jobs_show.salary_range_monthly',
-                                        )}
-                                    </p>
-                                    <p className="mt-1 text-base font-bold text-primary-600">
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex size-7 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+                                            <Zap className="size-3.5" />
+                                        </div>
+                                        <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                                            {t(
+                                                'candidate.jobs_show.salary_range_monthly',
+                                            )}
+                                        </p>
+                                    </div>
+                                    <p className="mt-2 text-lg font-extrabold text-primary-600">
                                         {job.salary_range}
                                     </p>
                                     <p className="mt-0.5 text-xs text-muted-foreground">
@@ -327,14 +306,19 @@ export default function CandidateJobShow({ job, similarJobs }: JobShowProps) {
                                 </CardContent>
                             </Card>
                             {job.integrity_score ? (
-                                <Card>
+                                <Card className="border-emerald-100">
                                     <CardContent className="pt-4 pb-4">
-                                        <p className="text-xs text-muted-foreground">
-                                            {t(
-                                                'candidate.jobs_show.integrity_score',
-                                            )}
-                                        </p>
-                                        <p className="mt-1 text-base font-bold text-green-600">
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                                                <Shield className="size-3.5" />
+                                            </div>
+                                            <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                                                {t(
+                                                    'candidate.jobs_show.integrity_score',
+                                                )}
+                                            </p>
+                                        </div>
+                                        <p className="mt-2 text-lg font-extrabold text-emerald-600">
                                             {job.integrity_score}/100
                                         </p>
                                         <p className="mt-0.5 text-xs text-muted-foreground">
@@ -381,9 +365,7 @@ export default function CandidateJobShow({ job, similarJobs }: JobShowProps) {
                                     title={t('candidate.jobs_show.about_job')}
                                     icon={FileText}
                                 >
-                                    <p className="text-sm leading-7 whitespace-pre-line text-muted-foreground">
-                                        {job.description}
-                                    </p>
+                                    <RichText text={job.description} />
                                 </ContentSection>
 
                                 <div>
@@ -509,17 +491,11 @@ export default function CandidateJobShow({ job, similarJobs }: JobShowProps) {
                                     <div className="mb-2 flex items-center gap-2">
                                         <Zap className="size-4 text-primary-500" />
                                         <p className="text-sm font-semibold">
-                                            Respon Cepat
+                                            {t('front.jobs.show.quick_response_title')}
                                         </p>
                                     </div>
                                     <p className="text-xs leading-5 text-muted-foreground">
-                                        Rekruter kami berkomitmen untuk
-                                        memproses lamaran Anda dalam waktu
-                                        maksimal{' '}
-                                        <strong className="text-foreground">
-                                            {slaDays} hari kerja
-                                        </strong>
-                                        .
+                                        {t('front.jobs.show.quick_response_text', { days: slaDays })}
                                     </p>
                                 </CardContent>
                             </Card>
@@ -530,7 +506,7 @@ export default function CandidateJobShow({ job, similarJobs }: JobShowProps) {
                             <Card>
                                 <CardHeader className="pb-2">
                                     <CardTitle className="text-sm">
-                                        Pekerjaan Serupa
+                                        {t('front.jobs.show.similar_jobs_title')}
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-1">
@@ -635,7 +611,9 @@ export default function CandidateJobShow({ job, similarJobs }: JobShowProps) {
                                 {!job.is_anonymous &&
                                     job.company_description && (
                                         <p className="line-clamp-4 text-xs leading-5 text-muted-foreground">
-                                            {job.company_description}
+                                            {stripHtmlTags(
+                                                job.company_description,
+                                            )}
                                         </p>
                                     )}
                                 {!job.is_anonymous &&
@@ -710,25 +688,11 @@ export default function CandidateJobShow({ job, similarJobs }: JobShowProps) {
                                                     </p>
                                                 </div>
                                             )}
-                                            {job.company_trust_score !=
-                                                null && (
-                                                <div>
-                                                    <p className="text-[11px] text-muted-foreground">
-                                                        Trust Score
-                                                    </p>
-                                                    <p className="text-xs font-medium">
-                                                        {
-                                                            job.company_trust_score
-                                                        }
-                                                        /100
-                                                    </p>
-                                                </div>
-                                            )}
                                             {job.company_response_rate !=
                                                 null && (
                                                 <div>
                                                     <p className="text-[11px] text-muted-foreground">
-                                                        Response Rate
+                                                        {t('front.jobs.show.company_response_rate_label')}
                                                     </p>
                                                     <p className="text-xs font-medium">
                                                         {
@@ -877,11 +841,53 @@ function ContentSection({
     );
 }
 
+const RICH_PROSE_CLASS =
+    'prose prose-sm max-w-none text-sm leading-7 text-muted-foreground [&_h1]:mt-0 [&_h1]:mb-3 [&_h1]:text-base [&_h1]:font-bold [&_h1]:text-foreground [&_h2]:mt-0 [&_h2]:mb-3 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-foreground [&_h3]:mt-0 [&_h3]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-foreground [&_li]:my-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5';
+
+function hasHtmlMarkup(value: string): boolean {
+    return /<[a-z][^>]*>/i.test(value);
+}
+
+function RichText({ text }: { text: string }) {
+    const normalized = text.trim();
+
+    if (!normalized) {
+        return null;
+    }
+
+    if (hasHtmlMarkup(normalized)) {
+        return (
+            <div
+                className={RICH_PROSE_CLASS}
+                dangerouslySetInnerHTML={{ __html: normalized }}
+            />
+        );
+    }
+
+    return (
+        <p className="text-sm leading-7 whitespace-pre-line text-muted-foreground">
+            {normalized}
+        </p>
+    );
+}
+
 function BulletList({ text }: { text: string }) {
-    const lines = text
-        .split('\n')
-        .map((l) => l.trim().replace(/^[-•*]\s*/, ''))
-        .filter(Boolean);
+    const normalized = text.trim();
+
+    if (hasHtmlMarkup(normalized)) {
+        return (
+            <div
+                className={RICH_PROSE_CLASS}
+                dangerouslySetInnerHTML={{ __html: normalized }}
+            />
+        );
+    }
+
+    const lines = parseListItems(normalized);
+
+    if (lines.length === 0) {
+        return null;
+    }
 
     return (
         <ul className="space-y-2 text-sm text-muted-foreground">
@@ -900,10 +906,46 @@ function splitListText(value?: string | null): string[] {
         return [];
     }
 
-    return value
+    return parseListItems(value);
+}
+
+function parseListItems(value: string): string[] {
+    const trimmed = value.trim();
+
+    // If the input contains HTML <li> tags, extract their inner text.
+    if (/<li[\s>]/i.test(trimmed)) {
+        const items: string[] = [];
+        const regex = /<li[^>]*>([\s\S]*?)<\/li>/gi;
+        let match: RegExpExecArray | null;
+
+        while ((match = regex.exec(trimmed)) !== null) {
+            const cleaned = stripHtmlTags(match[1] ?? '').trim();
+            if (cleaned !== '') {
+                items.push(cleaned);
+            }
+        }
+
+        if (items.length > 0) {
+            return items;
+        }
+    }
+
+    return trimmed
         .split('\n')
-        .map((line) => line.trim().replace(/^[-•*]\s*/, ''))
+        .map((line) => stripHtmlTags(line).trim().replace(/^[-•*]\s*/, ''))
         .filter(Boolean);
+}
+
+function stripHtmlTags(value: string): string {
+    return value
+        .replace(/<\/?[a-zA-Z][^<>]*>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 
 function SkillBox({

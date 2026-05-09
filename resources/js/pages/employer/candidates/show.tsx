@@ -39,6 +39,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTranslate } from '@/hooks/use-translate';
+import { formatAvailability } from '@/lib/availability';
 import { cn } from '@/lib/utils';
 import { index, show } from '@/routes/employer/candidates';
 import { show as showJob } from '@/routes/employer/jobs';
@@ -174,17 +176,6 @@ type ShowProps = {
     company_applications: ApplicationItem[];
 };
 
-const STATUS_LABEL: Record<string, string> = {
-    submitted: 'Baru masuk',
-    screening: 'Screening',
-    shortlisted: 'Shortlist',
-    interview: 'Interview',
-    offer: 'Offer',
-    hired: 'Diterima',
-    rejected: 'Ditolak',
-    withdrawn: 'Dibatalkan',
-};
-
 const STATUS_TONE: Record<string, string> = {
     submitted: 'bg-blue-100 text-blue-800 border-blue-200',
     screening: 'bg-amber-100 text-amber-800 border-amber-200',
@@ -201,7 +192,19 @@ export default function EmployerCandidateShow({
     candidate,
     company_applications: companyApplications,
 }: ShowProps) {
+    const { t } = useTranslate();
     const [activeTab, setActiveTab] = useState('profile');
+
+    const STATUS_LABEL: Record<string, string> = {
+        submitted: t('employer.candidates_show.status_submitted'),
+        screening: t('employer.candidates_show.status_screening'),
+        shortlisted: t('employer.candidates_show.status_shortlisted'),
+        interview: t('employer.candidates_show.status_interview'),
+        offer: t('employer.candidates_show.status_offer'),
+        hired: t('employer.candidates_show.status_hired'),
+        rejected: t('employer.candidates_show.status_rejected'),
+        withdrawn: t('employer.candidates_show.status_withdrawn'),
+    };
 
     const fitScore = application.ai_fit_score ?? null;
     const initials = candidate?.name
@@ -215,7 +218,7 @@ export default function EmployerCandidateShow({
 
     return (
         <>
-            <Head title={`Profil · ${candidate?.name ?? 'Kandidat'}`} />
+            <Head title={`${t('employer.candidates_show.head_title')} · ${candidate?.name ?? t('employer.candidates_show.candidate_label')}`} />
 
             <div className="min-h-screen bg-white p-4 md:p-6">
                 <div className="mx-auto max-w-6xl space-y-5">
@@ -224,7 +227,7 @@ export default function EmployerCandidateShow({
                         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
                     >
                         <ArrowLeft className="size-4" />
-                        Kembali ke daftar kandidat
+                        {t('employer.candidates_show.back_to_list')}
                     </Link>
 
                     <Card className="overflow-hidden border-0 bg-gradient-to-br from-[#01296A] via-[#0a3a8a] to-[#0a4ba5] text-white shadow-lg">
@@ -236,10 +239,10 @@ export default function EmployerCandidateShow({
                             />
                             <div className="space-y-2">
                                 <Badge className="border-0 bg-white/15 text-white">
-                                    Profil Kandidat
+                                    {t('employer.candidates_show.candidate_profile')}
                                 </Badge>
                                 <h1 className="text-2xl font-bold leading-tight md:text-3xl">
-                                    {candidate?.name ?? 'Kandidat'}
+                                    {candidate?.name ?? t('employer.candidates_show.candidate_label')}
                                 </h1>
                                 {candidate?.headline ? (
                                     <p className="text-sm text-white/85">
@@ -262,7 +265,7 @@ export default function EmployerCandidateShow({
                                     {candidate?.availability ? (
                                         <HeroPill
                                             icon={Clock}
-                                            label={`Available: ${candidate.availability}`}
+                                            label={`${t('employer.candidates_show.available')} ${formatAvailability(candidate.availability, t)}`}
                                         />
                                     ) : null}
                                     {candidate?.expected_salary ? (
@@ -347,7 +350,7 @@ export default function EmployerCandidateShow({
                                     <div className="rounded-md bg-white/10 px-3 py-2 text-xs">
                                         <div className="mb-1 flex items-center justify-between text-[10px] tracking-wider uppercase">
                                             <span className="text-white/70">
-                                                Kelengkapan Profil
+                                                {t('employer.candidates_show.profile_completion')}
                                             </span>
                                             <span className="font-semibold">
                                                 {candidate.profile_completion}%
@@ -371,7 +374,7 @@ export default function EmployerCandidateShow({
                         <CardContent className="grid gap-3 p-4 md:grid-cols-[1fr_auto] md:items-center md:p-5">
                             <div className="space-y-1.5">
                                 <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                                    Lamaran ke
+                                    {t('employer.candidates_show.applied_to')}
                                 </p>
                                 <div className="flex flex-wrap items-center gap-2">
                                     <Briefcase className="size-4 text-[#01296A]" />
@@ -385,14 +388,14 @@ export default function EmployerCandidateShow({
                                             }
                                             className="text-xs text-[#01296A] hover:underline"
                                         >
-                                            Lihat lowongan
+                                            {t('employer.candidates_show.view_job')}
                                         </Link>
                                     ) : null}
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    Dikirim {application.applied_at ?? '—'}
+                                    {t('employer.candidates_show.submitted_at')} {application.applied_at ?? '—'}
                                     {application.first_responded_at
-                                        ? ` · Pertama direspon ${application.first_responded_at}`
+                                        ? ` · ${t('employer.candidates_show.first_responded')} ${application.first_responded_at}`
                                         : ''}
                                 </p>
                             </div>
@@ -405,7 +408,7 @@ export default function EmployerCandidateShow({
                                             rel="noreferrer"
                                         >
                                             <Download className="size-4" />
-                                            Unduh CV
+                                            {t('employer.candidates_show.download_cv')}
                                         </a>
                                     </Button>
                                 ) : null}
@@ -420,7 +423,7 @@ export default function EmployerCandidateShow({
                                             }
                                         >
                                             <Sparkles className="size-4" />
-                                            Lihat AI Review
+                                            {t('employer.candidates_show.view_ai_review')}
                                         </Link>
                                     </Button>
                                 ) : null}
@@ -434,12 +437,12 @@ export default function EmployerCandidateShow({
                                 <TabPill
                                     value="profile"
                                     icon={UserRound}
-                                    label="Ringkasan"
+                                    label={t('employer.candidates_show.tab_summary')}
                                 />
                                 <TabPill
                                     value="cv"
                                     icon={Briefcase}
-                                    label="CV Lengkap"
+                                    label={t('employer.candidates_show.tab_cv')}
                                     count={
                                         (candidate?.experiences.length ?? 0) +
                                         (candidate?.educations.length ?? 0) +
@@ -449,12 +452,12 @@ export default function EmployerCandidateShow({
                                 <TabPill
                                     value="application"
                                     icon={ClipboardList}
-                                    label="Lamaran Ini"
+                                    label={t('employer.candidates_show.tab_application')}
                                 />
                                 <TabPill
                                     value="history"
                                     icon={History}
-                                    label="Histori"
+                                    label={t('employer.candidates_show.tab_history')}
                                     count={companyApplications.length}
                                 />
                             </TabsList>
@@ -470,7 +473,7 @@ export default function EmployerCandidateShow({
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base">
                                                 <Sparkles className="size-4 text-[#01296A]" />
-                                                Tentang Kandidat
+                                                {t('employer.candidates_show.about_candidate')}
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent>
@@ -486,7 +489,7 @@ export default function EmployerCandidateShow({
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base">
                                                 <Award className="size-4 text-[#01296A]" />
-                                                Keahlian
+                                                {t('employer.candidates_show.skills')}
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent>
@@ -511,11 +514,10 @@ export default function EmployerCandidateShow({
                                         </span>
                                         <div className="space-y-1">
                                             <p className="text-sm font-semibold">
-                                                Pengalaman, pendidikan,
-                                                sertifikasi
+                                                {t('employer.candidates_show.exp_edu_cert')}
                                             </p>
                                             <p className="text-xs leading-5 text-muted-foreground">
-                                                Pindah ke tab{' '}
+                                                {t('employer.candidates_show.exp_edu_cert_desc')}{' '}
                                                 <button
                                                     type="button"
                                                     onClick={() =>
@@ -523,10 +525,9 @@ export default function EmployerCandidateShow({
                                                     }
                                                     className="font-semibold text-[#01296A] underline-offset-2 hover:underline"
                                                 >
-                                                    CV Lengkap
+                                                    {t('employer.candidates_show.full_cv_tab')}
                                                 </button>{' '}
-                                                untuk lihat detail karier
-                                                kandidat.
+                                                {t('employer.candidates_show.exp_edu_cert_desc_suffix')}
                                             </p>
                                         </div>
                                     </CardContent>
@@ -538,7 +539,7 @@ export default function EmployerCandidateShow({
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-base">
                                             <Phone className="size-4 text-[#01296A]" />
-                                            Kontak
+                                            {t('employer.candidates_show.contact')}
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-2 text-sm">
@@ -556,12 +557,12 @@ export default function EmployerCandidateShow({
                                         />
                                         <ContactRow
                                             icon={Phone}
-                                            label="Telepon"
+                                            label={t('employer.candidates_show.phone')}
                                             value={candidate?.phone ?? '—'}
                                         />
                                         <ContactRow
                                             icon={Briefcase}
-                                            label="Role target"
+                                            label={t('employer.candidates_show.target_role')}
                                             value={
                                                 candidate?.preferred_role ??
                                                 '—'
@@ -574,7 +575,7 @@ export default function EmployerCandidateShow({
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-base">
                                             <PieChart className="size-4 text-[#01296A]" />
-                                            AI Skill Match
+                                            {t('employer.candidates_show.ai_skill_match')}
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
@@ -582,7 +583,7 @@ export default function EmployerCandidateShow({
                                             .length > 0 ? (
                                             <div>
                                                 <p className="mb-1.5 text-[10px] font-semibold tracking-wider text-emerald-700 uppercase">
-                                                    Matched
+                                                    {t('employer.candidates_show.matched')}
                                                 </p>
                                                 <div className="flex flex-wrap gap-1">
                                                     {application.ai_skill_match.matched.map(
@@ -603,7 +604,7 @@ export default function EmployerCandidateShow({
                                             .length > 0 ? (
                                             <div>
                                                 <p className="mb-1.5 text-[10px] font-semibold tracking-wider text-rose-700 uppercase">
-                                                    Belum match
+                                                    {t('employer.candidates_show.missing')}
                                                 </p>
                                                 <div className="flex flex-wrap gap-1">
                                                     {application.ai_skill_match.missing.map(
@@ -624,7 +625,7 @@ export default function EmployerCandidateShow({
                                         application.ai_skill_match.missing
                                             .length === 0 ? (
                                             <p className="text-sm text-muted-foreground">
-                                                Skill match belum dianalisis.
+                                                {t('employer.candidates_show.no_skill_match')}
                                             </p>
                                         ) : null}
                                     </CardContent>
@@ -641,20 +642,20 @@ export default function EmployerCandidateShow({
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-base">
                                             <Briefcase className="size-4 text-[#01296A]" />
-                                            Detail Lamaran
+                                            {t('employer.candidates_show.application_detail')}
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="grid gap-3 sm:grid-cols-2">
                                         <DetailItem
                                             icon={Briefcase}
-                                            label="Posisi"
+                                            label={t('employer.candidates_show.position')}
                                             value={
                                                 application.job.title ?? '—'
                                             }
                                         />
                                         <DetailItem
                                             icon={MapPin}
-                                            label="Lokasi"
+                                            label={t('employer.candidates_show.location')}
                                             value={
                                                 [
                                                     application.job
@@ -669,7 +670,7 @@ export default function EmployerCandidateShow({
                                         {application.job.work_mode ? (
                                             <DetailItem
                                                 icon={Monitor}
-                                                label="Mode kerja"
+                                                label={t('employer.candidates_show.work_mode')}
                                                 value={application.job.work_mode}
                                                 capitalize
                                             />
@@ -677,7 +678,7 @@ export default function EmployerCandidateShow({
                                         {application.job.job_type ? (
                                             <DetailItem
                                                 icon={Building2}
-                                                label="Tipe"
+                                                label={t('employer.candidates_show.job_type')}
                                                 value={application.job.job_type}
                                                 capitalize
                                             />
@@ -685,7 +686,7 @@ export default function EmployerCandidateShow({
                                         {application.job.experience_level ? (
                                             <DetailItem
                                                 icon={Target}
-                                                label="Level"
+                                                label={t('employer.candidates_show.level')}
                                                 value={
                                                     application.job
                                                         .experience_level
@@ -695,7 +696,7 @@ export default function EmployerCandidateShow({
                                         ) : null}
                                         <DetailItem
                                             icon={CalendarDays}
-                                            label="Diajukan"
+                                            label={t('employer.candidates_show.submitted')}
                                             value={
                                                 application.applied_at ?? '—'
                                             }
@@ -708,7 +709,7 @@ export default function EmployerCandidateShow({
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base">
                                                 <FileText className="size-4 text-[#01296A]" />
-                                                Cover Letter
+                                                {t('employer.candidates_show.cover_letter')}
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent>
@@ -724,7 +725,7 @@ export default function EmployerCandidateShow({
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base">
                                                 <ClipboardList className="size-4 text-[#01296A]" />
-                                                Jawaban Screening
+                                                {t('employer.candidates_show.screening_answers')}
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent className="space-y-3">
@@ -753,7 +754,7 @@ export default function EmployerCandidateShow({
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base">
                                                 <History className="size-4 text-[#01296A]" />
-                                                Timeline Status
+                                                {t('employer.candidates_show.status_timeline')}
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent>
@@ -797,7 +798,7 @@ export default function EmployerCandidateShow({
                                                             ) : null}
                                                             {entry.changed_by ? (
                                                                 <p className="text-[11px] text-muted-foreground">
-                                                                    oleh{' '}
+                                                                    {t('employer.candidates_show.by_label')}{' '}
                                                                     {
                                                                         entry.changed_by
                                                                     }
@@ -818,7 +819,7 @@ export default function EmployerCandidateShow({
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base">
                                                 <Sparkles className="size-4 text-[#01296A]" />
-                                                AI Fit Score
+                                                {t('employer.candidates_show.ai_fit_score')}
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent>
@@ -832,7 +833,7 @@ export default function EmployerCandidateShow({
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base">
                                                 <Bot className="size-4 text-[#01296A]" />
-                                                AI Interview
+                                                {t('employer.candidates_show.ai_interview')}
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent className="space-y-2">
@@ -846,8 +847,8 @@ export default function EmployerCandidateShow({
                                                             <p className="text-sm font-medium capitalize">
                                                                 {session.interview_mode ===
                                                                 'voice'
-                                                                    ? 'Voice AI'
-                                                                    : 'Text AI'}
+                                                                    ? t('candidate.ai_interview_show.voice_ai')
+                                                                    : t('candidate.ai_interview_show.text_ai')}
                                                             </p>
                                                             {session.fit_score !==
                                                                 null &&
@@ -899,7 +900,7 @@ export default function EmployerCandidateShow({
                                                                     ).url
                                                                 }
                                                             >
-                                                                Detail review
+                                                                {t('employer.candidates_show.detail_review')}
                                                             </Link>
                                                         </Button>
                                                     </div>
@@ -914,7 +915,7 @@ export default function EmployerCandidateShow({
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base">
                                                 <CalendarCheck className="size-4 text-[#01296A]" />
-                                                Interview Terjadwal
+                                                {t('employer.candidates_show.scheduled_interviews')}
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent className="space-y-2">
@@ -950,12 +951,10 @@ export default function EmployerCandidateShow({
                                         </span>
                                         <div className="space-y-1">
                                             <p className="text-sm font-semibold">
-                                                Aksi recruiter
+                                                {t('employer.candidates_show.recruiter_actions')}
                                             </p>
                                             <p className="text-xs leading-5 text-muted-foreground">
-                                                Update status, kirim WhatsApp,
-                                                atau jadwalkan interview lewat
-                                                halaman daftar kandidat.
+                                                {t('employer.candidates_show.recruiter_actions_desc')}
                                             </p>
                                         </div>
                                     </CardContent>
@@ -976,10 +975,10 @@ export default function EmployerCandidateShow({
                                             </span>
                                             <div>
                                                 <p className="font-semibold">
-                                                    CV Original
+                                                    {t('employer.candidates_show.cv_original')}
                                                 </p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    Diupload{' '}
+                                                    {t('employer.candidates_show.uploaded')}{' '}
                                                     {application.cv
                                                         .uploaded_at ?? '—'}
                                                 </p>
@@ -994,7 +993,7 @@ export default function EmployerCandidateShow({
                                                 rel="noreferrer"
                                             >
                                                 <Download className="size-4" />
-                                                Unduh / lihat
+                                                {t('employer.candidates_show.download_view')}
                                             </a>
                                         </Button>
                                     </CardContent>
@@ -1002,10 +1001,10 @@ export default function EmployerCandidateShow({
                             ) : null}
 
                             <CvSection
-                                title="Pengalaman Kerja"
+                                title={t('employer.candidates_show.work_experience')}
                                 icon={Briefcase}
                                 count={candidate?.experiences.length ?? 0}
-                                emptyText="Kandidat belum mengisi pengalaman kerja."
+                                emptyText={t('employer.candidates_show.no_experience')}
                             >
                                 {candidate?.experiences.map((exp) => (
                                     <ExperienceCard
@@ -1016,10 +1015,10 @@ export default function EmployerCandidateShow({
                             </CvSection>
 
                             <CvSection
-                                title="Pendidikan"
+                                title={t('employer.candidates_show.education')}
                                 icon={GraduationCap}
                                 count={candidate?.educations.length ?? 0}
-                                emptyText="Belum ada riwayat pendidikan."
+                                emptyText={t('employer.candidates_show.no_education')}
                             >
                                 {candidate?.educations.map((edu) => (
                                     <EducationItem
@@ -1030,10 +1029,10 @@ export default function EmployerCandidateShow({
                             </CvSection>
 
                             <CvSection
-                                title="Sertifikasi"
+                                title={t('employer.candidates_show.certifications')}
                                 icon={Star}
                                 count={candidate?.certifications.length ?? 0}
-                                emptyText="Belum ada sertifikasi."
+                                emptyText={t('employer.candidates_show.no_certifications')}
                             >
                                 {candidate?.certifications.map((cert) => (
                                     <CertificationItem
@@ -1049,7 +1048,7 @@ export default function EmployerCandidateShow({
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-base">
                                         <History className="size-4 text-[#01296A]" />
-                                        Histori Lamaran ke Perusahaan Ini
+                                        {t('employer.candidates_show.application_history')}
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-2">
@@ -1077,7 +1076,7 @@ export default function EmployerCandidateShow({
                                                             variant="outline"
                                                             className="text-[10px] text-[#01296A]"
                                                         >
-                                                            Saat ini
+                                                            {t('employer.candidates_show.current_badge')}
                                                         </Badge>
                                                     ) : null}
                                                 </div>
@@ -1214,11 +1213,12 @@ function HeroPill({
 }
 
 function FitScoreBadge({ score }: { score: number }) {
+    const { t } = useTranslate();
     const tone = score >= 80 ? 'bg-emerald-500' : score >= 60 ? 'bg-amber-500' : 'bg-rose-500';
     return (
         <div className="rounded-md bg-white/10 px-3 py-2 text-center">
             <p className="text-[10px] tracking-wider text-white/70 uppercase">
-                AI Fit Score
+                {t('employer.candidates_show.ai_fit_score')}
             </p>
             <div className="mt-0.5 flex items-center justify-center gap-1.5">
                 <span
@@ -1232,6 +1232,7 @@ function FitScoreBadge({ score }: { score: number }) {
 }
 
 function FitScoreCard({ score }: { score: number }) {
+    const { t } = useTranslate();
     const radius = 36;
     const circumference = 2 * Math.PI * radius;
     const offset = circumference - (score / 100) * circumference;
@@ -1273,14 +1274,13 @@ function FitScoreCard({ score }: { score: number }) {
             <div className="space-y-1 text-sm">
                 <p className="font-semibold">
                     {score >= 80
-                        ? 'Strong fit'
+                        ? t('employer.candidates_show.fit_strong')
                         : score >= 60
-                          ? 'Potensial'
-                          : 'Perlu validasi'}
+                          ? t('employer.candidates_show.fit_potential')
+                          : t('employer.candidates_show.fit_needs_validation')}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                    Skor dihitung dari kecocokan skill, pengalaman, dan
-                    requirements lowongan.
+                    {t('employer.candidates_show.fit_score_desc')}
                 </p>
             </div>
         </div>
@@ -1309,6 +1309,7 @@ function SkillChip({ skill }: { skill: Skill }) {
 }
 
 function ExperienceCard({ experience }: { experience: Experience }) {
+    const { t } = useTranslate();
     const [open, setOpen] = useState(false);
     const period = [experience.start_date, experience.end_date]
         .filter(Boolean)
@@ -1325,7 +1326,7 @@ function ExperienceCard({ experience }: { experience: Experience }) {
                 </span>
                 <div className="flex-1 space-y-1">
                     <p className="font-semibold leading-tight">
-                        {experience.job_title ?? 'Posisi'}
+                        {experience.job_title ?? t('employer.candidates_show.position')}
                     </p>
                     <p className="text-sm text-muted-foreground">
                         {experience.company_name ?? '—'}
@@ -1341,7 +1342,7 @@ function ExperienceCard({ experience }: { experience: Experience }) {
                                     variant="outline"
                                     className="ml-2 text-[10px] text-emerald-700"
                                 >
-                                    Sekarang
+                                    {t('employer.candidates_show.current')}
                                 </Badge>
                             ) : null}
                         </p>
@@ -1368,6 +1369,7 @@ function ExperienceCard({ experience }: { experience: Experience }) {
 }
 
 function EducationItem({ education }: { education: Education }) {
+    const { t } = useTranslate();
     const period = [education.start_year, education.end_year]
         .filter(Boolean)
         .join(' — ');
@@ -1391,7 +1393,7 @@ function EducationItem({ education }: { education: Education }) {
                     {period ? <span>{period}</span> : null}
                     {education.gpa ? (
                         <Badge variant="outline" className="text-[10px]">
-                            IPK {education.gpa}
+                            {t('employer.candidates_show.gpa')} {education.gpa}
                         </Badge>
                     ) : null}
                 </div>

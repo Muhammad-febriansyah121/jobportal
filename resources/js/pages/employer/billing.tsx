@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import EmployerBillingCancelController from '@/actions/App/Http/Controllers/Employer/EmployerBillingCancelController';
+import EmployerBillingClaimTrialController from '@/actions/App/Http/Controllers/Employer/EmployerBillingClaimTrialController';
 import EmployerBillingPurchaseController from '@/actions/App/Http/Controllers/Employer/EmployerBillingPurchaseController';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
@@ -93,6 +94,8 @@ type Plan = {
     ai_screening_quota: number | null;
     talent_search_quota: number | null;
     features: PlanFeature[];
+    is_trial?: boolean;
+    trial_claimable?: boolean;
 };
 
 type BillingProps = {
@@ -101,6 +104,7 @@ type BillingProps = {
     payments: Payment[];
     plans: Plan[];
     hasCompany: boolean;
+    hasClaimedTrial?: boolean;
 };
 
 function formatRupiah(amount: number): string {
@@ -180,6 +184,7 @@ export default function EmployerBilling({
     payments,
     plans,
     hasCompany,
+    hasClaimedTrial = false,
 }: BillingProps) {
     const { t } = useTranslate();
 
@@ -277,6 +282,7 @@ export default function EmployerBilling({
                                                 activeSubscription?.plan_id ===
                                                 plan.id
                                             }
+                                            hasClaimedTrial={hasClaimedTrial}
                                         />
                                     ))}
                                 </div>
@@ -783,15 +789,35 @@ function PendingPaymentBanner({
 
 const POPULAR_SLUG = 'medium';
 
-function PlanCard({ plan, isCurrent }: { plan: Plan; isCurrent: boolean }) {
+function PlanCard({
+    plan,
+    isCurrent,
+    hasClaimedTrial,
+}: {
+    plan: Plan;
+    isCurrent: boolean;
+    hasClaimedTrial: boolean;
+}) {
     const { t } = useTranslate();
     const [processing, setProcessing] = useState(false);
     const isPopular = plan.slug === POPULAR_SLUG;
+    const isTrial = Boolean(plan.is_trial);
+    const trialClaimable = Boolean(plan.trial_claimable);
+    const isEnterprise = plan.slug === 'enterprise';
 
     function handlePurchase() {
         setProcessing(true);
         router.post(
             EmployerBillingPurchaseController(plan.id).url,
+            {},
+            { onFinish: () => setProcessing(false) },
+        );
+    }
+
+    function handleClaimTrial() {
+        setProcessing(true);
+        router.post(
+            EmployerBillingClaimTrialController(plan.id).url,
             {},
             { onFinish: () => setProcessing(false) },
         );
@@ -824,11 +850,19 @@ function PlanCard({ plan, isCurrent }: { plan: Plan; isCurrent: boolean }) {
                     </Badge>
                 </div>
             )}
-            {!isCurrent && isPopular && (
+            {!isCurrent && isPopular && !isTrial && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
                     <Badge className="border-0 bg-primary-600 px-3 py-1 text-xs font-bold text-white shadow">
                         <Sparkles className="size-3" />
                         {t('employer.billing.most_popular')}
+                    </Badge>
+                </div>
+            )}
+            {!isCurrent && isTrial && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                    <Badge className="border-0 bg-amber-500 px-3 py-1 text-xs font-bold text-white shadow">
+                        <Sparkles className="size-3" />
+                        {t('employer.billing.trial_badge')}
                     </Badge>
                 </div>
             )}
@@ -870,7 +904,11 @@ function PlanCard({ plan, isCurrent }: { plan: Plan; isCurrent: boolean }) {
                               : 'text-foreground',
                     )}
                 >
-                    {plan.price === 0 ? t('employer.billing.free') : formatRupiah(plan.price)}
+                    {isEnterprise
+                        ? t('employer.billing.custom_price')
+                        : plan.price === 0
+                          ? t('employer.billing.free')
+                          : formatRupiah(plan.price)}
                 </p>
             </div>
 
@@ -928,6 +966,29 @@ function PlanCard({ plan, isCurrent }: { plan: Plan; isCurrent: boolean }) {
                             <CheckCircle2 className="size-4" />
                             {t('employer.billing.currently_active')}
                         </Button>
+                    ) : isTrial ? (
+                        trialClaimable ? (
+                            <Button
+                                className="w-full gap-1.5 bg-amber-500 text-white hover:bg-amber-600"
+                                onClick={handleClaimTrial}
+                                disabled={processing}
+                            >
+                                {processing ? (
+                                    t('employer.billing.processing')
+                                ) : (
+                                    <>
+                                        <Sparkles className="size-4" />
+                                        {t('employer.billing.try_free')}
+                                    </>
+                                )}
+                            </Button>
+                        ) : (
+                            <Button className="w-full" variant="outline" disabled>
+                                {hasClaimedTrial
+                                    ? t('employer.billing.trial_claimed')
+                                    : t('employer.billing.trial_unavailable')}
+                            </Button>
+                        )
                     ) : plan.price === 0 ? (
                         <Button className="w-full" variant="outline" disabled>
                             {t('employer.billing.contact_admin')}

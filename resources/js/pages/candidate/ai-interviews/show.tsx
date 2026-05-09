@@ -3,6 +3,8 @@ import {
     Bot,
     CalendarDays,
     CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
     Clock3,
     Hand,
     Info,
@@ -66,6 +68,7 @@ type AiInterviewShowProps = {
             assistant_name: string;
             assistant_role: string;
             greeting: string;
+            is_practice?: boolean;
         };
         reschedule_timeline?: Array<{
             action: string;
@@ -114,7 +117,7 @@ function normalizeQuestionText(value: string): string {
 export default function CandidateAiInterviewShow({
     session,
 }: AiInterviewShowProps) {
-    const { t } = useTranslate();
+    const { t, locale } = useTranslate();
     const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
     const localStreamRef = useRef<MediaStream | null>(null);
     const remoteStreamRef = useRef<MediaStream | null>(null);
@@ -129,13 +132,18 @@ export default function CandidateAiInterviewShow({
     const recordingChunksRef = useRef<Blob[]>([]);
     const recordingStreamRef = useRef<MediaStream | null>(null);
     const [hasSentGreeting, setHasSentGreeting] = useState(false);
+    const greetingPendingRef = useRef<boolean>(false);
     const [consented, setConsented] = useState(false);
     const [cameraStreamActive, setCameraStreamActive] = useState(false);
     const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
     const [cameraError, setCameraError] = useState<string | null>(null);
-    const [interviewLanguage, setInterviewLanguage] = useState<'id' | 'en'>(
-        session.interview_language === 'en' ? 'en' : 'id',
-    );
+    const [interviewLanguage, setInterviewLanguage] = useState<'id' | 'en'>(() => {
+        if (session.interview_language === 'en' || session.interview_language === 'id') {
+            return session.interview_language;
+        }
+
+        return locale === 'en' ? 'en' : 'id';
+    });
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [connecting, setConnecting] = useState(false);
     const [connected, setConnected] = useState(false);
@@ -193,6 +201,7 @@ export default function CandidateAiInterviewShow({
         [session.questions],
     );
     const isVoiceInterview = (session.interview_mode ?? 'voice') === 'voice';
+    const isPractice = Boolean(session.ai_intro?.is_practice);
     const invitationPending =
         session.status === 'scheduled' &&
         !session.candidate_confirmed_at &&
@@ -342,6 +351,10 @@ export default function CandidateAiInterviewShow({
     };
 
     const startRecording = () => {
+        if (isPractice) {
+            return;
+        }
+
         if (typeof MediaRecorder === 'undefined') {
             return;
         }
@@ -531,7 +544,9 @@ export default function CandidateAiInterviewShow({
         window.addEventListener('offline', handleOnlineState);
 
         void refreshDevices();
-        void startCameraPreview();
+        if (!isPractice) {
+            void startCameraPreview();
+        }
 
         let permissionStatus: PermissionStatus | null = null;
 
@@ -558,7 +573,7 @@ export default function CandidateAiInterviewShow({
                 permissionStatus.onchange = null;
             }
         };
-    }, [refreshDevices, startCameraPreview]);
+    }, [refreshDevices, startCameraPreview, isPractice]);
 
     useEffect(() => {
         if (!connected) {
@@ -744,7 +759,11 @@ export default function CandidateAiInterviewShow({
             }
 
             const stream = await navigator.mediaDevices.getUserMedia({
-                audio: true,
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                },
             });
             localStreamRef.current = stream;
             setMicPermission('granted');
@@ -767,7 +786,10 @@ export default function CandidateAiInterviewShow({
                 peerConnection.createDataChannel('karivia-events');
             dataChannelRef.current = dataChannel;
             dataChannel.onopen = () => {
-                // Greeting is triggered manually via sendGreeting() — not auto.
+                if (greetingPendingRef.current) {
+                    greetingPendingRef.current = false;
+                    sendGreeting();
+                }
             };
             dataChannel.onmessage = (event) => {
                 handleRealtimeEvent(String(event.data));
@@ -814,20 +836,40 @@ export default function CandidateAiInterviewShow({
     };
 
     const sendGreeting = () => {
-        const channel = dataChannelRef.current;
-
-        if (!channel || channel.readyState !== 'open' || hasSentGreeting) {
+        if (hasSentGreeting) {
             return;
         }
+
+        const channel = dataChannelRef.current;
+
+        if (!channel || channel.readyState !== 'open') {
+            greetingPendingRef.current = true;
+            toast.info('Menyiapkan koneksi AI, sapaan akan dimulai...');
+            return;
+        }
+
+        const kickoffInstruction =
+            interviewLanguage === 'en'
+                ? `The candidate has joined and is ready. Greet them now using exactly: "${session.ai_intro.greeting}" — then immediately ask Q1 prefixed with "Q1:".`
+                : `Kandidat sudah bergabung dan siap memulai. Sapa kandidat sekarang menggunakan tepat kalimat: "${session.ai_intro.greeting}" — lalu langsung tanyakan Q1 yang diawali "Q1:".`;
 
         channel.send(
             JSON.stringify({
                 type: 'response.create',
                 response: {
                     modalities: ['audio', 'text'],
+                    instructions: kickoffInstruction,
                 },
             }),
         );
+
+        // User-gesture-bound: ensure audio playback is unblocked even if
+        // the initial autoplay attempt was throttled by the browser.
+        if (remoteAudioRef.current && remoteStreamRef.current) {
+            remoteAudioRef.current.srcObject = remoteStreamRef.current;
+            void remoteAudioRef.current.play().catch(() => {});
+        }
+
         setHasSentGreeting(true);
     };
 
@@ -890,6 +932,7 @@ export default function CandidateAiInterviewShow({
         remoteStreamRef.current = null;
         setConnected(false);
         setHasSentGreeting(false);
+        greetingPendingRef.current = false;
         setSignalQuality(networkOnline ? 'good' : 'offline');
         setMuted(false);
         setHasQuestionStarted(false);
@@ -1090,6 +1133,7 @@ export default function CandidateAiInterviewShow({
                 remoteAudioRef={remoteAudioRef}
                 signalQuality={signalQuality}
                 cameraStream={cameraStream}
+                isPractice={isPractice}
             />
         );
     }
@@ -1259,7 +1303,8 @@ export default function CandidateAiInterviewShow({
                                     </div>
                                 </div>
 
-                                {/* Panduan Wawancara */}
+                                {/* Panduan Wawancara — hanya untuk mode voice */}
+                                {isVoiceInterview && (
                                 <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                                     <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
                                         <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-primary-600 to-primary-800 shadow-sm">
@@ -1342,6 +1387,7 @@ export default function CandidateAiInterviewShow({
                                         </div>
                                     </div>
                                 </div>
+                                )}
 
                                 {!isVoiceInterview && (
                                     <AnswerForm
@@ -1356,7 +1402,8 @@ export default function CandidateAiInterviewShow({
 
                             {/* Sidebar */}
                             <aside className="order-first space-y-4 lg:order-last">
-                                {/* Camera preview — paling atas */}
+                                {/* Camera preview — hidden in simulator/practice mode */}
+                                {!isPractice && (
                                 <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                                     <div className="relative aspect-video bg-slate-950">
                                         {cameraStreamActive ? (
@@ -1459,6 +1506,7 @@ export default function CandidateAiInterviewShow({
                                         )}
                                     </div>
                                 </div>
+                                )}
 
                                 {/* Candidate + session info */}
                                 <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -1526,84 +1574,7 @@ export default function CandidateAiInterviewShow({
                                     </div>
                                 </div>
 
-                                {/* Language selector */}
-                                {isVoiceInterview && (
-                                    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                                        <p className="border-b border-gray-100 px-4 py-3 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
-                                            Bahasa Interview
-                                        </p>
-                                        <div className="grid grid-cols-2 gap-2 p-3">
-                                            <button
-                                                type="button"
-                                                className={cn(
-                                                    'flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition-all',
-                                                    interviewLanguage === 'id'
-                                                        ? 'border-primary-400 bg-primary-50 ring-1 ring-primary-300/50'
-                                                        : 'border-gray-200 bg-gray-50/60 hover:border-gray-300 hover:bg-white',
-                                                )}
-                                                onClick={() =>
-                                                    setInterviewLanguage('id')
-                                                }
-                                            >
-                                                <span className="text-base">
-                                                    🇮🇩
-                                                </span>
-                                                <span>
-                                                    <p
-                                                        className={cn(
-                                                            'text-xs font-bold',
-                                                            interviewLanguage ===
-                                                                'id'
-                                                                ? 'text-primary-700'
-                                                                : 'text-slate-700',
-                                                        )}
-                                                    >
-                                                        Indonesia
-                                                    </p>
-                                                    <p className="text-[10px] text-slate-400">
-                                                        {t(
-                                                            'candidate.ai_interview_show.indonesian_language',
-                                                        )}
-                                                    </p>
-                                                </span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className={cn(
-                                                    'flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition-all',
-                                                    interviewLanguage === 'en'
-                                                        ? 'border-primary-400 bg-primary-50 ring-1 ring-primary-300/50'
-                                                        : 'border-gray-200 bg-gray-50/60 hover:border-gray-300 hover:bg-white',
-                                                )}
-                                                onClick={() =>
-                                                    setInterviewLanguage('en')
-                                                }
-                                            >
-                                                <span className="text-base">
-                                                    🇺🇸
-                                                </span>
-                                                <span>
-                                                    <p
-                                                        className={cn(
-                                                            'text-xs font-bold',
-                                                            interviewLanguage ===
-                                                                'en'
-                                                                ? 'text-primary-700'
-                                                                : 'text-slate-700',
-                                                        )}
-                                                    >
-                                                        English
-                                                    </p>
-                                                    <p className="text-[10px] text-slate-400">
-                                                        {t(
-                                                            'candidate.ai_interview_show.in_english',
-                                                        )}
-                                                    </p>
-                                                </span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
+                                {/* Language picker hidden — auto-detected from user locale (navbar flag). */}
 
                                 {/* Consent + Start */}
                                 {isVoiceInterview && (
@@ -1633,7 +1604,7 @@ export default function CandidateAiInterviewShow({
                                                 className={cn(
                                                     'w-full gap-2 text-base font-bold shadow-sm',
                                                     consented &&
-                                                        cameraStreamActive &&
+                                                        (isPractice || cameraStreamActive) &&
                                                         !connecting
                                                         ? 'bg-linear-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800'
                                                         : 'bg-primary-600 hover:bg-primary-700',
@@ -1641,7 +1612,7 @@ export default function CandidateAiInterviewShow({
                                                 size="lg"
                                                 disabled={
                                                     !consented ||
-                                                    !cameraStreamActive ||
+                                                    (!isPractice && !cameraStreamActive) ||
                                                     connecting
                                                 }
                                                 onClick={connectRealtime}
@@ -1659,10 +1630,10 @@ export default function CandidateAiInterviewShow({
                                                 )}
                                             </Button>
                                             {(!consented ||
-                                                !cameraStreamActive) &&
+                                                (!isPractice && !cameraStreamActive)) &&
                                                 !connecting && (
                                                     <p className="mt-2 text-center text-xs text-slate-400">
-                                                        {!cameraStreamActive
+                                                        {!isPractice && !cameraStreamActive
                                                             ? 'Aktifkan kamera untuk melanjutkan'
                                                             : 'Centang persetujuan untuk melanjutkan'}
                                                     </p>
@@ -2334,6 +2305,7 @@ function ActiveVoiceSession({
     remoteAudioRef,
     signalQuality,
     cameraStream,
+    isPractice,
 }: {
     session: AiInterviewShowProps['session'];
     activeQuestion?: AiInterviewShowProps['session']['questions'][number];
@@ -2355,6 +2327,7 @@ function ActiveVoiceSession({
     remoteAudioRef: React.RefObject<HTMLAudioElement | null>;
     signalQuality: SignalQuality;
     cameraStream: MediaStream | null;
+    isPractice: boolean;
 }) {
     const { branding } = usePage<{
         branding?: { name?: string; logo_url?: string | null };
@@ -2506,53 +2479,55 @@ function ActiveVoiceSession({
 
                     {/* Right sidebar — order-1 on mobile so camera is at top */}
                     <aside className="order-1 flex flex-col gap-3 border-b border-primary-100/60 bg-white/50 p-4 backdrop-blur-sm lg:order-2 lg:w-72 lg:border-b-0 lg:border-l xl:w-80">
-                        {/* Camera feed */}
-                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-slate-950 shadow-lg shadow-primary-200/40">
-                            <div className="relative aspect-video">
-                                <video
-                                    ref={cameraVideoCallbackRef}
-                                    autoPlay
-                                    playsInline
-                                    muted
-                                    className={cn(
-                                        'h-full w-full object-cover',
-                                        !cameraStream && 'hidden',
-                                    )}
-                                    style={{ transform: 'scaleX(-1)' }}
-                                />
-                                {!cameraStream && (
-                                    <div className="flex h-full flex-col items-center justify-center gap-2.5">
-                                        <div className="flex size-12 items-center justify-center rounded-full bg-slate-800 ring-1 ring-white/10">
-                                            <VideoOff className="size-5 text-slate-400" />
+                        {/* Camera feed — hidden in simulator/practice mode */}
+                        {!isPractice && (
+                            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-slate-950 shadow-lg shadow-primary-200/40">
+                                <div className="relative aspect-video">
+                                    <video
+                                        ref={cameraVideoCallbackRef}
+                                        autoPlay
+                                        playsInline
+                                        muted
+                                        className={cn(
+                                            'h-full w-full object-cover',
+                                            !cameraStream && 'hidden',
+                                        )}
+                                        style={{ transform: 'scaleX(-1)' }}
+                                    />
+                                    {!cameraStream && (
+                                        <div className="flex h-full flex-col items-center justify-center gap-2.5">
+                                            <div className="flex size-12 items-center justify-center rounded-full bg-slate-800 ring-1 ring-white/10">
+                                                <VideoOff className="size-5 text-slate-400" />
+                                            </div>
+                                            <p className="text-[11px] text-slate-400">
+                                                Kamera tidak aktif
+                                            </p>
                                         </div>
-                                        <p className="text-[11px] text-slate-400">
-                                            Kamera tidak aktif
-                                        </p>
+                                    )}
+                                    {/* Live badge */}
+                                    <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-black/70 px-2.5 py-1 backdrop-blur-sm">
+                                        <span className="size-1.5 animate-pulse rounded-full bg-red-500" />
+                                        <span className="text-[10px] font-bold tracking-wider text-white uppercase">
+                                            Live
+                                        </span>
                                     </div>
-                                )}
-                                {/* Live badge */}
-                                <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-black/70 px-2.5 py-1 backdrop-blur-sm">
-                                    <span className="size-1.5 animate-pulse rounded-full bg-red-500" />
-                                    <span className="text-[10px] font-bold tracking-wider text-white uppercase">
-                                        Live
-                                    </span>
+                                    {/* Mute indicator */}
+                                    {muted && (
+                                        <div className="absolute top-2.5 right-2.5 rounded-full bg-red-600/90 p-1.5 shadow-sm">
+                                            <MicOff className="size-3 text-white" />
+                                        </div>
+                                    )}
+                                    {/* Name overlay */}
+                                    {session.candidate_name && (
+                                        <div className="absolute right-0 bottom-0 left-0 bg-linear-to-t from-black/80 to-transparent px-3 py-3">
+                                            <p className="text-xs font-semibold text-white">
+                                                {session.candidate_name}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
-                                {/* Mute indicator */}
-                                {muted && (
-                                    <div className="absolute top-2.5 right-2.5 rounded-full bg-red-600/90 p-1.5 shadow-sm">
-                                        <MicOff className="size-3 text-white" />
-                                    </div>
-                                )}
-                                {/* Name overlay */}
-                                {session.candidate_name && (
-                                    <div className="absolute right-0 bottom-0 left-0 bg-linear-to-t from-black/80 to-transparent px-3 py-3">
-                                        <p className="text-xs font-semibold text-white">
-                                            {session.candidate_name}
-                                        </p>
-                                    </div>
-                                )}
                             </div>
-                        </div>
+                        )}
 
                         {/* Stats row */}
                         <div className="grid grid-cols-3 gap-2">
@@ -2721,19 +2696,8 @@ function ActiveVoiceSession({
                         </div>
 
                         {/* Question / greeting / sapa prompt */}
-                        <div className="w-full max-w-xl px-2 md:max-w-2xl md:px-0">
-                            {hasQuestionStarted ? (
-                                <h1 className="text-xl leading-snug font-black tracking-tight text-slate-900 md:text-3xl lg:text-4xl">
-                                    &ldquo;
-                                    {activeAiQuestionText ??
-                                        activeQuestion?.question}
-                                    &rdquo;
-                                </h1>
-                            ) : hasSentGreeting ? (
-                                <p className="text-base leading-7 text-slate-600 md:text-lg">
-                                    {session.ai_intro.greeting}
-                                </p>
-                            ) : (
+                        <div className="w-full max-w-xl px-2 text-center md:max-w-2xl md:px-0">
+                            {hasQuestionStarted ? null : hasSentGreeting ? null : (
                                 <div className="space-y-4">
                                     <p className="text-base leading-7 text-slate-600 md:text-lg">
                                         {t(
@@ -3049,96 +3013,164 @@ function AnswerForm({
     submitAnswers: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
     const { t } = useTranslate();
+    const total = session.questions.length;
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const activeQuestion = session.questions[currentIndex];
+    const errors = form.errors as Record<string, string>;
+    const answeredCount = useMemo(
+        () =>
+            session.questions.reduce(
+                (count, q) =>
+                    (form.data.answers[q.id] ?? '').trim().length > 0
+                        ? count + 1
+                        : count,
+                0,
+            ),
+        [session.questions, form.data.answers],
+    );
+    const progressPercent = total === 0 ? 0 : Math.round((answeredCount / total) * 100);
+    const isLast = currentIndex === total - 1;
+    const isFirst = currentIndex === 0;
+
+    if (!activeQuestion) {
+        return null;
+    }
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>
-                    {t('candidate.ai_interview_show.answers_per_question')}
-                </CardTitle>
-                <CardDescription>
-                    {isVoiceInterview
-                        ? t(
-                              'candidate.ai_interview_show.voice_answer_description',
-                          )
-                        : t(
-                              'candidate.ai_interview_show.text_answer_description',
-                          )}
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <form className="space-y-5" onSubmit={submitAnswers}>
-                    <div className="rounded-2xl border border-primary-200 bg-primary-50/80 p-4">
-                        <p className="text-xs font-bold tracking-[0.3em] text-primary-600 uppercase">
-                            {t('candidate.ai_interview_show.ai_opening')}
-                        </p>
-                        <p className="mt-3 text-base font-semibold text-slate-900">
+        <form onSubmit={submitAnswers} className="space-y-4">
+            {/* Compact greeting — only for text mode */}
+            {!isVoiceInterview && (
+                <div className="rounded-2xl border border-primary-200 bg-linear-to-br from-primary-50 to-secondary-50/40 p-4">
+                    <div className="flex items-center gap-2">
+                        <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary-100">
+                            <Bot className="size-3.5 text-primary-600" />
+                        </div>
+                        <p className="text-[11px] font-bold tracking-wider text-primary-600 uppercase">
                             {session.ai_intro.assistant_name}
                         </p>
-                        <p className="mt-2 text-sm leading-6 text-slate-600">
-                            {session.ai_intro.greeting}
+                    </div>
+                    <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600 sm:line-clamp-none">
+                        {session.ai_intro.greeting}
+                    </p>
+                </div>
+            )}
+
+            {/* Sticky exam header — progress + counter + nav grid */}
+            <div className="sticky top-2 z-10 space-y-3 rounded-2xl border bg-white/95 p-4 shadow-sm backdrop-blur-sm sm:p-5">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-bold tracking-[0.25em] text-primary-600 uppercase sm:text-xs">
+                            {t('candidate.ai_interview_show.answers_per_question')}
+                        </p>
+                        <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground sm:text-sm">
+                            {answeredCount} / {total} terisi ({progressPercent}%)
                         </p>
                     </div>
-                    {session.questions.map((question, questionIndex) => (
-                        <div
-                            key={question.id}
-                            className="rounded-2xl border p-4"
-                        >
-                            <label className="text-sm font-semibold">
-                                {questionIndex + 1}. {question.question}
-                            </label>
-                            <textarea
-                                className="mt-3 min-h-28 w-full rounded-xl border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                                value={form.data.answers[question.id] ?? ''}
-                                onChange={(event) =>
-                                    updateAnswer(
-                                        question.id,
-                                        event.target.value,
-                                    )
-                                }
-                                placeholder={t(
-                                    'candidate.ai_interview_show.write_answer_placeholder',
-                                )}
-                            />
-                            <InputError
-                                message={
-                                    (form.errors as Record<string, string>)[
-                                        `answers.${question.id}`
-                                    ]
-                                }
-                            />
-                        </div>
-                    ))}
-
-                    <div className="flex flex-col gap-3 rounded-2xl border bg-muted/20 p-4 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <p className="font-semibold">
-                                {t(
-                                    'candidate.ai_interview_show.complete_interview',
-                                )}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                                {isVoiceInterview
-                                    ? t(
-                                          'candidate.ai_interview_show.voice_submit_description',
-                                      )
-                                    : t(
-                                          'candidate.ai_interview_show.text_submit_description',
-                                      )}
-                            </p>
-                        </div>
-                        <Button disabled={form.processing}>
-                            <CheckCircle2 className="size-4" />
-                            {form.processing
-                                ? t('candidate.ai_interview_show.sending')
-                                : t(
-                                      'candidate.ai_interview_show.complete_and_submit',
-                                  )}
-                        </Button>
+                    <div className="shrink-0 rounded-full bg-primary-600 px-3 py-1.5 text-xs font-bold text-white sm:px-4 sm:py-2 sm:text-sm">
+                        {currentIndex + 1} / {total}
                     </div>
-                </form>
-            </CardContent>
-        </Card>
+                </div>
+
+                <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                        className="h-full rounded-full bg-linear-to-r from-primary-500 to-primary-700 transition-all duration-300"
+                        style={{ width: `${progressPercent}%` }}
+                    />
+                </div>
+
+                {/* Question grid — compact */}
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                    {session.questions.map((q, idx) => {
+                        const filled = (form.data.answers[q.id] ?? '').trim().length > 0;
+                        const isActive = idx === currentIndex;
+                        return (
+                            <button
+                                key={q.id}
+                                type="button"
+                                onClick={() => setCurrentIndex(idx)}
+                                className={cn(
+                                    'flex size-8 items-center justify-center rounded-md border text-xs font-bold transition-all sm:size-9 sm:text-sm',
+                                    isActive
+                                        ? 'border-primary-600 bg-primary-600 text-white shadow-sm'
+                                        : filled
+                                          ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:border-emerald-500'
+                                          : 'border-slate-200 bg-white text-slate-500 hover:border-slate-400',
+                                )}
+                                aria-label={`Soal ${idx + 1}${filled ? ' (terisi)' : ''}`}
+                            >
+                                {idx + 1}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Active question */}
+            <div className="rounded-2xl border-2 border-primary-200 bg-white p-4 shadow-sm sm:p-6">
+                <div className="mb-4 flex items-start gap-3">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-600 text-xs font-bold text-white shadow-sm sm:size-9 sm:text-sm">
+                        {currentIndex + 1}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        {activeQuestion.category ? (
+                            <p className="mb-1 text-[10px] font-bold tracking-widest text-primary-500 uppercase">
+                                {activeQuestion.category}
+                            </p>
+                        ) : null}
+                        <p className="text-sm leading-6 font-semibold text-slate-900 sm:text-base sm:leading-7">
+                            {activeQuestion.question}
+                        </p>
+                    </div>
+                </div>
+
+                <textarea
+                    autoFocus
+                    className="min-h-40 w-full rounded-xl border border-input bg-transparent px-3 py-2.5 text-sm leading-6 shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:min-h-48 sm:px-4 sm:py-3"
+                    value={form.data.answers[activeQuestion.id] ?? ''}
+                    onChange={(event) => updateAnswer(activeQuestion.id, event.target.value)}
+                    placeholder={t('candidate.ai_interview_show.write_answer_placeholder')}
+                />
+                <InputError message={errors[`answers.${activeQuestion.id}`]} />
+            </div>
+
+            {/* Navigation footer */}
+            <div className="flex flex-col gap-3 rounded-2xl border bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+                <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isFirst}
+                    onClick={() => setCurrentIndex((idx) => Math.max(0, idx - 1))}
+                    className="w-full sm:w-auto"
+                >
+                    <ChevronLeft className="size-4" />
+                    Sebelumnya
+                </Button>
+
+                {isLast ? (
+                    <Button
+                        type="submit"
+                        disabled={form.processing}
+                        className="w-full gap-2 sm:w-auto"
+                    >
+                        <CheckCircle2 className="size-4" />
+                        {form.processing
+                            ? t('candidate.ai_interview_show.sending')
+                            : t('candidate.ai_interview_show.complete_and_submit')}
+                    </Button>
+                ) : (
+                    <Button
+                        type="button"
+                        onClick={() =>
+                            setCurrentIndex((idx) => Math.min(total - 1, idx + 1))
+                        }
+                        className="w-full sm:w-auto"
+                    >
+                        Selanjutnya
+                        <ChevronRight className="size-4" />
+                    </Button>
+                )}
+            </div>
+        </form>
     );
 }
 

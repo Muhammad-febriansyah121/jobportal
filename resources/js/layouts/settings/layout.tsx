@@ -2,6 +2,7 @@ import { usePage } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import {
     BriefcaseBusiness,
+    Camera,
     FileText,
     GraduationCap,
     ShieldCheck,
@@ -13,53 +14,61 @@ import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/hooks/use-current-url';
+import { useTranslate } from '@/hooks/use-translate';
 import { cn, toUrl } from '@/lib/utils';
 import { index as candidateCvs } from '@/routes/candidate/cvs';
 import { index as candidateEducations } from '@/routes/candidate/educations';
 import { index as candidateExperiences } from '@/routes/candidate/experiences';
 import { edit as candidateProfileEdit } from '@/routes/candidate/profile';
+import { edit as candidateProfilePhoto } from '@/routes/candidate/profile/photo';
 import { index as candidateSkills } from '@/routes/candidate/skills';
 import { edit as editSecurity } from '@/routes/security';
 import type { NavItem } from '@/types';
 
-const profileDataNavItems: NavItem[] = [
-    {
-        title: 'Profil',
-        href: candidateProfileEdit(),
-        icon: UserRound,
-    },
-    {
-        title: 'Pengalaman Kerja',
-        href: candidateExperiences(),
-        icon: BriefcaseBusiness,
-    },
-    {
-        title: 'Pendidikan',
-        href: candidateEducations(),
-        icon: GraduationCap,
-    },
-    {
-        title: 'Skill',
-        href: candidateSkills(),
-        icon: Tags,
-    },
-    {
-        title: 'CV',
-        href: candidateCvs(),
-        icon: FileText,
-    },
-];
-
 export default function SettingsLayout({ children }: PropsWithChildren) {
+    const { t } = useTranslate();
     const { isCurrentOrParentUrl } = useCurrentUrl();
     const { auth } = usePage().props;
     const isCandidate = auth?.user?.role === 'candidate';
 
+    const profileDataNavItems: NavItem[] = [
+        {
+            title: t('settings_layout.nav_profile'),
+            href: candidateProfileEdit(),
+            icon: UserRound,
+        },
+        {
+            title: t('settings_layout.nav_profile_photo'),
+            href: candidateProfilePhoto(),
+            icon: Camera,
+        },
+        {
+            title: t('settings_layout.nav_experiences'),
+            href: candidateExperiences(),
+            icon: BriefcaseBusiness,
+        },
+        {
+            title: t('settings_layout.nav_educations'),
+            href: candidateEducations(),
+            icon: GraduationCap,
+        },
+        {
+            title: t('settings_layout.nav_skills'),
+            href: candidateSkills(),
+            icon: Tags,
+        },
+        {
+            title: t('settings_layout.nav_cv'),
+            href: candidateCvs(),
+            icon: FileText,
+        },
+    ];
+
     return (
         <div className="px-4 py-6">
             <Heading
-                title="Pengaturan Akun"
-                description="Kelola profil user dan ganti password akun."
+                title={t('settings_layout.heading_title')}
+                description={t('settings_layout.heading_description')}
             />
 
             <div className="flex flex-col gap-6 lg:flex-row lg:gap-12">
@@ -80,7 +89,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                         >
                             <Link href={editSecurity()}>
                                 <ShieldCheck className="h-4 w-4" />
-                                Ganti Password
+                                {t('settings_layout.change_password')}
                             </Link>
                         </Button>
 
@@ -127,7 +136,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                         >
                             <Link href={editSecurity()}>
                                 <ShieldCheck className="h-4 w-4" />
-                                Ganti Password
+                                {t('settings_layout.change_password')}
                             </Link>
                         </Button>
 
@@ -135,7 +144,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                             <>
                                 <div className="px-2 pt-3 pb-1">
                                     <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                                        Data Profil
+                                        {t('settings_layout.profile_data_heading')}
                                     </p>
                                 </div>
                                 {profileDataNavItems.map((item, index) => (

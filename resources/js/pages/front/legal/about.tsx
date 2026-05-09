@@ -11,6 +11,7 @@ import {
     Users,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useTranslate } from '@/hooks/use-translate';
 import HomeLayout from '@/layouts/front/home-layout';
 
 type Faq = { id: number; title: string; description: string };
@@ -221,12 +222,13 @@ export default function AboutPage({
     about_office_image,
     faqs,
 }: AboutProps) {
-    const title = about_title || 'Tentang Kami';
+    const { t } = useTranslate();
+    const title = about_title || t('front.about.default_title');
 
     const companyStats = [
-        { icon: Calendar, label: 'Tahun Berdiri', value: about_founded_year },
-        { icon: Users, label: 'Jumlah Karyawan', value: about_employee_count },
-        { icon: MapPin, label: 'Kantor Pusat', value: about_headquarters },
+        { icon: Calendar, label: t('front.about.stat_founded'), value: about_founded_year },
+        { icon: Users, label: t('front.about.stat_employees'), value: about_employee_count },
+        { icon: MapPin, label: t('front.about.stat_hq'), value: about_headquarters },
     ].filter((s) => s.value);
 
     return (
@@ -247,7 +249,7 @@ export default function AboutPage({
                         href="/"
                         className="mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-primary"
                     >
-                        <ArrowLeft className="size-4" /> Kembali ke Beranda
+                        <ArrowLeft className="size-4" /> {t('front.about.back_home')}
                     </Link>
 
                     <div className="grid gap-12 lg:grid-cols-[1fr_480px] lg:items-center">
@@ -255,7 +257,7 @@ export default function AboutPage({
                             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5">
                                 <Sparkles className="size-3.5 text-primary" />
                                 <span className="text-xs font-semibold text-primary">
-                                    Platform Karier #1 Indonesia
+                                    {t('front.about.hero_platform_badge')}
                                 </span>
                             </div>
 
@@ -323,10 +325,10 @@ export default function AboutPage({
                     <div className="mx-auto max-w-6xl">
                         <div className="mb-10 text-center">
                             <p className="text-xs font-semibold tracking-widest text-primary uppercase">
-                                Arah & Tujuan
+                                {t('front.about.vm_direction_kicker')}
                             </p>
                             <h2 className="mt-2 text-2xl font-extrabold text-foreground sm:text-3xl">
-                                Visi & Misi
+                                {t('front.about.vm_kicker')}
                             </h2>
                         </div>
 
@@ -339,7 +341,7 @@ export default function AboutPage({
                                             <Eye className="size-6 text-white" />
                                         </div>
                                         <p className="mb-3 text-xs font-semibold tracking-widest text-white/70 uppercase">
-                                            Visi
+                                            {t('front.about.vision_label')}
                                         </p>
                                         <p className="text-base leading-relaxed font-medium text-white">
                                             {about_vision}
@@ -356,7 +358,7 @@ export default function AboutPage({
                                             <Target className="size-6 text-primary" />
                                         </div>
                                         <p className="mb-3 text-xs font-semibold tracking-widest text-primary uppercase">
-                                            Misi
+                                            {t('front.about.mission_label')}
                                         </p>
                                         <ProseBlock html={about_mission} />
                                     </div>
@@ -377,7 +379,7 @@ export default function AboutPage({
                                     <div className="absolute -inset-4 rounded-3xl bg-gradient-to-tr from-primary-50 to-primary/10 blur-xl" />
                                     <img
                                         src={`/storage/${about_office_image}`}
-                                        alt="Kantor"
+                                        alt={t('front.about.office_alt')}
                                         className="relative z-10 h-72 w-full rounded-3xl object-cover lg:h-96"
                                     />
                                 </div>
@@ -388,10 +390,10 @@ export default function AboutPage({
                                 }
                             >
                                 <p className="mb-3 text-xs font-semibold tracking-widest text-primary uppercase">
-                                    Latar Belakang
+                                    {t('front.about.story_kicker')}
                                 </p>
                                 <h2 className="mb-6 text-2xl font-extrabold text-foreground sm:text-3xl">
-                                    Cerita Kami
+                                    {t('front.about.story_title')}
                                 </h2>
                                 <ProseBlock html={about_story} />
                             </div>
@@ -406,14 +408,13 @@ export default function AboutPage({
                     <div className="mx-auto max-w-6xl">
                         <div className="mb-12 text-center">
                             <p className="text-xs font-semibold tracking-widest text-primary uppercase">
-                                DNA Perusahaan
+                                {t('front.about.values_kicker')}
                             </p>
                             <h2 className="mt-2 text-2xl font-extrabold text-foreground sm:text-3xl">
-                                Nilai-Nilai Kami
+                                {t('front.about.values_title')}
                             </h2>
                             <p className="mt-3 text-sm text-muted-foreground">
-                                Prinsip yang menjadi landasan kami dalam setiap
-                                langkah
+                                {t('front.about.values_subtitle')}
                             </p>
                         </div>
                         <ValuesGrid html={about_values} />
@@ -427,18 +428,18 @@ export default function AboutPage({
                     <div className="mx-auto max-w-3xl">
                         <div className="mb-10 text-center">
                             <p className="text-xs font-semibold tracking-widest text-primary uppercase">
-                                FAQ
+                                {t('front.about.faq_kicker')}
                             </p>
                             <h2 className="mt-2 text-2xl font-extrabold text-foreground sm:text-3xl">
-                                Pertanyaan yang Sering Diajukan
+                                {t('front.about.faq_title')}
                             </h2>
                             <p className="mt-3 text-sm text-muted-foreground">
-                                Tidak menemukan jawaban?{' '}
+                                {t('front.about.faq_subtitle')}{' '}
                                 <Link
                                     href="/contact"
                                     className="font-semibold text-primary hover:underline"
                                 >
-                                    Hubungi kami
+                                    {t('front.about.faq_contact_link')}
                                 </Link>
                                 .
                             </p>
@@ -461,24 +462,23 @@ export default function AboutPage({
                         <Rocket className="size-7 text-white" />
                     </div>
                     <h2 className="text-2xl font-extrabold text-white sm:text-3xl">
-                        Siap Mulai Perjalanan Kariermu?
+                        {t('front.about.cta_title')}
                     </h2>
                     <p className="mt-3 text-sm text-white/80 sm:text-base">
-                        Bergabung dengan ratusan ribu pencari kerja yang telah
-                        mempercayai Karivia.
+                        {t('front.about.cta_subtitle')}
                     </p>
                     <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                         <Link
                             href="/jobs"
                             className="inline-flex items-center justify-center rounded-full bg-white px-7 py-3 text-sm font-bold text-primary transition hover:bg-white/90"
                         >
-                            Cari Lowongan
+                            {t('front.about.cta_find_jobs')}
                         </Link>
                         <Link
                             href="/register"
                             className="inline-flex items-center justify-center rounded-full border-2 border-white/40 px-7 py-3 text-sm font-bold text-white transition hover:bg-white/10"
                         >
-                            Daftar Gratis
+                            {t('front.about.cta_register')}
                         </Link>
                     </div>
                 </div>

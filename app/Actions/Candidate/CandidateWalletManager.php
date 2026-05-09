@@ -15,6 +15,10 @@ class CandidateWalletManager
 
     public const CV_BUILDER_DRAFT_TOKEN_COST = 500;
 
+    public const AI_INTERVIEW_SESSION_COST = 1;
+
+    public const AI_INTERVIEW_FREE_TRIAL_QUOTA = 1;
+
     public function ensureFreeQuota(CandidateProfile $candidate): CandidateProfile
     {
         if ($candidate->free_cv_builder_granted_at !== null) {
@@ -146,6 +150,92 @@ class CandidateWalletManager
             $fresh->forceFill([
                 'ai_token_balance' => max(0, (int) $fresh->ai_token_balance - self::CV_BUILDER_DRAFT_TOKEN_COST),
                 'cv_builder_quota_balance' => max(0, (int) $fresh->cv_builder_quota_balance - self::CV_BUILDER_DRAFT_QUOTA_COST),
+            ])->save();
+        });
+
+        return $candidate->refresh();
+    }
+
+    public function ensureFreeAiInterviewQuota(CandidateProfile $candidate): CandidateProfile
+    {
+        if ($candidate->free_ai_interview_granted_at !== null) {
+            return $candidate;
+        }
+
+        DB::transaction(function () use ($candidate): void {
+            $fresh = CandidateProfile::query()
+                ->whereKey($candidate->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($fresh->free_ai_interview_granted_at !== null) {
+                return;
+            }
+
+            CandidateWalletTransaction::create([
+                'candidate_id' => $fresh->id,
+                'type' => 'credit',
+                'source' => 'free_grant',
+                'ai_token_delta' => 0,
+                'cv_builder_quota_delta' => 0,
+                'ai_interview_quota_delta' => self::AI_INTERVIEW_FREE_TRIAL_QUOTA,
+                'amount' => 0,
+                'status' => 'success',
+                'meta_json' => [
+                    'label' => 'Trial gratis 1x simulasi AI Interview',
+                ],
+                'paid_at' => now(),
+            ]);
+
+            $fresh->forceFill([
+                'ai_interview_quota_balance' => (int) $fresh->ai_interview_quota_balance + self::AI_INTERVIEW_FREE_TRIAL_QUOTA,
+                'free_ai_interview_granted_at' => now(),
+            ])->save();
+        });
+
+        return $candidate->refresh();
+    }
+
+    public function canStartAiInterview(CandidateProfile $candidate): bool
+    {
+        $expiresAt = $candidate->ai_interview_quota_expires_at;
+
+        if ($expiresAt !== null && $expiresAt->isPast()) {
+            return false;
+        }
+
+        return (int) $candidate->ai_interview_quota_balance >= self::AI_INTERVIEW_SESSION_COST;
+    }
+
+    public function consumeAiInterviewQuota(CandidateProfile $candidate): CandidateProfile
+    {
+        DB::transaction(function () use ($candidate): void {
+            $fresh = CandidateProfile::query()
+                ->whereKey($candidate->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (! $this->canStartAiInterview($fresh)) {
+                return;
+            }
+
+            CandidateWalletTransaction::create([
+                'candidate_id' => $fresh->id,
+                'type' => 'debit',
+                'source' => 'ai_interview_session',
+                'ai_token_delta' => 0,
+                'cv_builder_quota_delta' => 0,
+                'ai_interview_quota_delta' => -self::AI_INTERVIEW_SESSION_COST,
+                'amount' => 0,
+                'status' => 'success',
+                'meta_json' => [
+                    'quota_cost' => self::AI_INTERVIEW_SESSION_COST,
+                ],
+                'paid_at' => now(),
+            ]);
+
+            $fresh->forceFill([
+                'ai_interview_quota_balance' => max(0, (int) $fresh->ai_interview_quota_balance - self::AI_INTERVIEW_SESSION_COST),
             ])->save();
         });
 

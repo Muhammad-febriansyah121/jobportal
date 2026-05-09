@@ -18,6 +18,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTranslate } from '@/hooks/use-translate';
 import { create, show } from '@/routes/employer/whatsapp-bulk';
 
 type Campaign = {
@@ -45,74 +46,68 @@ type WhatsAppBulkIndexProps = {
     };
 };
 
-const STATUS_LABELS: Record<string, string> = {
-    queued: 'Antri',
-    processing: 'Sedang dikirim',
-    completed: 'Selesai',
-    completed_with_errors: 'Selesai (sebagian gagal)',
-    failed: 'Gagal',
-};
-
-function statusBadge(status: string) {
-    if (status === 'completed') {
-        return (
-            <Badge className="border-green-200 bg-green-50 text-green-700">
-                <CheckCircle2 className="mr-1 size-3.5" />
-                Selesai
-            </Badge>
-        );
-    }
-    if (status === 'failed') {
-        return (
-            <Badge className="border-red-200 bg-red-50 text-red-700">
-                <AlertCircle className="mr-1 size-3.5" />
-                Gagal
-            </Badge>
-        );
-    }
-    if (status === 'completed_with_errors') {
-        return (
-            <Badge className="border-amber-200 bg-amber-50 text-amber-700">
-                Sebagian gagal
-            </Badge>
-        );
-    }
-    if (status === 'processing') {
-        return (
-            <Badge className="border-blue-200 bg-blue-50 text-blue-700">
-                Sedang dikirim
-            </Badge>
-        );
-    }
-    return (
-        <Badge variant="outline" className="text-muted-foreground">
-            {STATUS_LABELS[status] ?? status}
-        </Badge>
-    );
-}
-
 export default function EmployerWhatsAppBulkIndex({
     campaigns,
     gateway,
 }: WhatsAppBulkIndexProps) {
+    const { t } = useTranslate();
+
     const isConnected = ['CONNECTED', 'READY'].includes(
         (gateway.session_state ?? '').toUpperCase(),
     );
 
+    function statusBadge(status: string) {
+        if (status === 'completed') {
+            return (
+                <Badge className="border-green-200 bg-green-50 text-green-700">
+                    <CheckCircle2 className="mr-1 size-3.5" />
+                    {t('employer.whatsapp_bulk.status_completed')}
+                </Badge>
+            );
+        }
+        if (status === 'failed') {
+            return (
+                <Badge className="border-red-200 bg-red-50 text-red-700">
+                    <AlertCircle className="mr-1 size-3.5" />
+                    {t('employer.whatsapp_bulk.status_failed')}
+                </Badge>
+            );
+        }
+        if (status === 'completed_with_errors') {
+            return (
+                <Badge className="border-amber-200 bg-amber-50 text-amber-700">
+                    {t('employer.whatsapp_bulk.status_partial')}
+                </Badge>
+            );
+        }
+        if (status === 'processing') {
+            return (
+                <Badge className="border-blue-200 bg-blue-50 text-blue-700">
+                    {t('employer.whatsapp_bulk.status_processing')}
+                </Badge>
+            );
+        }
+        return (
+            <Badge variant="outline" className="text-muted-foreground">
+                {t('employer.whatsapp_bulk.status_queued')}
+            </Badge>
+        );
+    }
+
     return (
         <>
-            <Head title="Broadcast" />
+            <Head title={t('employer.whatsapp_bulk.page_title')} />
 
             <div className="space-y-6 p-4 md:p-6">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <Heading
-                        title="Broadcast"
-                        description="Kirim pesan massal via WhatsApp atau Email ke pelamar suatu lowongan dengan delay otomatis."
+                        title={t('employer.whatsapp_bulk.heading_title')}
+                        description={t('employer.whatsapp_bulk.heading_desc')}
                     />
                     <Button asChild>
                         <Link href={create().url}>
                             <Plus className="size-4" />
-                            Kampanye baru
+                            {t('employer.whatsapp_bulk.btn_new')}
                         </Link>
                     </Button>
                 </div>
@@ -122,10 +117,7 @@ export default function EmployerWhatsAppBulkIndex({
                         <CardContent className="flex items-start gap-3 py-4">
                             <AlertCircle className="mt-0.5 size-5 text-amber-600" />
                             <p className="text-sm text-amber-800">
-                                Gateway WhatsApp belum dikonfigurasi. Untuk
-                                broadcast WhatsApp, hubungkan dulu di halaman
-                                Koneksi WhatsApp. Channel Email tetap bisa
-                                dipakai.
+                                {t('employer.whatsapp_bulk.warning_not_configured')}
                             </p>
                         </CardContent>
                     </Card>
@@ -134,9 +126,7 @@ export default function EmployerWhatsAppBulkIndex({
                         <CardContent className="flex items-start gap-3 py-4">
                             <AlertCircle className="mt-0.5 size-5 text-amber-600" />
                             <p className="text-sm text-amber-800">
-                                Sesi WhatsApp belum terhubung. Untuk broadcast
-                                WhatsApp, pastikan status CONNECTED dulu.
-                                Channel Email tetap bisa dipakai.
+                                {t('employer.whatsapp_bulk.warning_not_connected')}
                             </p>
                         </CardContent>
                     </Card>
@@ -144,10 +134,9 @@ export default function EmployerWhatsAppBulkIndex({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Riwayat kampanye</CardTitle>
+                        <CardTitle>{t('employer.whatsapp_bulk.card_title')}</CardTitle>
                         <CardDescription>
-                            Semua kampanye broadcast (WhatsApp & Email) yang
-                            pernah dijalankan akun ini.
+                            {t('employer.whatsapp_bulk.card_desc')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -155,8 +144,7 @@ export default function EmployerWhatsAppBulkIndex({
                             <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
                                 <Send className="size-10 text-muted-foreground" />
                                 <p className="text-sm text-muted-foreground">
-                                    Belum ada kampanye. Klik &ldquo;Kampanye
-                                    baru&rdquo; untuk mulai kirim massal.
+                                    {t('employer.whatsapp_bulk.empty_text')}
                                 </p>
                             </div>
                         ) : (
@@ -164,24 +152,24 @@ export default function EmployerWhatsAppBulkIndex({
                                 <Table className="min-w-160">
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Lowongan</TableHead>
-                                            <TableHead>Channel</TableHead>
-                                            <TableHead>Status</TableHead>
+                                            <TableHead>{t('employer.whatsapp_bulk.col_job')}</TableHead>
+                                            <TableHead>{t('employer.whatsapp_bulk.col_channel')}</TableHead>
+                                            <TableHead>{t('employer.whatsapp_bulk.col_status')}</TableHead>
                                             <TableHead className="text-right">
-                                                Total
+                                                {t('employer.whatsapp_bulk.col_total')}
                                             </TableHead>
                                             <TableHead className="text-right">
-                                                Terkirim
+                                                {t('employer.whatsapp_bulk.col_sent')}
                                             </TableHead>
                                             <TableHead className="text-right">
-                                                Gagal
+                                                {t('employer.whatsapp_bulk.col_failed')}
                                             </TableHead>
                                             <TableHead className="text-right">
-                                                Lewati
+                                                {t('employer.whatsapp_bulk.col_skip')}
                                             </TableHead>
-                                            <TableHead>Dibuat</TableHead>
+                                            <TableHead>{t('employer.whatsapp_bulk.col_created')}</TableHead>
                                             <TableHead className="text-right">
-                                                Aksi
+                                                {t('employer.whatsapp_bulk.col_actions')}
                                             </TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -241,7 +229,7 @@ export default function EmployerWhatsAppBulkIndex({
                                                             }
                                                         >
                                                             <Eye className="size-4" />
-                                                            Detail
+                                                            {t('employer.whatsapp_bulk.btn_detail')}
                                                         </Link>
                                                     </Button>
                                                 </TableCell>

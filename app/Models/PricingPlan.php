@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 #[Fillable([
     'name', 'slug', 'price', 'duration_days', 'active_jobs_limit', 'recruiter_seat_limit',
-    'ai_screening_quota', 'talent_search_quota', 'features_json', 'is_active',
+    'ai_screening_quota', 'ai_interview_quota', 'talent_search_quota', 'features_json', 'is_active', 'is_trial',
 ])]
 class PricingPlan extends Model
 {
@@ -28,6 +28,7 @@ class PricingPlan extends Model
         return [
             'features_json' => 'array',
             'is_active' => 'boolean',
+            'is_trial' => 'boolean',
         ];
     }
 

@@ -255,6 +255,7 @@ class CandidateCareerPathController extends Controller
             'output_json' => $output,
             'model_name' => $this->ai->modelName(),
             'status' => is_array($output) ? 'success' : 'fallback',
+            ...$this->ai->tokenUsage(),
         ]);
 
         return is_array($output) ? $output : null;

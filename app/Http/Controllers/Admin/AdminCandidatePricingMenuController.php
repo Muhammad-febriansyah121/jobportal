@@ -26,8 +26,9 @@ class AdminCandidatePricingMenuController extends Controller
                 'name',
                 'slug',
                 'price',
-                'ai_token_amount',
+                'ai_interview_quota',
                 'cv_builder_quota',
+                'validity_days',
                 'is_default_free',
                 'is_active',
                 'created_at',
@@ -43,10 +44,11 @@ class AdminCandidatePricingMenuController extends Controller
                 'id' => $menu->id,
                 'name' => $menu->name,
                 'price' => 'Rp '.number_format((int) $menu->price, 0, ',', '.'),
-                'ai_token_amount' => number_format((int) $menu->ai_token_amount, 0, ',', '.'),
+                'ai_interview_quota' => (int) $menu->ai_interview_quota,
                 'cv_builder_quota' => (int) $menu->cv_builder_quota,
+                'validity_days' => (int) $menu->validity_days,
                 'menu_type' => [
-                    'label' => $menu->is_default_free ? 'Gratis Default' : 'Topup',
+                    'label' => $menu->is_default_free ? 'Gratis Default' : 'Berbayar',
                     'tone' => $menu->is_default_free ? 'success' : 'warning',
                 ],
                 'status' => [
@@ -58,7 +60,7 @@ class AdminCandidatePricingMenuController extends Controller
 
         return Inertia::render('admin/candidate-pricing-menus/index', [
             'title' => 'Kelola Pricing Kandidat',
-            'description' => 'Atur paket gratis sekali pakai CV Builder dan paket topup token AI untuk kandidat.',
+            'description' => 'Atur paket berlangganan kandidat untuk simulasi AI Interview, CV ATS, Analisa CV, dan Career Coach.',
             'indexAction' => route('admin.candidate-pricing-menus.index'),
             'createHref' => route('admin.candidate-pricing-menus.create'),
             'filters' => [
@@ -67,8 +69,9 @@ class AdminCandidatePricingMenuController extends Controller
             'columns' => [
                 ['key' => 'name', 'label' => 'Nama Paket'],
                 ['key' => 'price', 'label' => 'Harga'],
-                ['key' => 'ai_token_amount', 'label' => 'Token AI'],
-                ['key' => 'cv_builder_quota', 'label' => 'Kuota CV Builder'],
+                ['key' => 'ai_interview_quota', 'label' => 'Simulasi Interview AI'],
+                ['key' => 'cv_builder_quota', 'label' => 'Kuota CV'],
+                ['key' => 'validity_days', 'label' => 'Masa Aktif (hari)'],
                 ['key' => 'menu_type', 'label' => 'Tipe'],
                 ['key' => 'status', 'label' => 'Status'],
             ],
@@ -81,7 +84,7 @@ class AdminCandidatePricingMenuController extends Controller
     {
         return Inertia::render('admin/candidate-pricing-menus/create', [
             'title' => 'Tambah Pricing Kandidat',
-            'description' => 'Buat menu gratis atau paket topup token AI untuk kandidat.',
+            'description' => 'Buat paket berlangganan kandidat (Simulasi Interview AI, CV ATS, Analisa CV, Career Coach).',
             'backHref' => route('admin.candidate-pricing-menus.index'),
             'storeAction' => route('admin.candidate-pricing-menus.store'),
         ]);
@@ -203,8 +206,10 @@ class AdminCandidatePricingMenuController extends Controller
             ),
             'description' => $validated['description'] ?? null,
             'price' => $isDefaultFree ? 0 : $validated['price'],
-            'ai_token_amount' => $validated['ai_token_amount'],
+            'ai_token_amount' => 0,
+            'ai_interview_quota' => $validated['ai_interview_quota'] ?? 0,
             'cv_builder_quota' => $validated['cv_builder_quota'],
+            'validity_days' => $validated['validity_days'] ?? 30,
             'features_json' => collect(preg_split('/\r\n|\r|\n/', (string) ($validated['features'] ?? '')))
                 ->map(fn (string $feature): string => trim($feature))
                 ->filter()
@@ -212,6 +217,7 @@ class AdminCandidatePricingMenuController extends Controller
                 ->all(),
             'is_default_free' => $isDefaultFree,
             'is_active' => $request->boolean('is_active'),
+            'is_trial' => $request->boolean('is_trial'),
         ];
     }
 
@@ -247,11 +253,13 @@ class AdminCandidatePricingMenuController extends Controller
             'description' => $menu->description,
             'price' => (int) $menu->price,
             'price_label' => 'Rp '.number_format((int) $menu->price, 0, ',', '.'),
-            'ai_token_amount' => (int) $menu->ai_token_amount,
+            'ai_interview_quota' => (int) $menu->ai_interview_quota,
             'cv_builder_quota' => (int) $menu->cv_builder_quota,
+            'validity_days' => (int) $menu->validity_days,
             'features' => $menu->normalizedFeatures(),
             'is_default_free' => (bool) $menu->is_default_free,
             'is_active' => (bool) $menu->is_active,
+            'is_trial' => (bool) $menu->is_trial,
             'created_at' => $menu->created_at?->format('d M Y H:i'),
             'updated_at' => $menu->updated_at?->format('d M Y H:i'),
         ];

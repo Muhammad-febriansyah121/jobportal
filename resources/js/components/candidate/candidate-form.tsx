@@ -125,29 +125,41 @@ export function DatePickerInput({
 }
 
 type RupiahInputProps = {
-    name: string;
+    name?: string;
     defaultValue?: number | string | null;
+    value?: number | string | null;
+    onChange?: (value: number) => void;
     placeholder?: string;
 };
 
 export function RupiahInput({
     name,
     defaultValue,
+    value,
+    onChange,
     placeholder = 'Rp0',
 }: RupiahInputProps) {
-    const [amount, setAmount] = useState<number>(() =>
-        onlyDigits(defaultValue),
-    );
+    const isControlled = value !== undefined;
+    const [internal, setInternal] = useState<number>(() => onlyDigits(defaultValue));
+    const amount = isControlled ? onlyDigits(value) : internal;
+
+    const handleChange = (next: number): void => {
+        if (isControlled) {
+            onChange?.(next);
+        } else {
+            setInternal(next);
+        }
+    };
 
     return (
         <>
-            <input type="hidden" name={name} value={amount || ''} />
+            {name ? <input type="hidden" name={name} value={amount || ''} /> : null}
             <Input
                 id={name}
                 inputMode="numeric"
                 value={formatRupiah(amount)}
                 placeholder={placeholder}
-                onChange={(event) => setAmount(onlyDigits(event.target.value))}
+                onChange={(event) => handleChange(onlyDigits(event.target.value))}
             />
         </>
     );

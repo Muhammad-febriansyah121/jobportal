@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTranslate } from '@/hooks/use-translate';
 import HomeLayout from '@/layouts/front/home-layout';
 import { cn } from '@/lib/utils';
 import { login } from '@/routes';
@@ -75,12 +76,6 @@ type CompanyShowProps = {
                 review: string | null;
             } | null;
         };
-        salary_insight: {
-            salary_min: number | null;
-            salary_median: number | null;
-            salary_max: number | null;
-            source_count: number | null;
-        };
     };
     jobs: Array<{
         id: number;
@@ -95,14 +90,6 @@ type CompanyShowProps = {
     }>;
 };
 
-function formatMoney(amount: number | null): string {
-    if (amount === null) {
-        return '-';
-    }
-
-    return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
-}
-
 function splitListText(value?: string | null): string[] {
     if (!value) {
         return [];
@@ -115,6 +102,7 @@ function splitListText(value?: string | null): string[] {
 }
 
 export default function CompanyShow({ company, jobs }: CompanyShowProps) {
+    const { t } = useTranslate();
     const { auth } = usePage<{
         auth?: {
             user?: {
@@ -134,11 +122,6 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
         .slice(0, 2)
         .toUpperCase();
 
-    const salaryInsight = company.salary_insight;
-    const hasSalaryInsight =
-        salaryInsight.salary_min !== null ||
-        salaryInsight.salary_median !== null ||
-        salaryInsight.salary_max !== null;
     const myReview = company.review_access.my_review;
     const reviewForm = useForm({
         rating: myReview?.rating ?? 5,
@@ -148,27 +131,27 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
 
     const metrics = [
         {
-            label: 'Response Rate',
+            label: t('companies.show.metric_response_rate'),
             value:
                 company.response_rate !== null
                     ? `${company.response_rate}%`
-                    : 'Belum ada data',
-            helper: 'Kecepatan respon recruiter',
+                    : t('companies.show.metric_no_data'),
+            helper: t('companies.show.metric_response_rate_helper'),
             icon: TrendingUp,
         },
         {
-            label: 'Avg Response',
+            label: t('companies.show.metric_avg_response'),
             value:
-                company.median_response_hours !== null
-                    ? `${company.median_response_hours} jam`
-                    : 'Belum ada data',
-            helper: 'Median waktu respon',
+                company.median_response_hours != null
+                    ? t('companies.show.metric_hours', { hours: company.median_response_hours })
+                    : t('companies.show.metric_no_data'),
+            helper: t('companies.show.metric_avg_response_helper'),
             icon: Clock3,
         },
         {
-            label: 'Lowongan Aktif',
+            label: t('companies.show.metric_active_jobs'),
             value: `${company.open_jobs_count}`,
-            helper: 'Posisi sedang dibuka',
+            helper: t('companies.show.metric_active_jobs_helper'),
             icon: BriefcaseBusiness,
         },
     ];
@@ -185,7 +168,7 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
 
     return (
         <HomeLayout>
-            <Head title={`${company.name} - Detail Perusahaan`} />
+            <Head title={t('companies.show.page_title', { name: company.name })} />
 
             <section className="bg-slate-100/80 px-4 py-8 md:py-10">
                 <div className="mx-auto max-w-6xl space-y-5">
@@ -193,7 +176,7 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                         className="inline-flex items-center text-xs font-semibold tracking-wide text-slate-500 transition hover:text-slate-700"
                         href={companiesIndex().url}
                     >
-                        ← Kembali ke daftar perusahaan
+                        {t('companies.show.back')}
                     </Link>
 
                     <header className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-md">
@@ -229,13 +212,13 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                 <div className="flex items-center justify-between">
                                     <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-bold tracking-wider text-white/90 uppercase backdrop-blur-md">
                                         <Flame className="size-3" />
-                                        Company Profile
+                                        {t('companies.show.hero_company_profile')}
                                     </span>
 
                                     {company.is_verified ? (
                                         <span className="inline-flex items-center gap-1 rounded-full border border-blue-300/30 bg-blue-500/20 px-2.5 py-1 text-[11px] font-semibold text-blue-100 backdrop-blur-md">
                                             <BadgeCheck className="size-3" />
-                                            Terverifikasi
+                                            {t('companies.show.verified_badge')}
                                         </span>
                                     ) : null}
                                 </div>
@@ -250,18 +233,14 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                                 0,
                                                 130,
                                             ) ??
-                                                `${company.name} membuka kesempatan untuk talenta yang ingin tumbuh bersama tim berdampak tinggi.`}
+                                                t('companies.show.description_fallback', { company: company.name })}
                                         </p>
                                     </div>
 
                                     <div className="flex shrink-0 gap-2">
                                         <GlassInfo
-                                            label="Lowongan"
+                                            label={t('companies.show.hero_open_jobs')}
                                             value={`${company.open_jobs_count}`}
-                                        />
-                                        <GlassInfo
-                                            label="Rating"
-                                            value={`${company.review_summary.average_rating ?? '—'}`}
                                         />
                                     </div>
                                 </div>
@@ -296,7 +275,7 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                                 icon={Building2}
                                                 text={
                                                     company.industry ??
-                                                    'Industri belum ditentukan'
+                                                    t('companies.show.industry_unknown')
                                                 }
                                             />
                                             <span className="text-slate-300">
@@ -313,8 +292,8 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                                 icon={Users2}
                                                 text={
                                                     company.company_size
-                                                        ? `${company.company_size} karyawan`
-                                                        : 'Ukuran tim belum tersedia'
+                                                        ? t('companies.show.employees', { size: company.company_size })
+                                                        : t('companies.show.size_unknown')
                                                 }
                                             />
                                         </div>
@@ -330,7 +309,7 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                             target="_blank"
                                         >
                                             <Globe className="size-3.5" />
-                                            Website
+                                            {t('companies.show.website')}
                                         </a>
                                     ) : null}
                                     <Link
@@ -338,7 +317,7 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                         href={`${jobsIndex().url}?search=${encodeURIComponent(company.name)}`}
                                     >
                                         <BriefcaseBusiness className="size-3.5" />
-                                        Lihat Lowongan
+                                        {t('companies.show.view_jobs')}
                                     </Link>
                                 </div>
                             </div>
@@ -349,26 +328,19 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                         {company.is_verified ? (
                             <BadgeChip
                                 icon={<BadgeCheck className="size-3.5" />}
-                                label="Legal Terverifikasi"
+                                label={t('companies.show.legal_verified')}
                                 variant="blue"
-                            />
-                        ) : null}
-                        {company.trust_score !== null ? (
-                            <BadgeChip
-                                icon={<ShieldCheck className="size-3.5" />}
-                                label={`Trust Score ${company.trust_score}/100`}
-                                variant="green"
                             />
                         ) : null}
                         <BadgeChip
                             icon={<BriefcaseBusiness className="size-3.5" />}
-                            label={`${company.open_jobs_count} Lowongan Aktif`}
+                            label={t('companies.show.open_jobs_label', { count: company.open_jobs_count })}
                             variant="orange"
                         />
                         {company.company_size ? (
                             <BadgeChip
                                 icon={<Users2 className="size-3.5" />}
-                                label={`${company.company_size} Karyawan`}
+                                label={t('companies.show.employees_label', { size: company.company_size })}
                             />
                         ) : null}
                     </div>
@@ -397,60 +369,6 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                             ))}
                         </div>
 
-                        <div className="relative overflow-hidden rounded-2xl border border-primary-200 bg-white p-5 shadow-sm">
-                            <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-primary-500 to-secondary-400" />
-                            <div className="flex items-center gap-2">
-                                <div className="inline-flex rounded-lg bg-primary-50 p-1.5 text-primary-500 ring-1 ring-primary-100">
-                                    <Flame className="size-3.5" />
-                                </div>
-                                <p className="text-sm font-bold text-slate-900">
-                                    Salary Insights
-                                </p>
-                            </div>
-
-                            {hasSalaryInsight ? (
-                                <>
-                                    <div className="mt-4 grid grid-cols-3 gap-2">
-                                        <SalaryCell
-                                            label="Min"
-                                            value={formatMoney(
-                                                salaryInsight.salary_min,
-                                            )}
-                                        />
-                                        <SalaryCell
-                                            label="Median"
-                                            value={formatMoney(
-                                                salaryInsight.salary_median,
-                                            )}
-                                            highlight
-                                        />
-                                        <SalaryCell
-                                            label="Max"
-                                            value={formatMoney(
-                                                salaryInsight.salary_max,
-                                            )}
-                                        />
-                                    </div>
-                                    <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-400">
-                                        Berdasarkan{' '}
-                                        <span className="font-semibold text-slate-600">
-                                            {salaryInsight.source_count ?? 0}{' '}
-                                            laporan
-                                        </span>{' '}
-                                        gaji kandidat.
-                                    </p>
-                                </>
-                            ) : (
-                                <div className="mt-4 rounded-xl border border-dashed border-primary-200 bg-primary-50/50 px-4 py-5 text-center">
-                                    <Flame className="mx-auto mb-2 size-5 text-primary-300" />
-                                    <p className="text-xs leading-5 text-slate-500">
-                                        Belum ada data salary insight
-                                        <br />
-                                        untuk perusahaan ini.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
                     </div>
 
                     <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
@@ -468,40 +386,34 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                             className="after:hidden data-[state=active]:rounded-xl data-[state=active]:bg-primary-50 data-[state=active]:text-primary-700"
                                             value="about"
                                         >
-                                            Tentang Kami
+                                            {t('companies.show.tab_about')}
                                         </TabsTrigger>
                                         <TabsTrigger
                                             className="after:hidden data-[state=active]:rounded-xl data-[state=active]:bg-primary-50 data-[state=active]:text-primary-700"
                                             value="culture"
                                         >
-                                            Budaya & Benefit
+                                            {t('companies.show.tab_culture')}
                                         </TabsTrigger>
                                         <TabsTrigger
                                             className="after:hidden data-[state=active]:rounded-xl data-[state=active]:bg-primary-50 data-[state=active]:text-primary-700"
                                             value="jobs"
                                         >
-                                            {`Lowongan (${company.open_jobs_count})`}
-                                        </TabsTrigger>
-                                        <TabsTrigger
-                                            className="after:hidden data-[state=active]:rounded-xl data-[state=active]:bg-primary-50 data-[state=active]:text-primary-700"
-                                            value="reviews"
-                                        >
-                                            Ulasan
+                                            {t('companies.show.tab_jobs', { count: company.open_jobs_count })}
                                         </TabsTrigger>
                                     </TabsList>
                                 </div>
 
                                 <TabsContent value="about">
-                                    <SectionCard title="Tentang Kami">
+                                    <SectionCard title={t('companies.show.about_section_title')}>
                                         <p className="text-sm leading-7 text-slate-600">
                                             {company.description ||
-                                                `${company.name} berkomitmen membangun lingkungan kerja sehat, kolaboratif, dan berdampak. Kami membuka ruang tumbuh bagi talenta yang siap berkembang bersama tim.`}
+                                                t('companies.show.description_fallback', { company: company.name })}
                                         </p>
                                     </SectionCard>
                                 </TabsContent>
 
                                 <TabsContent value="culture" className="space-y-4">
-                                    <SectionCard title="Budaya Kerja">
+                                    <SectionCard title={t('companies.show.culture_section_title')}>
                                         {cultureItems.length > 0 ? (
                                             <ul className="space-y-2">
                                                 {cultureItems.map((item) => (
@@ -516,12 +428,12 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                             </ul>
                                         ) : (
                                             <p className="text-sm leading-7 text-slate-500">
-                                                Informasi budaya kerja belum diisi oleh perusahaan.
+                                                {t('companies.show.culture_empty')}
                                             </p>
                                         )}
                                     </SectionCard>
 
-                                    <SectionCard title="Benefit Perusahaan">
+                                    <SectionCard title={t('companies.show.benefits_section_title')}>
                                         {benefitItems.length > 0 ? (
                                             <ul className="space-y-2">
                                                 {benefitItems.map((item) => (
@@ -536,30 +448,30 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                             </ul>
                                         ) : (
                                             <p className="text-sm leading-7 text-slate-500">
-                                                Benefit perusahaan belum diisi.
+                                                {t('companies.show.benefits_empty')}
                                             </p>
                                         )}
                                     </SectionCard>
                                 </TabsContent>
 
                                 <TabsContent value="jobs">
-                                    <SectionCard title="Lowongan Aktif">
+                                    <SectionCard title={t('companies.show.jobs_section_title')}>
                                         <div className="mb-4 flex items-center justify-between">
                                             <p className="text-sm text-slate-500">
-                                                Posisi terbaru dari {company.name}
+                                                {t('companies.show.jobs_latest_from', { company: company.name })}
                                             </p>
                                             <Link
                                                 className="inline-flex items-center text-sm font-semibold text-primary-600 hover:text-primary-700"
                                                 href={`${jobsIndex().url}?search=${encodeURIComponent(company.name)}`}
                                             >
-                                                Lihat Semua
+                                                {t('companies.show.jobs_see_all')}
                                                 <ArrowRight className="ml-1 size-4" />
                                             </Link>
                                         </div>
 
                                         {jobs.length === 0 ? (
                                             <p className="text-sm text-slate-500">
-                                                Belum ada lowongan aktif saat ini.
+                                                {t('companies.show.jobs_empty')}
                                             </p>
                                         ) : (
                                             <div className="space-y-3">
@@ -589,7 +501,7 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                                                     {job.salary_range}
                                                                 </p>
                                                                 <p className="text-xs text-slate-500">
-                                                                    {job.published_at || 'Baru dipublikasikan'}
+                                                                    {job.published_at || t('companies.show.job_published_fallback')}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -600,11 +512,14 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                     </SectionCard>
                                 </TabsContent>
 
+                                {false && (
                                 <TabsContent value="reviews">
-                                    <SectionCard title="Ulasan Karyawan">
+                                    <SectionCard title={t('companies.show.reviews_section_title')}>
                                         <div className="flex items-start justify-between gap-3">
                                             <p className="text-xs text-slate-500">
-                                                {company.review_summary.total_reviews} ulasan tersedia
+                                                {t('companies.show.reviews_count', {
+                                                    count: company.review_summary.total_reviews,
+                                                })}
                                             </p>
                                             <span className="inline-flex items-center gap-1 text-lg font-black text-primary-600">
                                                 <Star className="size-5 fill-primary-400 text-primary-400" />
@@ -620,16 +535,16 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                                         key={review.id}
                                                     >
                                                         <p className="text-sm font-semibold text-slate-900">
-                                                            {review.title || 'Ulasan kandidat'}
+                                                            {review.title || t('companies.show.review_fallback_title')}
                                                         </p>
                                                         <p className="mt-1 text-xs leading-6 text-slate-600">
                                                             {review.review ||
-                                                                'Kandidat memberikan pengalaman positif bekerja dengan tim perusahaan ini.'}
+                                                                t('companies.show.review_fallback_body')}
                                                         </p>
                                                         {review.employer_reply ? (
                                                             <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-2">
                                                                 <p className="text-[10px] font-semibold tracking-wider text-blue-700 uppercase">
-                                                                    Balasan {company.name}
+                                                                    {t('companies.show.employer_reply_label', { company: company.name })}
                                                                 </p>
                                                                 <p className="mt-0.5 text-xs leading-5 whitespace-pre-wrap text-blue-900">
                                                                     {review.employer_reply}
@@ -646,7 +561,7 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                             </div>
                                         ) : (
                                             <p className="mt-3 text-sm text-slate-500">
-                                                Belum ada ulasan terbaru.
+                                                {t('companies.show.reviews_empty')}
                                             </p>
                                         )}
 
@@ -656,12 +571,12 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                                     <form className="space-y-2.5" onSubmit={submitReview}>
                                                         <p className="text-xs font-semibold text-slate-700">
                                                             {myReview
-                                                                ? 'Perbarui ulasan kamu'
-                                                                : 'Bagikan ulasan pengalaman kerja kamu'}
+                                                                ? t('companies.show.review_form_title_update')
+                                                                : t('companies.show.review_form_title_new')}
                                                         </p>
                                                         <div className="grid grid-cols-2 gap-2">
                                                             <label className="space-y-1 text-xs text-slate-600">
-                                                                <span>Rating</span>
+                                                                <span>{t('companies.show.review_form_rating')}</span>
                                                                 <select
                                                                     className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm"
                                                                     onChange={(event) =>
@@ -674,7 +589,7 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                                                 >
                                                                     {[5, 4, 3, 2, 1].map((value) => (
                                                                         <option key={value} value={value}>
-                                                                            {value} Bintang
+                                                                            {t('companies.show.review_form_stars', { count: value })}
                                                                         </option>
                                                                     ))}
                                                                 </select>
@@ -686,28 +601,28 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                                             </label>
 
                                                             <label className="space-y-1 text-xs text-slate-600">
-                                                                <span>Judul</span>
+                                                                <span>{t('companies.show.review_form_title_field')}</span>
                                                                 <input
                                                                     className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm"
                                                                     maxLength={120}
                                                                     onChange={(event) =>
                                                                         reviewForm.setData('title', event.target.value)
                                                                     }
-                                                                    placeholder="Contoh: Proses cepat dan profesional"
+                                                                    placeholder={t('companies.show.review_form_title_placeholder')}
                                                                     value={reviewForm.data.title}
                                                                 />
                                                             </label>
                                                         </div>
 
                                                         <label className="space-y-1 text-xs text-slate-600">
-                                                            <span>Ulasan</span>
+                                                            <span>{t('companies.show.review_form_review_field')}</span>
                                                             <textarea
                                                                 className="min-h-24 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm"
                                                                 maxLength={2000}
                                                                 onChange={(event) =>
                                                                     reviewForm.setData('review', event.target.value)
                                                                 }
-                                                                placeholder="Ceritakan pengalaman kamu bekerja atau proses rekrutmen di perusahaan ini."
+                                                                placeholder={t('companies.show.review_form_review_placeholder')}
                                                                 value={reviewForm.data.review}
                                                             />
                                                             {reviewForm.errors.review ? (
@@ -723,16 +638,15 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                                             type="submit"
                                                         >
                                                             {reviewForm.processing
-                                                                ? 'Menyimpan...'
+                                                                ? t('companies.show.review_form_saving')
                                                                 : myReview
-                                                                  ? 'Perbarui Ulasan'
-                                                                  : 'Kirim Ulasan'}
+                                                                  ? t('companies.show.review_form_update')
+                                                                  : t('companies.show.review_form_submit')}
                                                         </button>
                                                     </form>
                                                 ) : (
                                                     <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
-                                                        Ulasan bisa dikirim setelah status lamaran kamu di perusahaan
-                                                        ini sudah <span className="font-semibold">hired</span>.
+                                                        {t('companies.show.review_locked')}
                                                     </p>
                                                 )}
                                             </div>
@@ -746,55 +660,55 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                                         },
                                                     }).url}
                                                 >
-                                                    Login sebagai jobseeker untuk beri ulasan
+                                                    {t('companies.show.login_to_review')}
                                                 </Link>
                                             </div>
                                         ) : null}
                                     </SectionCard>
                                 </TabsContent>
+                                )}
                             </Tabs>
                         </div>
 
                         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
                             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                                 <h4 className="text-base font-bold text-slate-900">
-                                    Kantor Pusat
+                                    {t('companies.show.hq_title')}
                                 </h4>
                                 <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
                                     <p className="font-semibold text-slate-900">
-                                        {hq || 'Lokasi belum tersedia'}
+                                        {hq || t('companies.show.hq_location_unknown')}
                                     </p>
                                     <p className="mt-1 text-xs leading-6">
                                         {company.offices[0]?.address ||
-                                            'Detail alamat belum ditambahkan.'}
+                                            t('companies.show.hq_address_unknown')}
                                     </p>
                                 </div>
                                 <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
                                     <ShieldCheck className="size-3.5" />
-                                    Data perusahaan diverifikasi tim platform.
+                                    {t('companies.show.hq_verified_note')}
                                 </div>
                             </div>
 
                             <div className="rounded-2xl border border-primary-200 bg-linear-to-b from-primary-50 to-white p-4 shadow-sm md:p-5">
                                 <p className="text-base font-bold text-primary-900">
-                                    Tertarik dengan perusahaan ini?
+                                    {t('companies.show.cta_title')}
                                 </p>
                                 <p className="mt-2 text-xs leading-6 text-primary-900/80">
-                                    Pantau lowongan terbaru dari {company.name}{' '}
-                                    dan tingkatkan peluangmu untuk diterima.
+                                    {t('companies.show.cta_subtitle', { company: company.name })}
                                 </p>
                                 <Link
                                     className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-primary-600 px-3 text-sm font-semibold text-white transition hover:bg-primary-700"
                                     href={`${jobsIndex().url}?search=${encodeURIComponent(company.name)}`}
                                 >
-                                    Cari Lowongan Terkait
+                                    {t('companies.show.cta_find_jobs')}
                                 </Link>
                                 <button
                                     className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-xl border border-primary-200 bg-white px-3 text-sm font-semibold text-primary-700 transition hover:border-primary-300 hover:bg-primary-100"
                                     type="button"
                                 >
                                     <MessageCircle className="mr-1.5 size-4" />
-                                    Hubungi HR
+                                    {t('companies.show.cta_contact_hr')}
                                 </button>
                             </div>
                         </aside>
@@ -887,35 +801,3 @@ function JobPill({ text }: { text: string }) {
     );
 }
 
-function SalaryCell({
-    label,
-    value,
-    highlight = false,
-}: {
-    label: string;
-    value: string;
-    highlight?: boolean;
-}) {
-    return (
-        <div
-            className={cn(
-                'rounded-xl border px-2.5 py-3 text-center',
-                highlight
-                    ? 'border-primary-200 bg-primary-50'
-                    : 'border-slate-200 bg-slate-50',
-            )}
-        >
-            <p className="text-[9px] font-bold tracking-[0.16em] text-slate-400 uppercase">
-                {label}
-            </p>
-            <p
-                className={cn(
-                    'mt-1 text-xs leading-snug font-bold',
-                    highlight ? 'text-primary-600' : 'text-slate-700',
-                )}
-            >
-                {value}
-            </p>
-        </div>
-    );
-}

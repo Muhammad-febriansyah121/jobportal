@@ -323,9 +323,18 @@ export default function CandidateInterviewShow({
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-sm leading-7 whitespace-pre-line text-foreground/85">
-                                        {interview.notes}
-                                    </p>
+                                    {/<[a-z][^>]*>/i.test(interview.notes) ? (
+                                        <div
+                                            className="prose prose-sm max-w-none text-sm leading-7 text-foreground/85 [&_li]:my-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_strong]:font-semibold [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5"
+                                            dangerouslySetInnerHTML={{
+                                                __html: interview.notes,
+                                            }}
+                                        />
+                                    ) : (
+                                        <p className="text-sm leading-7 whitespace-pre-line text-foreground/85">
+                                            {interview.notes}
+                                        </p>
+                                    )}
                                 </CardContent>
                             </Card>
                         ) : null}
@@ -1037,11 +1046,25 @@ function capitalize(value: string): string {
 }
 
 function truncateText(text: string, max: number): string {
-    if (text.length <= max) {
-        return text;
+    const cleaned = stripHtmlTags(text);
+
+    if (cleaned.length <= max) {
+        return cleaned;
     }
 
-    return text.slice(0, max).trimEnd() + '…';
+    return cleaned.slice(0, max).trimEnd() + '…';
+}
+
+function stripHtmlTags(value: string): string {
+    return value
+        .replace(/<\/?[a-zA-Z][^<>]*>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 
 CandidateInterviewShow.layout = ({ interview }: InterviewShowProps) => ({

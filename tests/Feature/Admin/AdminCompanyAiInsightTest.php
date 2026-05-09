@@ -69,6 +69,12 @@ test('admin can generate ai insight for a company', function () {
     $mock = Mockery::mock(AiService::class);
     $mock->shouldReceive('chat')->once()->andReturn('Perusahaan aktif mempublikasikan lowongan.');
     $mock->shouldReceive('modelName')->once()->andReturn('gpt-4o-mini');
+    $mock->shouldReceive('tokenUsage')->andReturn([
+        'prompt_tokens' => 120,
+        'completion_tokens' => 80,
+        'reasoning_tokens' => null,
+        'total_tokens' => 200,
+    ]);
     app()->instance(AiService::class, $mock);
 
     $this->actingAs($admin)
@@ -97,6 +103,12 @@ test('generate ai insight handles api failure gracefully', function () {
     $mock = Mockery::mock(AiService::class);
     $mock->shouldReceive('chat')->once()->andReturn(null);
     $mock->shouldReceive('modelName')->once()->andReturn('gpt-4o-mini');
+    $mock->shouldReceive('tokenUsage')->andReturn([
+        'prompt_tokens' => null,
+        'completion_tokens' => null,
+        'reasoning_tokens' => null,
+        'total_tokens' => null,
+    ]);
     app()->instance(AiService::class, $mock);
 
     $this->actingAs($admin)

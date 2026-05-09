@@ -7,6 +7,7 @@ import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
+import { useTranslate } from '@/hooks/use-translate';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Marquee } from '@/components/ui/marquee';
@@ -51,6 +52,7 @@ export default function RegisterCandidate({
     skills = [],
     googleLoginClientId = '',
 }: Props) {
+    const { t } = useTranslate();
     const { name, branding } = usePage().props as {
         name: string;
         branding?: {
@@ -112,7 +114,7 @@ export default function RegisterCandidate({
 
     return (
         <>
-            <Head title="Daftar Kandidat" />
+            <Head title={t('auth.register_candidate.head_title')} />
 
             <div className="relative grid h-dvh overflow-hidden bg-white lg:grid-cols-2">
                 <div className="pointer-events-none absolute -top-32 -left-24 h-80 w-80 rounded-full bg-primary/20 blur-3xl" />
@@ -157,27 +159,25 @@ export default function RegisterCandidate({
                         <div className="space-y-6">
                             <div className="space-y-3">
                                 <span className="inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold tracking-widest text-primary uppercase ring-1 ring-primary/20 backdrop-blur-sm">
-                                    Platform Karir #1 Indonesia
+                                    {t('auth.register_candidate.platform_badge')}
                                 </span>
                                 <h2 className="text-4xl leading-tight font-bold text-foreground xl:text-5xl">
-                                    Temukan Karir
+                                    {t('auth.register_candidate.hero_title')}
                                     <br />
                                     <span className="text-primary">
-                                        Impian Kamu
+                                        {t('auth.register_candidate.hero_title_highlight')}
                                     </span>
                                 </h2>
                                 <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-                                    Bergabunglah dengan ribuan profesional yang
-                                    telah menemukan peluang karir terbaik
-                                    melalui {siteName}.
+                                    {t('auth.register_candidate.hero_subtitle', { siteName })}
                                 </p>
                             </div>
 
                             <div className="grid grid-cols-3 gap-4">
                                 {[
-                                    { value: '50K+', label: 'Lowongan' },
-                                    { value: '10K+', label: 'Perusahaan' },
-                                    { value: '500K+', label: 'Kandidat' },
+                                    { value: '50K+', label: t('auth.register_candidate.stat_jobs') },
+                                    { value: '10K+', label: t('auth.register_candidate.stat_companies') },
+                                    { value: '500K+', label: t('auth.register_candidate.stat_candidates') },
                                 ].map((stat) => (
                                     <div
                                         key={stat.label}
@@ -196,7 +196,7 @@ export default function RegisterCandidate({
 
                         <div className="rounded-2xl border border-primary/15 bg-white/70 p-4 shadow-xs backdrop-blur-md">
                             <p className="mb-3 text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-                                Dipercaya Perusahaan Ternama
+                                {t('auth.register_candidate.trusted_by')}
                             </p>
                             <Marquee
                                 pauseOnHover
@@ -250,11 +250,10 @@ export default function RegisterCandidate({
                         <div className="w-full max-w-md space-y-6 rounded-2xl border border-primary/15 bg-white/80 p-6 shadow-xl shadow-primary/10 backdrop-blur-md md:p-8">
                             <div className="space-y-1">
                                 <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                                    Daftar Kandidat
+                                    {t('auth.register_candidate.form_title')}
                                 </h1>
                                 <p className="text-sm text-muted-foreground">
-                                    Buat akun dan lengkapi minat karier di
-                                    halaman onboarding.
+                                    {t('auth.register_candidate.form_subtitle')}
                                 </p>
                             </div>
 
@@ -281,7 +280,7 @@ export default function RegisterCandidate({
                                                 htmlFor="name"
                                                 className="text-sm font-medium"
                                             >
-                                                Nama Lengkap
+                                                {t('auth.register_candidate.name_label')}
                                             </Label>
                                             <Input
                                                 id="name"
@@ -291,7 +290,7 @@ export default function RegisterCandidate({
                                                 tabIndex={1}
                                                 autoComplete="name"
                                                 name="name"
-                                                placeholder="Nama lengkap kamu"
+                                                placeholder={t('auth.register_candidate.name_placeholder')}
                                                 className="h-11 rounded-lg bg-muted/50 transition-shadow focus:ring-2 focus:ring-primary/20"
                                             />
                                             <InputError message={errors.name} />
@@ -302,7 +301,7 @@ export default function RegisterCandidate({
                                                 htmlFor="email"
                                                 className="text-sm font-medium"
                                             >
-                                                Email
+                                                {t('auth.register_candidate.email_label')}
                                             </Label>
                                             <Input
                                                 id="email"
@@ -311,7 +310,7 @@ export default function RegisterCandidate({
                                                 tabIndex={2}
                                                 autoComplete="email"
                                                 name="email"
-                                                placeholder="kamu@email.com"
+                                                placeholder={t('auth.register_candidate.email_placeholder')}
                                                 className="h-11 rounded-lg bg-muted/50 transition-shadow focus:ring-2 focus:ring-primary/20"
                                             />
                                             <InputError
@@ -324,7 +323,7 @@ export default function RegisterCandidate({
                                                 htmlFor="password"
                                                 className="text-sm font-medium"
                                             >
-                                                Password
+                                                {t('auth.register_candidate.password_label')}
                                             </Label>
                                             <PasswordInput
                                                 id="password"
@@ -332,7 +331,7 @@ export default function RegisterCandidate({
                                                 tabIndex={3}
                                                 autoComplete="new-password"
                                                 name="password"
-                                                placeholder="Buat password"
+                                                placeholder={t('auth.register_candidate.password_placeholder')}
                                                 className="h-11 rounded-lg bg-muted/50 transition-shadow focus:ring-2 focus:ring-primary/20"
                                             />
                                             <InputError
@@ -345,7 +344,7 @@ export default function RegisterCandidate({
                                                 htmlFor="password_confirmation"
                                                 className="text-sm font-medium"
                                             >
-                                                Konfirmasi Password
+                                                {t('auth.register_candidate.confirm_password_label')}
                                             </Label>
                                             <PasswordInput
                                                 id="password_confirmation"
@@ -353,7 +352,7 @@ export default function RegisterCandidate({
                                                 tabIndex={4}
                                                 autoComplete="new-password"
                                                 name="password_confirmation"
-                                                placeholder="Ulangi password"
+                                                placeholder={t('auth.register_candidate.confirm_password_placeholder')}
                                                 className="h-11 rounded-lg bg-muted/50 transition-shadow focus:ring-2 focus:ring-primary/20"
                                             />
                                             <InputError
@@ -381,10 +380,10 @@ export default function RegisterCandidate({
                                             {processing ? (
                                                 <>
                                                     <Spinner className="mr-2" />
-                                                    Memproses...
+                                                    {t('auth.register_candidate.processing')}
                                                 </>
                                             ) : (
-                                                'Buat Akun Kandidat'
+                                                t('auth.register_candidate.submit')
                                             )}
                                         </Button>
 
@@ -392,7 +391,7 @@ export default function RegisterCandidate({
                                             <div className="space-y-3">
                                                 <div className="relative text-center text-xs text-muted-foreground">
                                                     <span className="relative z-10 bg-white px-2">
-                                                        atau
+                                                        {t('auth.register_candidate.or')}
                                                     </span>
                                                     <span className="absolute top-1/2 left-0 w-full -translate-y-1/2 border-t" />
                                                 </div>
@@ -427,7 +426,7 @@ export default function RegisterCandidate({
                                                                 fill="#EA4335"
                                                             />
                                                         </svg>
-                                                        Daftar dengan Google
+                                                        {t('auth.register_candidate.google_register')}
                                                     </a>
                                                 </Button>
                                             </div>
@@ -435,14 +434,14 @@ export default function RegisterCandidate({
 
                                         {recaptchaEnabled && (
                                             <p className="text-center text-xs text-muted-foreground">
-                                                Dilindungi oleh reCAPTCHA.{' '}
+                                                {t('auth.register_candidate.recaptcha_text')}{' '}
                                                 <a
                                                     href="https://policies.google.com/privacy"
                                                     target="_blank"
                                                     rel="noreferrer"
                                                     className="underline underline-offset-2 hover:text-foreground"
                                                 >
-                                                    Privasi
+                                                    {t('auth.register_candidate.recaptcha_privacy')}
                                                 </a>{' '}
                                                 &{' '}
                                                 <a
@@ -451,9 +450,9 @@ export default function RegisterCandidate({
                                                     rel="noreferrer"
                                                     className="underline underline-offset-2 hover:text-foreground"
                                                 >
-                                                    Syarat
+                                                    {t('auth.register_candidate.recaptcha_terms')}
                                                 </a>{' '}
-                                                berlaku.
+                                                {t('auth.register_candidate.recaptcha_applies')}
                                             </p>
                                         )}
                                     </>
@@ -461,7 +460,7 @@ export default function RegisterCandidate({
                             </Form>
 
                             <p className="text-center text-sm text-muted-foreground">
-                                Daftar sebagai perusahaan?{' '}
+                                {t('auth.register_candidate.switch_to_employer')}{' '}
                                 <TextLink
                                     href={register({
                                         query: { type: 'employer' },
@@ -469,24 +468,23 @@ export default function RegisterCandidate({
                                     tabIndex={6}
                                     className="font-semibold text-primary hover:underline"
                                 >
-                                    Ganti ke Perusahaan
+                                    {t('auth.register_candidate.switch_link')}
                                 </TextLink>
                             </p>
 
                             <p className="text-center text-sm text-muted-foreground">
-                                Sudah punya akun?{' '}
+                                {t('auth.register_candidate.have_account')}{' '}
                                 <TextLink
                                     href={login()}
                                     tabIndex={7}
                                     className="font-semibold text-primary hover:underline"
                                 >
-                                    Masuk
+                                    {t('auth.register_candidate.sign_in')}
                                 </TextLink>
                             </p>
 
                             <p className="text-center text-xs text-muted-foreground/60">
-                                © {new Date().getFullYear()} {siteName}. Hak
-                                cipta dilindungi.
+                                © {new Date().getFullYear()} {siteName}. {t('auth.register_candidate.copyright')}
                             </p>
                         </div>
                     </div>

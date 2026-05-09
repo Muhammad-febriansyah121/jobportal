@@ -27,6 +27,7 @@ class CandidateCompanyReviewController extends Controller
             ->get()
             ->map(fn (CompanyReview $review): array => [
                 'id' => $review->id,
+                'company_id' => $review->company_id,
                 'company_name' => $review->company?->name ?? '-',
                 'company_slug' => $review->company?->slug ?? '',
                 'company_logo' => $review->company?->logo_url,
@@ -39,9 +40,41 @@ class CandidateCompanyReviewController extends Controller
                 'reviewed_at' => $review->reviewed_at?->format('d M Y'),
             ]);
 
+        $reviewedCompanyIds = $reviews->pluck('company_id')->all();
+
+        $eligibleCompanies = Company::query()
+            ->whereHas('jobListings.applications', fn (Builder $query): Builder => $query
+                ->where('candidate_id', $candidate->id)
+                ->where('status', 'hired')
+            )
+            ->whereNotIn('id', $reviewedCompanyIds)
+            ->select(['id', 'name', 'slug', 'logo_url'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Company $company): array => [
+                'id' => $company->id,
+                'name' => $company->name,
+                'slug' => $company->slug,
+                'logo_url' => $company->logo_url,
+            ]);
+
         return Inertia::render('candidate/company-reviews/index', [
             'reviews' => $reviews,
+            'eligible_companies' => $eligibleCompanies,
         ]);
+    }
+
+    public function storeFromList(
+        StoreCompanyReviewRequest $request,
+        ResolveCandidateProfile $resolveCandidateProfile
+    ): RedirectResponse {
+        $request->validate([
+            'company_id' => ['required', 'integer', 'exists:companies,id'],
+        ]);
+
+        $company = Company::query()->findOrFail($request->integer('company_id'));
+
+        return $this->store($request, $company, $resolveCandidateProfile);
     }
 
     public function store(
@@ -85,7 +118,7 @@ class CandidateCompanyReviewController extends Controller
                 : 'Ulasan diperbarui dan akan ditinjau ulang oleh perusahaan.',
         ]);
 
-        return to_route('companies.show', $company->slug);
+        return to_route('candidate.company-reviews.index');
     }
 
     public function destroy(

@@ -32,6 +32,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTranslate } from '@/hooks/use-translate';
 import { create, edit, index as indexRoute } from '@/routes/employer/message-templates';
 
 type Channel = 'whatsapp' | 'email';
@@ -68,6 +69,7 @@ export default function EmployerMessageTemplatesIndex({
     templates,
     filters,
 }: Props) {
+    const { t } = useTranslate();
     const [confirmId, setConfirmId] = useState<number | null>(null);
 
     const submitFilter = (event: React.FormEvent<HTMLFormElement>) => {
@@ -89,10 +91,10 @@ export default function EmployerMessageTemplatesIndex({
             {
                 preserveScroll: true,
                 onSuccess: () => {
-                    toast.success('Template dihapus.');
+                    toast.success(t('employer.message_templates.toast_deleted'));
                 },
                 onError: () => {
-                    toast.error('Gagal menghapus template.');
+                    toast.error(t('employer.message_templates.toast_error'));
                 },
                 onFinish: () => {
                     setConfirmId(null);
@@ -103,28 +105,27 @@ export default function EmployerMessageTemplatesIndex({
 
     return (
         <>
-            <Head title="Template Pesan" />
+            <Head title={t('employer.message_templates.page_title')} />
 
             <div className="space-y-6 p-4 md:p-6">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <Heading
-                        title="Template Pesan"
-                        description="Simpan template pesan WhatsApp & Email yang sering dipakai untuk broadcast atau undangan interview."
+                        title={t('employer.message_templates.heading_title')}
+                        description={t('employer.message_templates.heading_desc')}
                     />
                     <Button asChild>
                         <Link href={create().url}>
                             <Plus className="size-4" />
-                            Buat template
+                            {t('employer.message_templates.btn_create')}
                         </Link>
                     </Button>
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Daftar template</CardTitle>
+                        <CardTitle>{t('employer.message_templates.card_title')}</CardTitle>
                         <CardDescription>
-                            Cari berdasarkan nama atau isi pesan, saring per
-                            channel.
+                            {t('employer.message_templates.card_desc')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -137,7 +138,7 @@ export default function EmployerMessageTemplatesIndex({
                                 <Input
                                     name="search"
                                     defaultValue={filters.search}
-                                    placeholder="Cari nama atau isi pesan"
+                                    placeholder={t('employer.message_templates.search_placeholder')}
                                     className="pl-9"
                                 />
                             </div>
@@ -146,12 +147,12 @@ export default function EmployerMessageTemplatesIndex({
                                 defaultValue={filters.channel}
                                 className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none"
                             >
-                                <option value="">Semua channel</option>
+                                <option value="">{t('employer.message_templates.filter_all_channel')}</option>
                                 <option value="whatsapp">WhatsApp</option>
                                 <option value="email">Email</option>
                             </select>
                             <Button type="submit" variant="outline">
-                                Filter
+                                {t('employer.message_templates.btn_filter')}
                             </Button>
                         </form>
 
@@ -159,8 +160,7 @@ export default function EmployerMessageTemplatesIndex({
                             <div className="flex flex-col items-center justify-center gap-3 rounded-md border border-dashed border-border py-10 text-center">
                                 <FileText className="size-10 text-muted-foreground" />
                                 <p className="text-sm text-muted-foreground">
-                                    Belum ada template. Klik &ldquo;Buat
-                                    template&rdquo; untuk mulai.
+                                    {t('employer.message_templates.empty_text')}
                                 </p>
                             </div>
                         ) : (
@@ -168,13 +168,13 @@ export default function EmployerMessageTemplatesIndex({
                                 <Table className="min-w-160">
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Nama</TableHead>
-                                            <TableHead>Channel</TableHead>
-                                            <TableHead>Pratinjau</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Diperbarui</TableHead>
+                                            <TableHead>{t('employer.message_templates.col_name')}</TableHead>
+                                            <TableHead>{t('employer.message_templates.col_channel')}</TableHead>
+                                            <TableHead>{t('employer.message_templates.col_preview')}</TableHead>
+                                            <TableHead>{t('employer.message_templates.col_status')}</TableHead>
+                                            <TableHead>{t('employer.message_templates.col_updated')}</TableHead>
                                             <TableHead className="text-right">
-                                                Aksi
+                                                {t('employer.message_templates.col_actions')}
                                             </TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -217,11 +217,11 @@ export default function EmployerMessageTemplatesIndex({
                                                 <TableCell>
                                                     {tpl.is_active ? (
                                                         <Badge className="border-green-200 bg-green-50 text-green-700">
-                                                            Aktif
+                                                            {t('employer.message_templates.badge_active')}
                                                         </Badge>
                                                     ) : (
                                                         <Badge variant="outline">
-                                                            Nonaktif
+                                                            {t('employer.message_templates.badge_inactive')}
                                                         </Badge>
                                                     )}
                                                 </TableCell>
@@ -243,7 +243,7 @@ export default function EmployerMessageTemplatesIndex({
                                                                 }
                                                             >
                                                                 <Pencil className="size-3.5" />
-                                                                Edit
+                                                                {t('employer.message_templates.btn_edit')}
                                                             </Link>
                                                         </Button>
                                                         <Button
@@ -257,7 +257,7 @@ export default function EmployerMessageTemplatesIndex({
                                                             }
                                                         >
                                                             <Trash2 className="size-3.5" />
-                                                            Hapus
+                                                            {t('employer.message_templates.btn_delete')}
                                                         </Button>
                                                     </div>
                                                 </TableCell>
@@ -277,21 +277,20 @@ export default function EmployerMessageTemplatesIndex({
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Hapus template?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('employer.message_templates.delete_title')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Template yang dihapus tidak bisa dikembalikan. Pesan
-                            yang sudah dikirim sebelumnya tidak terpengaruh.
+                            {t('employer.message_templates.delete_desc')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogCancel>{t('employer.message_templates.btn_cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             className="bg-red-600 hover:bg-red-700"
                             onClick={() =>
                                 confirmId && handleDelete(confirmId)
                             }
                         >
-                            Ya, hapus
+                            {t('employer.message_templates.btn_confirm_delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

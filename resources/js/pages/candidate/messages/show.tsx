@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Building2, Send } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { useTranslate } from '@/hooks/use-translate';
 import { index, show, store } from '@/routes/candidate/messages';
 
 type MessageItem = {
@@ -29,6 +30,7 @@ export default function CandidateMessageShow({
     conversation,
     messages,
 }: ShowPageProps) {
+    const { t } = useTranslate();
     const { data, setData, post, processing, reset, errors } = useForm({
         body: '',
     });
@@ -49,7 +51,7 @@ export default function CandidateMessageShow({
 
     return (
         <>
-            <Head title={`Pesan — ${conversation.company.name}`} />
+            <Head title={t('candidate.messages_show.page_title', { company: conversation.company.name })} />
 
             <div className="flex h-[calc(100dvh-4rem)] flex-col">
                 <div className="flex items-center gap-4 border-b bg-white px-4 py-3 shadow-sm md:px-6">
@@ -70,7 +72,7 @@ export default function CandidateMessageShow({
                         </p>
                         {conversation.job_title && (
                             <p className="truncate text-xs text-[#64748b]">
-                                Posisi: {conversation.job_title}
+                                {t('candidate.messages_show.position_label')}: {conversation.job_title}
                             </p>
                         )}
                     </div>
@@ -80,7 +82,7 @@ export default function CandidateMessageShow({
                     {messages.length === 0 ? (
                         <div className="flex h-full items-center justify-center">
                             <p className="text-sm text-muted-foreground">
-                                Belum ada pesan. Mulai percakapan sekarang.
+                                {t('candidate.messages_show.empty')}
                             </p>
                         </div>
                     ) : (
@@ -96,7 +98,7 @@ export default function CandidateMessageShow({
                         <textarea
                             value={data.body}
                             onChange={(e) => setData('body', e.target.value)}
-                            placeholder="Tulis pesan..."
+                            placeholder={t('candidate.messages_show.message_placeholder')}
                             className="max-h-32 min-h-10 flex-1 resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                             rows={1}
                             onKeyDown={(e) => {

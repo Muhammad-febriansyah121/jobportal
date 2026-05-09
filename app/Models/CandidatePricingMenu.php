@@ -13,9 +13,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'price',
     'ai_token_amount',
     'cv_builder_quota',
+    'ai_interview_quota',
+    'validity_days',
     'features_json',
     'is_default_free',
     'is_active',
+    'is_trial',
 ])]
 class CandidatePricingMenu extends Model
 {
@@ -25,6 +28,7 @@ class CandidatePricingMenu extends Model
             'features_json' => 'array',
             'is_default_free' => 'boolean',
             'is_active' => 'boolean',
+            'is_trial' => 'boolean',
         ];
     }
 

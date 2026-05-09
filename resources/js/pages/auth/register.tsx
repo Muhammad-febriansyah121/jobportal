@@ -1,14 +1,19 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, setLayoutProps } from '@inertiajs/react';
 import { Building2, CheckCircle2, CircleUserRound, Sparkles } from 'lucide-react';
 import { useMemo } from 'react';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { useTranslate } from '@/hooks/use-translate';
-import AuthSimpleLayout from '@/layouts/auth/auth-simple-layout';
 import { login, register } from '@/routes';
 
 export default function Register() {
     const { t } = useTranslate();
+
+    setLayoutProps({
+        title: t('auth.register.layout_title'),
+        description: t('auth.register.layout_description'),
+        wide: true,
+    });
 
     const candidateBenefits = useMemo(
         () => [
@@ -120,12 +125,3 @@ export default function Register() {
     );
 }
 
-Register.layout = (page: React.ReactElement) => (
-    <AuthSimpleLayout
-        title="Pilih Tipe Akun"
-        description="Daftar sebagai kandidat atau perusahaan sesuai kebutuhanmu."
-        wide
-    >
-        {page}
-    </AuthSimpleLayout>
-);

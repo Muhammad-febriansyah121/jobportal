@@ -18,19 +18,13 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslate } from '@/hooks/use-translate';
 import { cn } from '@/lib/utils';
 import {
     index as aiInterviewIndex,
     show as showInterview,
 } from '@/routes/candidate/ai-interviews';
 import { show as showCareerResource } from '@/routes/candidate/career-resources';
-
-const RESOURCE_TYPE_LABELS: Record<string, string> = {
-    article: 'Artikel',
-    video: 'Video',
-    template: 'Template',
-    guide: 'Panduan',
-};
 
 const RESOURCE_TYPE_ICONS = {
     article: BookOpen,
@@ -94,6 +88,7 @@ export default function CandidateAiInterviewFeedback({
     progress_trends: progressTrends,
     resources,
 }: FeedbackPageProps) {
+    const { t } = useTranslate();
     const isSkillDrill = session.practice_mode === 'skill_drill';
     const fitScore = Math.max(0, Math.min(100, session.fit_score ?? 0));
     const totalQuestions = session.question_feedbacks.length;
@@ -140,14 +135,16 @@ export default function CandidateAiInterviewFeedback({
           }).url;
 
     const sessionTitle = isSkillDrill
-        ? `Latihan ${session.target_skill ?? 'Skill'}`
+        ? t('candidate.ai_interview_feedback.skill_drill_title', {
+              skill: session.target_skill ?? t('candidate.ai_interview_feedback.default_skill'),
+          })
         : session.job_title
           ? `${session.job_title}${session.company ? ` · ${session.company}` : ''}`
-          : 'Latihan Umum';
+          : t('candidate.ai_interview_feedback.general_practice');
 
     return (
         <>
-            <Head title="Hasil Latihan AI" />
+            <Head title={t('candidate.ai_interview_feedback.page_title')} />
 
             <div className="min-h-screen bg-slate-50 px-4 py-6 md:px-8 md:py-8">
                 <div className="mx-auto max-w-5xl space-y-5">
@@ -157,13 +154,15 @@ export default function CandidateAiInterviewFeedback({
                             className="inline-flex items-center gap-1 hover:text-foreground"
                         >
                             <ArrowRight className="size-3.5 rotate-180" />
-                            Kembali ke Simulator
+                            {t('candidate.ai_interview_feedback.back_to_simulator')}
                         </Link>
                         <span aria-hidden>•</span>
                         <span>
                             {session.completed_at
-                                ? `Selesai ${session.completed_at}`
-                                : 'Selesai'}
+                                ? t('candidate.ai_interview_feedback.completed_at', {
+                                      date: session.completed_at,
+                                  })
+                                : t('candidate.ai_interview_feedback.completed')}
                         </span>
                     </div>
 
@@ -176,37 +175,38 @@ export default function CandidateAiInterviewFeedback({
                                         {isSkillDrill ? (
                                             <>
                                                 <Brain className="mr-1 size-3" />
-                                                Skill Drill
+                                                {t('candidate.ai_interview_feedback.skill_drill')}
                                             </>
                                         ) : (
                                             <>
                                                 <Briefcase className="mr-1 size-3" />
-                                                Mock Interview
+                                                {t('candidate.ai_interview_feedback.mock_interview')}
                                             </>
                                         )}
                                     </Badge>
                                     <Badge className="border-0 bg-white/15 text-white capitalize">
-                                        {scoreLabel(fitScore)}
+                                        {scoreLabel(fitScore, t)}
                                     </Badge>
                                 </div>
                                 <h1 className="text-2xl font-bold leading-tight md:text-3xl">
-                                    Latihan selesai,{' '}
-                                    {session.candidate_name ?? 'Kandidat'}!
+                                    {t('candidate.ai_interview_feedback.session_done_heading', {
+                                        name: session.candidate_name ?? t('candidate.ai_interview_feedback.default_candidate'),
+                                    })}
                                 </h1>
                                 <p className="text-sm text-white/80">
                                     {sessionTitle}
                                 </p>
                                 <div className="grid grid-cols-3 gap-2 pt-2 md:max-w-md">
                                     <Stat
-                                        label="Pertanyaan"
+                                        label={t('candidate.ai_interview_feedback.stat_questions')}
                                         value={totalQuestions}
                                     />
                                     <Stat
-                                        label="Dijawab"
+                                        label={t('candidate.ai_interview_feedback.stat_answered')}
                                         value={answeredCount}
                                     />
                                     <Stat
-                                        label="Rata-rata"
+                                        label={t('candidate.ai_interview_feedback.stat_average')}
                                         value={avgScore !== null ? `${avgScore}` : '—'}
                                     />
                                 </div>
@@ -219,7 +219,7 @@ export default function CandidateAiInterviewFeedback({
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-base">
                                     <PlayCircle className="size-4 text-primary" />
-                                    Rekaman Interview
+                                    {t('candidate.ai_interview_feedback.recording_title')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pb-5">
@@ -230,7 +230,7 @@ export default function CandidateAiInterviewFeedback({
                                     className="w-full rounded-xl bg-black"
                                     style={{ maxHeight: '480px' }}
                                 >
-                                    Browser kamu tidak mendukung pemutaran video.
+                                    {t('candidate.ai_interview_feedback.video_unsupported')}
                                 </video>
                             </CardContent>
                         </Card>
@@ -244,7 +244,7 @@ export default function CandidateAiInterviewFeedback({
                                 </span>
                                 <div className="space-y-2">
                                     <p className="text-xs font-semibold tracking-[0.2em] text-[#01296A] uppercase">
-                                        Catatan AI
+                                        {t('candidate.ai_interview_feedback.ai_notes')}
                                     </p>
                                     {session.summary ? (
                                         <p className="text-sm leading-6 text-foreground/80">
@@ -266,7 +266,7 @@ export default function CandidateAiInterviewFeedback({
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-base">
                                     <ThumbsUp className="size-4 text-emerald-600" />
-                                    Yang sudah kuat
+                                    {t('candidate.ai_interview_feedback.strengths_title')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-2">
@@ -283,8 +283,7 @@ export default function CandidateAiInterviewFeedback({
                                     ))
                                 ) : (
                                     <p className="text-sm text-muted-foreground">
-                                        Belum ada kategori dengan skor 70+.
-                                        Lanjutkan latihan untuk meraihnya!
+                                        {t('candidate.ai_interview_feedback.strengths_empty')}
                                     </p>
                                 )}
                                 {session.strengths.length > 0 ? (
@@ -312,7 +311,7 @@ export default function CandidateAiInterviewFeedback({
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-base">
                                     <Target className="size-4 text-amber-600" />
-                                    Area yang perlu diperdalam
+                                    {t('candidate.ai_interview_feedback.weaknesses_title')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-2">
@@ -329,8 +328,7 @@ export default function CandidateAiInterviewFeedback({
                                     ))
                                 ) : (
                                     <p className="text-sm text-muted-foreground">
-                                        Tidak ada kategori di bawah 70.
-                                        Pertahankan!
+                                        {t('candidate.ai_interview_feedback.weaknesses_empty')}
                                     </p>
                                 )}
                                 {session.weaknesses.length > 0 ? (
@@ -360,7 +358,7 @@ export default function CandidateAiInterviewFeedback({
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-base">
                                     <TrendingUp className="size-4 text-[#01296A]" />
-                                    Rincian per Kategori
+                                    {t('candidate.ai_interview_feedback.category_breakdown_title')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -383,7 +381,7 @@ export default function CandidateAiInterviewFeedback({
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-base">
                                     <Lightbulb className="size-4 text-[#01296A]" />
-                                    Feedback per Pertanyaan
+                                    {t('candidate.ai_interview_feedback.question_feedback_title')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-2">
@@ -405,7 +403,7 @@ export default function CandidateAiInterviewFeedback({
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-base">
                                     <TrendingUp className="size-4 text-[#01296A]" />
-                                    Perkembangan Antar Sesi
+                                    {t('candidate.ai_interview_feedback.progress_trends_title')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -422,7 +420,7 @@ export default function CandidateAiInterviewFeedback({
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-base">
                                     <BookOpen className="size-4 text-[#01296A]" />
-                                    Materi yang Disarankan
+                                    {t('candidate.ai_interview_feedback.suggested_resources_title')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -440,24 +438,26 @@ export default function CandidateAiInterviewFeedback({
                         <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
                             <div className="space-y-1">
                                 <p className="text-base font-semibold">
-                                    Mau lanjut latihan?
+                                    {t('candidate.ai_interview_feedback.cta_title')}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
                                     {weakestCategories.length > 0
-                                        ? `Fokus ke area ${formatReadableLabel(weakestCategories[0]?.category ?? '')} yang skornya masih rendah.`
-                                        : 'Coba mode lain atau drill skill spesifik.'}
+                                        ? t('candidate.ai_interview_feedback.cta_focus_area', {
+                                              area: formatReadableLabel(weakestCategories[0]?.category ?? ''),
+                                          })
+                                        : t('candidate.ai_interview_feedback.cta_try_other')}
                                 </p>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 <Button asChild size="lg">
                                     <Link href={retryUrl}>
                                         <RotateCcw className="size-4" />
-                                        Latihan ulang
+                                        {t('candidate.ai_interview_feedback.retry_button')}
                                     </Link>
                                 </Button>
                                 <Button asChild size="lg" variant="outline">
                                     <Link href={showInterview(session.id).url}>
-                                        Detail sesi
+                                        {t('candidate.ai_interview_feedback.detail_button')}
                                         <ArrowRight className="size-4" />
                                     </Link>
                                 </Button>
@@ -566,6 +566,7 @@ function CategoryCard({
 }: {
     item: FeedbackPageProps['session']['category_scores'][number];
 }) {
+    const { t } = useTranslate();
     const score = Math.max(0, Math.min(100, item.average_score ?? 0));
     const tone =
         score >= 80 ? 'good' : score >= 60 ? 'medium' : 'low';
@@ -626,7 +627,9 @@ function CategoryCard({
                 />
             </div>
             <p className="mt-2 text-[11px] text-muted-foreground">
-                {item.answered_count} jawaban dinilai
+                {t('candidate.ai_interview_feedback.answers_rated', {
+                    count: item.answered_count,
+                })}
             </p>
         </div>
     );
@@ -639,6 +642,7 @@ function QuestionFeedbackItem({
     index: number;
     feedback: FeedbackPageProps['session']['question_feedbacks'][number];
 }) {
+    const { t } = useTranslate();
     const [open, setOpen] = useState(false);
     const score = feedback.score ?? null;
     const scoreClass =
@@ -661,7 +665,9 @@ function QuestionFeedbackItem({
                     {index}
                 </span>
                 <p className="flex-1 text-sm leading-tight">
-                    {feedback.question || 'Pertanyaan tidak tersedia'}
+                    {feedback.question
+                        ? stripHtml(feedback.question)
+                        : t('candidate.ai_interview_feedback.question_unavailable')}
                 </p>
                 <span
                     className={cn(
@@ -687,7 +693,7 @@ function QuestionFeedbackItem({
                     ) : null}
                     <p className="text-foreground/80">
                         {feedback.analysis ||
-                            'Belum ada analisis untuk jawaban ini.'}
+                            t('candidate.ai_interview_feedback.analysis_unavailable')}
                     </p>
                 </div>
             ) : null}
@@ -702,6 +708,7 @@ function ProgressTrendChart({
     points: FeedbackPageProps['progress_trends']['points'];
     categories: FeedbackPageProps['progress_trends']['categories'];
 }) {
+    const { t } = useTranslate();
     const chartWidth = 760;
     const chartHeight = 220;
     const leftPad = 28;
@@ -839,7 +846,7 @@ function ProgressTrendChart({
                         className="size-2 rounded-full bg-[#01296A]"
                         aria-hidden
                     />
-                    Fit score
+                    {t('candidate.ai_interview_feedback.fit_score_legend')}
                 </span>
                 {categorySeries.map((series) => (
                     <span
@@ -864,12 +871,21 @@ function EducationResourceCard({
 }: {
     resource: FeedbackPageProps['resources'][number];
 }) {
+    const { t } = useTranslate();
     const Icon =
         RESOURCE_TYPE_ICONS[
             resource.type as keyof typeof RESOURCE_TYPE_ICONS
         ] ?? BookOpen;
+
+    const resourceTypeLabels: Record<string, string> = {
+        article: t('candidate.ai_interview_feedback.resource_type_article'),
+        video: t('candidate.ai_interview_feedback.resource_type_video'),
+        template: t('candidate.ai_interview_feedback.resource_type_template'),
+        guide: t('candidate.ai_interview_feedback.resource_type_guide'),
+    };
+
     const typeLabel =
-        RESOURCE_TYPE_LABELS[resource.type] ?? formatReadableLabel(resource.type);
+        resourceTypeLabels[resource.type] ?? formatReadableLabel(resource.type);
 
     return (
         <Link
@@ -900,6 +916,23 @@ function formatReadableLabel(value: string): string {
         .toLowerCase();
 }
 
+function stripHtml(value: string): string {
+    return value
+        // Remove complete HTML tags first
+        .replace(/<\/?[a-zA-Z][^<>]*>/g, ' ')
+        // Remove dangling/truncated tag fragments like "<st" or "<strong data-start"
+        .replace(/<\/?[a-zA-Z][^<>]*$/g, ' ')
+        // Remove leftover tag-opener fragments mid-string
+        .replace(/<\/?[a-zA-Z][^\s<>]*\b/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 function focusFromCategory(category: string): string {
     switch (category) {
         case 'technical':
@@ -914,14 +947,14 @@ function focusFromCategory(category: string): string {
     }
 }
 
-function scoreLabel(score: number): string {
+function scoreLabel(score: number, t: (key: string) => string): string {
     if (score >= 80) {
-        return 'Sudah kuat';
+        return t('candidate.ai_interview_feedback.score_label_strong');
     }
     if (score >= 60) {
-        return 'Cukup baik';
+        return t('candidate.ai_interview_feedback.score_label_good');
     }
-    return 'Perlu ditingkatkan';
+    return t('candidate.ai_interview_feedback.score_label_needs_improvement');
 }
 
 CandidateAiInterviewFeedback.layout = ({ session }: FeedbackPageProps) => ({

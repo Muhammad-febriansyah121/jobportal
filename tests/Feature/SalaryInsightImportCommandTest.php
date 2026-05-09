@@ -12,11 +12,9 @@ test('salary insight csv import command aggregates rows and updates existing rec
 
     SalaryInsight::factory()->create([
         'industry_id' => $industry->id,
-        'company_id' => null,
         'job_title' => 'Backend Developer',
         'location_city' => 'Jakarta',
         'salary_min' => 9_000_000,
-        'salary_median' => 12_000_000,
         'salary_max' => 16_000_000,
         'source_count' => 1,
         'published_at' => null,
@@ -42,11 +40,9 @@ CSV
         ->where('job_title', 'Backend Developer')
         ->where('location_city', 'Jakarta')
         ->where('industry_id', $industry->id)
-        ->whereNull('company_id')
         ->firstOrFail();
 
     expect($backend->salary_min)->toBe(10_000_000);
-    expect($backend->salary_median)->toBe(15_500_000);
     expect($backend->salary_max)->toBe(22_000_000);
     expect($backend->source_count)->toBe(3);
     expect($backend->source_name)->toBe('LinkedIn + JobStreet');
@@ -57,11 +53,9 @@ CSV
         ->where('job_title', 'Data Analyst')
         ->where('location_city', 'Bandung')
         ->where('industry_id', $industry->id)
-        ->whereNull('company_id')
         ->firstOrFail();
 
     expect($analyst->salary_min)->toBe(7_000_000);
-    expect($analyst->salary_median)->toBe(9_000_000);
     expect($analyst->salary_max)->toBe(11_000_000);
     expect($analyst->source_count)->toBe(1);
     expect($analyst->source_name)->toBe('LinkedIn + JobStreet');

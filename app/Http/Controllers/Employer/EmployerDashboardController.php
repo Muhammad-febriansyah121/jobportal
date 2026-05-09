@@ -135,7 +135,7 @@ class EmployerDashboardController extends Controller
             ],
             [
                 'key' => 'talent_search',
-                'label' => 'Pencarian Kandidat',
+                'label' => 'Job Invitation',
                 'used' => $talentSearchUsed,
                 'limit' => $activePlan?->talent_search_quota,
             ],

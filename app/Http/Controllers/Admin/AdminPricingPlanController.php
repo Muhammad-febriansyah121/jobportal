@@ -21,7 +21,7 @@ class AdminPricingPlanController extends Controller
     public function index(Request $request): Response
     {
         $plans = PricingPlan::query()
-            ->select(['id', 'name', 'slug', 'price', 'duration_days', 'active_jobs_limit', 'recruiter_seat_limit', 'ai_screening_quota', 'talent_search_quota', 'features_json', 'is_active', 'created_at'])
+            ->select(['id', 'name', 'slug', 'price', 'duration_days', 'active_jobs_limit', 'recruiter_seat_limit', 'ai_screening_quota', 'ai_interview_quota', 'talent_search_quota', 'features_json', 'is_active', 'created_at'])
             ->withCount('subscriptions')
             ->when($request->filled('search'), fn ($query) => $query->where('name', 'like', '%'.$request->string('search')->toString().'%'))
             ->latest()
@@ -31,11 +31,13 @@ class AdminPricingPlanController extends Controller
                 'id' => $plan->id,
                 'name' => $plan->name,
                 'slug' => $plan->slug,
-                'price' => 'Rp '.number_format((int) $plan->price, 0, ',', '.'),
+                'price' => (int) $plan->price === 0 && $plan->slug === 'enterprise'
+                    ? 'Custom'
+                    : 'Rp '.number_format((int) $plan->price, 0, ',', '.'),
                 'duration' => $this->durationLabel((int) $plan->duration_days),
                 'active_jobs_limit' => $plan->active_jobs_limit,
                 'recruiter_seat_limit' => $plan->recruiter_seat_limit,
-                'ai_screening_quota' => $plan->ai_screening_quota,
+                'ai_interview_quota' => $plan->ai_interview_quota,
                 'talent_search_quota' => $plan->talent_search_quota,
                 'status' => [
                     'label' => $plan->is_active ? 'Aktif' : 'Nonaktif',
@@ -59,8 +61,8 @@ class AdminPricingPlanController extends Controller
                 ['key' => 'duration', 'label' => 'Masa Aktif'],
                 ['key' => 'active_jobs_limit', 'label' => 'Job limit'],
                 ['key' => 'recruiter_seat_limit', 'label' => 'Seat'],
-                ['key' => 'ai_screening_quota', 'label' => 'AI quota'],
-                ['key' => 'talent_search_quota', 'label' => 'Talent quota'],
+                ['key' => 'ai_interview_quota', 'label' => 'Interview AI'],
+                ['key' => 'talent_search_quota', 'label' => 'Job Invitation'],
                 ['key' => 'status', 'label' => 'Status'],
                 ['key' => 'subscriptions_count', 'label' => 'Subscription'],
             ],
@@ -161,6 +163,7 @@ class AdminPricingPlanController extends Controller
             'duration_days' => $validated['duration_days'],
             'active_jobs_limit' => $validated['active_jobs_limit'],
             'recruiter_seat_limit' => $validated['recruiter_seat_limit'],
+            'ai_interview_quota' => $validated['ai_interview_quota'] ?? 0,
             'talent_search_quota' => $validated['talent_search_quota'],
             'features_json' => collect(preg_split('/\r\n|\r|\n/', (string) ($validated['features'] ?? '')))
                 ->map(fn (string $feature): string => trim($feature))
@@ -168,6 +171,7 @@ class AdminPricingPlanController extends Controller
                 ->values()
                 ->all(),
             'is_active' => $request->boolean('is_active'),
+            'is_trial' => $request->boolean('is_trial'),
         ];
     }
 
@@ -198,6 +202,7 @@ class AdminPricingPlanController extends Controller
             'duration_label' => $this->durationLabel((int) $plan->duration_days),
             'active_jobs_limit' => (int) $plan->active_jobs_limit,
             'recruiter_seat_limit' => (int) $plan->recruiter_seat_limit,
+            'ai_interview_quota' => (int) $plan->ai_interview_quota,
             'talent_search_quota' => (int) $plan->talent_search_quota,
             'features' => collect($plan->normalizedFeatures())
                 ->filter(fn (array $feature): bool => $feature['included'])
@@ -205,6 +210,7 @@ class AdminPricingPlanController extends Controller
                 ->values()
                 ->all(),
             'is_active' => (bool) $plan->is_active,
+            'is_trial' => (bool) $plan->is_trial,
             'subscriptions_count' => (int) ($plan->subscriptions_count ?? 0),
             'created_at' => $plan->created_at?->format('d M Y H:i'),
             'updated_at' => $plan->updated_at?->format('d M Y H:i'),

@@ -8,6 +8,7 @@ import {
     PlayCircle,
     Tag,
 } from 'lucide-react';
+import { useTranslate } from '@/hooks/use-translate';
 import HomeLayout from '@/layouts/front/home-layout';
 import { cn } from '@/lib/utils';
 import { index, show } from '@/routes/career-resources';
@@ -15,7 +16,6 @@ import { index, show } from '@/routes/career-resources';
 const TYPE_META: Record<
     string,
     {
-        label: string;
         Icon: React.ComponentType<{ className?: string }>;
         color: string;
         bg: string;
@@ -23,28 +23,24 @@ const TYPE_META: Record<
     }
 > = {
     article: {
-        label: 'Artikel',
         Icon: FileText,
         color: 'text-sky-600',
         bg: 'bg-sky-50',
         accent: 'from-sky-500 to-sky-700',
     },
     guide: {
-        label: 'Panduan',
         Icon: BookOpen,
         color: 'text-emerald-600',
         bg: 'bg-emerald-50',
         accent: 'from-emerald-500 to-emerald-700',
     },
     video: {
-        label: 'Video',
         Icon: PlayCircle,
         color: 'text-rose-600',
         bg: 'bg-rose-50',
         accent: 'from-rose-500 to-rose-700',
     },
     template: {
-        label: 'Template',
         Icon: LayoutTemplate,
         color: 'text-violet-600',
         bg: 'bg-violet-50',
@@ -78,7 +74,6 @@ type ShowProps = {
 
 function RelatedCard({ resource }: { resource: Related }) {
     const meta = TYPE_META[resource.type] ?? {
-        label: resource.type,
         Icon: BookOpen,
         color: 'text-muted-foreground',
         bg: 'bg-muted',
@@ -123,14 +118,15 @@ function RelatedCard({ resource }: { resource: Related }) {
 }
 
 export default function CareerResourceShow({ resource, related }: ShowProps) {
+    const { t } = useTranslate();
     const meta = TYPE_META[resource.type] ?? {
-        label: resource.type,
         Icon: BookOpen,
         color: 'text-muted-foreground',
         bg: 'bg-muted',
         accent: 'from-slate-500 to-slate-700',
     };
-    const { label, Icon, bg, color } = meta;
+    const { Icon, bg, color } = meta;
+    const label = t(`career_resources.index.type_${resource.type}`);
 
     return (
         <HomeLayout>
@@ -144,7 +140,7 @@ export default function CareerResourceShow({ resource, related }: ShowProps) {
                         className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-primary"
                         href={index.url()}
                     >
-                        <ArrowLeft className="size-4" /> Kembali ke Sumber Karier
+                        <ArrowLeft className="size-4" /> {t('career_resources.show.back')}
                     </Link>
 
                     <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -205,7 +201,7 @@ export default function CareerResourceShow({ resource, related }: ShowProps) {
                                 <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
                                     <Icon className="size-12 opacity-30" />
                                     <p className="mt-3 text-sm">
-                                        Konten belum tersedia
+                                        {t('career_resources.show.content_empty')}
                                     </p>
                                 </div>
                             )}
@@ -216,11 +212,11 @@ export default function CareerResourceShow({ resource, related }: ShowProps) {
                             {/* Meta card */}
                             <div className="rounded-2xl border border-border bg-white p-4 shadow-sm">
                                 <h3 className="mb-3 text-sm font-bold text-foreground">
-                                    Tentang Konten Ini
+                                    {t('career_resources.show.meta_title')}
                                 </h3>
                                 <dl className="space-y-2.5 text-sm">
                                     <div className="flex justify-between">
-                                        <dt className="text-muted-foreground">Tipe</dt>
+                                        <dt className="text-muted-foreground">{t('career_resources.show.meta_type')}</dt>
                                         <dd className="font-medium text-foreground">
                                             {label}
                                         </dd>
@@ -228,7 +224,7 @@ export default function CareerResourceShow({ resource, related }: ShowProps) {
                                     {resource.category && (
                                         <div className="flex justify-between">
                                             <dt className="text-muted-foreground">
-                                                Kategori
+                                                {t('career_resources.show.meta_category')}
                                             </dt>
                                             <dd className="font-medium text-foreground">
                                                 {resource.category}
@@ -238,7 +234,7 @@ export default function CareerResourceShow({ resource, related }: ShowProps) {
                                     {resource.published_at && (
                                         <div className="flex justify-between">
                                             <dt className="text-muted-foreground">
-                                                Diterbitkan
+                                                {t('career_resources.show.meta_published')}
                                             </dt>
                                             <dd className="font-medium text-foreground">
                                                 {resource.published_at}
@@ -252,7 +248,7 @@ export default function CareerResourceShow({ resource, related }: ShowProps) {
                             {related.length > 0 && (
                                 <div className="space-y-3">
                                     <h3 className="text-sm font-bold text-foreground">
-                                        Konten Terkait
+                                        {t('career_resources.show.related_title')}
                                     </h3>
                                     {related.map((r) => (
                                         <RelatedCard key={r.id} resource={r} />
@@ -263,17 +259,16 @@ export default function CareerResourceShow({ resource, related }: ShowProps) {
                             {/* CTA */}
                             <div className="rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-5 text-white shadow-sm">
                                 <h3 className="text-sm font-bold">
-                                    Siap cari lowongan?
+                                    {t('career_resources.show.cta_title')}
                                 </h3>
                                 <p className="mt-1 text-xs text-white/70">
-                                    Terapkan ilmu dari artikel ini dan temukan
-                                    pekerjaan impianmu.
+                                    {t('career_resources.show.cta_subtitle')}
                                 </p>
                                 <Link
                                     className="mt-3 inline-flex items-center gap-1 rounded-lg bg-white px-4 py-2 text-xs font-semibold text-primary transition hover:bg-white/90"
                                     href="/jobs"
                                 >
-                                    Lihat Lowongan
+                                    {t('career_resources.show.cta_find_jobs')}
                                 </Link>
                             </div>
                         </aside>

@@ -3,7 +3,6 @@
 use App\Models\Company;
 use App\Models\Industry;
 use App\Models\JobListing;
-use App\Models\SalaryInsight;
 use App\Models\User;
 
 test('guest can open public company detail page', function () {
@@ -38,16 +37,6 @@ test('guest can open public company detail page', function () {
         'published_at' => now(),
     ]);
 
-    SalaryInsight::factory()->create([
-        'company_id' => $company->id,
-        'industry_id' => $industry->id,
-        'salary_min' => 11000000,
-        'salary_median' => 15000000,
-        'salary_max' => 20000000,
-        'source_count' => 25,
-        'published_at' => now(),
-    ]);
-
     $response = $this->get(route('companies.show', $company->slug));
 
     $response->assertInertia(fn ($page) => $page
@@ -58,7 +47,6 @@ test('guest can open public company detail page', function () {
         ->has('jobs', 1)
         ->where('company.review_access.can_submit', false)
         ->where('company.review_access.my_review', null)
-        ->where('company.salary_insight.salary_median', 15000000)
     );
 });
 

@@ -6,7 +6,6 @@ use App\Models\Application;
 use App\Models\Company;
 use App\Models\CompanyReview;
 use App\Models\JobListing;
-use App\Models\SalaryInsight;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -38,12 +37,6 @@ class CompanyProfileController extends Controller
                 'salary_range' => $this->salaryRange($job),
                 'published_at' => $job->published_at?->diffForHumans(),
             ]);
-
-        $salaryInsight = SalaryInsight::query()
-            ->where('company_id', $company->id)
-            ->whereNotNull('published_at')
-            ->selectRaw('MIN(salary_min) as salary_min, AVG(salary_median) as salary_median, MAX(salary_max) as salary_max, SUM(source_count) as source_count')
-            ->first();
 
         $publishedReviews = $company->reviews()
             ->where('status', 'approved');
@@ -131,12 +124,6 @@ class CompanyProfileController extends Controller
                 'review_access' => [
                     'can_submit' => $canSubmitReview,
                     'my_review' => $myReview,
-                ],
-                'salary_insight' => [
-                    'salary_min' => $salaryInsight?->salary_min !== null ? (int) $salaryInsight->salary_min : null,
-                    'salary_median' => $salaryInsight?->salary_median !== null ? (int) round((float) $salaryInsight->salary_median) : null,
-                    'salary_max' => $salaryInsight?->salary_max !== null ? (int) $salaryInsight->salary_max : null,
-                    'source_count' => $salaryInsight?->source_count !== null ? (int) $salaryInsight->source_count : null,
                 ],
             ],
             'jobs' => $jobs,

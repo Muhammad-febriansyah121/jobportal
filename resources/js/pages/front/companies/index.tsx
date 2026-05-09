@@ -8,7 +8,6 @@ import {
     ExternalLink,
     MapPin,
     Search,
-    Shield,
     SlidersHorizontal,
     Sparkles,
     Users,
@@ -16,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import HomeLayout from '@/layouts/front/home-layout';
+import { useTranslate } from '@/hooks/use-translate';
 import { cn } from '@/lib/utils';
 import { index as companiesIndex, show as companyShow } from '@/routes/companies';
 import { index as jobsIndex } from '@/routes/jobs';
@@ -50,10 +50,6 @@ type CompaniesPageProps = {
     };
 };
 
-const sortOptions = [
-    { value: 'recommended', label: 'Rekomendasi' },
-    { value: 'most_jobs', label: 'Lowongan Terbanyak' },
-];
 
 const avatarColors = [
     'bg-violet-100 text-violet-700',
@@ -89,31 +85,19 @@ function CompanyAvatar({ name, logoUrl }: { name: string; logoUrl: string | null
     );
 }
 
-function TrustBar({ score }: { score: number | null }) {
-    if (!score) {
-return null;
-}
-
-    const pct = Math.min(100, Math.max(0, score));
-    const color = pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-secondary-400' : 'bg-red-400';
-
-    return (
-        <div className="flex items-center gap-2">
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
-                <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${pct}%` }} />
-            </div>
-            <span className="text-[11px] font-semibold text-slate-500">{pct}</span>
-        </div>
-    );
-}
-
 export default function FrontCompaniesIndex({ filters, industries, companies }: CompaniesPageProps) {
+    const { t } = useTranslate();
     const [heroSearch, setHeroSearch] = useState(filters.search);
+
+    const sortOptions = [
+        { value: 'recommended', label: t('front.companies.sort_recommended') },
+        { value: 'most_jobs', label: t('front.companies.sort_most_jobs') },
+    ];
 
     const showingLabel =
         companies.from && companies.to
-            ? `${companies.from}–${companies.to} dari ${companies.total} perusahaan`
-            : `${companies.data.length} perusahaan`;
+            ? t('front.companies.showing_range', { from: companies.from, to: companies.to, total: companies.total })
+            : t('front.companies.showing_count', { count: companies.data.length });
 
     const activeFilterCount = [filters.search, filters.industry_id, filters.location].filter(Boolean).length;
 
@@ -129,7 +113,7 @@ export default function FrontCompaniesIndex({ filters, industries, companies }: 
 
     return (
         <HomeLayout>
-            <Head title="Perusahaan" />
+            <Head title={t('front.companies.head_title')} />
 
             {/* Hero */}
             <section className="relative overflow-hidden bg-white pt-20 pb-12 text-center">
@@ -137,14 +121,14 @@ export default function FrontCompaniesIndex({ filters, industries, companies }: 
                 <div className="relative mx-auto max-w-3xl px-4">
                     <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-4 py-1.5 text-xs font-semibold text-primary-600">
                         <Sparkles className="size-3.5" />
-                        {companies.total.toLocaleString('id-ID')}+ Perusahaan Aktif
+                        {t('front.companies.hero_badge', { count: companies.total.toLocaleString('id-ID') })}
                     </div>
                     <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-                        Temukan Perusahaan{' '}
-                        <span className="text-primary-600">Terbaik</span>
+                        {t('front.companies.hero_title')}{' '}
+                        <span className="text-primary-600">{t('front.companies.hero_title_highlight')}</span>
                     </h1>
                     <p className="mt-4 text-base text-slate-500">
-                        Jelajahi profil perusahaan terverifikasi, cek lowongan aktif, dan pilih tempat kerja yang paling sesuai tujuan kariermu.
+                        {t('front.companies.hero_subtitle')}
                     </p>
                     <form
                         className="mt-8 flex gap-2"
@@ -158,7 +142,7 @@ export default function FrontCompaniesIndex({ filters, industries, companies }: 
                             <input
                                 className="h-12 w-full rounded-xl border border-slate-200 bg-white pr-4 pl-10 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-200"
                                 onChange={(e) => setHeroSearch(e.target.value)}
-                                placeholder="Cari nama perusahaan..."
+                                placeholder={t('front.companies.hero_search_placeholder')}
                                 type="text"
                                 value={heroSearch}
                             />
@@ -167,7 +151,7 @@ export default function FrontCompaniesIndex({ filters, industries, companies }: 
                             className="h-12 rounded-xl bg-primary-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700 active:scale-95"
                             type="submit"
                         >
-                            Cari
+                            {t('front.companies.hero_search_button')}
                         </button>
                     </form>
                 </div>
@@ -175,186 +159,184 @@ export default function FrontCompaniesIndex({ filters, industries, companies }: 
 
             {/* Main */}
             <section className="bg-[#f5f6f8] px-4 py-8">
-                <div className="mx-auto max-w-6xl">
-                    <div className="grid gap-6 lg:grid-cols-[270px_1fr]">
+                <div className="mx-auto max-w-7xl space-y-5">
 
-                        {/* Sidebar */}
-                        <aside className="lg:sticky lg:top-6 lg:self-start">
-                            <form
-                                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
-                                onSubmit={(event) => {
-                                    event.preventDefault();
-                                    const formData = new FormData(event.currentTarget);
-                                    router.get(companiesIndex().url, Object.fromEntries(formData.entries()), { preserveScroll: true, preserveState: true });
-                                }}
-                            >
-                                <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 py-3.5">
-                                    <div className="flex items-center gap-2">
-                                        <SlidersHorizontal className="size-4 text-primary-600" />
-                                        <span className="text-sm font-bold text-slate-800">Filter</span>
-                                        {activeFilterCount > 0 && (
-                                            <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary-600 text-[10px] font-bold text-white">
-                                                {activeFilterCount}
-                                            </span>
-                                        )}
-                                    </div>
-                                    {activeFilterCount > 0 && (
-                                        <button
-                                            className="text-xs font-semibold text-primary-600 hover:text-primary-700"
-                                            onClick={(e) => {
- e.preventDefault(); router.get(companiesIndex().url); 
-}}
-                                            type="button"
-                                        >
-                                            Reset semua
-                                        </button>
-                                    )}
-                                </div>
-
-                                <div className="divide-y divide-slate-100">
-                                    <div className="p-4">
-                                        <p className="mb-2 text-[10px] font-bold tracking-widest text-slate-400 uppercase">Nama perusahaan</p>
-                                        <div className="relative">
-                                            <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400" />
-                                            <input
-                                                className="h-10 w-full rounded-lg border border-slate-200 bg-white pr-3 pl-8 text-sm transition outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                                                defaultValue={filters.search}
-                                                name="search"
-                                                placeholder="Tokopedia, Gojek..."
-                                                type="text"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="p-4">
-                                        <p className="mb-2 text-[10px] font-bold tracking-widest text-slate-400 uppercase">Industri</p>
-                                        <select
-                                            className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm transition outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                                            defaultValue={filters.industry_id}
-                                            name="industry_id"
-                                        >
-                                            <option value="">Semua industri</option>
-                                            {industries.map((industry) => (
-                                                <option key={industry.id} value={industry.id}>
-                                                    {industry.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="p-4">
-                                        <p className="mb-2 text-[10px] font-bold tracking-widest text-slate-400 uppercase">Lokasi</p>
-                                        <div className="relative">
-                                            <MapPin className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400" />
-                                            <input
-                                                className="h-10 w-full rounded-lg border border-slate-200 bg-white pr-3 pl-8 text-sm transition outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                                                defaultValue={filters.location}
-                                                name="location"
-                                                placeholder="Jakarta, Surabaya..."
-                                                type="text"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="p-4 pt-0">
-                                    <button
-                                        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary-600 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700 active:scale-[0.98]"
-                                        type="submit"
-                                    >
-                                        <Search className="size-4" />
-                                        Terapkan Filter
-                                    </button>
-                                </div>
-                            </form>
-                        </aside>
-
-                        {/* List */}
-                        <div className="space-y-4">
-                            {/* Toolbar */}
-                            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                                <p className="text-sm font-medium text-slate-500">
-                                    Menampilkan <span className="font-bold text-slate-800">{showingLabel}</span>
-                                </p>
-                                <form>
-                                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-500 transition hover:border-primary-300">
-                                        <ArrowUpDown className="size-3.5 text-slate-400" />
-                                        <select
-                                            className="cursor-pointer bg-transparent font-semibold text-slate-800 outline-none"
-                                            defaultValue={filters.sort}
-                                            name="sort"
-                                            onChange={(e) => router.get(companiesIndex().url, { ...filters, sort: e.target.value }, { preserveScroll: true, preserveState: true })}
-                                        >
-                                            {sortOptions.map((o) => (
-                                                <option key={o.value} value={o.value}>{o.label}</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown className="size-3.5 text-slate-400" />
-                                    </label>
-                                </form>
+                    {/* Filter bar (horizontal, on top) */}
+                    <form
+                        className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            const formData = new FormData(event.currentTarget);
+                            router.get(companiesIndex().url, Object.fromEntries(formData.entries()), { preserveScroll: true, preserveState: true });
+                        }}
+                    >
+                        <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-5 py-3">
+                            <div className="flex items-center gap-2">
+                                <SlidersHorizontal className="size-4 text-primary-600" />
+                                <span className="text-sm font-bold text-slate-800">{t('front.companies.filter_title')}</span>
+                                {activeFilterCount > 0 && (
+                                    <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary-600 text-[10px] font-bold text-white">
+                                        {activeFilterCount}
+                                    </span>
+                                )}
                             </div>
-
-                            {/* Active chips */}
-                            {activeFilterChips.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                    {activeFilterChips.map((chip) => (
-                                        <button
-                                            key={chip.key}
-                                            type="button"
-                                            onClick={() => removeFilter(chip.key)}
-                                            className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700 transition hover:bg-primary-100"
-                                        >
-                                            {chip.label}
-                                            <X className="size-3" />
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Cards grid */}
-                            {companies.data.length === 0 ? (
-                                <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-14 text-center shadow-sm">
-                                    <Building2 className="mx-auto size-10 text-slate-300" />
-                                    <p className="mt-4 text-base font-semibold text-slate-700">Perusahaan tidak ditemukan</p>
-                                    <p className="mt-1 text-sm text-slate-400">Coba ubah kata kunci atau longgarkan filter.</p>
-                                    <button
-                                        onClick={() => router.get(companiesIndex().url)}
-                                        className="mt-5 inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-primary-300 hover:text-primary-600"
-                                    >
-                                        <X className="size-3.5" />
-                                        Reset filter
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="grid gap-3 md:grid-cols-2">
-                                    {companies.data.map((company) => (
-                                        <CompanyCard key={company.id} company={company} />
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Pagination */}
-                            {companies.links.length > 3 && (
-                                <nav className="flex items-center justify-center gap-1.5 pt-2">
-                                    {companies.links.map((link, index) => (
-                                        <Link
-                                            key={`${link.label}-${index}`}
-                                            className={cn(
-                                                'min-w-9 rounded-lg border px-3 py-1.5 text-center text-sm font-medium transition',
-                                                link.active
-                                                    ? 'border-primary-600 bg-primary-600 text-white shadow-sm'
-                                                    : 'border-slate-200 bg-white text-slate-600 hover:border-primary-300 hover:text-primary-600',
-                                                !link.url && 'pointer-events-none opacity-40',
-                                            )}
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                            href={link.url ?? '#'}
-                                            preserveScroll
-                                        />
-                                    ))}
-                                </nav>
+                            {activeFilterCount > 0 && (
+                                <button
+                                    className="text-xs font-semibold text-primary-600 hover:text-primary-700"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        router.get(companiesIndex().url);
+                                    }}
+                                    type="button"
+                                >
+                                    {t('front.companies.filter_reset_all')}
+                                </button>
                             )}
                         </div>
+
+                        <div className="grid gap-3 p-4 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
+                            {/* Company name */}
+                            <div className="lg:col-span-4">
+                                <p className="mb-1.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase">{t('front.companies.filter_company_name_label')}</p>
+                                <div className="relative">
+                                    <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        className="h-10 w-full rounded-lg border border-slate-200 bg-white pr-3 pl-8 text-sm transition outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
+                                        defaultValue={filters.search}
+                                        name="search"
+                                        placeholder={t('front.companies.filter_company_name_placeholder')}
+                                        type="text"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Industry */}
+                            <div className="lg:col-span-3">
+                                <p className="mb-1.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase">{t('front.companies.filter_industry_label')}</p>
+                                <select
+                                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm transition outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
+                                    defaultValue={filters.industry_id}
+                                    name="industry_id"
+                                >
+                                    <option value="">{t('front.companies.industry_all')}</option>
+                                    {industries.map((industry) => (
+                                        <option key={industry.id} value={industry.id}>
+                                            {industry.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Location */}
+                            <div className="lg:col-span-3">
+                                <p className="mb-1.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase">{t('front.companies.filter_location_label')}</p>
+                                <div className="relative">
+                                    <MapPin className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        className="h-10 w-full rounded-lg border border-slate-200 bg-white pr-3 pl-8 text-sm transition outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
+                                        defaultValue={filters.location}
+                                        name="location"
+                                        placeholder={t('front.companies.filter_location_placeholder')}
+                                        type="text"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Apply */}
+                            <div className="lg:col-span-2">
+                                <button
+                                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700 active:scale-[0.98]"
+                                    type="submit"
+                                >
+                                    <Search className="size-4" />
+                                    {t('front.companies.filter_apply_button')}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    {/* Toolbar */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                        <p className="text-sm font-medium text-slate-500">
+                            {t('front.companies.toolbar_showing')} <span className="font-bold text-slate-800">{showingLabel}</span>
+                        </p>
+                        <form>
+                            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-500 transition hover:border-primary-300">
+                                <ArrowUpDown className="size-3.5 text-slate-400" />
+                                <select
+                                    className="cursor-pointer bg-transparent font-semibold text-slate-800 outline-none"
+                                    defaultValue={filters.sort}
+                                    name="sort"
+                                    onChange={(e) => router.get(companiesIndex().url, { ...filters, sort: e.target.value }, { preserveScroll: true, preserveState: true })}
+                                >
+                                    {sortOptions.map((o) => (
+                                        <option key={o.value} value={o.value}>{o.label}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="size-3.5 text-slate-400" />
+                            </label>
+                        </form>
                     </div>
+
+                    {/* Active chips */}
+                    {activeFilterChips.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                            {activeFilterChips.map((chip) => (
+                                <button
+                                    key={chip.key}
+                                    type="button"
+                                    onClick={() => removeFilter(chip.key)}
+                                    className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700 transition hover:bg-primary-100"
+                                >
+                                    {chip.label}
+                                    <X className="size-3" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Cards grid (3 cols on large) */}
+                    {companies.data.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-14 text-center shadow-sm">
+                            <Building2 className="mx-auto size-10 text-slate-300" />
+                            <p className="mt-4 text-base font-semibold text-slate-700">{t('front.companies.empty_title')}</p>
+                            <p className="mt-1 text-sm text-slate-400">{t('front.companies.empty_subtitle')}</p>
+                            <button
+                                onClick={() => router.get(companiesIndex().url)}
+                                className="mt-5 inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-primary-300 hover:text-primary-600"
+                            >
+                                <X className="size-3.5" />
+                                {t('front.companies.empty_reset')}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {companies.data.map((company) => (
+                                <CompanyCard key={company.id} company={company} />
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Pagination */}
+                    {companies.links.length > 3 && (
+                        <nav className="flex items-center justify-center gap-1.5 pt-2">
+                            {companies.links.map((link, index) => (
+                                <Link
+                                    key={`${link.label}-${index}`}
+                                    className={cn(
+                                        'min-w-9 rounded-lg border px-3 py-1.5 text-center text-sm font-medium transition',
+                                        link.active
+                                            ? 'border-primary-600 bg-primary-600 text-white shadow-sm'
+                                            : 'border-slate-200 bg-white text-slate-600 hover:border-primary-300 hover:text-primary-600',
+                                        !link.url && 'pointer-events-none opacity-40',
+                                    )}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                    href={link.url ?? '#'}
+                                    preserveScroll
+                                />
+                            ))}
+                        </nav>
+                    )}
                 </div>
             </section>
         </HomeLayout>
@@ -362,88 +344,88 @@ export default function FrontCompaniesIndex({ filters, industries, companies }: 
 }
 
 function CompanyCard({ company }: { company: CompanyItem }) {
+    const { t } = useTranslate();
+    const hasJobs = company.open_jobs_count > 0;
+
     return (
-        <article className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:border-primary-200 hover:shadow-md">
-            <div className="absolute top-0 left-0 h-full w-1 rounded-l-2xl bg-primary-600 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
-
-            <div className="p-5">
-                {/* Header row */}
-                <div className="flex items-start gap-3">
-                    <CompanyAvatar name={company.name} logoUrl={company.logo_url} />
-
-                    <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                            <h2 className="truncate text-base font-bold text-slate-900 transition group-hover:text-primary-600">
-                                {company.name}
-                            </h2>
-                            {company.is_verified && (
-                                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                                    <BadgeCheck className="size-3" />
-                                    Verified
-                                </span>
-                            )}
-                        </div>
-
-                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-                            <span className="flex items-center gap-1 text-xs text-slate-500">
-                                <Building2 className="size-3.5 text-slate-400" />
-                                {company.industry ?? 'Industri umum'}
-                            </span>
-                            <span className="flex items-center gap-1 text-xs text-slate-500">
-                                <MapPin className="size-3.5 text-slate-400" />
-                                {company.location || 'Indonesia'}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Lowongan badge */}
-                    <span className={cn(
-                        'shrink-0 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold',
-                        company.open_jobs_count > 0
-                            ? 'bg-primary-50 text-primary-700 border border-primary-200'
-                            : 'bg-slate-100 text-slate-500',
-                    )}>
-                        <BriefcaseBusiness className="size-3.5" />
-                        {company.open_jobs_count}
+        <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-lg">
+            {/* Decorative gradient header */}
+            <div className="relative h-16 bg-gradient-to-br from-primary-500/15 via-primary-400/10 to-secondary-300/10">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,_rgba(255,255,255,0.6)_0%,_transparent_60%)]" />
+                {hasJobs && (
+                    <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full border border-primary-200 bg-white/90 px-2.5 py-1 text-[11px] font-bold text-primary-700 shadow-sm backdrop-blur">
+                        <BriefcaseBusiness className="size-3" />
+                        {t('front.companies.card_jobs_badge', { count: company.open_jobs_count })}
                     </span>
-                </div>
+                )}
+            </div>
 
-                {/* Meta row */}
-                <div className="mt-4 space-y-2.5">
-                    <div className="flex flex-wrap gap-2">
-                        {company.company_size && (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] text-slate-600">
-                                <Users className="size-3 text-slate-400" />
-                                {company.company_size} karyawan
-                            </span>
-                        )}
-                        {company.trust_score !== null && (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] text-slate-600">
-                                <Shield className="size-3 text-slate-400" />
-                                Trust {company.trust_score}
-                            </span>
-                        )}
+            <div className="-mt-8 flex flex-1 flex-col px-5 pb-5">
+                {/* Avatar (overlapping header) */}
+                <div className="flex items-end justify-between gap-3">
+                    <div className="rounded-2xl bg-white p-1 shadow-sm ring-1 ring-slate-100">
+                        <CompanyAvatar name={company.name} logoUrl={company.logo_url} />
                     </div>
-                    {company.trust_score !== null && (
-                        <TrustBar score={company.trust_score} />
+                    {company.is_verified && (
+                        <span className="mb-1 inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                            <BadgeCheck className="size-3" />
+                            {t('front.companies.card_verified')}
+                        </span>
                     )}
                 </div>
 
-                {/* Actions */}
-                <div className="mt-4 flex gap-2">
+                {/* Name + meta */}
+                <h2 className="mt-3 truncate text-base font-bold text-slate-900 transition group-hover:text-primary-600">
+                    {company.name}
+                </h2>
+
+                <div className="mt-2 space-y-1.5">
+                    <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                        <Building2 className="size-3.5 shrink-0 text-slate-400" />
+                        <span className="truncate">
+                            {company.industry ?? t('front.companies.card_industry_fallback')}
+                        </span>
+                    </p>
+                    <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                        <MapPin className="size-3.5 shrink-0 text-slate-400" />
+                        <span className="truncate">
+                            {company.location || t('front.companies.card_location_fallback')}
+                        </span>
+                    </p>
+                    {company.company_size && (
+                        <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                            <Users className="size-3.5 shrink-0 text-slate-400" />
+                            <span className="truncate">
+                                {t('front.companies.card_employees', { size: company.company_size })}
+                            </span>
+                        </p>
+                    )}
+                </div>
+
+                {/* Footer: spacer + actions */}
+                <div className="flex-1" />
+
+                <div className="mt-4 flex gap-2 border-t border-slate-100 pt-4">
                     <Link
-                        className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                        className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:border-primary-200 hover:bg-primary-50/50 hover:text-primary-700"
                         href={companyShow(company.slug)}
                     >
                         <ExternalLink className="size-3.5" />
-                        Profil
+                        {t('front.companies.card_profile_link')}
                     </Link>
                     <Link
-                        className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-primary-200 bg-primary-50 text-sm font-semibold text-primary-700 transition hover:border-primary-300 hover:bg-primary-100"
+                        className={cn(
+                            'inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold transition',
+                            hasJobs
+                                ? 'bg-primary-600 text-white shadow-sm hover:bg-primary-700'
+                                : 'pointer-events-none border border-slate-200 bg-slate-50 text-slate-400',
+                        )}
                         href={`${jobsIndex().url}?search=${encodeURIComponent(company.name)}`}
                     >
                         <BriefcaseBusiness className="size-3.5" />
-                        {company.open_jobs_count} Lowongan
+                        {hasJobs
+                            ? t('front.companies.card_jobs', { count: company.open_jobs_count })
+                            : t('front.companies.card_jobs_empty')}
                     </Link>
                 </div>
             </div>

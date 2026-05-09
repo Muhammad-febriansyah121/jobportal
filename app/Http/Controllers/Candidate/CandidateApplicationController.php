@@ -186,26 +186,6 @@ class CandidateApplicationController extends Controller
         ]);
     }
 
-    public function withdraw(Request $request, Application $application, ResolveCandidateProfile $resolveCandidateProfile): RedirectResponse
-    {
-        $candidate = $resolveCandidateProfile->handle($request->user());
-        $this->ensureOwnsApplication($application, $candidate->id);
-
-        if (in_array($application->status, ['hired', 'rejected', 'withdrawn'], true)) {
-            throw ValidationException::withMessages([
-                'application' => 'Lamaran pada status ini tidak dapat ditarik.',
-            ]);
-        }
-
-        $previousStatus = $application->status;
-        $application->update(['status' => 'withdrawn']);
-        $this->recordStatus($application, $previousStatus, 'withdrawn', $request->user()->id, 'Lamaran ditarik oleh kandidat.');
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Lamaran berhasil ditarik.']);
-
-        return to_route('candidate.applications.index');
-    }
-
     private function validateScreeningAnswers(JobListing $jobListing, array $screeningAnswers): void
     {
         $missingRequiredQuestion = $jobListing->screeningQuestions()

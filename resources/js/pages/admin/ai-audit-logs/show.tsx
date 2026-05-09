@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { AdminActionList } from '@/components/admin/admin-action';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslate } from '@/hooks/use-translate';
 import type { AdminAction } from '@/types';
 
 type AiAuditLogDetail = {
@@ -16,6 +17,10 @@ type AiAuditLogDetail = {
     input_hash: string;
     input_json: Record<string, unknown> | null;
     output_json: Record<string, unknown> | null;
+    prompt_tokens: number | null;
+    completion_tokens: number | null;
+    reasoning_tokens: number | null;
+    total_tokens: number | null;
     created_at: string;
 };
 
@@ -92,6 +97,7 @@ function Pill({
 
 function RawJsonToggle({ data }: { data: Record<string, unknown> }) {
     const [open, setOpen] = useState(false);
+    const { t } = useTranslate();
 
     return (
         <div className="mt-4 border-t pt-4">
@@ -105,7 +111,7 @@ function RawJsonToggle({ data }: { data: Record<string, unknown> }) {
                 ) : (
                     <ChevronDown className="size-3.5" />
                 )}
-                {open ? 'Sembunyikan' : 'Lihat'} raw JSON
+                {open ? t('admin.ai_audit_logs_show.hide_json') : t('admin.ai_audit_logs_show.show_json')}
             </button>
             {open && (
                 <pre className="mt-3 overflow-x-auto rounded-lg bg-muted px-4 py-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-foreground/70">
@@ -119,6 +125,7 @@ function RawJsonToggle({ data }: { data: Record<string, unknown> }) {
 // ─── Input renderers ───────────────────────────────────────────────────────
 
 function InputRiskDetection({ data }: { data: Record<string, unknown> }) {
+    const { t } = useTranslate();
     const user = data.user as Record<string, unknown> | undefined;
     const window = data.window as Record<string, unknown> | undefined;
     const signals = data.signals as Record<string, unknown> | undefined;
@@ -133,7 +140,7 @@ function InputRiskDetection({ data }: { data: Record<string, unknown> }) {
                 {user && (
                     <div className="rounded-lg border p-4">
                         <p className="mb-3 text-xs font-semibold text-muted-foreground uppercase">
-                            Pengguna
+                            {t('admin.ai_audit_logs_show.user')}
                         </p>
                         <dl className="grid gap-2">
                             <div className="flex justify-between text-sm">
@@ -150,7 +157,7 @@ function InputRiskDetection({ data }: { data: Record<string, unknown> }) {
                             </div>
                             <div className="flex justify-between text-sm">
                                 <dt className="text-muted-foreground">
-                                    Domain email
+                                    {t('admin.ai_audit_logs_show.email_domain')}
                                 </dt>
                                 <dd className="font-medium">
                                     @{String(user.email_domain)}
@@ -162,19 +169,19 @@ function InputRiskDetection({ data }: { data: Record<string, unknown> }) {
                 {window && (
                     <div className="rounded-lg border p-4">
                         <p className="mb-3 text-xs font-semibold text-muted-foreground uppercase">
-                            Periode Analisis
+                            {t('admin.ai_audit_logs_show.analysis_period')}
                         </p>
                         <dl className="grid gap-2">
                             <div className="flex justify-between text-sm">
                                 <dt className="text-muted-foreground">
-                                    Rentang
+                                    {t('admin.ai_audit_logs_show.range')}
                                 </dt>
                                 <dd className="font-medium">
-                                    {String(window.days)} hari terakhir
+                                    {t('admin.ai_audit_logs_show.last_n_days', { n: String(window.days) })}
                                 </dd>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <dt className="text-muted-foreground">Sejak</dt>
+                                <dt className="text-muted-foreground">{t('admin.ai_audit_logs_show.since')}</dt>
                                 <dd className="font-medium">
                                     {new Date(
                                         String(window.since),
@@ -194,17 +201,17 @@ function InputRiskDetection({ data }: { data: Record<string, unknown> }) {
             {signals && (
                 <div className="rounded-lg border p-4">
                     <p className="mb-3 text-xs font-semibold text-muted-foreground uppercase">
-                        Sinyal Aktivitas
+                        {t('admin.ai_audit_logs_show.activity_signals')}
                     </p>
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         {[
-                            { key: 'apply_count', label: 'Lamaran dikirim' },
-                            { key: 'failed_login_count', label: 'Login gagal' },
+                            { key: 'apply_count', label: t('admin.ai_audit_logs_show.applications_sent') },
+                            { key: 'failed_login_count', label: t('admin.ai_audit_logs_show.failed_logins') },
                             {
                                 key: 'destructive_action_count',
-                                label: 'Aksi destruktif',
+                                label: t('admin.ai_audit_logs_show.destructive_actions'),
                             },
-                            { key: 'unique_ip_count', label: 'IP unik' },
+                            { key: 'unique_ip_count', label: t('admin.ai_audit_logs_show.unique_ips') },
                         ].map(({ key, label }) => (
                             <div
                                 key={key}
@@ -223,7 +230,7 @@ function InputRiskDetection({ data }: { data: Record<string, unknown> }) {
                         signals.heuristic_level !== null && (
                         <div className="mt-3 flex items-center gap-2 text-sm">
                             <span className="text-muted-foreground">
-                                Level heuristik:
+                                {t('admin.ai_audit_logs_show.heuristic_level')}
                             </span>
                             <Pill
                                 label={String(
@@ -249,7 +256,7 @@ function InputRiskDetection({ data }: { data: Record<string, unknown> }) {
             {activities && activities.length > 0 && (
                 <div className="rounded-lg border">
                     <p className="border-b px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
-                        Aktivitas Terbaru ({activities.length} entri)
+                        {t('admin.ai_audit_logs_show.recent_activity', { n: String(activities.length) })}
                     </p>
                     <div className="divide-y">
                         {activities.map((a, i) => (
@@ -292,7 +299,7 @@ function InputRiskDetection({ data }: { data: Record<string, unknown> }) {
             )}
             {activities && activities.length === 0 && (
                 <p className="text-sm text-muted-foreground italic">
-                    Tidak ada aktivitas dalam periode ini.
+                    {t('admin.ai_audit_logs_show.no_activity')}
                 </p>
             )}
 
@@ -332,6 +339,7 @@ function InputGeneric({ data }: { data: Record<string, unknown> }) {
 // ─── Output renderers ──────────────────────────────────────────────────────
 
 function OutputRiskDetection({ data }: { data: Record<string, unknown> }) {
+    const { t } = useTranslate();
     const riskLevel = String(data.risk_level ?? 'unknown');
     const riskScore = Number(data.risk_score ?? 0);
     const reasons = (data.reasons as string[] | undefined) ?? [];
@@ -375,7 +383,7 @@ function OutputRiskDetection({ data }: { data: Record<string, unknown> }) {
                 {reasons.length > 0 && (
                     <div className="rounded-lg border p-4">
                         <p className="mb-3 text-xs font-semibold text-muted-foreground uppercase">
-                            Alasan
+                            {t('admin.ai_audit_logs_show.reasons')}
                         </p>
                         <ul className="flex flex-col gap-2">
                             {reasons.map((r, i) => (
@@ -397,7 +405,7 @@ function OutputRiskDetection({ data }: { data: Record<string, unknown> }) {
                 {actions.length > 0 && (
                     <div className="rounded-lg border p-4">
                         <p className="mb-3 text-xs font-semibold text-muted-foreground uppercase">
-                            Tindakan yang Disarankan
+                            {t('admin.ai_audit_logs_show.recommended_actions')}
                         </p>
                         <ul className="flex flex-col gap-2">
                             {actions.map((a, i) => (
@@ -420,7 +428,7 @@ function OutputRiskDetection({ data }: { data: Record<string, unknown> }) {
             <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                 {data.confidence !== undefined && data.confidence !== null && (
                     <span>
-                        Confidence:{' '}
+                        {t('admin.ai_audit_logs_show.confidence')}{' '}
                         <strong className="text-foreground">
                             {String(data.confidence)}
                         </strong>
@@ -429,7 +437,7 @@ function OutputRiskDetection({ data }: { data: Record<string, unknown> }) {
                 {data.analysis_source !== undefined &&
                     data.analysis_source !== null && (
                     <span>
-                        Sumber:{' '}
+                        {t('admin.ai_audit_logs_show.source')}{' '}
                         <strong className="text-foreground">
                             {String(data.analysis_source)}
                         </strong>
@@ -438,7 +446,7 @@ function OutputRiskDetection({ data }: { data: Record<string, unknown> }) {
                 {data.generated_at !== undefined &&
                     data.generated_at !== null && (
                     <span>
-                        Dibuat:{' '}
+                        {t('admin.ai_audit_logs_show.generated_at')}{' '}
                         <strong className="text-foreground">
                             {new Date(String(data.generated_at)).toLocaleString(
                                 'id-ID',
@@ -454,12 +462,14 @@ function OutputRiskDetection({ data }: { data: Record<string, unknown> }) {
 }
 
 function OutputSummary({ data }: { data: Record<string, unknown> }) {
+    const { t } = useTranslate();
+
     return (
         <div className="flex flex-col gap-4">
             {data.summary !== undefined && data.summary !== null && (
                 <div className="rounded-lg border border-primary-200 bg-primary-50 p-4">
                     <p className="mb-1 text-xs font-semibold text-primary-600 uppercase">
-                        Ringkasan
+                        {t('admin.ai_audit_logs_show.summary')}
                     </p>
                     <p className="text-sm leading-relaxed text-primary-900">
                         {String(data.summary)}
@@ -468,7 +478,7 @@ function OutputSummary({ data }: { data: Record<string, unknown> }) {
             )}
             {data.generated_at !== undefined && data.generated_at !== null && (
                 <p className="text-xs text-muted-foreground">
-                    Dibuat:{' '}
+                    {t('admin.ai_audit_logs_show.generated_at')}{' '}
                     {new Date(String(data.generated_at)).toLocaleString(
                         'id-ID',
                     )}
@@ -526,6 +536,8 @@ function JsonCard({
     feature: string;
     type: 'input' | 'output';
 }) {
+    const { t } = useTranslate();
+
     if (!data) {
         return (
             <Card>
@@ -533,7 +545,7 @@ function JsonCard({
                     <CardTitle className="text-sm">{label}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm italic text-muted-foreground">Tidak ada data.</p>
+                    <p className="text-sm italic text-muted-foreground">{t('admin.ai_audit_logs_show.no_data')}</p>
                 </CardContent>
             </Card>
         );
@@ -572,14 +584,63 @@ content = <OutputGeneric data={data} />;
     );
 }
 
+function TokenUsageCard({ log }: { log: AiAuditLogDetail }) {
+    const hasUsage =
+        log.prompt_tokens !== null ||
+        log.completion_tokens !== null ||
+        log.reasoning_tokens !== null ||
+        log.total_tokens !== null;
+
+    const formatNumber = (value: number | null) =>
+        value === null ? '—' : value.toLocaleString('id-ID');
+
+    return (
+        <Card>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Token Usage</CardTitle>
+            </CardHeader>
+            <CardContent>
+                {hasUsage ? (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {[
+                            { label: 'Prompt', value: log.prompt_tokens },
+                            { label: 'Completion', value: log.completion_tokens },
+                            { label: 'Reasoning', value: log.reasoning_tokens },
+                            { label: 'Total', value: log.total_tokens },
+                        ].map((item) => (
+                            <div
+                                key={item.label}
+                                className="flex flex-col items-center rounded-lg bg-muted/50 p-3 text-center"
+                            >
+                                <span className="text-2xl font-bold">
+                                    {formatNumber(item.value)}
+                                </span>
+                                <span className="mt-0.5 text-xs text-muted-foreground">
+                                    {item.label}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-sm italic text-muted-foreground">
+                        Token usage tidak tercatat (cache hit, fallback, atau panggilan sebelum tracking aktif).
+                    </p>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function AiAuditLogShow({ log, backHref, actions }: Props) {
+    const { t } = useTranslate();
+
     return (
         <>
             <Head title={`AI Audit — ${log.feature}`} />
 
             <div className="flex flex-col gap-6 p-6">
                 <AdminPageHeader
-                    title="Detail AI Log"
+                    title={t('admin.ai_audit_logs_show.page_title')}
                     description={log.feature}
                     backHref={backHref}
                 />
@@ -595,12 +656,12 @@ export default function AiAuditLogShow({ log, backHref, actions }: Props) {
                 {/* Metadata card */}
                 <Card>
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">Informasi Log</CardTitle>
+                        <CardTitle className="text-sm">{t('admin.ai_audit_logs_show.log_info')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                     <dl className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                         <MetaItem label="Feature">{log.feature}</MetaItem>
-                        <MetaItem label="User">
+                        <MetaItem label={t('admin.ai_audit_logs_show.user')}>
                             <span className="block font-medium">
                                 {log.user_name}
                             </span>
@@ -617,10 +678,12 @@ export default function AiAuditLogShow({ log, backHref, actions }: Props) {
                                 {log.input_hash}
                             </code>
                         </MetaItem>
-                        <MetaItem label="Dibuat">{log.created_at}</MetaItem>
+                        <MetaItem label={t('admin.ai_audit_logs_show.created_at')}>{log.created_at}</MetaItem>
                     </dl>
                     </CardContent>
                 </Card>
+
+                <TokenUsageCard log={log} />
 
                 <JsonCard
                     label="Input"

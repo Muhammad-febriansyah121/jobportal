@@ -13,6 +13,7 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { useTranslate } from '@/hooks/use-translate';
 
 type Option = {
     value: string;
@@ -68,6 +69,7 @@ export function AssessmentQuestionForm({
     question?: AssessmentQuestionValue;
     skillOptions: Option[];
 }) {
+    const { t } = useTranslate();
     const form = useForm<AssessmentQuestionFormData>({
         ...(method === 'patch' ? { _method: 'patch' as const } : {}),
         mode: 'manual',
@@ -165,18 +167,18 @@ export function AssessmentQuestionForm({
         <form className="grid gap-6 xl:grid-cols-[1fr_320px]" onSubmit={submit}>
             <section className="space-y-5 rounded-lg border bg-white p-5 shadow-sm">
                 <div className="grid gap-2">
-                    <Label htmlFor="skill_id">Skill</Label>
+                    <Label htmlFor="skill_id">{t("admin.assessment.form.skill")}</Label>
                     <SearchableOptionSelect
                         onChange={(value) => form.setData('skill_id', value)}
                         options={skillOptions}
-                        placeholder="Pilih skill"
+                        placeholder={t("admin.assessment.form.skill_placeholder")}
                         value={form.data.skill_id}
                     />
                     <InputError message={form.errors.skill_id} />
                 </div>
 
                 <div className="grid gap-2">
-                    <Label htmlFor="difficulty">Level</Label>
+                    <Label htmlFor="difficulty">{t("admin.assessment.form.level")}</Label>
                     <select
                         className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                         id="difficulty"
@@ -198,7 +200,7 @@ export function AssessmentQuestionForm({
 
                 {isCreate ? (
                     <div className="grid gap-2">
-                        <Label htmlFor="mode">Mode Input</Label>
+                        <Label htmlFor="mode">{t("admin.assessment.form.mode")}</Label>
                         <select
                             className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                             id="mode"
@@ -211,8 +213,8 @@ export function AssessmentQuestionForm({
                             }
                             value={form.data.mode}
                         >
-                            <option value="manual">Manual (1 soal)</option>
-                            <option value="ai">Generate AI (batch)</option>
+                            <option value="manual">{t("admin.assessment.form.mode_manual")}</option>
+                            <option value="ai">{t("admin.assessment.form.mode_ai")}</option>
                         </select>
                         <InputError message={form.errors.mode} />
                     </div>
@@ -220,7 +222,7 @@ export function AssessmentQuestionForm({
 
                 {isCreate && isAiMode ? (
                     <div className="grid gap-2">
-                        <Label htmlFor="total_questions">Jumlah Soal AI</Label>
+                        <Label htmlFor="total_questions">{t("admin.assessment.form.ai_count")}</Label>
                         <Input
                             id="total_questions"
                             inputMode="numeric"
@@ -277,7 +279,7 @@ export function AssessmentQuestionForm({
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label>Pertanyaan</Label>
+                                    <Label>{t("admin.assessment.form.question")}</Label>
                                     <textarea
                                         className="min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                         onChange={(event) =>
@@ -287,7 +289,7 @@ export function AssessmentQuestionForm({
                                                 event.target.value,
                                             )
                                         }
-                                        placeholder="Masukkan pertanyaan"
+                                        placeholder={t("admin.assessment.form.question_placeholder")}
                                         required
                                         value={item.question}
                                     />
@@ -304,7 +306,7 @@ export function AssessmentQuestionForm({
                                             `manual_questions.${index}.option_a`,
                                         )}
                                         id={`option_a_${index}`}
-                                        label="Opsi A"
+                                        label={t("admin.assessment.form.option_a")}
                                         onChange={(value) =>
                                             updateManualQuestion(
                                                 index,
@@ -319,7 +321,7 @@ export function AssessmentQuestionForm({
                                             `manual_questions.${index}.option_b`,
                                         )}
                                         id={`option_b_${index}`}
-                                        label="Opsi B"
+                                        label={t("admin.assessment.form.option_b")}
                                         onChange={(value) =>
                                             updateManualQuestion(
                                                 index,
@@ -334,7 +336,7 @@ export function AssessmentQuestionForm({
                                             `manual_questions.${index}.option_c`,
                                         )}
                                         id={`option_c_${index}`}
-                                        label="Opsi C"
+                                        label={t("admin.assessment.form.option_c")}
                                         onChange={(value) =>
                                             updateManualQuestion(
                                                 index,
@@ -349,7 +351,7 @@ export function AssessmentQuestionForm({
                                             `manual_questions.${index}.option_d`,
                                         )}
                                         id={`option_d_${index}`}
-                                        label="Opsi D"
+                                        label={t("admin.assessment.form.option_d")}
                                         onChange={(value) =>
                                             updateManualQuestion(
                                                 index,
@@ -362,7 +364,7 @@ export function AssessmentQuestionForm({
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label>Jawaban Benar</Label>
+                                    <Label>{t("admin.assessment.form.correct_answer")}</Label>
                                     <select
                                         className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                         onChange={(event) =>
@@ -482,7 +484,7 @@ export function AssessmentQuestionForm({
                             form.setData('is_active', Boolean(checked))
                         }
                     />
-                    <span className="text-sm font-medium">Soal aktif</span>
+                    <span className="text-sm font-medium">{t("admin.assessment.form.is_active")}</span>
                 </label>
                 <InputError message={form.errors.is_active} />
 
@@ -492,10 +494,10 @@ export function AssessmentQuestionForm({
                     type="submit"
                 >
                     {form.processing
-                        ? 'Menyimpan...'
+                        ? t('admin.assessment.form.btn_saving')
                         : isAiMode && isCreate
                           ? 'Generate Soal AI'
-                          : 'Simpan Soal'}
+                          : t('admin.assessment.form.btn_save_manual')}
                 </Button>
             </aside>
         </form>
@@ -513,6 +515,7 @@ function SearchableOptionSelect({
     placeholder: string;
     value: string;
 }) {
+    const { t } = useTranslate();
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
 
@@ -555,7 +558,7 @@ function SearchableOptionSelect({
                         autoFocus
                         className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                         onChange={(event) => setQuery(event.target.value)}
-                        placeholder="Cari skill..."
+                        placeholder={t("admin.assessment.form.search_skill")}
                         value={query}
                     />
                 </div>

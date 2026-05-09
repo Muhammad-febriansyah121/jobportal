@@ -18,7 +18,7 @@ class AdminAiAuditLogController extends Controller
     public function index(Request $request): Response
     {
         $logs = AiAuditLog::query()
-            ->select(['id', 'user_id', 'feature', 'input_hash', 'model_name', 'status', 'created_at'])
+            ->select(['id', 'user_id', 'feature', 'input_hash', 'model_name', 'status', 'total_tokens', 'created_at'])
             ->with(['user:id,name,email'])
             ->when($request->filled('feature'), fn ($query) => $query->where('feature', $request->string('feature')->toString()))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
@@ -35,13 +35,20 @@ class AdminAiAuditLogController extends Controller
                     'label' => str($log->status)->headline()->toString(),
                     'tone' => $this->statusTone($log->status),
                 ],
+                'total_tokens' => $log->total_tokens !== null ? number_format($log->total_tokens) : '—',
                 'created_at' => $log->created_at?->format('d M Y H:i'),
                 'actions' => $this->aiLogActions($log),
             ]);
 
+        $totals = AiAuditLog::query()
+            ->when($request->filled('feature'), fn ($query) => $query->where('feature', $request->string('feature')->toString()))
+            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
+            ->selectRaw('SUM(prompt_tokens) AS prompt_sum, SUM(completion_tokens) AS completion_sum, SUM(reasoning_tokens) AS reasoning_sum, SUM(total_tokens) AS total_sum, COUNT(*) AS row_count')
+            ->first();
+
         return Inertia::render('admin/resources/index', [
             'title' => 'AI Audit Log',
-            'description' => 'Audit input hash, output JSON, model name, status, dan retry request untuk AI job yang gagal.',
+            'description' => 'Audit input hash, output JSON, model name, status, token usage, dan retry request untuk AI job yang gagal.',
             'indexAction' => route('admin.ai-audit-logs.index'),
             'filters' => [
                 $this->field('feature', 'Feature', 'select', $request->string('feature')->toString(), $this->featureOptions()),
@@ -53,10 +60,18 @@ class AdminAiAuditLogController extends Controller
                 ['key' => 'model_name', 'label' => 'Model'],
                 ['key' => 'input_hash', 'label' => 'Input hash'],
                 ['key' => 'status', 'label' => 'Status'],
+                ['key' => 'total_tokens', 'label' => 'Tokens'],
                 ['key' => 'created_at', 'label' => 'Tanggal'],
             ],
             'rows' => $logs,
             'emptyState' => 'Belum ada AI audit log.',
+            'summary' => [
+                'rows' => (int) ($totals->row_count ?? 0),
+                'prompt_tokens' => (int) ($totals->prompt_sum ?? 0),
+                'completion_tokens' => (int) ($totals->completion_sum ?? 0),
+                'reasoning_tokens' => (int) ($totals->reasoning_sum ?? 0),
+                'total_tokens' => (int) ($totals->total_sum ?? 0),
+            ],
         ]);
     }
 
@@ -75,6 +90,10 @@ class AdminAiAuditLogController extends Controller
                 'input_hash' => $aiAuditLog->input_hash ?? '-',
                 'input_json' => $aiAuditLog->input_json,
                 'output_json' => $aiAuditLog->output_json,
+                'prompt_tokens' => $aiAuditLog->prompt_tokens,
+                'completion_tokens' => $aiAuditLog->completion_tokens,
+                'reasoning_tokens' => $aiAuditLog->reasoning_tokens,
+                'total_tokens' => $aiAuditLog->total_tokens,
                 'created_at' => $aiAuditLog->created_at?->format('d M Y H:i'),
             ],
             'backHref' => route('admin.ai-audit-logs.index'),

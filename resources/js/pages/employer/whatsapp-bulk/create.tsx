@@ -33,6 +33,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTranslate } from '@/hooks/use-translate';
 import { create, index } from '@/routes/employer/whatsapp-bulk';
 
 type Channel = 'whatsapp' | 'email';
@@ -90,6 +91,7 @@ export default function EmployerBroadcastCreate({
     templates,
     default_reply_to,
 }: WhatsAppBulkCreateProps) {
+    const { t } = useTranslate();
     const form = useForm<{
         channel: Channel;
         job_listing_id: number | null;
@@ -147,7 +149,7 @@ export default function EmployerBroadcastCreate({
         if (templateId === '') {
             return;
         }
-        const tpl = templates.find((t) => String(t.id) === templateId);
+        const tpl = templates.find((tplItem) => String(tplItem.id) === templateId);
         if (!tpl) {
             return;
         }
@@ -179,7 +181,7 @@ export default function EmployerBroadcastCreate({
         form.post(EmployerWhatsAppBulkController.store.url(), {
             preserveScroll: true,
             onError: () => {
-                toast.error('Periksa form, ada isian yang belum sesuai.');
+                toast.error(t('employer.whatsapp_bulk_create.toast_error'));
             },
         });
     };
@@ -197,21 +199,21 @@ export default function EmployerBroadcastCreate({
 
     return (
         <>
-            <Head title="Buat Broadcast" />
+            <Head title={t('employer.whatsapp_bulk_create.page_title')} />
 
             <div className="space-y-6 p-4 md:p-6">
                 <div className="flex items-center gap-3">
                     <Button asChild variant="outline" size="sm">
                         <Link href={index().url}>
                             <ArrowLeft className="size-4" />
-                            Kembali
+                            {t('employer.whatsapp_bulk_create.btn_back')}
                         </Link>
                     </Button>
                 </div>
 
                 <Heading
-                    title="Buat kampanye Broadcast"
-                    description="Pilih channel (WhatsApp atau Email), pilih lowongan, centang pelamar, lalu tulis pesan dengan variabel {nama} / {posisi} / {perusahaan}."
+                    title={t('employer.whatsapp_bulk_create.heading_title')}
+                    description={t('employer.whatsapp_bulk_create.heading_desc')}
                 />
 
                 {!isEmail && !gateway.is_connected ? (
@@ -219,9 +221,7 @@ export default function EmployerBroadcastCreate({
                         <CardContent className="flex items-start gap-3 py-4">
                             <AlertCircle className="mt-0.5 size-5 text-amber-600" />
                             <p className="text-sm text-amber-800">
-                                Sesi WhatsApp belum terhubung. Hubungkan dulu di
-                                halaman Koneksi WhatsApp sebelum mengirim, atau
-                                ganti channel ke Email.
+                                {t('employer.whatsapp_bulk_create.warning_not_connected')}
                             </p>
                         </CardContent>
                     </Card>
@@ -230,10 +230,9 @@ export default function EmployerBroadcastCreate({
                 <form onSubmit={submit} className="space-y-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>1. Pilih channel</CardTitle>
+                            <CardTitle>{t('employer.whatsapp_bulk_create.step1_title')}</CardTitle>
                             <CardDescription>
-                                Tentukan apakah broadcast dikirim via WhatsApp
-                                atau Email.
+                                {t('employer.whatsapp_bulk_create.step1_desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
@@ -252,10 +251,9 @@ export default function EmployerBroadcastCreate({
                                         className="mt-1"
                                     />
                                     <div>
-                                        <p className="font-medium">WhatsApp</p>
+                                        <p className="font-medium">{t('employer.whatsapp_bulk.channel_whatsapp')}</p>
                                         <p className="text-xs text-muted-foreground">
-                                            Kirim via gateway WA. Butuh sesi
-                                            terhubung.
+                                            {t('employer.whatsapp_bulk.channel_whatsapp_description')}
                                         </p>
                                     </div>
                                 </label>
@@ -273,10 +271,9 @@ export default function EmployerBroadcastCreate({
                                         className="mt-1"
                                     />
                                     <div>
-                                        <p className="font-medium">Email</p>
+                                        <p className="font-medium">{t('employer.whatsapp_bulk.channel_email')}</p>
                                         <p className="text-xs text-muted-foreground">
-                                            Kirim via SMTP global. Subject wajib
-                                            diisi.
+                                            {t('employer.whatsapp_bulk.channel_email_description')}
                                         </p>
                                     </div>
                                 </label>
@@ -286,15 +283,14 @@ export default function EmployerBroadcastCreate({
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>2. Pilih lowongan</CardTitle>
+                            <CardTitle>{t('employer.whatsapp_bulk_create.step2_title')}</CardTitle>
                             <CardDescription>
-                                Daftar pelamar akan diambil dari lowongan yang
-                                kamu pilih.
+                                {t('employer.whatsapp_bulk_create.step2_desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <div className="space-y-2">
-                                <Label htmlFor="job">Lowongan</Label>
+                                <Label htmlFor="job">{t('employer.whatsapp_bulk_create.label_job')}</Label>
                                 <Select
                                     value={
                                         form.data.job_listing_id?.toString() ??
@@ -303,7 +299,7 @@ export default function EmployerBroadcastCreate({
                                     onValueChange={onChangeJob}
                                 >
                                     <SelectTrigger id="job">
-                                        <SelectValue placeholder="Pilih lowongan" />
+                                        <SelectValue placeholder={t('employer.whatsapp_bulk_create.placeholder_job')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {jobs.map((job) => (
@@ -311,9 +307,7 @@ export default function EmployerBroadcastCreate({
                                                 key={job.id}
                                                 value={job.id.toString()}
                                             >
-                                                {job.title} (
-                                                {job.applications_count}{' '}
-                                                pelamar)
+                                                {t('employer.whatsapp_bulk.job_option', { title: job.title, count: job.applications_count })}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -328,37 +322,39 @@ export default function EmployerBroadcastCreate({
                     {form.data.job_listing_id ? (
                         <Card>
                             <CardHeader>
-                                <CardTitle>3. Pilih pelamar</CardTitle>
+                                <CardTitle>{t('employer.whatsapp_bulk_create.step3_title')}</CardTitle>
                                 <CardDescription>
-                                    Pelamar tanpa{' '}
-                                    {isEmail ? 'email' : 'nomor WhatsApp'} tidak
-                                    bisa dipilih dan otomatis dilewati.
+                                    {t('employer.whatsapp_bulk.step_3_description', {
+                                        contact: isEmail
+                                            ? t('employer.whatsapp_bulk.contact_email')
+                                            : t('employer.whatsapp_bulk.contact_whatsapp_number'),
+                                    })}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 {applications.length === 0 ? (
                                     <p className="rounded-md border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                                        Belum ada pelamar untuk lowongan ini.
+                                        {t('employer.whatsapp_bulk_create.no_applicants')}
                                     </p>
                                 ) : (
                                     <>
                                         <div className="flex flex-wrap items-center justify-between gap-3">
                                             <div className="text-sm text-muted-foreground">
-                                                Total pelamar:{' '}
+                                                {t('employer.whatsapp_bulk.total_applicants')}:{' '}
                                                 <span className="font-semibold text-foreground">
                                                     {applications.length}
                                                 </span>{' '}
-                                                — Bisa dikirim:{' '}
+                                                — {t('employer.whatsapp_bulk.sendable')}:{' '}
                                                 <span className="font-semibold text-foreground">
                                                     {eligibleApplications.length}
                                                 </span>
                                                 {ineligibleCount > 0 ? (
                                                     <>
                                                         {' '}
-                                                        — Tanpa{' '}
+                                                        — {t('employer.whatsapp_bulk.without')}{' '}
                                                         {isEmail
-                                                            ? 'email'
-                                                            : 'nomor'}
+                                                            ? t('employer.whatsapp_bulk.contact_email')
+                                                            : t('employer.whatsapp_bulk.number')}
                                                         :{' '}
                                                         <span className="font-semibold text-amber-700">
                                                             {ineligibleCount}
@@ -381,7 +377,7 @@ export default function EmployerBroadcastCreate({
                                                         )
                                                     }
                                                 />
-                                                Pilih semua yang valid
+                                                {t('employer.whatsapp_bulk_create.select_all')}
                                             </label>
                                         </div>
 
@@ -397,18 +393,18 @@ export default function EmployerBroadcastCreate({
                                                     <TableRow>
                                                         <TableHead className="w-12" />
                                                         <TableHead>
-                                                            Kandidat
+                                                            {t('employer.whatsapp_bulk_create.col_candidate')}
                                                         </TableHead>
                                                         <TableHead>
                                                             {isEmail
-                                                                ? 'Email'
-                                                                : 'Nomor WA'}
+                                                                ? t('employer.whatsapp_bulk_create.col_email')
+                                                                : t('employer.whatsapp_bulk_create.col_wa')}
                                                         </TableHead>
                                                         <TableHead>
-                                                            Status
+                                                            {t('employer.whatsapp_bulk_create.col_status')}
                                                         </TableHead>
                                                         <TableHead>
-                                                            Melamar
+                                                            {t('employer.whatsapp_bulk_create.col_applied')}
                                                         </TableHead>
                                                     </TableRow>
                                                 </TableHeader>
@@ -471,8 +467,7 @@ export default function EmployerBroadcastCreate({
                                                                 <TableCell className="font-mono text-sm">
                                                                     {contact ?? (
                                                                         <span className="text-amber-700">
-                                                                            tidak
-                                                                            ada
+                                                                            {t('employer.whatsapp_bulk_create.no_contact')}
                                                                         </span>
                                                                     )}
                                                                 </TableCell>
@@ -505,9 +500,9 @@ export default function EmployerBroadcastCreate({
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>4. Tulis pesan</CardTitle>
+                            <CardTitle>{t('employer.whatsapp_bulk_create.step4_title')}</CardTitle>
                             <CardDescription>
-                                Variabel didukung:{' '}
+                                {t('employer.whatsapp_bulk.supported_variables')}:{' '}
                                 <code className="font-mono">{'{nama}'}</code>,{' '}
                                 <code className="font-mono">{'{posisi}'}</code>,{' '}
                                 <code className="font-mono">
@@ -515,22 +510,22 @@ export default function EmployerBroadcastCreate({
                                 </code>
                                 .{' '}
                                 {isEmail
-                                    ? 'Pengiriman email dengan jeda 5-15 detik per pesan.'
-                                    : 'Pengiriman WA dengan jeda 3-8 detik per pesan.'}
+                                    ? t('employer.whatsapp_bulk.email_delay_info')
+                                    : t('employer.whatsapp_bulk.whatsapp_delay_info')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {filteredTemplates.length > 0 ? (
                                 <div className="space-y-2">
                                     <Label htmlFor="template">
-                                        Gunakan template
+                                        {t('employer.whatsapp_bulk_create.label_template')}
                                     </Label>
                                     <Select
                                         value=""
                                         onValueChange={applyTemplate}
                                     >
                                         <SelectTrigger id="template">
-                                            <SelectValue placeholder="Pilih template untuk mengisi pesan" />
+                                            <SelectValue placeholder={t('employer.whatsapp_bulk_create.placeholder_template')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {filteredTemplates.map((tpl) => (
@@ -550,7 +545,7 @@ export default function EmployerBroadcastCreate({
                                 <>
                                     <div className="space-y-2">
                                         <Label htmlFor="subject">
-                                            Subject email
+                                            {t('employer.whatsapp_bulk_create.label_subject')}
                                         </Label>
                                         <Input
                                             id="subject"
@@ -562,7 +557,7 @@ export default function EmployerBroadcastCreate({
                                                     e.target.value,
                                                 )
                                             }
-                                            placeholder="Contoh: Update lamaran Anda di {perusahaan}"
+                                            placeholder={t('employer.whatsapp_bulk.email_subject_placeholder')}
                                         />
                                         <InputError
                                             message={form.errors.subject}
@@ -570,7 +565,7 @@ export default function EmployerBroadcastCreate({
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="reply_to">
-                                            Reply-to email
+                                            {t('employer.whatsapp_bulk_create.label_reply_to')}
                                         </Label>
                                         <Input
                                             id="reply_to"
@@ -582,37 +577,28 @@ export default function EmployerBroadcastCreate({
                                                     e.target.value,
                                                 )
                                             }
-                                            placeholder="hr@perusahaan.com"
+                                            placeholder={t('employer.whatsapp_bulk.reply_to_email_placeholder')}
                                         />
                                         <InputError
                                             message={form.errors.reply_to_email}
                                         />
-                                        <p className="text-xs text-muted-foreground">
-                                            Saat kandidat reply, balasan masuk
-                                            ke alamat ini.
-                                        </p>
                                     </div>
                                 </>
                             ) : null}
 
                             <div className="space-y-2">
-                                <Label htmlFor="body">Isi pesan</Label>
+                                <Label htmlFor="body">{t('employer.whatsapp_bulk_create.label_body')}</Label>
                                 <RichTextEditor
                                     value={form.data.message_template}
                                     onChange={(html) =>
                                         form.setData('message_template', html)
                                     }
-                                    placeholder="Halo {nama}, terima kasih sudah melamar posisi {posisi}..."
+                                    placeholder={t('employer.whatsapp_bulk.message_body_placeholder')}
                                     minHeightClass="min-h-56"
                                 />
                                 <InputError
                                     message={form.errors.message_template}
                                 />
-                                <p className="text-xs text-muted-foreground">
-                                    Format Email akan dikirim sebagai HTML;
-                                    format WhatsApp dikonversi otomatis ke
-                                    *tebal* / _miring_.
-                                </p>
                             </div>
                         </CardContent>
                     </Card>
@@ -621,8 +607,8 @@ export default function EmployerBroadcastCreate({
                         <Button type="submit" disabled={!canSubmit}>
                             <Send className="size-4" />
                             {form.processing
-                                ? 'Menjadwalkan...'
-                                : `Kirim ke ${form.data.application_ids.length} pelamar`}
+                                ? t('employer.whatsapp_bulk_create.btn_sending')
+                                : t('employer.whatsapp_bulk_create.btn_send', { count: String(form.data.application_ids.length) })}
                         </Button>
                     </div>
                 </form>

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['candidate_id', 'coaching_session_id', 'title', 'match_score', 'recommendation_json'])]
+#[Fillable(['candidate_id', 'coaching_session_id', 'title', 'target_role', 'match_score', 'is_primary', 'recommendation_json'])]
 class AiCareerRecommendation extends Model
 {
     public function candidate(): BelongsTo
@@ -29,6 +29,7 @@ class AiCareerRecommendation extends Model
     {
         return [
             'recommendation_json' => 'array',
+            'is_primary' => 'boolean',
         ];
     }
 }

@@ -18,9 +18,11 @@ export type PricingPlanValue = {
     duration_days: number;
     active_jobs_limit: number;
     recruiter_seat_limit: number;
+    ai_interview_quota: number;
     talent_search_quota: number;
     features: string[];
     is_active: boolean;
+    is_trial?: boolean;
     subscriptions_count?: number;
 };
 
@@ -31,9 +33,11 @@ type PricingPlanFormData = {
     duration_days: number;
     active_jobs_limit: number;
     recruiter_seat_limit: number;
+    ai_interview_quota: number;
     talent_search_quota: number;
     features: string;
     is_active: boolean;
+    is_trial: boolean;
 };
 
 export function PricingPlanForm({
@@ -64,9 +68,11 @@ export function PricingPlanForm({
         duration_days: plan?.duration_days ?? 30,
         active_jobs_limit: plan?.active_jobs_limit ?? 0,
         recruiter_seat_limit: plan?.recruiter_seat_limit ?? 1,
+        ai_interview_quota: plan?.ai_interview_quota ?? 0,
         talent_search_quota: plan?.talent_search_quota ?? 0,
         features: initialFeatures.join('\n'),
         is_active: plan?.is_active ?? true,
+        is_trial: plan?.is_trial ?? false,
     });
     const features = splitFeatures(form.data.features);
 
@@ -84,6 +90,7 @@ export function PricingPlanForm({
     function updateNumber(
         field:
             | 'active_jobs_limit'
+            | 'ai_interview_quota'
             | 'duration_days'
             | 'price'
             | 'recruiter_seat_limit'
@@ -197,6 +204,24 @@ export function PricingPlanForm({
                             </span>
                         </label>
                         <InputError message={form.errors.is_active} />
+
+                        <label className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-3">
+                            <Checkbox
+                                checked={form.data.is_trial}
+                                onCheckedChange={(checked) =>
+                                    form.setData('is_trial', Boolean(checked))
+                                }
+                            />
+                            <span>
+                                <span className="block text-sm font-semibold text-emerald-800">
+                                    {t('admin.pricing_plans_form.trial_package')}
+                                </span>
+                                <span className="text-xs text-emerald-700/80">
+                                    {t('admin.pricing_plans_form.trial_package_hint')}
+                                </span>
+                            </span>
+                        </label>
+                        <InputError message={form.errors.is_trial} />
                     </div>
                 </section>
 
@@ -234,6 +259,15 @@ export function PricingPlanForm({
                             error={form.errors.talent_search_quota}
                             onChange={(value) =>
                                 updateNumber('talent_search_quota', value)
+                            }
+                        />
+                        <NumberField
+                            id="ai_interview_quota"
+                            label={t('admin.pricing_plans_form.ai_interview_quota')}
+                            value={form.data.ai_interview_quota}
+                            error={form.errors.ai_interview_quota}
+                            onChange={(value) =>
+                                updateNumber('ai_interview_quota', value)
                             }
                         />
                     </div>
@@ -282,17 +316,24 @@ export function PricingPlanForm({
             <aside className="space-y-6">
                 <section className="rounded-lg border bg-white p-5 shadow-sm">
                     <div className="flex items-center justify-between gap-3">
-                        <h2 className="text-lg font-semibold">Preview Paket</h2>
-                        <Badge
-                            className={
-                                form.data.is_active
-                                    ? 'bg-emerald-600 text-white'
-                                    : ''
-                            }
-                            variant={form.data.is_active ? 'default' : 'outline'}
-                        >
-                            {form.data.is_active ? 'Aktif' : 'Nonaktif'}
-                        </Badge>
+                        <h2 className="text-lg font-semibold">{t('admin.pricing_plans_form.preview_title')}</h2>
+                        <div className="flex items-center gap-1.5">
+                            {form.data.is_trial ? (
+                                <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                                    {t('admin.pricing_plans_form.badge_trial')}
+                                </Badge>
+                            ) : null}
+                            <Badge
+                                className={
+                                    form.data.is_active
+                                        ? 'bg-emerald-600 text-white'
+                                        : ''
+                                }
+                                variant={form.data.is_active ? 'default' : 'outline'}
+                            >
+                                {form.data.is_active ? t('common.active') : t('common.inactive')}
+                            </Badge>
+                        </div>
                     </div>
 
                     <div className="mt-5 rounded-lg border bg-[#eff4ff] p-4">
@@ -313,7 +354,8 @@ export function PricingPlanForm({
                     <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
                         <Quota label="Active jobs" value={form.data.active_jobs_limit} />
                         <Quota label="Recruiter seat" value={form.data.recruiter_seat_limit} />
-                        <Quota label="Talent search" value={form.data.talent_search_quota} />
+                        <Quota label="Job Invitation" value={form.data.talent_search_quota} />
+                        <Quota label="Interview AI" value={form.data.ai_interview_quota} />
                     </dl>
 
                     <div className="mt-5 space-y-2">

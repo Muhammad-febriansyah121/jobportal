@@ -3,14 +3,26 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class AiService
 {
     private const API_URL = 'https://api.openai.com/v1/chat/completions';
 
     private const DEFAULT_MODEL = 'gpt-5';
+
+    /**
+     * @var array{prompt_tokens: int|null, completion_tokens: int|null, reasoning_tokens: int|null, total_tokens: int|null}
+     */
+    private array $lastUsage = [
+        'prompt_tokens' => null,
+        'completion_tokens' => null,
+        'reasoning_tokens' => null,
+        'total_tokens' => null,
+    ];
 
     public function modelName(): string
     {
@@ -19,8 +31,22 @@ class AiService
         return $model !== '' ? $model : self::DEFAULT_MODEL;
     }
 
+    /**
+     * Token usage from the most recent successful chat/chatJson call.
+     * Returns nulls if no call has succeeded yet (or the call failed before
+     * a response was parsed). Spread into AiAuditLog::create payloads.
+     *
+     * @return array{prompt_tokens: int|null, completion_tokens: int|null, reasoning_tokens: int|null, total_tokens: int|null}
+     */
+    public function tokenUsage(): array
+    {
+        return $this->lastUsage;
+    }
+
     public function chat(array $messages, int $maxTokens = 1000, float $temperature = 0.7): ?string
     {
+        $this->resetUsage();
+
         $apiKey = Setting::get('ai_api_key');
 
         if (! $apiKey) {
@@ -39,9 +65,20 @@ class AiService
             $payload['temperature'] = $temperature;
         }
 
-        $response = Http::withToken($apiKey)
-            ->timeout(60)
-            ->post($this->endpointUrl(), $payload);
+        try {
+            $response = Http::withToken($apiKey)
+                ->connectTimeout(5)
+                ->timeout(25)
+                ->post($this->endpointUrl(), $payload);
+        } catch (ConnectionException $exception) {
+            Log::warning('AiService: connection/timeout failure', ['message' => $exception->getMessage()]);
+
+            return null;
+        } catch (Throwable $exception) {
+            Log::error('AiService: unexpected exception', ['message' => $exception->getMessage()]);
+
+            return null;
+        }
 
         if (! $response->successful()) {
             Log::error('AiService: API request failed', [
@@ -51,6 +88,8 @@ class AiService
 
             return null;
         }
+
+        $this->captureUsage($response->json('usage'));
 
         return $response->json('choices.0.message.content');
     }
@@ -62,6 +101,8 @@ class AiService
      */
     public function chatJson(array $messages, array $schema, string $schemaName, int $maxTokens = 1600): ?array
     {
+        $this->resetUsage();
+
         $apiKey = Setting::get('ai_api_key');
 
         if (! $apiKey) {
@@ -88,9 +129,20 @@ class AiService
             $payload['temperature'] = 0.2;
         }
 
-        $response = Http::withToken($apiKey)
-            ->timeout(60)
-            ->post($this->endpointUrl(), $payload);
+        try {
+            $response = Http::withToken($apiKey)
+                ->connectTimeout(5)
+                ->timeout(25)
+                ->post($this->endpointUrl(), $payload);
+        } catch (ConnectionException $exception) {
+            Log::warning('AiService: structured connection/timeout failure', ['message' => $exception->getMessage()]);
+
+            return null;
+        } catch (Throwable $exception) {
+            Log::error('AiService: structured unexpected exception', ['message' => $exception->getMessage()]);
+
+            return null;
+        }
 
         if (! $response->successful()) {
             Log::error('AiService: structured API request failed', [
@@ -109,7 +161,45 @@ class AiService
 
         $decoded = json_decode($content, true);
 
-        return is_array($decoded) ? $decoded : null;
+        if (! is_array($decoded)) {
+            return null;
+        }
+
+        $this->captureUsage($response->json('usage'));
+
+        return $decoded;
+    }
+
+    private function resetUsage(): void
+    {
+        $this->lastUsage = [
+            'prompt_tokens' => null,
+            'completion_tokens' => null,
+            'reasoning_tokens' => null,
+            'total_tokens' => null,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $usage
+     */
+    private function captureUsage(?array $usage): void
+    {
+        if (! is_array($usage)) {
+            return;
+        }
+
+        $this->lastUsage = [
+            'prompt_tokens' => $this->intOrNull($usage['prompt_tokens'] ?? null),
+            'completion_tokens' => $this->intOrNull($usage['completion_tokens'] ?? null),
+            'reasoning_tokens' => $this->intOrNull($usage['completion_tokens_details']['reasoning_tokens'] ?? null),
+            'total_tokens' => $this->intOrNull($usage['total_tokens'] ?? null),
+        ];
+    }
+
+    private function intOrNull(mixed $value): ?int
+    {
+        return is_numeric($value) ? (int) $value : null;
     }
 
     private function supportsTemperature(): bool

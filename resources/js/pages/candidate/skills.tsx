@@ -1,10 +1,9 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { ShieldCheck, Trash2 } from 'lucide-react';
-
+import { Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import CandidateSkillController from '@/actions/App/Http/Controllers/Candidate/CandidateSkillController';
 import { Field, Select } from '@/components/candidate/candidate-form';
 import { EmptyState } from '@/components/candidate/candidate-ui';
-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +13,23 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { useTranslate } from '@/hooks/use-translate';
 import { index } from '@/routes/candidate/skills';
 
@@ -32,6 +47,11 @@ type CandidateSkill = {
     verified_at?: string | null;
 };
 
+type DialogState =
+    | { mode: 'closed' }
+    | { mode: 'create' }
+    | { mode: 'edit'; skill: CandidateSkill };
+
 export default function CandidateSkills({
     candidateSkills,
     skills,
@@ -40,103 +60,142 @@ export default function CandidateSkills({
     skills: Option[];
 }) {
     const { t } = useTranslate();
+    const [dialog, setDialog] = useState<DialogState>({ mode: 'closed' });
+
+    const closeDialog = () => setDialog({ mode: 'closed' });
+    const dialogOpen = dialog.mode !== 'closed';
+    const editing = dialog.mode === 'edit' ? dialog.skill : undefined;
 
     return (
         <>
             <Head title={t('candidate.skills.page_title')} />
             <div className="space-y-6">
-                <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-                    <SkillForm skills={skills} t={t} />
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>
-                                {t('candidate.skills.active_title')}
-                            </CardTitle>
+                <Card>
+                    <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="space-y-1">
+                            <CardTitle>{t('candidate.skills.active_title')}</CardTitle>
                             <CardDescription>
                                 {t('candidate.skills.active_description')}
                             </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {candidateSkills.length ? (
-                                candidateSkills.map((skill) => (
-                                    <div
-                                        className="rounded-lg border p-4"
-                                        key={skill.id}
-                                    >
-                                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                                            <div>
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <p className="font-medium">
-                                                        {skill.name}
-                                                    </p>
+                        </div>
+                        <Button
+                            type="button"
+                            onClick={() => setDialog({ mode: 'create' })}
+                            className="shrink-0"
+                        >
+                            <Plus className="size-4" />
+                            {t('candidate.skills.form_add_button')}
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        {candidateSkills.length === 0 ? (
+                            <div className="px-6 py-8">
+                                <EmptyState
+                                    title={t('candidate.skills.empty_title')}
+                                    description={t('candidate.skills.empty_description')}
+                                />
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <Table className="min-w-160">
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Skill</TableHead>
+                                            <TableHead>
+                                                {t('candidate.skills.proficiency')}
+                                            </TableHead>
+                                            <TableHead>
+                                                {t('candidate.skills.years_exp')}
+                                            </TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead className="w-32 text-right">
+                                                Aksi
+                                            </TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {candidateSkills.map((skill) => (
+                                            <TableRow key={skill.id}>
+                                                <TableCell className="font-medium">
+                                                    {skill.name}
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground capitalize">
+                                                    {skill.proficiency ?? '-'}
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground">
+                                                    {skill.years_exp ?? 0} {t('candidate.skills.year')}
+                                                </TableCell>
+                                                <TableCell>
                                                     {skill.verified_at ? (
                                                         <Badge>
                                                             <ShieldCheck className="size-3" />
-                                                            {t(
-                                                                'candidate.skills.verified',
-                                                            )}
+                                                            {t('candidate.skills.verified')}
                                                         </Badge>
                                                     ) : (
                                                         <Badge variant="secondary">
-                                                            {t(
-                                                                'candidate.skills.not_verified',
-                                                            )}
+                                                            {t('candidate.skills.not_verified')}
                                                         </Badge>
                                                     )}
-                                                </div>
-                                                <p className="mt-1 text-sm text-muted-foreground">
-                                                    {skill.proficiency ?? '-'} ·{' '}
-                                                    {skill.years_exp ?? 0}{' '}
-                                                    {t('candidate.skills.year')}
-                                                </p>
-                                            </div>
-                                            <Button
-                                                asChild
-                                                size="sm"
-                                                variant="destructive"
-                                            >
-                                                <Link
-                                                    href={CandidateSkillController.destroy(
-                                                        skill.id,
-                                                    )}
-                                                    method="delete"
-                                                    as="button"
-                                                >
-                                                    <Trash2 />
-                                                    {t(
-                                                        'candidate.skills.delete',
-                                                    )}
-                                                </Link>
-                                            </Button>
-                                        </div>
-                                        <details className="mt-4">
-                                            <summary className="cursor-pointer text-sm font-medium text-primary">
-                                                {t(
-                                                    'candidate.skills.edit_skill',
-                                                )}
-                                            </summary>
-                                            <div className="mt-4">
-                                                <SkillForm
-                                                    skills={skills}
-                                                    skill={skill}
-                                                    t={t}
-                                                />
-                                            </div>
-                                        </details>
-                                    </div>
-                                ))
-                            ) : (
-                                <EmptyState
-                                    title={t('candidate.skills.empty_title')}
-                                    description={t(
-                                        'candidate.skills.empty_description',
-                                    )}
-                                />
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <Button
+                                                            type="button"
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            className="size-8"
+                                                            aria-label={t('candidate.skills.edit_skill')}
+                                                            onClick={() => setDialog({ mode: 'edit', skill })}
+                                                        >
+                                                            <Pencil className="size-4" />
+                                                        </Button>
+                                                        <Button
+                                                            asChild
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            className="size-8 text-destructive hover:text-destructive"
+                                                            aria-label={t('candidate.skills.delete')}
+                                                        >
+                                                            <Link
+                                                                href={CandidateSkillController.destroy(skill.id)}
+                                                                method="delete"
+                                                                as="button"
+                                                            >
+                                                                <Trash2 className="size-4" />
+                                                            </Link>
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
+
+            <Dialog open={dialogOpen} onOpenChange={(open) => !open && closeDialog()}>
+                <DialogContent className="sm:max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {editing
+                                ? t('candidate.skills.form_edit_title')
+                                : t('candidate.skills.form_add_title')}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {t('candidate.skills.active_description')}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <SkillForm
+                        skills={skills}
+                        skill={editing}
+                        onSuccess={closeDialog}
+                        t={t}
+                    />
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
@@ -144,126 +203,107 @@ export default function CandidateSkills({
 function SkillForm({
     skills,
     skill,
+    onSuccess,
     t,
 }: {
     skills: Option[];
     skill?: CandidateSkill;
+    onSuccess: () => void;
     t: (key: string) => string;
 }) {
     const isEdit = Boolean(skill);
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>
-                    {isEdit
-                        ? t('candidate.skills.form_edit_title')
-                        : t('candidate.skills.form_add_title')}
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <Form
-                    {...(isEdit
-                        ? CandidateSkillController.update.form(skill!.id)
-                        : CandidateSkillController.store.form())}
-                    className="space-y-4"
-                >
-                    {({ processing, errors }) => (
+        <Form
+            {...(isEdit
+                ? CandidateSkillController.update.form(skill!.id)
+                : CandidateSkillController.store.form())}
+            options={{ preserveScroll: true }}
+            onSuccess={onSuccess}
+            resetOnSuccess={!isEdit}
+            className="space-y-4"
+        >
+            {({ processing, errors }) => (
+                <>
+                    {isEdit ? null : (
                         <>
-                            {isEdit ? null : (
-                                <>
-                                    <Field
-                                        label={t(
-                                            'candidate.skills.select_skill',
-                                        )}
-                                        name="skill_id"
-                                        error={errors.skill_id}
-                                    >
-                                        <Select name="skill_id" defaultValue="">
-                                            <option value="">
-                                                {t(
-                                                    'candidate.skills.choose_existing',
-                                                )}
-                                            </option>
-                                            {skills.map((option) => (
-                                                <option
-                                                    key={option.value}
-                                                    value={option.value}
-                                                >
-                                                    {option.label}
-                                                </option>
-                                            ))}
-                                        </Select>
-                                    </Field>
-
-                                    <Field
-                                        label={t('candidate.skills.new_skill')}
-                                        name="skill_name"
-                                        error={errors.skill_name}
-                                    >
-                                        <Input
-                                            name="skill_name"
-                                            placeholder={t(
-                                                'candidate.skills.new_skill_placeholder',
-                                            )}
-                                        />
-                                    </Field>
-                                </>
-                            )}
                             <Field
-                                label={t('candidate.skills.years_exp')}
-                                name="years_exp"
-                                error={errors.years_exp}
+                                label={t('candidate.skills.select_skill')}
+                                name="skill_id"
+                                error={errors.skill_id}
                             >
-                                <Input
-                                    type="number"
-                                    name="years_exp"
-                                    defaultValue={skill?.years_exp ?? ''}
-                                    placeholder={t(
-                                        'candidate.skills.years_exp_placeholder',
-                                    )}
-                                />
-                            </Field>
-                            <Field
-                                label={t('candidate.skills.proficiency')}
-                                name="proficiency"
-                                error={errors.proficiency}
-                            >
-                                <Select
-                                    name="proficiency"
-                                    defaultValue={skill?.proficiency ?? ''}
-                                >
+                                <Select name="skill_id" defaultValue="">
                                     <option value="">
-                                        {t('candidate.skills.select_level')}
+                                        {t('candidate.skills.choose_existing')}
                                     </option>
-                                    <option value="beginner">
-                                        {t('candidate.skills.level_beginner')}
-                                    </option>
-                                    <option value="intermediate">
-                                        {t(
-                                            'candidate.skills.level_intermediate',
-                                        )}
-                                    </option>
-                                    <option value="advanced">
-                                        {t('candidate.skills.level_advanced')}
-                                    </option>
-                                    <option value="expert">
-                                        {t('candidate.skills.level_expert')}
-                                    </option>
+                                    {skills.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
                                 </Select>
                             </Field>
-                            <Button disabled={processing}>
-                                {processing
-                                    ? t('candidate.form.saving')
-                                    : isEdit
-                                      ? t('candidate.form.save_changes')
-                                      : t('candidate.skills.form_add_button')}
-                            </Button>
+
+                            <Field
+                                label={t('candidate.skills.new_skill')}
+                                name="skill_name"
+                                error={errors.skill_name}
+                            >
+                                <Input
+                                    name="skill_name"
+                                    placeholder={t('candidate.skills.new_skill_placeholder')}
+                                />
+                            </Field>
                         </>
                     )}
-                </Form>
-            </CardContent>
-        </Card>
+                    <Field
+                        label={t('candidate.skills.years_exp')}
+                        name="years_exp"
+                        error={errors.years_exp}
+                    >
+                        <Input
+                            type="number"
+                            name="years_exp"
+                            defaultValue={skill?.years_exp ?? ''}
+                            placeholder={t('candidate.skills.years_exp_placeholder')}
+                        />
+                    </Field>
+                    <Field
+                        label={t('candidate.skills.proficiency')}
+                        name="proficiency"
+                        error={errors.proficiency}
+                    >
+                        <Select
+                            name="proficiency"
+                            defaultValue={skill?.proficiency ?? ''}
+                        >
+                            <option value="">{t('candidate.skills.select_level')}</option>
+                            <option value="beginner">
+                                {t('candidate.skills.level_beginner')}
+                            </option>
+                            <option value="intermediate">
+                                {t('candidate.skills.level_intermediate')}
+                            </option>
+                            <option value="advanced">
+                                {t('candidate.skills.level_advanced')}
+                            </option>
+                            <option value="expert">
+                                {t('candidate.skills.level_expert')}
+                            </option>
+                        </Select>
+                    </Field>
+                    <DialogFooter>
+                        <Button disabled={processing}>
+                            {processing
+                                ? t('candidate.form.saving')
+                                : isEdit
+                                  ? t('candidate.form.save_changes')
+                                  : t('candidate.skills.form_add_button')}
+                        </Button>
+                    </DialogFooter>
+                </>
+            )}
+        </Form>
     );
 }
 

@@ -157,32 +157,32 @@ export default function CandidateDashboard({
             case 'profile_photo':
                 return {
                     cta: t('candidate.dashboard.completion_upload_photo'),
-                    href: settingsProfileEdit(),
+                    href: settingsProfileEdit().url,
                 };
             case 'cv':
                 return {
                     cta: t('candidate.dashboard.completion_upload_cv'),
-                    href: cvsIndex(),
+                    href: cvsIndex().url,
                 };
             case 'skills':
                 return {
                     cta: t('candidate.dashboard.completion_add_skill'),
-                    href: skillsIndex(),
+                    href: skillsIndex().url,
                 };
             case 'experiences':
                 return {
                     cta: t('candidate.dashboard.completion_add_experience'),
-                    href: experiencesIndex(),
+                    href: experiencesIndex().url,
                 };
             case 'educations':
                 return {
                     cta: t('candidate.dashboard.completion_add_education'),
-                    href: educationsIndex(),
+                    href: educationsIndex().url,
                 };
             default:
                 return {
                     cta: t('candidate.dashboard.completion_complete_profile'),
-                    href: profileEdit(),
+                    href: profileEdit().url,
                 };
         }
     };
@@ -701,10 +701,9 @@ export default function CandidateDashboard({
                                                 : t(
                                                       'candidate.dashboard.draft_cost_message',
                                                       {
-                                                          tokens: cvBuilder.draft_token_cost.toLocaleString(
+                                                          amount: cvBuilder.draft_token_cost.toLocaleString(
                                                               'id-ID',
                                                           ),
-                                                          quota: cvBuilder.draft_quota_cost,
                                                       },
                                                   )}
                                         </p>
@@ -882,7 +881,7 @@ function JobCardItem({ job }: { job: JobCard }) {
                 {job.match_score ? (
                     <Badge className="rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-50">
                         {t('candidate.dashboard.match_label', {
-                            score: job.match_score,
+                            percent: job.match_score,
                         })}
                     </Badge>
                 ) : null}

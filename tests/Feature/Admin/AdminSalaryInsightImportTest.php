@@ -37,7 +37,6 @@ CSV,
         ->firstOrFail();
 
     expect($insight->salary_min)->toBe(20_000_000);
-    expect($insight->salary_median)->toBe(23_000_000);
     expect($insight->salary_max)->toBe(26_000_000);
     expect($insight->source_count)->toBe(2);
     expect($insight->source_name)->toBe('LinkedIn + JobStreet');

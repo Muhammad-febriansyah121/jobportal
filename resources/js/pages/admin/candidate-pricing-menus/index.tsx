@@ -4,6 +4,7 @@ import { AdminDataTable } from '@/components/admin/admin-data-table';
 import { AdminFilterBar } from '@/components/admin/admin-filter-bar';
 import { Button } from '@/components/ui/button';
 import type { AdminColumn, AdminField, AdminPaginatedRows } from '@/types';
+import { useTranslate } from '@/hooks/use-translate';
 
 type CandidatePricingMenuIndexProps = {
     title: string;
@@ -26,6 +27,7 @@ export default function CandidatePricingMenuIndex({
     rows,
     emptyState,
 }: CandidatePricingMenuIndexProps) {
+    const { t } = useTranslate();
     return (
         <>
             <Head title={title} />

@@ -154,4 +154,67 @@ class EmployerTalentSearchActionController extends Controller
 
         return to_route('employer.messages.show', $conversation);
     }
+
+    public function unlock(
+        Request $request,
+        CandidateProfile $candidateProfile,
+        ResolveEmployerCompany $resolveEmployerCompany,
+    ): RedirectResponse {
+        $company = $resolveEmployerCompany->handle($request->user());
+
+        if ($company === null) {
+            return to_route('employer.company.edit');
+        }
+
+        $action = EmployerTalentCandidate::query()->firstOrCreate([
+            'company_id' => $company->id,
+            'candidate_id' => $candidateProfile->id,
+        ]);
+
+        if ($action->unlocked_at !== null) {
+            Inertia::flash('toast', ['type' => 'info', 'message' => 'Kandidat sudah pernah di-unlock — tidak ada Job Invitation tambahan yang dipakai.']);
+
+            return back();
+        }
+
+        $activeSubscription = $company->activeSubscription()->with('plan:id,talent_search_quota')->first();
+        $limit = (int) ($activeSubscription?->plan?->talent_search_quota ?? 0);
+
+        $used = EmployerTalentCandidate::query()
+            ->where('company_id', $company->id)
+            ->whereNotNull('unlocked_at')
+            ->count();
+
+        if ($limit > 0 && $used >= $limit) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => 'Kuota Job Invitation paket Anda sudah habis. Upgrade paket untuk menambah kuota.',
+            ]);
+
+            return to_route('employer.billing.index');
+        }
+
+        if ($limit === 0) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => 'Paket Anda tidak menyertakan Job Invitation. Upgrade paket untuk membuka kontak kandidat.',
+            ]);
+
+            return to_route('employer.billing.index');
+        }
+
+        $action->forceFill([
+            'unlocked_at' => now(),
+            'unlocked_by_user_id' => $request->user()->id,
+        ])->save();
+
+        $remaining = max(0, $limit - $used - 1);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => "Kontak & CV kandidat terbuka. Sisa Job Invitation: {$remaining}.",
+        ]);
+
+        return back();
+    }
 }

@@ -540,6 +540,12 @@ test('candidate voice transcript is stored and analyzed with ai structured outpu
                 ],
             ]);
         $mock->shouldReceive('modelName')->andReturn('gpt-5');
+        $mock->shouldReceive('tokenUsage')->andReturn([
+            'prompt_tokens' => 540,
+            'completion_tokens' => 320,
+            'reasoning_tokens' => 50,
+            'total_tokens' => 910,
+        ]);
     });
 
     $this->actingAs($candidateUser)
@@ -636,6 +642,12 @@ test('fallback fit score penalizes unanswered questions when ai analysis is unav
             ->once()
             ->andReturn(null);
         $mock->shouldReceive('modelName')->once()->andReturn('gpt-5');
+        $mock->shouldReceive('tokenUsage')->andReturn([
+            'prompt_tokens' => null,
+            'completion_tokens' => null,
+            'reasoning_tokens' => null,
+            'total_tokens' => null,
+        ]);
     });
 
     $this->actingAs($candidateUser)
@@ -1179,6 +1191,12 @@ test('candidate feedback page retries ai analysis when placeholder analysis stil
                 ],
             ]);
         $mock->shouldReceive('modelName')->andReturn('gpt-5');
+        $mock->shouldReceive('tokenUsage')->andReturn([
+            'prompt_tokens' => 410,
+            'completion_tokens' => 220,
+            'reasoning_tokens' => 30,
+            'total_tokens' => 660,
+        ]);
     });
 
     $this->actingAs($candidateUser)

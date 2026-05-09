@@ -88,6 +88,7 @@ PROMPT;
             ],
             'model_name' => $this->ai->modelName(),
             'status' => $result ? 'success' : 'failed',
+            ...$this->ai->tokenUsage(),
         ]);
     }
 

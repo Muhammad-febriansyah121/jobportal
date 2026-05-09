@@ -20,6 +20,7 @@ import {
     UserCheck,
     Users,
 } from 'lucide-react';
+import { useTranslate } from '@/hooks/use-translate';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -57,6 +58,9 @@ type JobShowProps = {
         work_mode: string;
         job_type: string;
         experience_level: string;
+        qualification?: string | null;
+        qualification_label?: string | null;
+        experience_years?: string | null;
         location: string;
         salary_range: string;
         is_anonymous: boolean;
@@ -141,25 +145,6 @@ type InterviewQuestionForm = {
     allow_ai_followup: boolean;
 };
 
-const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-    published: {
-        label: 'Published',
-        className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    },
-    draft: {
-        label: 'Draft',
-        className: 'bg-zinc-100 text-zinc-600 border-zinc-200',
-    },
-    closed: {
-        label: 'Ditutup',
-        className: 'bg-red-100 text-red-600 border-red-200',
-    },
-    suspended: {
-        label: 'Suspended',
-        className: 'bg-secondary-100 text-secondary-700 border-secondary-200',
-    },
-};
-
 const APPLICATION_STATUS_CONFIG: Record<string, { className: string }> = {
     applied: { className: 'bg-blue-100 text-blue-700' },
     shortlisted: { className: 'bg-violet-100 text-violet-700' },
@@ -180,12 +165,32 @@ export default function EmployerJobShow({
     applications,
     suggested_questions,
 }: JobShowProps) {
+    const { t } = useTranslate();
+
+    const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+        published: {
+            label: t('employer.jobs_show.status_published'),
+            className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+        },
+        draft: {
+            label: t('employer.jobs_show.status_draft'),
+            className: 'bg-zinc-100 text-zinc-600 border-zinc-200',
+        },
+        closed: {
+            label: t('employer.jobs_show.status_closed'),
+            className: 'bg-red-100 text-red-600 border-red-200',
+        },
+        suspended: {
+            label: t('employer.jobs_show.status_suspended'),
+            className: 'bg-secondary-100 text-secondary-700 border-secondary-200',
+        },
+    };
 
     const statusCfg = STATUS_CONFIG[job.status] ?? STATUS_CONFIG['draft'];
 
     const pipelineStages = [
         {
-            label: 'Total Pelamar',
+            label: t('employer.jobs_show.total_applicants'),
             value: job.applications_count,
             icon: Users,
             color: 'text-blue-600',
@@ -194,7 +199,7 @@ export default function EmployerJobShow({
             accent: 'from-blue-500 to-blue-400',
         },
         {
-            label: 'Terpilih',
+            label: t('employer.jobs_show.shortlisted'),
             value: job.shortlisted_applications_count,
             icon: Layers,
             color: 'text-violet-600',
@@ -203,7 +208,7 @@ export default function EmployerJobShow({
             accent: 'from-violet-500 to-violet-400',
         },
         {
-            label: 'Wawancara',
+            label: t('employer.jobs_show.interview'),
             value: job.interview_applications_count,
             icon: Mic,
             color: 'text-secondary-600',
@@ -212,7 +217,7 @@ export default function EmployerJobShow({
             accent: 'from-secondary-500 to-secondary-400',
         },
         {
-            label: 'Penawaran',
+            label: t('employer.jobs_show.offer'),
             value: job.offer_applications_count,
             icon: CircleDollarSign,
             color: 'text-primary-600',
@@ -221,7 +226,7 @@ export default function EmployerJobShow({
             accent: 'from-primary-500 to-primary-400',
         },
         {
-            label: 'Diterima',
+            label: t('employer.jobs_show.hired'),
             value: job.hired_applications_count,
             icon: UserCheck,
             color: 'text-emerald-600',
@@ -253,24 +258,27 @@ export default function EmployerJobShow({
 
     return (
         <>
-            <Head title={`Detail Lowongan - ${job.title}`} />
+            <Head title={t('employer.jobs_show.head_title', { title: job.title })} />
 
             <div className="space-y-6 p-4 md:p-6">
                 {/* Page header */}
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <Heading
-                        title="Detail Lowongan"
-                        description={`Ringkasan lowongan ${job.title} untuk ${company.name}.`}
+                        title={t('employer.jobs_show.page_title')}
+                        description={t('employer.jobs_show.page_description', {
+                            title: job.title,
+                            company: company.name,
+                        })}
                     />
                     <div className="flex gap-2">
                         <Button variant="outline" asChild>
-                            <Link href={index()}>Kembali</Link>
+                            <Link href={index()}>{t('employer.jobs_show.back')}</Link>
                         </Button>
                         <Button
                             className="bg-primary-500 text-white hover:bg-primary-600"
                             asChild
                         >
-                            <Link href={edit(job.id)}>Edit Lowongan</Link>
+                            <Link href={edit(job.id)}>{t('employer.jobs_show.edit_job')}</Link>
                         </Button>
                     </div>
                 </div>
@@ -298,7 +306,7 @@ export default function EmployerJobShow({
                                 </span>
                                 {job.is_anonymous ? (
                                     <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
-                                        Anonim
+                                        {t('employer.jobs_show.anonymous')}
                                     </span>
                                 ) : null}
                                 {job.industry ? (
@@ -314,47 +322,49 @@ export default function EmployerJobShow({
                         <div className="grid gap-0 divide-y divide-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
                             <MetaCell
                                 icon={MapPin}
-                                label="Lokasi"
+                                label={t('employer.jobs_show.location')}
                                 value={job.location || '-'}
                             />
                             <MetaCell
                                 icon={Globe}
-                                label="Mode Kerja"
+                                label={t('employer.jobs_show.work_mode')}
                                 value={job.work_mode}
                             />
                             <MetaCell
                                 icon={Briefcase}
-                                label="Jenis Kerja"
+                                label={t('employer.jobs_show.job_type')}
                                 value={job.job_type}
                             />
                             <MetaCell
                                 icon={Sparkles}
-                                label="Level"
+                                label={t('employer.jobs_show.level')}
                                 value={job.experience_level}
                             />
                         </div>
                         <div className="grid gap-0 divide-y divide-border border-t sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
                             <MetaCell
                                 icon={CalendarDays}
-                                label="Dipublikasikan"
+                                label={t('employer.jobs_show.published_at')}
                                 value={job.published_at}
                             />
                             <MetaCell
                                 icon={Ban}
-                                label="Ditutup"
+                                label={t('employer.jobs_show.closed_at')}
                                 value={job.closes_at}
                             />
                             <MetaCell
                                 icon={CalendarDays}
-                                label="Dibuat"
+                                label={t('employer.jobs_show.created_at')}
                                 value={job.created_at}
                             />
                             <MetaCell
                                 icon={Clock3}
-                                label="SLA Respon"
+                                label={t('employer.jobs_show.response_sla')}
                                 value={
                                     job.response_sla_hours
-                                        ? `${job.response_sla_hours} jam`
+                                        ? t('employer.jobs_show.response_sla_hours', {
+                                              hours: job.response_sla_hours,
+                                          })
                                         : '-'
                                 }
                             />
@@ -417,7 +427,7 @@ export default function EmployerJobShow({
                                 <Briefcase className="size-4 text-primary-600" />
                             </div>
                             <h3 className="font-semibold text-foreground">
-                                Informasi Posisi
+                                {t('employer.jobs_show.position_info')}
                             </h3>
                         </div>
                         <div className="divide-y">
@@ -425,29 +435,33 @@ export default function EmployerJobShow({
                                 icon={
                                     <FileText className="size-3.5 text-primary-500" />
                                 }
-                                title="Deskripsi"
+                                title={t('employer.jobs_show.description')}
                                 text={job.description ?? '-'}
+                                emptyText={t('employer.jobs_show.not_filled')}
                             />
                             <InfoSection
                                 icon={
                                     <ClipboardList className="size-3.5 text-primary-500" />
                                 }
-                                title="Tanggung Jawab"
+                                title={t('employer.jobs_show.responsibilities')}
                                 text={job.responsibilities ?? '-'}
+                                emptyText={t('employer.jobs_show.not_filled')}
                             />
                             <InfoSection
                                 icon={
                                     <BadgeCheck className="size-3.5 text-primary-500" />
                                 }
-                                title="Kualifikasi Wajib"
+                                title={t('employer.jobs_show.required_qualifications')}
                                 text={job.required_qualifications ?? '-'}
+                                emptyText={t('employer.jobs_show.not_filled')}
                             />
                             <InfoSection
                                 icon={
                                     <Star className="size-3.5 text-primary-500" />
                                 }
-                                title="Kualifikasi Tambahan"
+                                title={t('employer.jobs_show.preferred_qualifications')}
                                 text={job.preferred_qualifications ?? '-'}
+                                emptyText={t('employer.jobs_show.not_filled')}
                             />
                         </div>
                     </Card>
@@ -457,18 +471,45 @@ export default function EmployerJobShow({
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-base">
                                     <CircleDollarSign className="size-4 text-primary-500" />
-                                    Kompensasi
+                                    {t('employer.jobs_show.compensation')}
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent>
-                                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                    Rentang Gaji
-                                </p>
-                                <p className="mt-1.5 text-xl font-bold text-foreground">
-                                    {job.is_salary_visible
-                                        ? job.salary_range
-                                        : 'Tidak ditampilkan ke kandidat'}
-                                </p>
+                            <CardContent className="space-y-4">
+                                <div>
+                                    <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                        {t('employer.jobs_show.salary_range')}
+                                    </p>
+                                    <p className="mt-1.5 text-xl font-bold text-foreground">
+                                        {job.is_salary_visible
+                                            ? job.salary_range
+                                            : t('employer.jobs_show.salary_hidden')}
+                                    </p>
+                                </div>
+                                {(job.qualification_label ||
+                                    job.experience_years) && (
+                                    <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                                        <div>
+                                            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                                {t('employer.jobs_show.qualification')}
+                                            </p>
+                                            <p className="mt-1.5 text-sm font-semibold text-foreground">
+                                                {job.qualification_label ?? '-'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                                {t('employer.jobs_show.experience_years')}
+                                            </p>
+                                            <p className="mt-1.5 text-sm font-semibold text-foreground">
+                                                {job.experience_years
+                                                    ? t('employer.jobs_show.experience_years_value', {
+                                                          years: job.experience_years,
+                                                      })
+                                                    : '-'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 
@@ -476,7 +517,7 @@ export default function EmployerJobShow({
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-base">
                                     <Sparkles className="size-4 text-primary-500" />
-                                    Skill Dibutuhkan
+                                    {t('employer.jobs_show.required_skills')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -498,7 +539,7 @@ export default function EmployerJobShow({
                                     </ul>
                                 ) : (
                                     <p className="text-sm text-muted-foreground">
-                                        Belum ada skill ditetapkan.
+                                        {t('employer.jobs_show.no_skills')}
                                     </p>
                                 )}
                             </CardContent>
@@ -516,11 +557,10 @@ export default function EmployerJobShow({
                                 </div>
                                 <div>
                                     <CardTitle className="text-base">
-                                        Interview AI
+                                        {t('employer.jobs_show.ai_interview')}
                                     </CardTitle>
                                     <p className="mt-0.5 text-sm text-muted-foreground">
-                                        Kelola undangan AI interview untuk
-                                        kandidat lowongan ini.
+                                        {t('employer.jobs_show.ai_interview_description')}
                                     </p>
                                 </div>
                             </div>
@@ -528,11 +568,11 @@ export default function EmployerJobShow({
                                 <Badge variant="outline">
                                     {applications.total ??
                                         applications.data.length}{' '}
-                                    kandidat
+                                    {t('employer.jobs_show.candidates')}
                                 </Badge>
                                 <Button size="sm" variant="outline" asChild>
                                     <Link href={compareAiInterviews(job.id)}>
-                                        Bandingkan Kandidat
+                                        {t('employer.jobs_show.compare_candidates')}
                                     </Link>
                                 </Button>
                                 <Button
@@ -548,7 +588,7 @@ export default function EmployerJobShow({
                                         })}
                                     >
                                         <Mic className="size-3.5" />
-                                        Kelola Kandidat
+                                        {t('employer.jobs_show.manage_candidates')}
                                     </Link>
                                 </Button>
                             </div>
@@ -565,10 +605,10 @@ export default function EmployerJobShow({
                             </div>
                             <div>
                                 <CardTitle className="text-base">
-                                    Pelamar Terbaru
+                                    {t('employer.jobs_show.recent_applicants')}
                                 </CardTitle>
                                 <p className="mt-0.5 text-sm text-muted-foreground">
-                                    5 pelamar paling baru untuk lowongan ini.
+                                    {t('employer.jobs_show.recent_applicants_description')}
                                 </p>
                             </div>
                         </div>
@@ -586,12 +626,12 @@ export default function EmployerJobShow({
                                         recent_filters.recent_search ?? ''
                                     }
                                     className="pl-9"
-                                    placeholder="Cari pelamar terbaru"
+                                    placeholder={t('employer.jobs_show.search_recent_placeholder')}
                                 />
                             </div>
                             <Button type="submit" variant="outline">
                                 <Filter className="size-4" />
-                                Cari
+                                {t('employer.jobs_show.search_btn')}
                             </Button>
                         </form>
 
@@ -601,11 +641,11 @@ export default function EmployerJobShow({
                                     <Table className="min-w-160">
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Kandidat</TableHead>
-                                            <TableHead>Headline</TableHead>
-                                            <TableHead>Tahap</TableHead>
-                                            <TableHead>AI Fit</TableHead>
-                                            <TableHead>Dilamar</TableHead>
+                                            <TableHead>{t('employer.jobs_show.candidate')}</TableHead>
+                                            <TableHead>{t('employer.jobs_show.headline')}</TableHead>
+                                            <TableHead>{t('employer.jobs_show.stage')}</TableHead>
+                                            <TableHead>{t('employer.jobs_show.ai_fit')}</TableHead>
+                                            <TableHead>{t('employer.jobs_show.applied_at')}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -698,7 +738,7 @@ export default function EmployerJobShow({
                             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-12 text-center">
                                 <Users className="size-10 text-muted-foreground/40" />
                                 <p className="mt-3 text-sm font-medium text-muted-foreground">
-                                    Belum ada pelamar
+                                    {t('employer.jobs_show.no_applicants')}
                                 </p>
                             </div>
                         )}
@@ -738,10 +778,12 @@ function InfoSection({
     icon,
     title,
     text,
+    emptyText,
 }: {
     icon: React.ReactNode;
     title: string;
     text: string;
+    emptyText: string;
 }) {
     const normalizedText = text.trim();
     const hasHtmlTags = /<[^>]+>/.test(normalizedText);
@@ -757,7 +799,7 @@ function InfoSection({
             </div>
             {isEmpty ? (
                 <p className="text-sm text-muted-foreground/60 italic">
-                    Belum diisi.
+                    {emptyText}
                 </p>
             ) : hasHtmlTags ? (
                 <div

@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Candidate;
 use App\Actions\Candidate\ResolveCandidateProfile;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Candidate\SaveCandidateProfileRequest;
+use App\Http\Requests\Candidate\UpdateProfilePhotoRequest;
 use App\Models\Industry;
 use App\Models\Skill;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -76,6 +79,55 @@ class CandidateProfileController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Profil kandidat berhasil diperbarui.']);
 
         return back();
+    }
+
+    public function editPhoto(Request $request, ResolveCandidateProfile $resolveCandidateProfile): Response
+    {
+        $candidate = $resolveCandidateProfile->refreshCompletion(
+            $resolveCandidateProfile->handle($request->user())
+        );
+
+        return Inertia::render('candidate/profile-photo', [
+            'profile' => [
+                'full_name' => $candidate->full_name,
+                'avatar_url' => $request->user()->avatar_url,
+                'profile_completion' => $candidate->profile_completion,
+            ],
+        ]);
+    }
+
+    public function updatePhoto(UpdateProfilePhotoRequest $request, ResolveCandidateProfile $resolveCandidateProfile): RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($request->boolean('remove_avatar')) {
+            $this->deleteStoredAvatar($user->avatar_url);
+            $user->avatar_url = null;
+        }
+
+        if ($request->hasFile('avatar')) {
+            $this->deleteStoredAvatar($user->avatar_url);
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $user->avatar_url = Storage::disk('public')->url($path);
+        }
+
+        $user->save();
+
+        $resolveCandidateProfile->refreshCompletion($resolveCandidateProfile->handle($user));
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Foto profil berhasil diperbarui.']);
+
+        return to_route('candidate.profile.photo.edit');
+    }
+
+    private function deleteStoredAvatar(?string $avatarUrl): void
+    {
+        if (! is_string($avatarUrl) || $avatarUrl === '' || ! Str::startsWith($avatarUrl, '/storage/')) {
+            return;
+        }
+
+        $path = Str::of($avatarUrl)->after('/storage/')->toString();
+        Storage::disk('public')->delete($path);
     }
 
     private function industries(): array

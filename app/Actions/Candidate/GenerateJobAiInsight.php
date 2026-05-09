@@ -35,7 +35,8 @@ class GenerateJobAiInsight
             ->where('user_id', $candidate->user_id)
             ->where('feature', 'job_ai_insight')
             ->where('input_hash', $inputHash)
-            ->where('status', 'success')
+            ->whereIn('status', ['success', 'fallback'])
+            ->where('created_at', '>=', now()->subMinutes(15))
             ->latest()
             ->first();
 
@@ -60,6 +61,7 @@ class GenerateJobAiInsight
             'output_json' => $output,
             'model_name' => $this->ai->modelName(),
             'status' => $status,
+            ...$this->ai->tokenUsage(),
         ]);
 
         return $this->normalizeOutput($output);

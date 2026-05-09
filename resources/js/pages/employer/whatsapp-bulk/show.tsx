@@ -17,6 +17,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTranslate } from '@/hooks/use-translate';
 import { index } from '@/routes/employer/whatsapp-bulk';
 
 type Recipient = {
@@ -51,42 +52,11 @@ type WhatsAppBulkShowProps = {
     };
 };
 
-function recipientBadge(status: string) {
-    if (status === 'sent') {
-        return (
-            <Badge className="border-green-200 bg-green-50 text-green-700">
-                <CheckCircle2 className="mr-1 size-3.5" />
-                Terkirim
-            </Badge>
-        );
-    }
-    if (status === 'failed') {
-        return (
-            <Badge className="border-red-200 bg-red-50 text-red-700">
-                <XCircle className="mr-1 size-3.5" />
-                Gagal
-            </Badge>
-        );
-    }
-    if (status === 'skipped') {
-        return (
-            <Badge variant="outline" className="text-amber-700">
-                Dilewati
-            </Badge>
-        );
-    }
-    return (
-        <Badge className="border-blue-200 bg-blue-50 text-blue-700">
-            <Clock className="mr-1 size-3.5" />
-            Antri
-        </Badge>
-    );
-}
-
 export default function EmployerWhatsAppBulkShow({
     campaign,
     recipients,
 }: WhatsAppBulkShowProps) {
+    const { t } = useTranslate();
     const stillProcessing = ['queued', 'processing'].includes(campaign.status);
 
     usePoll(
@@ -100,6 +70,38 @@ export default function EmployerWhatsAppBulkShow({
         },
     );
 
+    function recipientBadge(status: string) {
+        if (status === 'sent') {
+            return (
+                <Badge className="border-green-200 bg-green-50 text-green-700">
+                    <CheckCircle2 className="mr-1 size-3.5" />
+                    {t('employer.whatsapp_bulk_show.status_sent')}
+                </Badge>
+            );
+        }
+        if (status === 'failed') {
+            return (
+                <Badge className="border-red-200 bg-red-50 text-red-700">
+                    <XCircle className="mr-1 size-3.5" />
+                    {t('employer.whatsapp_bulk_show.status_failed')}
+                </Badge>
+            );
+        }
+        if (status === 'skipped') {
+            return (
+                <Badge variant="outline" className="text-amber-700">
+                    {t('employer.whatsapp_bulk_show.status_skipped')}
+                </Badge>
+            );
+        }
+        return (
+            <Badge className="border-blue-200 bg-blue-50 text-blue-700">
+                <Clock className="mr-1 size-3.5" />
+                {t('employer.whatsapp_bulk_show.status_queued')}
+            </Badge>
+        );
+    }
+
     return (
         <>
             <Head title={`Broadcast #${campaign.id}`} />
@@ -109,7 +111,7 @@ export default function EmployerWhatsAppBulkShow({
                     <Button asChild variant="outline" size="sm">
                         <Link href={index().url}>
                             <ArrowLeft className="size-4" />
-                            Kembali
+                            {t('employer.whatsapp_bulk_show.btn_back')}
                         </Link>
                     </Button>
                 </div>
@@ -122,7 +124,7 @@ export default function EmployerWhatsAppBulkShow({
                 {campaign.channel === 'email' && campaign.subject ? (
                     <Card>
                         <CardContent className="py-3 text-sm">
-                            <span className="font-medium">Subject:</span>{' '}
+                            <span className="font-medium">{t('employer.whatsapp_bulk.subject')}:</span>{' '}
                             {campaign.subject}
                             {campaign.reply_to_email ? (
                                 <span className="ml-3 text-muted-foreground">
@@ -137,7 +139,7 @@ export default function EmployerWhatsAppBulkShow({
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-xs text-muted-foreground uppercase">
-                                Total
+                                {t('employer.whatsapp_bulk_show.card_total')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -149,7 +151,7 @@ export default function EmployerWhatsAppBulkShow({
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-xs text-muted-foreground uppercase">
-                                Terkirim
+                                {t('employer.whatsapp_bulk_show.card_sent')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -161,7 +163,7 @@ export default function EmployerWhatsAppBulkShow({
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-xs text-muted-foreground uppercase">
-                                Gagal
+                                {t('employer.whatsapp_bulk_show.card_failed')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -173,7 +175,7 @@ export default function EmployerWhatsAppBulkShow({
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-xs text-muted-foreground uppercase">
-                                Dilewati
+                                {t('employer.whatsapp_bulk_show.card_skipped')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -186,7 +188,7 @@ export default function EmployerWhatsAppBulkShow({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Template pesan</CardTitle>
+                        <CardTitle>{t('employer.whatsapp_bulk_show.template_title')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <pre className="whitespace-pre-wrap rounded-md border border-border bg-muted/40 p-4 text-sm">
@@ -197,22 +199,22 @@ export default function EmployerWhatsAppBulkShow({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Daftar penerima</CardTitle>
+                        <CardTitle>{t('employer.whatsapp_bulk_show.recipients_title')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="overflow-x-auto">
                             <Table className="min-w-160">
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Kandidat</TableHead>
+                                        <TableHead>{t('employer.whatsapp_bulk_show.col_candidate')}</TableHead>
                                         <TableHead>
                                             {campaign.channel === 'email'
                                                 ? 'Email'
-                                                : 'Nomor'}
+                                                : t('employer.whatsapp_bulk_show.col_contact')}
                                         </TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Dikirim</TableHead>
-                                        <TableHead>Catatan</TableHead>
+                                        <TableHead>{t('employer.whatsapp_bulk_show.col_status')}</TableHead>
+                                        <TableHead>{t('employer.whatsapp_bulk_show.col_sent_at')}</TableHead>
+                                        <TableHead>{t('employer.whatsapp_bulk_show.col_notes')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -222,7 +224,7 @@ export default function EmployerWhatsAppBulkShow({
                                                 colSpan={5}
                                                 className="py-8 text-center text-sm text-muted-foreground"
                                             >
-                                                Belum ada penerima.
+                                                {t('employer.whatsapp_bulk_show.empty_recipients')}
                                             </TableCell>
                                         </TableRow>
                                     ) : (

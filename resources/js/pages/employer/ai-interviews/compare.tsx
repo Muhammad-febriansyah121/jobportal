@@ -1,4 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { useTranslate } from '@/hooks/use-translate';
 import {
     ArrowLeft,
     BarChart3,
@@ -78,26 +79,29 @@ type ViewMode = 'cards' | 'table';
 
 const FINAL_DECISION_STATUSES = ['offer', 'hired', 'rejected', 'withdrawn'];
 
-const AI_STATUS_LABELS: Record<string, string> = {
-    pending: 'Menunggu',
-    scheduled: 'Terjadwal',
-    in_progress: 'Berlangsung',
-    completed: 'Selesai',
-    cancelled: 'Dibatalkan',
-};
+type TFn = (key: string, replacements?: Record<string, string | number>) => string;
 
-function formatAiStatus(status?: string | null): string {
+function formatAiStatus(status: string | null | undefined, t: TFn): string {
+    const map: Record<string, string> = {
+        pending: t('employer.ai_interview_compare.ai_status_pending'),
+        scheduled: t('employer.ai_interview_compare.ai_status_scheduled'),
+        in_progress: t('employer.ai_interview_compare.ai_status_in_progress'),
+        completed: t('employer.ai_interview_compare.ai_status_completed'),
+        cancelled: t('employer.ai_interview_compare.ai_status_cancelled'),
+    };
     if (!status) {
-        return 'Belum mulai';
+        return t('employer.ai_interview_compare.ai_status_not_started');
     }
-    return AI_STATUS_LABELS[status] ?? status;
+    return map[status] ?? status;
 }
 
-function formatMode(mode?: string | null): string {
+function formatMode(mode: string | null | undefined, t: TFn): string {
     if (!mode) {
         return '-';
     }
-    return mode === 'text' ? 'Teks' : 'Voice AI';
+    return mode === 'text'
+        ? t('employer.ai_interview_compare.mode_text')
+        : t('employer.ai_interview_compare.mode_voice');
 }
 
 function scoreToneClass(score: number): {
@@ -137,6 +141,7 @@ export default function EmployerAiInterviewCompare({
     job,
     candidates,
 }: CompareProps) {
+    const { t } = useTranslate();
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState<SortKey>('fit_desc');
     const [filterBy, setFilterBy] = useState<FilterKey>('all');
@@ -236,7 +241,7 @@ export default function EmployerAiInterviewCompare({
 
     const requestBulk = (action: 'advance' | 'reject') => {
         if (selectedSessionIds.length === 0) {
-            toast.error('Pilih minimal satu kandidat.');
+            toast.error(t('employer.ai_interview_compare.toast_select_one'));
             return;
         }
         setConfirmAction({ kind: 'bulk', action });
@@ -247,7 +252,7 @@ export default function EmployerAiInterviewCompare({
         action: 'advance' | 'reject',
     ) => {
         if (candidate.session_id === null) {
-            toast.error('Sesi AI interview tidak ditemukan untuk kandidat ini.');
+            toast.error(t('employer.ai_interview_compare.toast_no_session'));
             return;
         }
         setConfirmAction({ kind: 'single', action, candidate });
@@ -270,13 +275,13 @@ export default function EmployerAiInterviewCompare({
                 onSuccess: () => {
                     toast.success(
                         action === 'advance'
-                            ? `${count} kandidat diloloskan ke tahap user.`
-                            : `${count} kandidat ditolak.`,
+                            ? t('employer.ai_interview_compare.toast_bulk_advanced', { count })
+                            : t('employer.ai_interview_compare.toast_bulk_rejected', { count }),
                     );
                     setSelectedSessionIds([]);
                 },
                 onError: () => {
-                    toast.error('Gagal memproses keputusan bulk.');
+                    toast.error(t('employer.ai_interview_compare.toast_bulk_error'));
                 },
                 onFinish: () => {
                     setBulkBusy(null);
@@ -310,12 +315,12 @@ export default function EmployerAiInterviewCompare({
                 onSuccess: () => {
                     toast.success(
                         action === 'advance'
-                            ? `${candidate.candidate_name} diloloskan ke tahap user.`
-                            : `${candidate.candidate_name} ditolak.`,
+                            ? t('employer.ai_interview_compare.toast_single_advanced', { name: candidate.candidate_name })
+                            : t('employer.ai_interview_compare.toast_single_rejected', { name: candidate.candidate_name }),
                     );
                 },
                 onError: () => {
-                    toast.error('Gagal memproses keputusan.');
+                    toast.error(t('employer.ai_interview_compare.toast_single_error'));
                 },
                 onFinish: () => setConfirmAction(null),
             },
@@ -370,18 +375,18 @@ export default function EmployerAiInterviewCompare({
 
     return (
         <>
-            <Head title={`Perbandingan Kandidat AI - ${job.title}`} />
+            <Head title={t('employer.ai_interview_compare.title', { job: job.title })} />
 
             <div className="space-y-6 p-4 md:p-6">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <Heading
-                        title="Perbandingan Kandidat AI"
-                        description={`Bandingkan hasil wawancara AI untuk lowongan ${job.title}, lalu pilih kandidat untuk dilanjutkan atau ditolak.`}
+                        title={t('employer.ai_interview_compare.heading')}
+                        description={t('employer.ai_interview_compare.description', { job: job.title })}
                     />
                     <Button variant="outline" asChild>
                         <Link href={showJob(job.id)}>
                             <ArrowLeft className="size-4" />
-                            Kembali ke Lowongan
+                            {t('employer.ai_interview_compare.back_to_job')}
                         </Link>
                     </Button>
                 </div>
@@ -396,39 +401,37 @@ export default function EmployerAiInterviewCompare({
                                 </div>
                                 <div>
                                     <p className="text-sm font-bold tracking-[0.3em] text-primary-600 uppercase">
-                                        AI Ranking Insight
+                                        {t('employer.ai_interview_compare.ai_ranking_insight')}
                                     </p>
                                     <h2 className="text-2xl font-bold">
                                         {topCandidate
-                                            ? `${topCandidate.candidate_name} kandidat terkuat`
-                                            : 'Belum ada kandidat untuk dibandingkan'}
+                                            ? t('employer.ai_interview_compare.top_candidate', { name: topCandidate.candidate_name })
+                                            : t('employer.ai_interview_compare.no_candidates')}
                                     </h2>
                                 </div>
                             </div>
                             <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground">
-                                Ranking memakai fit score dan scorecard hasil
-                                interview AI. Anda tetap perlu review akhir
-                                sebelum mengambil keputusan hiring.
+                                {t('employer.ai_interview_compare.ranking_note')}
                             </p>
 
                             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
                                 <StatPill
-                                    label="Total"
+                                    label={t('employer.ai_interview_compare.stat_total')}
                                     value={stats.total}
                                     tone="slate"
                                 />
                                 <StatPill
-                                    label="Selesai"
+                                    label={t('employer.ai_interview_compare.stat_completed')}
                                     value={stats.completed}
                                     tone="green"
                                 />
                                 <StatPill
-                                    label="Diloloskan"
+                                    label={t('employer.ai_interview_compare.stat_advanced')}
                                     value={stats.advanced}
                                     tone="primary"
                                 />
                                 <StatPill
-                                    label="Ditolak"
+                                    label={t('employer.ai_interview_compare.stat_rejected')}
                                     value={stats.rejected}
                                     tone="red"
                                 />
@@ -436,7 +439,7 @@ export default function EmployerAiInterviewCompare({
                         </div>
                         <div className="rounded-2xl border bg-white p-5 shadow-sm">
                             <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                Rata-rata Fit Score
+                                {t('employer.ai_interview_compare.avg_fit_score')}
                             </p>
                             <p className="mt-2 text-3xl font-bold text-primary-600">
                                 {stats.avgFit}/100
@@ -444,7 +447,7 @@ export default function EmployerAiInterviewCompare({
                             <ProgressBar value={stats.avgFit} />
                             {topCandidate ? (
                                 <p className="mt-3 text-sm text-muted-foreground">
-                                    Kandidat tertinggi:{' '}
+                                    {t('employer.ai_interview_compare.top_candidate_label')}{' '}
                                     <span className="font-semibold text-foreground">
                                         {topCandidate.candidate_name}
                                     </span>{' '}
@@ -464,7 +467,7 @@ export default function EmployerAiInterviewCompare({
                                 <Input
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Cari nama, email, atau headline"
+                                    placeholder={t('employer.ai_interview_compare.search_placeholder')}
                                     className="pl-9"
                                 />
                             </div>
@@ -476,15 +479,15 @@ export default function EmployerAiInterviewCompare({
                                 className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                             >
                                 <option value="fit_desc">
-                                    Fit Score (tertinggi)
+                                    {t('employer.ai_interview_compare.sort_fit_desc')}
                                 </option>
                                 <option value="fit_asc">
-                                    Fit Score (terendah)
+                                    {t('employer.ai_interview_compare.sort_fit_asc')}
                                 </option>
                                 <option value="completed_desc">
-                                    Selesai terbaru
+                                    {t('employer.ai_interview_compare.sort_completed_desc')}
                                 </option>
-                                <option value="name_asc">Nama (A-Z)</option>
+                                <option value="name_asc">{t('employer.ai_interview_compare.sort_name_asc')}</option>
                             </select>
                             <select
                                 value={filterBy}
@@ -493,12 +496,12 @@ export default function EmployerAiInterviewCompare({
                                 }
                                 className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                             >
-                                <option value="all">Semua kandidat</option>
+                                <option value="all">{t('employer.ai_interview_compare.filter_all')}</option>
                                 <option value="completed">
-                                    Hanya yang sudah selesai
+                                    {t('employer.ai_interview_compare.filter_completed')}
                                 </option>
                                 <option value="pending">
-                                    Belum/sedang interview
+                                    {t('employer.ai_interview_compare.filter_pending')}
                                 </option>
                             </select>
                         </div>
@@ -511,7 +514,7 @@ export default function EmployerAiInterviewCompare({
                                 onClick={() => setViewMode('cards')}
                             >
                                 <LayoutGrid className="size-4" />
-                                Kartu
+                                {t('employer.ai_interview_compare.view_cards')}
                             </Button>
                             <Button
                                 size="sm"
@@ -521,7 +524,7 @@ export default function EmployerAiInterviewCompare({
                                 onClick={() => setViewMode('table')}
                             >
                                 <TableIcon className="size-4" />
-                                Tabel
+                                {t('employer.ai_interview_compare.view_table')}
                             </Button>
                         </div>
                     </CardContent>
@@ -537,9 +540,9 @@ export default function EmployerAiInterviewCompare({
                                 onCheckedChange={toggleSelectAll}
                             />
                             <span>
-                                Pilih semua{' '}
+                                {t('employer.ai_interview_compare.select_all')}{' '}
                                 {selectedSessionIds.length > 0
-                                    ? `(${selectedSessionIds.length} terpilih)`
+                                    ? t('employer.ai_interview_compare.selected_count', { count: selectedSessionIds.length })
                                     : ''}
                             </span>
                         </label>
@@ -550,7 +553,7 @@ export default function EmployerAiInterviewCompare({
                                 disabled={selectedSessionIds.length === 0}
                                 onClick={() => setSelectedSessionIds([])}
                             >
-                                Batal pilih
+                                {t('employer.ai_interview_compare.deselect')}
                             </Button>
                             <Button
                                 size="sm"
@@ -564,8 +567,8 @@ export default function EmployerAiInterviewCompare({
                             >
                                 <XCircle className="size-4" />
                                 {bulkBusy === 'reject'
-                                    ? 'Menolak...'
-                                    : `Tolak (${selectedSessionIds.length})`}
+                                    ? t('employer.ai_interview_compare.rejecting')
+                                    : t('employer.ai_interview_compare.reject_count', { count: selectedSessionIds.length })}
                             </Button>
                             <Button
                                 size="sm"
@@ -578,8 +581,8 @@ export default function EmployerAiInterviewCompare({
                             >
                                 <CheckCircle2 className="size-4" />
                                 {bulkBusy === 'advance'
-                                    ? 'Memproses...'
-                                    : `Loloskan ke User (${selectedSessionIds.length})`}
+                                    ? t('employer.ai_interview_compare.processing')
+                                    : t('employer.ai_interview_compare.advance_count', { count: selectedSessionIds.length })}
                             </Button>
                         </div>
                     </div>
@@ -589,7 +592,7 @@ export default function EmployerAiInterviewCompare({
                 {visibleCandidates.length === 0 ? (
                     <Card>
                         <CardContent className="p-10 text-center text-muted-foreground">
-                            Tidak ada kandidat sesuai filter.
+                            {t('employer.ai_interview_compare.no_candidates_filter')}
                         </CardContent>
                     </Card>
                 ) : viewMode === 'cards' ? (
@@ -641,23 +644,23 @@ export default function EmployerAiInterviewCompare({
                         <AlertDialogTitle>
                             {confirmAction?.action === 'advance'
                                 ? confirmAction.kind === 'bulk'
-                                    ? `Loloskan ${selectedSessionIds.length} kandidat ke tahap user?`
-                                    : `Loloskan ${confirmAction.candidate.candidate_name}?`
+                                    ? t('employer.ai_interview_compare.confirm_advance_bulk', { count: selectedSessionIds.length })
+                                    : t('employer.ai_interview_compare.confirm_advance_single', { name: confirmAction.candidate.candidate_name })
                                 : confirmAction?.kind === 'bulk'
-                                  ? `Tolak ${selectedSessionIds.length} kandidat?`
+                                  ? t('employer.ai_interview_compare.confirm_reject_bulk', { count: selectedSessionIds.length })
                                   : confirmAction?.kind === 'single'
-                                    ? `Tolak ${confirmAction.candidate.candidate_name}?`
+                                    ? t('employer.ai_interview_compare.confirm_reject_single', { name: confirmAction.candidate.candidate_name })
                                     : ''}
                         </AlertDialogTitle>
                         <AlertDialogDescription>
                             {confirmAction?.action === 'advance'
-                                ? 'Status kandidat akan dipindah ke tahap "Penawaran" dan kandidat akan menerima notifikasi bahwa lamarannya dilanjutkan.'
-                                : 'Kandidat akan ditolak dan menerima notifikasi penolakan. Aksi ini tidak otomatis bisa dibatalkan dari halaman ini.'}
+                                ? t('employer.ai_interview_compare.confirm_advance_desc')
+                                : t('employer.ai_interview_compare.confirm_reject_desc')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={bulkBusy !== null}>
-                            Batal
+                            {t('employer.ai_interview_compare.cancel')}
                         </AlertDialogCancel>
                         <AlertDialogAction
                             disabled={bulkBusy !== null}
@@ -672,10 +675,10 @@ export default function EmployerAiInterviewCompare({
                             }}
                         >
                             {bulkBusy !== null
-                                ? 'Memproses...'
+                                ? t('employer.ai_interview_compare.processing')
                                 : confirmAction?.action === 'advance'
-                                  ? 'Ya, loloskan'
-                                  : 'Ya, tolak'}
+                                  ? t('employer.ai_interview_compare.yes_advance')
+                                  : t('employer.ai_interview_compare.yes_reject')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -699,14 +702,15 @@ function CandidateCompareCard({
     onAdvance: () => void;
     onReject: () => void;
 }) {
+    const { t } = useTranslate();
     const score = candidate.fit_score ?? 0;
     const scoreEntries = Object.entries(candidate.scorecard ?? {});
     const finalDecision = FINAL_DECISION_STATUSES.includes(candidate.status);
     const decisionLabel =
         candidate.status === 'offer' || candidate.status === 'hired'
-            ? 'Diloloskan'
+            ? t('employer.ai_interview_compare.badge_advanced')
             : candidate.status === 'rejected'
-              ? 'Ditolak'
+              ? t('employer.ai_interview_compare.badge_rejected')
               : null;
 
     return (
@@ -734,13 +738,13 @@ function CandidateCompareCard({
                             {rank === 1 ? (
                                 <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
                                     <Trophy className="size-3" />
-                                    Terbaik
+                                    {t('employer.ai_interview_compare.badge_best')}
                                 </Badge>
                             ) : null}
                             {decisionLabel ? (
                                 <Badge
                                     className={
-                                        decisionLabel === 'Diloloskan'
+                                        decisionLabel === t('employer.ai_interview_compare.badge_advanced')
                                             ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'
                                             : 'bg-red-100 text-red-700 hover:bg-red-100'
                                     }
@@ -801,8 +805,7 @@ function CandidateCompareCard({
                                 </div>
                             ) : (
                                 <p className="mt-1 text-xs text-slate-500">
-                                    Belum ada skor karena AI interview belum
-                                    selesai.
+                                    {t('employer.ai_interview_compare.no_score_yet')}
                                 </p>
                             )}
                         </div>
@@ -811,12 +814,12 @@ function CandidateCompareCard({
 
                 <div className="flex flex-wrap gap-1.5">
                     <Badge variant="outline" className="text-xs">
-                        Tahap: {candidate.status_label}
+                        {t('employer.ai_interview_compare.stage_label')} {candidate.status_label}
                     </Badge>
                     {candidate.session_id !== null ? (
                         <>
                             <Badge variant="outline" className="text-xs">
-                                {formatMode(candidate.interview_mode)}
+                                {formatMode(candidate.interview_mode, t)}
                             </Badge>
                             <Badge
                                 variant="outline"
@@ -830,7 +833,7 @@ function CandidateCompareCard({
                                           : 'border-slate-200 bg-slate-50 text-slate-600',
                                 )}
                             >
-                                AI: {formatAiStatus(candidate.interview_status)}
+                                AI: {formatAiStatus(candidate.interview_status, t)}
                             </Badge>
                         </>
                     ) : (
@@ -838,7 +841,7 @@ function CandidateCompareCard({
                             variant="outline"
                             className="border-slate-200 bg-slate-50 text-xs text-slate-500"
                         >
-                            Belum AI Interview
+                            {t('employer.ai_interview_compare.no_ai_interview')}
                         </Badge>
                     )}
                 </div>
@@ -852,7 +855,7 @@ function CandidateCompareCard({
                 {scoreEntries.length > 0 ? (
                     <div className="space-y-2.5 rounded-xl border bg-slate-50/50 p-3">
                         <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                            Scorecard
+                            {t('employer.ai_interview_compare.scorecard_label')}
                         </p>
                         {scoreEntries.slice(0, 4).map(([label, value]) => (
                             <div key={label}>
@@ -876,7 +879,7 @@ function CandidateCompareCard({
                         <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
                             <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
                                 <Sparkles className="size-3.5" />
-                                Kekuatan
+                                {t('employer.ai_interview_compare.strengths_label')}
                             </p>
                             <ul className="space-y-1.5">
                                 {candidate.strengths.length > 0 ? (
@@ -895,7 +898,7 @@ function CandidateCompareCard({
                                         ))
                                 ) : (
                                     <li className="text-xs text-slate-400 italic">
-                                        Belum tersedia
+                                        {t('employer.ai_interview_compare.not_available')}
                                     </li>
                                 )}
                             </ul>
@@ -903,7 +906,7 @@ function CandidateCompareCard({
                         <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-3">
                             <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-amber-700">
                                 <BarChart3 className="size-3.5" />
-                                Perbaikan
+                                {t('employer.ai_interview_compare.weaknesses_label')}
                             </p>
                             <ul className="space-y-1.5">
                                 {candidate.weaknesses.length > 0 ? (
@@ -922,7 +925,7 @@ function CandidateCompareCard({
                                         ))
                                 ) : (
                                     <li className="text-xs text-slate-400 italic">
-                                        Belum tersedia
+                                        {t('employer.ai_interview_compare.not_available')}
                                     </li>
                                 )}
                             </ul>
@@ -934,7 +937,7 @@ function CandidateCompareCard({
                     <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center">
                         <Bot className="mx-auto size-5 text-slate-400" />
                         <p className="mt-1.5 text-xs text-slate-500">
-                            Kandidat belum dijadwalkan AI Interview.
+                            {t('employer.ai_interview_compare.not_scheduled')}
                         </p>
                     </div>
                 ) : null}
@@ -943,7 +946,7 @@ function CandidateCompareCard({
                     {candidate.session_id !== null ? (
                         <Button asChild size="sm" variant="outline" className="flex-1">
                             <Link href={showAiInterview(candidate.session_id)}>
-                                Detail
+                                {t('employer.ai_interview_compare.detail')}
                             </Link>
                         </Button>
                     ) : null}
@@ -956,7 +959,7 @@ function CandidateCompareCard({
                                 onClick={onReject}
                             >
                                 <XCircle className="size-3.5" />
-                                Tolak
+                                {t('employer.ai_interview_compare.reject')}
                             </Button>
                             <Button
                                 size="sm"
@@ -964,7 +967,7 @@ function CandidateCompareCard({
                                 onClick={onAdvance}
                             >
                                 <CheckCircle2 className="size-3.5" />
-                                Loloskan
+                                {t('employer.ai_interview_compare.advance')}
                             </Button>
                         </>
                     ) : null}
@@ -989,6 +992,7 @@ function ComparisonTable({
     onAdvance: (c: Candidate) => void;
     onReject: (c: Candidate) => void;
 }) {
+    const { t } = useTranslate();
     return (
         <Card>
             <CardContent className="overflow-x-auto p-0">
@@ -996,7 +1000,7 @@ function ComparisonTable({
                     <TableHeader>
                         <TableRow>
                             <TableHead className="w-48 align-bottom">
-                                Kriteria
+                                {t('employer.ai_interview_compare.table_criteria')}
                             </TableHead>
                             {candidates.map((c, idx) => {
                                 const finalDecision =
@@ -1047,7 +1051,7 @@ function ComparisonTable({
                                                             onReject(c)
                                                         }
                                                     >
-                                                        Tolak
+                                                        {t('employer.ai_interview_compare.reject')}
                                                     </Button>
                                                     <Button
                                                         size="sm"
@@ -1056,7 +1060,7 @@ function ComparisonTable({
                                                             onAdvance(c)
                                                         }
                                                     >
-                                                        Loloskan
+                                                        {t('employer.ai_interview_compare.advance')}
                                                     </Button>
                                                 </div>
                                             ) : null}
@@ -1069,7 +1073,7 @@ function ComparisonTable({
                     <TableBody>
                         <TableRow>
                             <TableCell className="font-medium">
-                                Fit Score
+                                {t('employer.ai_interview_compare.table_fit_score')}
                             </TableCell>
                             {candidates.map((c) => {
                                 const hasScore = c.fit_score != null;
@@ -1092,7 +1096,7 @@ function ComparisonTable({
                                             />
                                         ) : (
                                             <p className="text-xs text-slate-400">
-                                                Belum diskor
+                                                {t('employer.ai_interview_compare.not_scored')}
                                             </p>
                                         )}
                                     </TableCell>
@@ -1101,7 +1105,7 @@ function ComparisonTable({
                         </TableRow>
                         <TableRow>
                             <TableCell className="font-medium">
-                                Status Seleksi
+                                {t('employer.ai_interview_compare.table_selection_status')}
                             </TableCell>
                             {candidates.map((c) => (
                                 <TableCell key={c.id}>
@@ -1113,7 +1117,7 @@ function ComparisonTable({
                         </TableRow>
                         <TableRow>
                             <TableCell className="font-medium">
-                                Status AI
+                                {t('employer.ai_interview_compare.table_ai_status')}
                             </TableCell>
                             {candidates.map((c) => (
                                 <TableCell key={c.id} className="text-sm">
@@ -1130,11 +1134,11 @@ function ComparisonTable({
                                                       : 'border-slate-200 bg-slate-50 text-slate-600'
                                             }
                                         >
-                                            {formatAiStatus(c.interview_status)}
+                                            {formatAiStatus(c.interview_status, t)}
                                         </Badge>
                                     ) : (
                                         <span className="text-xs text-muted-foreground">
-                                            Belum AI
+                                            {t('employer.ai_interview_compare.no_ai')}
                                         </span>
                                     )}
                                 </TableCell>
@@ -1142,7 +1146,7 @@ function ComparisonTable({
                         </TableRow>
                         <TableRow>
                             <TableCell className="font-medium">
-                                Selesai
+                                {t('employer.ai_interview_compare.table_completed')}
                             </TableCell>
                             {candidates.map((c) => (
                                 <TableCell
@@ -1181,7 +1185,7 @@ function ComparisonTable({
                         ))}
                         <TableRow>
                             <TableCell className="font-medium">
-                                Kekuatan
+                                {t('employer.ai_interview_compare.table_strengths')}
                             </TableCell>
                             {candidates.map((c) => (
                                 <TableCell key={c.id}>
@@ -1206,7 +1210,7 @@ function ComparisonTable({
                         </TableRow>
                         <TableRow>
                             <TableCell className="font-medium">
-                                Perbaikan
+                                {t('employer.ai_interview_compare.table_weaknesses')}
                             </TableCell>
                             {candidates.map((c) => (
                                 <TableCell key={c.id}>

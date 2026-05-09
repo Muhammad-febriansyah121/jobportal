@@ -11,7 +11,6 @@ import {
     Mic,
     Timer,
 } from 'lucide-react';
-import CandidateApplicationController from '@/actions/App/Http/Controllers/Candidate/CandidateApplicationController';
 import { StatusBadge } from '@/components/candidate/candidate-ui';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
@@ -149,23 +148,6 @@ export default function CandidateApplicationShow({
                                 </Link>
                             </Button>
                         ) : null}
-                        {!['hired', 'rejected', 'withdrawn'].includes(
-                            application.status,
-                        ) ? (
-                            <Button asChild variant="destructive">
-                                <Link
-                                    href={CandidateApplicationController.withdraw(
-                                        application.id,
-                                    )}
-                                    method="patch"
-                                    as="button"
-                                >
-                                    {t(
-                                        'candidate.applications.btn_withdraw',
-                                    )}
-                                </Link>
-                            </Button>
-                        ) : null}
                     </div>
                 </div>
 
@@ -253,7 +235,7 @@ export default function CandidateApplicationShow({
                                                 ? t(
                                                       'candidate.applications.mode_text',
                                                   )
-                                                : 'Voice AI'}
+                                                : t('candidate.ai_interview_show.voice_ai')}
                                         </Info>
                                         <Info
                                             label={t(
@@ -304,9 +286,26 @@ export default function CandidateApplicationShow({
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-sm leading-6 whitespace-pre-line text-muted-foreground">
-                                {application.cover_letter ?? '-'}
-                            </p>
+                            {application.cover_letter ? (
+                                /<[a-z][^>]*>/i.test(
+                                    application.cover_letter,
+                                ) ? (
+                                    <div
+                                        className="prose prose-sm max-w-none text-sm leading-7 text-muted-foreground [&_li]:my-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5"
+                                        dangerouslySetInnerHTML={{
+                                            __html: application.cover_letter,
+                                        }}
+                                    />
+                                ) : (
+                                    <p className="text-sm leading-6 whitespace-pre-line text-muted-foreground">
+                                        {application.cover_letter}
+                                    </p>
+                                )
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    -
+                                </p>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -411,7 +410,7 @@ export default function CandidateApplicationShow({
                                                 )}
                                             >
                                                 {isVoice
-                                                    ? 'Voice AI'
+                                                    ? t('candidate.ai_interview_show.voice_ai')
                                                     : t(
                                                           'candidate.applications.mode_text_short',
                                                       )}
@@ -483,7 +482,7 @@ export default function CandidateApplicationShow({
                                                                 </p>
                                                                 <p className="text-sm font-semibold text-foreground">
                                                                     {isVoice
-                                                                        ? 'Voice AI'
+                                                                        ? t('candidate.ai_interview_show.voice_ai')
                                                                         : t(
                                                                               'candidate.applications.mode_text',
                                                                           )}
@@ -497,7 +496,7 @@ export default function CandidateApplicationShow({
                                                         {isVoice ? (
                                                             <span>
                                                                 <strong className="text-foreground">
-                                                                    Voice AI:
+                                                                    {t('candidate.ai_interview_show.voice_ai')}:
                                                                 </strong>{' '}
                                                                 {t(
                                                                     'candidate.applications.mode_voice_description',

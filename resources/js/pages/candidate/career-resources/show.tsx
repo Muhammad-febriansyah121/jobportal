@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { BookOpen, CalendarDays, FileText, LayoutTemplate, PlayCircle, Tag } from 'lucide-react';
+import { useTranslate } from '@/hooks/use-translate';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -10,13 +11,6 @@ const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
     video: PlayCircle,
     template: LayoutTemplate,
     guide: BookOpen,
-};
-
-const TYPE_LABELS: Record<string, string> = {
-    article: 'Artikel',
-    video: 'Video',
-    template: 'Template',
-    guide: 'Panduan',
 };
 
 type Related = {
@@ -43,6 +37,13 @@ type ShowProps = {
 };
 
 export default function CandidateCareerResourceShow({ resource, related }: ShowProps) {
+    const { t } = useTranslate();
+    const typeLabels: Record<string, string> = {
+        article: t('candidate.career_resources.type_article'),
+        video: t('candidate.career_resources.type_video'),
+        template: t('candidate.career_resources.type_template'),
+        guide: t('candidate.career_resources.type_guide'),
+    };
     const Icon = TYPE_ICONS[resource.type] ?? BookOpen;
 
     return (
@@ -67,7 +68,7 @@ export default function CandidateCareerResourceShow({ resource, related }: ShowP
                         >
                             <Badge className="bg-white/20 text-white backdrop-blur-sm hover:bg-white/20">
                                 <Icon className="size-3.5" />
-                                {TYPE_LABELS[resource.type] ?? resource.type}
+                                {typeLabels[resource.type] ?? resource.type}
                             </Badge>
                         </div>
 
@@ -93,11 +94,21 @@ export default function CandidateCareerResourceShow({ resource, related }: ShowP
                         {/* Content */}
                         <Card>
                             <CardContent className="pt-6">
-                                <div className="prose prose-sm max-w-none text-foreground">
-                                    <p className="whitespace-pre-line leading-7 text-muted-foreground">
-                                        {resource.content}
-                                    </p>
-                                </div>
+                                {resource.content &&
+                                /<[a-z][^>]*>/i.test(resource.content) ? (
+                                    <div
+                                        className="prose prose-sm max-w-none leading-7 text-muted-foreground [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:mt-4 [&_h2]:mb-2 [&_li]:my-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5"
+                                        dangerouslySetInnerHTML={{
+                                            __html: resource.content,
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="prose prose-sm max-w-none text-foreground">
+                                        <p className="whitespace-pre-line leading-7 text-muted-foreground">
+                                            {resource.content ?? ''}
+                                        </p>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
@@ -107,7 +118,7 @@ export default function CandidateCareerResourceShow({ resource, related }: ShowP
                         {related.length > 0 && (
                             <Card>
                                 <CardHeader className="pb-2">
-                                    <CardTitle className="text-sm">Konten Terkait</CardTitle>
+                                    <CardTitle className="text-sm">{t('candidate.career_resources.related_content')}</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-1">
                                     {related.map((item) => {
@@ -127,7 +138,7 @@ export default function CandidateCareerResourceShow({ resource, related }: ShowP
                                                         {item.title}
                                                     </span>
                                                     <span className="text-xs text-muted-foreground">
-                                                        {item.category ?? TYPE_LABELS[item.type] ?? item.type}
+                                                        {item.category ?? typeLabels[item.type] ?? item.type}
                                                         {item.published_at ? ` · ${item.published_at}` : ''}
                                                     </span>
                                                 </span>
@@ -144,7 +155,7 @@ export default function CandidateCareerResourceShow({ resource, related }: ShowP
                                     href={index.url()}
                                     className="text-sm font-medium text-primary-600 hover:underline"
                                 >
-                                    ← Lihat semua artikel
+                                    {t('candidate.career_resources.back_to_list')}
                                 </Link>
                             </CardContent>
                         </Card>

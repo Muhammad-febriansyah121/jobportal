@@ -24,6 +24,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslate } from '@/hooks/use-translate';
 
 type WhatsAppPageProps = {
     phone: string | null;
@@ -44,45 +45,8 @@ type WhatsAppPageProps = {
     } | null;
 };
 
-function stateBadge(state?: string | null) {
-    const value = (state ?? '').toUpperCase();
-
-    if (value === 'CONNECTED' || value === 'READY') {
-        return (
-            <Badge className="border-green-200 bg-green-50 text-green-700">
-                <CheckCircle2 className="mr-1 size-3.5" />
-                Terhubung
-            </Badge>
-        );
-    }
-
-    if (value === 'WAITING_QR' || value === 'CONNECTING') {
-        return (
-            <Badge className="border-secondary-200 bg-secondary-50 text-secondary-700">
-                <RefreshCcw className="mr-1 size-3.5" />
-                Menunggu Scan
-            </Badge>
-        );
-    }
-
-    if (value === '') {
-        return (
-            <Badge variant="outline" className="border-border text-muted-foreground">
-                Belum ada sesi
-            </Badge>
-        );
-    }
-
-    return (
-        <Badge className="border-red-200 bg-red-50 text-red-700">
-            <AlertCircle className="mr-1 size-3.5" />
-            {value}
-        </Badge>
-    );
-}
-
 function qrSource(qrCode?: string | null): string | null {
-    if (! qrCode || qrCode.trim() === '') {
+    if (!qrCode || qrCode.trim() === '') {
         return null;
     }
 
@@ -95,6 +59,8 @@ export default function EmployerWhatsApp({
     settings,
     session,
 }: WhatsAppPageProps) {
+    const { t } = useTranslate();
+
     const settingsForm = useForm({
         enabled: settings.enabled,
         session_id: settings.session_id ?? '',
@@ -133,8 +99,6 @@ export default function EmployerWhatsApp({
         2500,
         {
             only: ['settings', 'session', 'gatewayConfigured'],
-            preserveScroll: true,
-            preserveState: true,
         },
         {
             autoStart: shouldPollSession,
@@ -155,6 +119,43 @@ export default function EmployerWhatsApp({
         currentSessionId,
         setSettingsData,
     ]);
+
+    function stateBadge(state?: string | null) {
+        const value = (state ?? '').toUpperCase();
+
+        if (value === 'CONNECTED' || value === 'READY') {
+            return (
+                <Badge className="border-green-200 bg-green-50 text-green-700">
+                    <CheckCircle2 className="mr-1 size-3.5" />
+                    {t('employer.whatsapp.state_connected')}
+                </Badge>
+            );
+        }
+
+        if (value === 'WAITING_QR' || value === 'CONNECTING') {
+            return (
+                <Badge className="border-secondary-200 bg-secondary-50 text-secondary-700">
+                    <RefreshCcw className="mr-1 size-3.5" />
+                    {t('employer.whatsapp.state_waiting')}
+                </Badge>
+            );
+        }
+
+        if (value === '') {
+            return (
+                <Badge variant="outline" className="border-border text-muted-foreground">
+                    {t('employer.whatsapp.state_no_session')}
+                </Badge>
+            );
+        }
+
+        return (
+            <Badge className="border-red-200 bg-red-50 text-red-700">
+                <AlertCircle className="mr-1 size-3.5" />
+                {value}
+            </Badge>
+        );
+    }
 
     function saveSettings(e: React.FormEvent) {
         e.preventDefault();
@@ -192,12 +193,12 @@ export default function EmployerWhatsApp({
 
     return (
         <>
-            <Head title="Koneksi WhatsApp" />
+            <Head title={t('employer.whatsapp.page_title')} />
 
             <div className="space-y-6 p-4 md:p-6">
                 <Heading
-                    title="Koneksi WhatsApp"
-                    description="Hubungkan WhatsApp gateway untuk kirim notifikasi otomatis ke kandidat dan tim hiring."
+                    title={t('employer.whatsapp.heading_title')}
+                    description={t('employer.whatsapp.heading_desc')}
                 />
 
                 {!gatewayConfigured ? (
@@ -206,12 +207,10 @@ export default function EmployerWhatsApp({
                             <AlertCircle className="mt-0.5 size-5 text-red-600" />
                             <div>
                                 <p className="text-sm font-semibold text-red-800">
-                                    Gateway WhatsApp belum dikonfigurasi.
+                                    {t('employer.whatsapp.gateway_not_configured_title')}
                                 </p>
                                 <p className="mt-1 text-sm text-red-700">
-                                    Isi konfigurasi gateway di Admin Setting Web
-                                    (tab AI) untuk `whatsapp_gateway_url` dan
-                                    `whatsapp_gateway_api_key`.
+                                    {t('employer.whatsapp.gateway_not_configured_desc')}
                                 </p>
                             </div>
                         </CardContent>
@@ -221,11 +220,9 @@ export default function EmployerWhatsApp({
                 <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Pengaturan notifikasi</CardTitle>
+                            <CardTitle>{t('employer.whatsapp.settings_title')}</CardTitle>
                             <CardDescription>
-                                Aktifkan kanal WhatsApp setelah sesi berhasil
-                                terhubung. Session ID terisi otomatis dari
-                                proses QR connect.
+                                {t('employer.whatsapp.settings_desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -233,11 +230,10 @@ export default function EmployerWhatsApp({
                                 <div className="flex items-center justify-between rounded-lg border border-border bg-white/60 p-4">
                                     <div>
                                         <p className="text-sm font-semibold text-foreground">
-                                            Aktifkan notifikasi WhatsApp
+                                            {t('employer.whatsapp.enable_whatsapp')}
                                         </p>
                                         <p className="mt-1 text-xs text-muted-foreground">
-                                            Jika dimatikan, notifikasi tetap
-                                            masuk inbox platform.
+                                            {t('employer.whatsapp.enable_whatsapp_desc')}
                                         </p>
                                     </div>
                                     <Checkbox
@@ -253,22 +249,18 @@ export default function EmployerWhatsApp({
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="phone">Nomor WhatsApp akun</Label>
+                                    <Label htmlFor="phone">{t('employer.whatsapp.label_phone')}</Label>
                                     <Input
                                         id="phone"
                                         value={connectedPhoneNumber}
                                         readOnly
-                                        placeholder="Belum ada nomor WhatsApp yang terhubung"
+                                        placeholder={t('employer.whatsapp.no_number_connected')}
                                     />
-                                    <p className="text-xs text-muted-foreground">
-                                        Nomor ini mengikuti nomor WhatsApp yang
-                                        sedang terhubung di session gateway.
-                                    </p>
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label htmlFor="test-phone">
-                                        Nomor uji koneksi
+                                        {t('employer.whatsapp.label_test_phone')}
                                     </Label>
                                     <Input
                                         id="test-phone"
@@ -279,44 +271,31 @@ export default function EmployerWhatsApp({
                                                 e.target.value,
                                             )
                                         }
-                                        placeholder="Contoh: 628123456789"
+                                        placeholder={t('employer.whatsapp.test_number_placeholder')}
                                     />
                                     <InputError
                                         message={testForm.errors.phone_number}
                                     />
-                                    <p className="text-xs text-muted-foreground">
-                                        Isi nomor WhatsApp yang ingin menerima
-                                        pesan test dari session ini.
-                                    </p>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="session-id">Session ID</Label>
+                                    <Label htmlFor="session-id">{t('employer.whatsapp.label_session_id')}</Label>
                                     <Input
                                         id="session-id"
                                         value={settingsForm.data.session_id}
                                         readOnly
-                                        placeholder="Akan terisi otomatis setelah sesi terhubung"
+                                        placeholder={t('employer.whatsapp.session_id_placeholder')}
                                     />
                                     <InputError
                                         message={settingsForm.errors.session_id}
                                     />
-                                    <p className="text-xs text-muted-foreground">
-                                        Tidak perlu diisi manual. Klik
-                                        <span className="font-semibold">
-                                            {' '}
-                                            Buat / Hubungkan Sesi Baru
-                                        </span>{' '}
-                                        untuk generate QR dan session ID
-                                        otomatis.
-                                    </p>
                                 </div>
 
                                 <Button
                                     type="submit"
                                     disabled={settingsForm.processing || !sessionId}
                                 >
-                                    Simpan Pengaturan
+                                    {t('employer.whatsapp.btn_save')}
                                 </Button>
 
                                 <Button
@@ -332,7 +311,7 @@ export default function EmployerWhatsApp({
                                     }
                                 >
                                     <Send className="size-4" />
-                                    Test Koneksi
+                                    {t('employer.whatsapp.btn_test')}
                                 </Button>
                             </form>
                         </CardContent>
@@ -340,10 +319,9 @@ export default function EmployerWhatsApp({
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Status sesi gateway</CardTitle>
+                            <CardTitle>{t('employer.whatsapp.session_title')}</CardTitle>
                             <CardDescription>
-                                Buat sesi baru, reconnect, atau putuskan sesi
-                                agar tidak dipakai lagi.
+                                {t('employer.whatsapp.session_desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-5">
@@ -351,16 +329,14 @@ export default function EmployerWhatsApp({
                                 <div className="rounded-lg border border-border p-4">
                                     <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
                                         <QrCode className="size-4" />
-                                        Scan QR untuk menyambungkan perangkat
+                                        {t('employer.whatsapp.scan_qr')}
                                     </p>
                                     <p className="mb-3 text-xs text-muted-foreground">
-                                        Jika WhatsApp menolak tautan perangkat,
-                                        tunggu QR diperbarui lalu scan ulang
-                                        tanpa menutup halaman ini.
+                                        {t('employer.whatsapp.scan_qr_hint')}
                                     </p>
                                     <img
                                         src={qrCodeUrl}
-                                        alt="QR WhatsApp Session"
+                                        alt={t('employer.whatsapp.qr_alt')}
                                         className="mx-auto w-full max-w-[240px] rounded-md border border-border bg-white p-2"
                                     />
                                 </div>
@@ -369,7 +345,7 @@ export default function EmployerWhatsApp({
                             <div className="flex items-center justify-between rounded-lg border border-border bg-white/60 p-4">
                                 <div>
                                     <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-                                        Status saat ini
+                                        {t('employer.whatsapp.current_status')}
                                     </p>
                                     <div className="mt-2">{stateBadge(session?.state)}</div>
                                 </div>
@@ -388,7 +364,7 @@ export default function EmployerWhatsApp({
 
                             <form onSubmit={connectSession} className="space-y-3">
                                 <div className="space-y-2">
-                                    <Label htmlFor="session-label">Label sesi</Label>
+                                    <Label htmlFor="session-label">{t('employer.whatsapp.label_session_label')}</Label>
                                     <Input
                                         id="session-label"
                                         value={connectForm.data.label}
@@ -398,14 +374,12 @@ export default function EmployerWhatsApp({
                                                 e.target.value,
                                             )
                                         }
-                                        placeholder="Contoh: HR Karivia"
+                                        placeholder={t('employer.whatsapp.session_label_placeholder')}
                                     />
                                     <InputError message={connectForm.errors.label} />
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    Setelah klik tombol di bawah, scan QR dari
-                                    WhatsApp di ponsel. QR akan diperbarui
-                                    otomatis bila gateway mengirim QR baru.
+                                    {t('employer.whatsapp.connect_hint')}
                                 </p>
 
                                 <Button
@@ -414,7 +388,7 @@ export default function EmployerWhatsApp({
                                     className="w-full"
                                 >
                                     <Link2 className="size-4" />
-                                    Buat / Hubungkan Sesi Baru
+                                    {t('employer.whatsapp.btn_connect')}
                                 </Button>
                             </form>
 
@@ -427,7 +401,7 @@ export default function EmployerWhatsApp({
                                     className="w-full"
                                 >
                                     <RefreshCcw className="size-4" />
-                                    Reconnect
+                                    {t('employer.whatsapp.btn_reconnect')}
                                 </Button>
                                 <Button
                                     type="button"
@@ -437,13 +411,13 @@ export default function EmployerWhatsApp({
                                     className="w-full border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
                                 >
                                     <Unlink2 className="size-4" />
-                                    Putuskan Sesi
+                                    {t('employer.whatsapp.btn_disconnect')}
                                 </Button>
                             </div>
 
                             {isConnected && session?.phone_number ? (
                                 <p className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                                    Session aktif di nomor {session.phone_number}.
+                                    {t('employer.whatsapp.session_active', { number: session.phone_number })}
                                 </p>
                             ) : null}
 

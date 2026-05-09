@@ -30,6 +30,7 @@ createInertiaApp({
                 return AuthLayout;
             case name.startsWith('settings/'):
             case name === 'candidate/profile':
+            case name === 'candidate/profile-photo':
             case name === 'candidate/experiences':
             case name === 'candidate/educations':
             case name === 'candidate/skills':

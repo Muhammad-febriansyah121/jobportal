@@ -27,9 +27,15 @@ class CandidatePricingController extends Controller
             $resolveCandidateProfile->handle($request->user())
         );
 
+        $hasClaimedTrial = CandidateWalletTransaction::query()
+            ->where('candidate_id', $candidate->id)
+            ->where('source', 'trial')
+            ->exists();
+
         $menus = CandidatePricingMenu::query()
             ->where('is_active', true)
             ->orderByDesc('is_default_free')
+            ->orderByDesc('is_trial')
             ->orderBy('price')
             ->get()
             ->map(fn (CandidatePricingMenu $menu): array => [
@@ -40,8 +46,12 @@ class CandidatePricingController extends Controller
                 'price_label' => 'Rp '.number_format((int) $menu->price, 0, ',', '.'),
                 'ai_token_amount' => (int) $menu->ai_token_amount,
                 'cv_builder_quota' => (int) $menu->cv_builder_quota,
+                'ai_interview_quota' => (int) $menu->ai_interview_quota,
+                'validity_days' => (int) $menu->validity_days,
                 'features' => $menu->normalizedFeatures(),
                 'is_default_free' => (bool) $menu->is_default_free,
+                'is_trial' => (bool) $menu->is_trial,
+                'trial_claimable' => (bool) $menu->is_trial && ! $hasClaimedTrial,
             ])
             ->values();
 
@@ -51,14 +61,26 @@ class CandidatePricingController extends Controller
             ->latest('id')
             ->first();
 
+        $latestPaidTopupExpiresAt = CandidateWalletTransaction::query()
+            ->where('candidate_id', $candidate->id)
+            ->where('status', 'paid')
+            ->where('source', 'purchase')
+            ->whereNotNull('expires_at')
+            ->latest('id')
+            ->value('expires_at');
+
         return Inertia::render('candidate/pricing', [
             'wallet' => [
                 'ai_token_balance' => (int) $candidate->ai_token_balance,
                 'cv_builder_quota_balance' => (int) $candidate->cv_builder_quota_balance,
+                'ai_interview_quota_balance' => (int) $candidate->ai_interview_quota_balance,
+                'ai_interview_quota_expires_at' => $candidate->ai_interview_quota_expires_at?->toIso8601String(),
+                'cv_builder_quota_expires_at' => $latestPaidTopupExpiresAt?->toIso8601String(),
                 'draft_token_cost' => CandidateWalletManager::CV_BUILDER_DRAFT_TOKEN_COST,
                 'draft_quota_cost' => CandidateWalletManager::CV_BUILDER_DRAFT_QUOTA_COST,
             ],
             'menus' => $menus,
+            'hasClaimedTrial' => $hasClaimedTrial,
             'pendingTopup' => $pendingTopup ? [
                 'id' => $pendingTopup->id,
                 'order_id' => $pendingTopup->order_id,
@@ -86,6 +108,75 @@ class CandidatePricingController extends Controller
                 ])
                 ->values(),
         ]);
+    }
+
+    public function claimTrial(
+        Request $request,
+        CandidatePricingMenu $candidatePricingMenu,
+        ResolveCandidateProfile $resolveCandidateProfile,
+        CandidateWalletManager $walletManager
+    ): RedirectResponse {
+        $candidate = $walletManager->ensureFreeQuota(
+            $resolveCandidateProfile->handle($request->user())
+        );
+
+        abort_unless($candidatePricingMenu->is_active, 404);
+        abort_unless($candidatePricingMenu->is_trial, 422, 'Paket ini bukan paket trial.');
+
+        $alreadyClaimed = CandidateWalletTransaction::query()
+            ->where('candidate_id', $candidate->id)
+            ->where('source', 'trial')
+            ->exists();
+
+        if ($alreadyClaimed) {
+            Inertia::flash('toast', [
+                'type' => 'warning',
+                'message' => 'Trial sudah pernah diklaim untuk akun ini.',
+            ]);
+
+            return back();
+        }
+
+        $validityDays = (int) ($candidatePricingMenu->validity_days ?: 7);
+        $aiInterviewDelta = (int) $candidatePricingMenu->ai_interview_quota;
+        $cvBuilderDelta = (int) $candidatePricingMenu->cv_builder_quota;
+
+        DB::transaction(function () use ($candidate, $candidatePricingMenu, $validityDays, $aiInterviewDelta, $cvBuilderDelta): void {
+            CandidateWalletTransaction::create([
+                'candidate_id' => $candidate->id,
+                'candidate_pricing_menu_id' => $candidatePricingMenu->id,
+                'order_id' => 'TRIAL-'.$candidate->id.'-'.$candidatePricingMenu->id.'-'.time(),
+                'type' => 'credit',
+                'source' => 'trial',
+                'ai_token_delta' => 0,
+                'cv_builder_quota_delta' => $cvBuilderDelta,
+                'ai_interview_quota_delta' => $aiInterviewDelta,
+                'amount' => 0,
+                'status' => 'paid',
+                'paid_at' => now(),
+                'expires_at' => now()->addDays($validityDays),
+                'meta_json' => [
+                    'menu' => $candidatePricingMenu->name,
+                    'validity_days' => $validityDays,
+                    'is_trial' => true,
+                ],
+            ]);
+
+            $candidate->forceFill([
+                'cv_builder_quota_balance' => max(0, (int) $candidate->cv_builder_quota_balance + $cvBuilderDelta),
+                'ai_interview_quota_balance' => max(0, (int) $candidate->ai_interview_quota_balance + $aiInterviewDelta),
+                'ai_interview_quota_expires_at' => $aiInterviewDelta > 0
+                    ? now()->addDays($validityDays)
+                    : $candidate->ai_interview_quota_expires_at,
+            ])->save();
+        });
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Trial '.$candidatePricingMenu->name.' aktif. Selamat mencoba!',
+        ]);
+
+        return back();
     }
 
     public function purchase(
@@ -118,10 +209,12 @@ class CandidatePricingController extends Controller
             'source' => 'purchase',
             'ai_token_delta' => (int) $candidatePricingMenu->ai_token_amount,
             'cv_builder_quota_delta' => (int) $candidatePricingMenu->cv_builder_quota,
+            'ai_interview_quota_delta' => (int) $candidatePricingMenu->ai_interview_quota,
             'amount' => (int) $candidatePricingMenu->price,
             'status' => 'pending',
             'meta_json' => [
                 'menu' => $candidatePricingMenu->name,
+                'validity_days' => (int) $candidatePricingMenu->validity_days,
             ],
         ]);
 
@@ -203,14 +296,22 @@ class CandidatePricingController extends Controller
                     return;
                 }
 
+                $validityDays = (int) ($fresh->pricingMenu?->validity_days ?? 0);
                 $fresh->update([
                     'status' => 'paid',
                     'paid_at' => now(),
+                    'expires_at' => $validityDays > 0 ? now()->addDays($validityDays) : null,
                 ]);
+
+                $aiInterviewDelta = (int) $fresh->ai_interview_quota_delta;
 
                 $candidate->forceFill([
                     'ai_token_balance' => max(0, (int) $candidate->ai_token_balance + (int) $fresh->ai_token_delta),
                     'cv_builder_quota_balance' => max(0, (int) $candidate->cv_builder_quota_balance + (int) $fresh->cv_builder_quota_delta),
+                    'ai_interview_quota_balance' => max(0, (int) $candidate->ai_interview_quota_balance + $aiInterviewDelta),
+                    'ai_interview_quota_expires_at' => $aiInterviewDelta > 0 && $validityDays > 0
+                        ? now()->addDays($validityDays)
+                        : $candidate->ai_interview_quota_expires_at,
                 ])->save();
             });
 

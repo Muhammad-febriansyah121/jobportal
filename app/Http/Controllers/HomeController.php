@@ -17,7 +17,13 @@ class HomeController extends Controller
 {
     public function __invoke(Request $request): Response
     {
-        $jobs = JobListing::query()
+        $jobsPerPage = 9;
+        $jobsPage = max(1, (int) $request->input('jobs_page', 1));
+
+        $fewApplicantsWindow = now()->subDays(JobListing::FEW_APPLICANTS_DAYS_WINDOW);
+        $fewApplicantsThreshold = JobListing::FEW_APPLICANTS_THRESHOLD;
+
+        $jobsPaginator = JobListing::query()
             ->published()
             ->select([
                 'id',
@@ -32,14 +38,24 @@ class HomeController extends Controller
                 'salary_max',
                 'is_salary_visible',
                 'is_anonymous',
+                'is_urgent',
                 'closes_at',
                 'published_at',
+                'created_at',
+                'status',
             ])
             ->with('company:id,name')
+            ->withCount('applications')
             ->where(fn ($query) => $query->whereNull('closes_at')->orWhere('closes_at', '>=', now()))
+            ->orderByDesc('is_urgent')
+            ->orderByRaw(
+                '(CASE WHEN published_at >= ? AND (SELECT COUNT(*) FROM applications WHERE applications.job_listing_id = job_listings.id) < ? THEN 1 ELSE 0 END) DESC',
+                [$fewApplicantsWindow, $fewApplicantsThreshold]
+            )
             ->latest('published_at')
-            ->limit(12)
-            ->get();
+            ->paginate($jobsPerPage, ['*'], 'jobs_page', $jobsPage);
+
+        $jobs = collect($jobsPaginator->items());
 
         $candidate = $this->resolveCandidate($request);
         $savedJobIds = $candidate === null
@@ -47,6 +63,21 @@ class HomeController extends Controller
             : $candidate->savedJobs()
                 ->whereIn('job_listing_id', $jobs->pluck('id'))
                 ->pluck('job_listing_id');
+
+        $jobsArray = $jobs->map(fn (JobListing $job): array => [
+            'id' => $job->id,
+            'slug' => $job->slug,
+            'title' => $job->title,
+            'is_anonymous' => (bool) $job->is_anonymous,
+            'is_urgent' => (bool) $job->is_urgent,
+            'is_few_applicants' => $job->is_few_applicants,
+            'company' => $job->is_anonymous ? null : $job->company?->name,
+            'type' => str($job->job_type)->headline()->toString(),
+            'work_mode' => str($job->work_mode)->headline()->toString(),
+            'location' => collect([$job->location_city, $job->location_province])->filter()->implode(', '),
+            'salary' => $this->salaryRange($job),
+            'is_saved' => $savedJobIds->contains($job->id),
+        ])->values()->all();
 
         $stats = [
             'active_jobs' => JobListing::query()
@@ -90,18 +121,12 @@ class HomeController extends Controller
             ->get();
 
         return Inertia::render('front/home/index', [
-            'jobs' => $jobs->map(fn (JobListing $job): array => [
-                'id' => $job->id,
-                'slug' => $job->slug,
-                'title' => $job->title,
-                'is_anonymous' => (bool) $job->is_anonymous,
-                'company' => $job->is_anonymous ? null : $job->company?->name,
-                'type' => str($job->job_type)->headline()->toString(),
-                'work_mode' => str($job->work_mode)->headline()->toString(),
-                'location' => collect([$job->location_city, $job->location_province])->filter()->implode(', '),
-                'salary' => $this->salaryRange($job),
-                'is_saved' => $savedJobIds->contains($job->id),
-            ]),
+            'jobs' => $jobsArray,
+            'jobs_pagination' => [
+                'current_page' => $jobsPaginator->currentPage(),
+                'last_page' => $jobsPaginator->lastPage(),
+                'has_more' => $jobsPaginator->hasMorePages(),
+            ],
             'stats' => $stats,
             'industries' => $industries->map(fn (Industry $i): array => [
                 'id' => $i->id,
@@ -135,7 +160,10 @@ class HomeController extends Controller
 
     public function jobs(Request $request): Response
     {
-        $perPage = 9;
+        $perPage = 10;
+
+        $fewApplicantsWindow = now()->subDays(JobListing::FEW_APPLICANTS_DAYS_WINDOW);
+        $fewApplicantsThreshold = JobListing::FEW_APPLICANTS_THRESHOLD;
 
         $jobs = JobListing::query()
             ->published()
@@ -153,10 +181,14 @@ class HomeController extends Controller
                 'salary_max',
                 'is_salary_visible',
                 'is_anonymous',
+                'is_urgent',
                 'published_at',
                 'closes_at',
+                'created_at',
+                'status',
             ])
             ->with('company:id,name,is_verified')
+            ->withCount('applications')
             ->when($request->filled('search'), function ($query) use ($request) {
                 $keyword = $request->string('search')->toString();
 
@@ -180,7 +212,13 @@ class HomeController extends Controller
             ->when(
                 $request->string('sort')->toString() === 'salary_high',
                 fn ($query) => $query->orderByDesc('salary_max')->orderByDesc('published_at'),
-                fn ($query) => $query->latest('published_at'),
+                fn ($query) => $query
+                    ->orderByDesc('is_urgent')
+                    ->orderByRaw(
+                        '(CASE WHEN published_at >= ? AND (SELECT COUNT(*) FROM applications WHERE applications.job_listing_id = job_listings.id) < ? THEN 1 ELSE 0 END) DESC',
+                        [$fewApplicantsWindow, $fewApplicantsThreshold]
+                    )
+                    ->latest('published_at'),
             )
             ->paginate($perPage)
             ->withQueryString();
@@ -208,6 +246,8 @@ class HomeController extends Controller
                 'slug' => $job->slug,
                 'title' => $job->title,
                 'is_anonymous' => (bool) $job->is_anonymous,
+                'is_urgent' => (bool) $job->is_urgent,
+                'is_few_applicants' => $job->is_few_applicants,
                 'company' => $job->is_anonymous ? null : $job->company?->name,
                 'company_verified' => $job->is_anonymous ? false : (bool) $job->company?->is_verified,
                 'location' => collect([$job->location_city, $job->location_province])->filter()->implode(', '),

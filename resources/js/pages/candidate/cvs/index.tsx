@@ -3,6 +3,7 @@ import {
     ExternalLink,
     Eye,
     FileText,
+    Plus,
     Star,
     Trash2,
     Upload,
@@ -10,7 +11,6 @@ import {
 import { useState } from 'react';
 import { Field } from '@/components/candidate/candidate-form';
 import { EmptyState } from '@/components/candidate/candidate-ui';
-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,7 +20,24 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { useTranslate } from '@/hooks/use-translate';
 import {
     destroy as destroyCv,
     primary as primaryCv,
@@ -41,209 +58,258 @@ type Props = {
     cvs: CvItem[];
 };
 
+type DialogState =
+    | { mode: 'closed' }
+    | { mode: 'upload' }
+    | { mode: 'preview'; cv: CvItem };
+
 export default function CandidateCvsIndex({ cvs }: Props) {
-    const [previewCvUrl, setPreviewCvUrl] = useState<string | null>(
-        () =>
-            cvs.find((cv) => cv.is_primary && cv.is_pdf)?.preview_url ??
-            cvs.find((cv) => cv.is_pdf)?.preview_url ??
-            null,
-    );
+    const { t } = useTranslate();
+    const [dialog, setDialog] = useState<DialogState>({ mode: 'closed' });
+
+    const closeDialog = () => setDialog({ mode: 'closed' });
+    const dialogOpen = dialog.mode !== 'closed';
 
     return (
         <>
-            <Head title="Data Profil – CV" />
+            <Head title={t('candidate.cvs.page_title')} />
 
             <div className="space-y-6">
-                <div className="grid gap-6 xl:grid-cols-2">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Upload CV File</CardTitle>
+                <Card>
+                    <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="space-y-1">
+                            <CardTitle>{t('candidate.cvs.list_title')}</CardTitle>
                             <CardDescription>
-                                Simpan versi file PDF atau DOC yang sudah final.
+                                {t('candidate.cvs.upload_desc')}
                             </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Form
-                                {...storeCv.form()}
-                                className="space-y-4"
-                                encType="multipart/form-data"
-                            >
-                                {({ processing, errors }) => (
-                                    <>
-                                        <Field
-                                            label="File CV"
-                                            name="cv_file"
-                                            error={errors.cv_file}
-                                        >
-                                            <Input
-                                                type="file"
-                                                name="cv_file"
-                                                accept=".pdf,.doc,.docx"
-                                            />
-                                        </Field>
-                                        <label className="flex items-center gap-3 text-sm">
-                                            <input
-                                                className="size-4 rounded border-input"
-                                                name="is_primary"
-                                                type="checkbox"
-                                                value="1"
-                                            />
-                                            Jadikan CV utama
-                                        </label>
-                                        <Button disabled={processing}>
-                                            <Upload className="size-4" />
-                                            {processing
-                                                ? 'Mengunggah...'
-                                                : 'Upload CV'}
-                                        </Button>
-                                    </>
-                                )}
-                            </Form>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Daftar CV</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {cvs.length ? (
-                                cvs.map((cv) => (
-                                    <div
-                                        className="rounded-lg border p-4"
-                                        key={cv.id}
-                                    >
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-2">
-                                                    <FileText className="size-4" />
-                                                    <p className="font-medium">
-                                                        CV #{cv.id}
-                                                    </p>
+                        </div>
+                        <Button
+                            type="button"
+                            onClick={() => setDialog({ mode: 'upload' })}
+                            className="shrink-0"
+                        >
+                            <Plus className="size-4" />
+                            {t('candidate.cvs.btn_upload')}
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        {cvs.length === 0 ? (
+                            <div className="px-6 py-8">
+                                <EmptyState
+                                    title={t('candidate.cvs.empty_title')}
+                                    description={t('candidate.cvs.empty_desc')}
+                                />
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <Table className="min-w-160">
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>CV</TableHead>
+                                            <TableHead>
+                                                {t('candidate.cvs.uploaded_at')}
+                                            </TableHead>
+                                            <TableHead>Format</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead className="w-44 text-right">
+                                                Aksi
+                                            </TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {cvs.map((cv) => (
+                                            <TableRow key={cv.id}>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <FileText className="size-4 text-muted-foreground" />
+                                                        <span className="font-medium">
+                                                            CV #{cv.id}
+                                                        </span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground">
+                                                    {cv.uploaded_at ?? '-'}
+                                                </TableCell>
+                                                <TableCell className="text-muted-foreground">
+                                                    {cv.is_pdf ? 'PDF' : (cv.source || 'DOC').toUpperCase()}
+                                                </TableCell>
+                                                <TableCell>
                                                     {cv.is_primary ? (
-                                                        <Badge>Utama</Badge>
-                                                    ) : null}
-                                                </div>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Upload: {cv.uploaded_at}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {cv.is_pdf
-                                                        ? 'PDF dapat dipreview langsung.'
-                                                        : 'Preview hanya tersedia untuk file PDF.'}
-                                                </p>
-                                            </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                {cv.is_pdf ? (
-                                                    <Button
-                                                        type="button"
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() =>
-                                                            setPreviewCvUrl(
-                                                                cv.preview_url,
-                                                            )
-                                                        }
-                                                    >
-                                                        <Eye className="size-4" />
-                                                        Preview
-                                                    </Button>
-                                                ) : (
-                                                    <Button
-                                                        asChild
-                                                        type="button"
-                                                        size="sm"
-                                                        variant="outline"
-                                                    >
-                                                        <a
-                                                            href={cv.file_url}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                        >
-                                                            <ExternalLink className="size-4" />
-                                                            Buka File
-                                                        </a>
-                                                    </Button>
-                                                )}
-                                                {!cv.is_primary ? (
-                                                    <Form
-                                                        {...primaryCv.form(
-                                                            cv.id,
-                                                        )}
-                                                    >
-                                                        {({ processing }) => (
+                                                        <Badge>
+                                                            {t('candidate.cvs.badge_primary')}
+                                                        </Badge>
+                                                    ) : (
+                                                        <span className="text-muted-foreground text-sm">-</span>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        {cv.is_pdf ? (
                                                             <Button
-                                                                disabled={
-                                                                    processing
-                                                                }
-                                                                size="sm"
-                                                                variant="outline"
+                                                                type="button"
+                                                                size="icon"
+                                                                variant="ghost"
+                                                                className="size-8"
+                                                                aria-label={t('candidate.cvs.btn_preview')}
+                                                                onClick={() => setDialog({ mode: 'preview', cv })}
                                                             >
-                                                                <Star className="size-4" />
-                                                                Jadikan utama
+                                                                <Eye className="size-4" />
+                                                            </Button>
+                                                        ) : (
+                                                            <Button
+                                                                asChild
+                                                                size="icon"
+                                                                variant="ghost"
+                                                                className="size-8"
+                                                                aria-label={t('candidate.cvs.btn_open')}
+                                                            >
+                                                                <a
+                                                                    href={cv.file_url}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                >
+                                                                    <ExternalLink className="size-4" />
+                                                                </a>
                                                             </Button>
                                                         )}
-                                                    </Form>
-                                                ) : null}
-                                                <Button
-                                                    asChild
-                                                    size="sm"
-                                                    variant="destructive"
-                                                >
-                                                    <Link
-                                                        href={destroyCv(cv.id)}
-                                                        method="delete"
-                                                        as="button"
-                                                    >
-                                                        <Trash2 className="size-4" />
-                                                        Hapus
-                                                    </Link>
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <EmptyState
-                                    title="Belum ada CV upload"
-                                    description="Upload CV final untuk dipakai saat melamar."
-                                />
-                            )}
-
-                            {previewCvUrl ? (
-                                <div className="space-y-2 rounded-lg border p-3">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <p className="text-sm font-medium">
-                                            Preview CV PDF
-                                        </p>
-                                        <Button
-                                            asChild
-                                            size="sm"
-                                            variant="outline"
-                                        >
-                                            <a
-                                                href={previewCvUrl}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                            >
-                                                <ExternalLink className="size-4" />
-                                                Buka di tab baru
-                                            </a>
-                                        </Button>
-                                    </div>
-                                    <div className="overflow-hidden rounded-md border bg-muted/20">
-                                        <iframe
-                                            src={previewCvUrl}
-                                            title="Preview CV PDF"
-                                            className="h-[68vh] w-full"
-                                        />
-                                    </div>
-                                </div>
-                            ) : null}
-                        </CardContent>
-                    </Card>
-                </div>
+                                                        {!cv.is_primary ? (
+                                                            <Form {...primaryCv.form(cv.id)}>
+                                                                {({ processing }) => (
+                                                                    <Button
+                                                                        type="submit"
+                                                                        disabled={processing}
+                                                                        size="icon"
+                                                                        variant="ghost"
+                                                                        className="size-8"
+                                                                        aria-label={t('candidate.cvs.btn_make_primary')}
+                                                                    >
+                                                                        <Star className="size-4" />
+                                                                    </Button>
+                                                                )}
+                                                            </Form>
+                                                        ) : null}
+                                                        <Button
+                                                            asChild
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            className="size-8 text-destructive hover:text-destructive"
+                                                            aria-label={t('candidate.cvs.btn_delete')}
+                                                        >
+                                                            <Link
+                                                                href={destroyCv(cv.id)}
+                                                                method="delete"
+                                                                as="button"
+                                                            >
+                                                                <Trash2 className="size-4" />
+                                                            </Link>
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
+
+            {/* Upload modal */}
+            <Dialog
+                open={dialogOpen && dialog.mode === 'upload'}
+                onOpenChange={(open) => !open && closeDialog()}
+            >
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>{t('candidate.cvs.upload_title')}</DialogTitle>
+                        <DialogDescription>
+                            {t('candidate.cvs.upload_desc')}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Form
+                        {...storeCv.form()}
+                        options={{ preserveScroll: true }}
+                        onSuccess={closeDialog}
+                        className="space-y-4"
+                        encType="multipart/form-data"
+                    >
+                        {({ processing, errors }) => (
+                            <>
+                                <Field
+                                    label={t('candidate.cvs.cv_file')}
+                                    name="cv_file"
+                                    error={errors.cv_file}
+                                >
+                                    <Input
+                                        type="file"
+                                        name="cv_file"
+                                        accept=".pdf,.doc,.docx"
+                                    />
+                                </Field>
+                                <label className="flex items-center gap-3 text-sm">
+                                    <input
+                                        className="size-4 rounded border-input"
+                                        name="is_primary"
+                                        type="checkbox"
+                                        value="1"
+                                    />
+                                    {t('candidate.cvs.label_make_primary')}
+                                </label>
+                                <DialogFooter>
+                                    <Button disabled={processing}>
+                                        <Upload className="size-4" />
+                                        {processing
+                                            ? t('candidate.cvs.btn_uploading')
+                                            : t('candidate.cvs.btn_upload')}
+                                    </Button>
+                                </DialogFooter>
+                            </>
+                        )}
+                    </Form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Preview modal */}
+            <Dialog
+                open={dialogOpen && dialog.mode === 'preview'}
+                onOpenChange={(open) => !open && closeDialog()}
+            >
+                <DialogContent className="sm:max-w-4xl">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {t('candidate.cvs.preview_title')}
+                            {dialog.mode === 'preview' ? ` — CV #${dialog.cv.id}` : ''}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {t('candidate.cvs.preview_pdf_title')}
+                        </DialogDescription>
+                    </DialogHeader>
+                    {dialog.mode === 'preview' ? (
+                        <div className="space-y-3">
+                            <div className="overflow-hidden rounded-md border bg-muted/20">
+                                <iframe
+                                    src={dialog.cv.preview_url}
+                                    title={t('candidate.cvs.preview_pdf_title')}
+                                    className="h-[70vh] w-full"
+                                />
+                            </div>
+                            <DialogFooter>
+                                <Button asChild variant="outline">
+                                    <a
+                                        href={dialog.cv.preview_url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        <ExternalLink className="size-4" />
+                                        {t('candidate.cvs.btn_open_tab')}
+                                    </a>
+                                </Button>
+                            </DialogFooter>
+                        </div>
+                    ) : null}
+                </DialogContent>
+            </Dialog>
         </>
     );
 }

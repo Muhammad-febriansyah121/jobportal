@@ -626,15 +626,43 @@ function OnboardingForm({
                                                 name="availability"
                                                 error={errors.availability}
                                             >
-                                                <Input
+                                                <Select
                                                     name="availability"
                                                     defaultValue={
                                                         merged.availability
                                                     }
-                                                    placeholder={t(
-                                                        'candidate.onboarding.availability_placeholder',
-                                                    )}
-                                                />
+                                                >
+                                                    <option value="">
+                                                        {t(
+                                                            'candidate.profile.placeholder_availability',
+                                                        )}
+                                                    </option>
+                                                    <option value="none">
+                                                        {t(
+                                                            'candidate.profile.availability_none',
+                                                        )}
+                                                    </option>
+                                                    <option value="lt_1_month">
+                                                        {t(
+                                                            'candidate.profile.availability_lt_1_month',
+                                                        )}
+                                                    </option>
+                                                    <option value="1_month">
+                                                        {t(
+                                                            'candidate.profile.availability_1_month',
+                                                        )}
+                                                    </option>
+                                                    <option value="2_months">
+                                                        {t(
+                                                            'candidate.profile.availability_2_months',
+                                                        )}
+                                                    </option>
+                                                    <option value="gt_2_months">
+                                                        {t(
+                                                            'candidate.profile.availability_gt_2_months',
+                                                        )}
+                                                    </option>
+                                                </Select>
                                             </Field>
                                         </div>
 

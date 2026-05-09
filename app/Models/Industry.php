@@ -27,4 +27,9 @@ class Industry extends Model
     {
         return $this->hasMany(SalaryInsight::class);
     }
+
+    public function subIndustries()
+    {
+        return $this->hasMany(SubIndustry::class);
+    }
 }

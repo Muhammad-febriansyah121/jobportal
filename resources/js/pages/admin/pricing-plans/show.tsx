@@ -4,6 +4,7 @@ import {
     CalendarDays,
     Check,
     Search,
+    Sparkles,
     Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -23,6 +24,7 @@ type PricingPlanDetail = {
     duration_label: string;
     active_jobs_limit: number;
     recruiter_seat_limit: number;
+    ai_interview_quota: number;
     talent_search_quota: number;
     features: string[];
     is_active: boolean;
@@ -141,6 +143,11 @@ export default function PricingPlanShow({
                                 icon={Search}
                                 label={t('admin.pricing_plans_show.talent_search')}
                                 value={plan.talent_search_quota}
+                            />
+                            <Metric
+                                icon={Sparkles}
+                                label={t('admin.pricing_plans_show.ai_interview_quota')}
+                                value={plan.ai_interview_quota}
                             />
                         </section>
 

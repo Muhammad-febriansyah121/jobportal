@@ -59,7 +59,7 @@ test('candidate with hired status can create company review', function () {
             'title' => 'Lingkungan kerja supportif',
             'review' => 'Proses rekrutmen cepat dan budaya kerja tim sangat kolaboratif.',
         ])
-        ->assertRedirect(route('companies.show', $company->slug));
+        ->assertRedirect(route('candidate.company-reviews.index'));
 
     $review = CompanyReview::query()
         ->where('company_id', $company->id)

@@ -102,11 +102,11 @@ export default function AdminResourceShow({
                         <CardContent className="pt-5">
                             <div className="mb-2 flex items-center gap-2">
                                 <span className="text-sm font-semibold text-primary-700">
-                                    ✦ {t('admin.resources_show.ai_summary')}
+                                    ✦ {t('admin.resources.show.ai_summary')}
                                 </span>
                                 {aiSummary?.generated_at && (
                                     <span className="text-xs text-muted-foreground">
-                                        — {t('admin.resources_show.updated_at')} {aiSummary.generated_at}
+                                        — {t('admin.resources.show.updated_at')} {aiSummary.generated_at}
                                     </span>
                                 )}
                             </div>
@@ -116,8 +116,8 @@ export default function AdminResourceShow({
                                 </p>
                             ) : (
                                 <p className="text-sm italic text-muted-foreground">
-                                    {t('admin.resources_show.no_summary_prefix')}{' '}
-                                    <strong>Generate AI Summary</strong> {t('admin.resources_show.no_summary_suffix')}
+                                    {t('admin.resources.show.no_summary_prefix')}{' '}
+                                    <strong>{t('admin.resources.show.generate_ai_summary')}</strong> {t('admin.resources.show.no_summary_suffix')}
                                 </p>
                             )}
                         </CardContent>
@@ -140,7 +140,7 @@ export default function AdminResourceShow({
                                             {item.label}
                                         </dt>
                                         <dd className="text-sm wrap-break-word whitespace-pre-wrap">
-                                            {renderDetailValue(item.value, t('admin.resources_show.open_document'))}
+                                            {renderDetailValue(item.value, t('admin.resources.show.open_document'))}
                                         </dd>
                                     </div>
                                 ))}

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Employer;
 
+use App\Actions\Employer\AiInterviewQuotaTracker;
 use App\Actions\Employer\ResolveEmployerCompany;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employer\ApproveAiInterviewRescheduleRequest;
@@ -37,11 +38,23 @@ class EmployerAiInterviewController extends Controller
     public function store(
         ScheduleAiInterviewRequest $request,
         JobListing $jobListing,
-        ResolveEmployerCompany $resolveEmployerCompany
+        ResolveEmployerCompany $resolveEmployerCompany,
+        AiInterviewQuotaTracker $quotaTracker
     ): RedirectResponse {
         $company = $resolveEmployerCompany->handle($request->user());
 
         abort_unless($company !== null && $jobListing->company_id === $company->id, 404);
+
+        if (! $quotaTracker->canSchedule($company, 1)) {
+            $summary = $quotaTracker->summary($company);
+            $limitText = $summary['limit'] === null ? 'tidak tersedia' : (string) $summary['limit'];
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => "Kuota AI Interview pada paket aktif sudah habis (terpakai {$summary['used']} dari {$limitText}). Upgrade paket untuk lanjut menjadwalkan interview.",
+            ]);
+
+            return back();
+        }
 
         $data = $request->validated();
         $application = Application::query()
@@ -114,7 +127,8 @@ class EmployerAiInterviewController extends Controller
     public function storeBulk(
         BulkScheduleAiInterviewRequest $request,
         JobListing $jobListing,
-        ResolveEmployerCompany $resolveEmployerCompany
+        ResolveEmployerCompany $resolveEmployerCompany,
+        AiInterviewQuotaTracker $quotaTracker
     ): RedirectResponse {
         $company = $resolveEmployerCompany->handle($request->user());
 
@@ -131,6 +145,17 @@ class EmployerAiInterviewController extends Controller
             Inertia::flash('toast', [
                 'type' => 'error',
                 'message' => 'Beberapa kandidat tidak ditemukan pada lowongan ini.',
+            ]);
+
+            return back();
+        }
+
+        if (! $quotaTracker->canSchedule($company, $applications->count())) {
+            $summary = $quotaTracker->summary($company);
+            $remainingText = $summary['remaining'] ?? 0;
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => "Kuota AI Interview tidak cukup. Tersisa {$remainingText} dari {$summary['limit']}, dibutuhkan {$applications->count()}.",
             ]);
 
             return back();
@@ -239,13 +264,37 @@ class EmployerAiInterviewController extends Controller
             'responses.question',
             'analysis',
             'rescheduleHistories.actor:id,name',
+            'manualReviews.reviewer:id,name',
         ]);
 
         abort_unless($aiInterviewSession->application?->jobListing?->company_id === $company->id, 404);
 
         return Inertia::render('employer/ai-interviews/show', [
             'session' => $this->sessionPayload($aiInterviewSession),
+            'manual_reviews' => $this->manualReviewsPayload($aiInterviewSession, $request->user()->id),
         ]);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function manualReviewsPayload(AiInterviewSession $session, int $currentUserId): array
+    {
+        return $session->manualReviews
+            ->sortByDesc('updated_at')
+            ->values()
+            ->map(fn ($review) => [
+                'id' => $review->id,
+                'rating' => $review->rating,
+                'decision' => $review->decision,
+                'notes' => $review->notes,
+                'reviewer_id' => $review->reviewer_id,
+                'reviewer_name' => $review->reviewer?->name ?? '—',
+                'is_mine' => $review->reviewer_id === $currentUserId,
+                'created_at' => $review->created_at?->format('d M Y H:i'),
+                'updated_at' => $review->updated_at?->format('d M Y H:i'),
+            ])
+            ->all();
     }
 
     public function compare(

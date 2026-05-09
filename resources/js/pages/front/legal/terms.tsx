@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, ScrollText } from 'lucide-react';
+import { useTranslate } from '@/hooks/use-translate';
 import HomeLayout from '@/layouts/front/home-layout';
 
 type TermsProps = {
@@ -8,7 +9,8 @@ type TermsProps = {
 };
 
 export default function TermsPage({ terms_title, terms_content }: TermsProps) {
-    const title = terms_title || 'Syarat & Ketentuan';
+    const { t } = useTranslate();
+    const title = terms_title || t('front.terms.default_title');
 
     return (
         <HomeLayout>
@@ -25,7 +27,7 @@ export default function TermsPage({ terms_title, terms_content }: TermsProps) {
                         className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-primary"
                     >
                         <ArrowLeft className="size-4" />
-                        Kembali ke Beranda
+                        {t('front.terms.back_home')}
                     </Link>
 
                     <div className="flex items-center gap-3">
@@ -33,7 +35,7 @@ export default function TermsPage({ terms_title, terms_content }: TermsProps) {
                             <ScrollText className="size-6 text-primary" />
                         </div>
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-widest text-primary">Legal</p>
+                            <p className="text-xs font-semibold uppercase tracking-widest text-primary">{t('front.terms.kicker')}</p>
                             <h1 className="text-2xl font-extrabold text-foreground sm:text-3xl">{title}</h1>
                         </div>
                     </div>
@@ -53,7 +55,7 @@ export default function TermsPage({ terms_title, terms_content }: TermsProps) {
                     ) : (
                         <div className="rounded-2xl border border-border bg-white p-10 text-center shadow-sm">
                             <ScrollText className="mx-auto size-12 text-neutral-300" />
-                            <p className="mt-3 text-sm text-muted-foreground">Konten belum tersedia.</p>
+                            <p className="mt-3 text-sm text-muted-foreground">{t('front.terms.empty_state')}</p>
                         </div>
                     )}
                 </div>

@@ -1,6 +1,7 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { ArrowLeft, FileText, Send } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslate } from '@/hooks/use-translate';
 import CandidateApplicationController from '@/actions/App/Http/Controllers/Candidate/CandidateApplicationController';
 import { Field, Select } from '@/components/candidate/candidate-form';
 import Heading from '@/components/heading';
@@ -57,6 +58,8 @@ export default function CandidateJobApplyPage({
     application_chance,
     cvs,
 }: ApplyJobPageProps) {
+    const { t } = useTranslate();
+
     return (
         <>
             <Head title={`Lamar ${job.title}`} />
@@ -65,19 +68,19 @@ export default function CandidateJobApplyPage({
                 <div className="flex flex-wrap items-start justify-between gap-3">
                     <Heading
                         title={`Lamar ${job.title}`}
-                        description={`Lengkapi data lamaran untuk ${job.is_anonymous ? 'perusahaan' : (job.company ?? 'perusahaan')} dengan benar sebelum submit.`}
+                        description={`Lengkapi data lamaran untuk ${job.is_anonymous ? t('candidate.apply.anonymous_company') : (job.company ?? t('candidate.apply.anonymous_company'))} dengan benar sebelum submit.`}
                     />
                     <Button variant="outline" asChild>
                         <Link href={show(job.slug)}>
                             <ArrowLeft className="size-4" />
-                            Kembali ke Detail
+                            {t('candidate.apply.back')}
                         </Link>
                     </Button>
                 </div>
 
                 <Card className="border-primary-200 bg-primary-50/60">
                     <CardContent className="flex flex-wrap items-center gap-2 pt-5 text-sm text-muted-foreground">
-                        <Badge variant="secondary">Langkah 1/1</Badge>
+                        <Badge variant="secondary">{t('candidate.apply.step')}</Badge>
                         <span>
                             Pastikan CV dan jawaban screening terisi sebelum
                             kirim.
@@ -120,7 +123,7 @@ export default function CandidateJobApplyPage({
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-lg">
                                 <FileText className="size-5 text-primary-600" />
-                                Form Lamaran
+                                {t('candidate.apply.form_title')}
                             </CardTitle>
                             <CardDescription>
                                 Field bertanda{' '}
@@ -138,7 +141,7 @@ export default function CandidateJobApplyPage({
                                 {({ processing, errors }) => (
                                     <>
                                         <Field
-                                            label="Pilih CV"
+                                            label={t('candidate.apply.cv_label')}
                                             name="candidate_cv_id"
                                             error={errors.candidate_cv_id}
                                             required
@@ -160,7 +163,7 @@ export default function CandidateJobApplyPage({
                                                     required
                                                 >
                                                     <option value="">
-                                                        Pilih CV
+                                                        {t('candidate.apply.cv_placeholder')}
                                                     </option>
                                                     {cvs.map((cv) => (
                                                         <option
@@ -178,13 +181,13 @@ export default function CandidateJobApplyPage({
                                         </Field>
 
                                         <Field
-                                            label="Cover letter"
+                                            label={t('candidate.apply.cover_letter_label')}
                                             name="cover_letter"
                                             error={errors.cover_letter}
                                         >
                                             <RichTextEditor
                                                 name="cover_letter"
-                                                placeholder="Tulis alasan singkat kenapa kamu cocok untuk posisi ini"
+                                                placeholder={t('candidate.apply.cover_letter_placeholder')}
                                                 minLength={100}
                                                 maxLength={5000}
                                             />
@@ -220,14 +223,14 @@ export default function CandidateJobApplyPage({
                                         <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                                             <Button variant="outline" asChild>
                                                 <Link href={show(job.slug)}>
-                                                    Batal
+                                                    {t('candidate.apply.btn_cancel')}
                                                 </Link>
                                             </Button>
                                             <Button disabled={processing}>
                                                 <Send className="size-4" />
                                                 {processing
-                                                    ? 'Mengirim...'
-                                                    : 'Kirim Lamaran'}
+                                                    ? t('candidate.apply.btn_submitting')
+                                                    : t('candidate.apply.btn_submit')}
                                             </Button>
                                         </div>
                                     </>
@@ -247,7 +250,7 @@ export default function CandidateJobApplyPage({
                                 <p className="font-semibold text-foreground">
                                     {job.title}
                                 </p>
-                                <p>{job.is_anonymous ? 'Perusahaan Anonim' : (job.company ?? '-')}</p>
+                                <p>{job.is_anonymous ? t('candidate.apply.anonymous_company') : (job.company ?? '-')}</p>
                                 <p>{job.location}</p>
                                 <p>
                                     {job.work_mode_label} · {job.job_type_label}
@@ -293,6 +296,7 @@ function ScreeningField({
     question: ScreeningQuestion;
     error?: string;
 }) {
+    const { t } = useTranslate();
     const name = `screening_answers[${question.id}]`;
 
     return (
@@ -304,7 +308,7 @@ function ScreeningField({
         >
             {question.type === 'multiple_choice' ? (
                 <Select name={name} required={question.is_required}>
-                    <option value="">Pilih jawaban</option>
+                    <option value="">{t('candidate.apply.select_answer')}</option>
                     {(question.options ?? []).map((option) => (
                         <option value={option} key={option}>
                             {option}
@@ -313,9 +317,9 @@ function ScreeningField({
                 </Select>
             ) : question.type === 'yes_no' ? (
                 <Select name={name} required={question.is_required}>
-                    <option value="">Pilih jawaban</option>
-                    <option value="yes">Ya</option>
-                    <option value="no">Tidak</option>
+                    <option value="">{t('candidate.apply.select_answer')}</option>
+                    <option value="yes">{t('candidate.apply.yes')}</option>
+                    <option value="no">{t('candidate.apply.no')}</option>
                 </Select>
             ) : question.type === 'number' ? (
                 <Input
@@ -327,7 +331,7 @@ function ScreeningField({
             ) : (
                 <RichTextEditor
                     name={name}
-                    placeholder="Jawaban kamu"
+                    placeholder={t('candidate.apply.text_answer_placeholder')}
                     required={question.is_required}
                 />
             )}

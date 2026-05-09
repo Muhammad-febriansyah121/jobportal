@@ -1,8 +1,9 @@
 import { Head } from '@inertiajs/react';
 import {
+    CalendarDays,
     Check,
-    Coins,
     FilePenLine,
+    Sparkles,
     Ticket,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -10,6 +11,7 @@ import { AdminActionList } from '@/components/admin/admin-action';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { Badge } from '@/components/ui/badge';
 import type { AdminAction } from '@/types';
+import { useTranslate } from '@/hooks/use-translate';
 
 type CandidatePricingMenuDetail = {
     id: number;
@@ -18,8 +20,9 @@ type CandidatePricingMenuDetail = {
     description?: string | null;
     price: number;
     price_label: string;
-    ai_token_amount: number;
+    ai_interview_quota: number;
     cv_builder_quota: number;
+    validity_days: number;
     features: string[];
     is_default_free: boolean;
     is_active: boolean;
@@ -42,6 +45,7 @@ export default function CandidatePricingMenuShow({
     menu,
     actions = [],
 }: CandidatePricingMenuShowProps) {
+    const { t } = useTranslate();
     return (
         <>
             <Head title={title} />
@@ -65,7 +69,7 @@ export default function CandidatePricingMenuShow({
                                     : 'bg-secondary-500 text-white'
                             }
                         >
-                            {menu.is_default_free ? 'Gratis Default' : 'Topup'}
+                            {menu.is_default_free ? t('admin.pricing.show.badge_free') : t('admin.pricing.show.badge_topup')}
                         </Badge>
                         <Badge
                             className={
@@ -75,7 +79,7 @@ export default function CandidatePricingMenuShow({
                             }
                             variant={menu.is_active ? 'default' : 'outline'}
                         >
-                            {menu.is_active ? 'Aktif' : 'Nonaktif'}
+                            {menu.is_active ? t('admin.pricing.show.status_active') : t('admin.pricing.show.status_inactive')}
                         </Badge>
                     </div>
                     <AdminActionList actions={actions} />
@@ -97,7 +101,7 @@ export default function CandidatePricingMenuShow({
                         </p>
 
                         <p className="mt-5 rounded-lg border bg-[#eaf2ff] px-3 py-3 text-sm text-[#01296A]">
-                            {menu.description || 'Tidak ada deskripsi paket.'}
+                            {menu.description || t('admin.pricing.show.empty_desc')}
                         </p>
 
                         <div className="mt-6 space-y-3">
@@ -122,21 +126,26 @@ export default function CandidatePricingMenuShow({
                     </section>
 
                     <div className="space-y-6">
-                        <section className="grid gap-4 md:grid-cols-3">
+                        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                             <Metric
-                                icon={Coins}
-                                label="Token AI"
-                                value={formatNumber(menu.ai_token_amount)}
+                                icon={Sparkles}
+                                label="Simulasi Interview AI"
+                                value={formatNumber(menu.ai_interview_quota)}
                             />
                             <Metric
                                 icon={FilePenLine}
-                                label="Kuota CV Builder"
+                                label={t("admin.pricing.show.metric_cv")}
                                 value={formatNumber(menu.cv_builder_quota)}
                             />
                             <Metric
+                                icon={CalendarDays}
+                                label="Masa Aktif"
+                                value={`${menu.validity_days} hari`}
+                            />
+                            <Metric
                                 icon={Ticket}
-                                label="Tipe Paket"
-                                value={menu.is_default_free ? 'Gratis' : 'Topup'}
+                                label={t("admin.pricing.show.metric_type")}
+                                value={menu.is_default_free ? t('admin.pricing.show.type_free') : 'Berbayar'}
                             />
                         </section>
 
@@ -145,14 +154,14 @@ export default function CandidatePricingMenuShow({
                                 Audit Ringkas
                             </h2>
                             <dl className="mt-4 grid gap-4 md:grid-cols-3">
-                                <Info label="Dibuat" value={menu.created_at ?? '-'} />
+                                <Info label={t("admin.pricing.show.audit_created")} value={menu.created_at ?? '-'} />
                                 <Info
-                                    label="Terakhir update"
+                                    label={t("admin.pricing.show.audit_updated")}
                                     value={menu.updated_at ?? '-'}
                                 />
                                 <Info
-                                    label="Status"
-                                    value={menu.is_active ? 'Aktif' : 'Nonaktif'}
+                                    label={t("admin.pricing.show.audit_status")}
+                                    value={menu.is_active ? t('admin.pricing.show.status_active') : t('admin.pricing.show.status_inactive')}
                                 />
                             </dl>
                         </section>

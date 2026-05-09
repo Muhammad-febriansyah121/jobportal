@@ -3,6 +3,7 @@
 use App\Http\Controllers\Candidate\CandidateAiInterviewController;
 use App\Http\Controllers\Candidate\CandidateApplicationController;
 use App\Http\Controllers\Candidate\CandidateCareerCoachController;
+use App\Http\Controllers\Candidate\CandidateCareerPathController;
 use App\Http\Controllers\Candidate\CandidateCareerResourceController;
 use App\Http\Controllers\Candidate\CandidateCertificationController;
 use App\Http\Controllers\Candidate\CandidateCompanyReviewController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\Candidate\CandidateProfileController;
 use App\Http\Controllers\Candidate\CandidateReportController;
 use App\Http\Controllers\Candidate\CandidateSavedJobController;
 use App\Http\Controllers\Candidate\CandidateSkillController;
+use App\Http\Controllers\Candidate\CandidateSystemReviewController;
 use App\Http\Controllers\Candidate\CandidateWorkspaceController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +36,8 @@ Route::prefix('candidate')
 
         Route::get('profile', [CandidateProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('profile', [CandidateProfileController::class, 'update'])->name('profile.update');
+        Route::get('profile-photo', [CandidateProfileController::class, 'editPhoto'])->name('profile.photo.edit');
+        Route::patch('profile-photo', [CandidateProfileController::class, 'updatePhoto'])->name('profile.photo.update');
 
         // Routes accessible before profile is 100% complete (needed to complete profile)
         Route::resource('experiences', CandidateExperienceController::class)->parameters(['experiences' => 'candidateExperience'])->only(['index', 'store', 'update', 'destroy']);
@@ -62,7 +66,12 @@ Route::prefix('candidate')
             Route::post('jobs/{jobListing}/report', [CandidateReportController::class, 'store'])->name('jobs.report');
             Route::post('companies/{company:slug}/reviews', [CandidateCompanyReviewController::class, 'store'])->name('companies.reviews.store');
             Route::get('company-reviews', [CandidateCompanyReviewController::class, 'index'])->name('company-reviews.index');
+            Route::post('company-reviews', [CandidateCompanyReviewController::class, 'storeFromList'])->name('company-reviews.store');
             Route::delete('company-reviews/{companyReview}', [CandidateCompanyReviewController::class, 'destroy'])->name('company-reviews.destroy');
+
+            Route::get('system-reviews', [CandidateSystemReviewController::class, 'index'])->name('system-reviews.index');
+            Route::post('system-reviews', [CandidateSystemReviewController::class, 'store'])->name('system-reviews.store');
+            Route::delete('system-reviews/{systemReview}', [CandidateSystemReviewController::class, 'destroy'])->name('system-reviews.destroy');
 
             Route::get('saved-jobs', [CandidateSavedJobController::class, 'index'])->name('saved-jobs.index');
             Route::get('messages', [CandidateWorkspaceController::class, 'messages'])->name('messages.index');
@@ -71,7 +80,6 @@ Route::prefix('candidate')
 
             Route::get('applications', [CandidateApplicationController::class, 'index'])->name('applications.index');
             Route::get('applications/{application}', [CandidateApplicationController::class, 'show'])->name('applications.show');
-            Route::patch('applications/{application}/withdraw', [CandidateApplicationController::class, 'withdraw'])->name('applications.withdraw');
 
             Route::get('interviews', [CandidateInterviewController::class, 'index'])->name('interviews.index');
             Route::get('interviews/{interview}', [CandidateInterviewController::class, 'show'])->name('interviews.show');
@@ -99,7 +107,14 @@ Route::prefix('candidate')
             Route::post('career-coach/sessions', [CandidateCareerCoachController::class, 'start'])->name('career-coach.start');
             Route::post('career-coach/messages', [CandidateCareerCoachController::class, 'message'])->name('career-coach.message');
 
+            Route::get('career-paths', [CandidateCareerPathController::class, 'index'])->name('career-paths.index');
+            Route::post('career-paths', [CandidateCareerPathController::class, 'generate'])->name('career-paths.generate');
+            Route::patch('career-paths/{careerPath}/activate', [CandidateCareerPathController::class, 'activate'])->name('career-paths.activate');
+            Route::delete('career-paths/{careerPath}', [CandidateCareerPathController::class, 'destroy'])->name('career-paths.destroy');
+            Route::patch('career-paths/steps/{step}', [CandidateCareerPathController::class, 'toggleStep'])->name('career-paths.steps.toggle');
+
             Route::get('pricing', [CandidatePricingController::class, 'index'])->name('pricing.index');
+            Route::post('pricing/claim-trial/{candidatePricingMenu}', [CandidatePricingController::class, 'claimTrial'])->name('pricing.claim-trial');
             Route::post('pricing/purchase/{candidatePricingMenu}', [CandidatePricingController::class, 'purchase'])->name('pricing.purchase');
             Route::post('pricing/check/{candidateWalletTransaction}', [CandidatePricingController::class, 'check'])->name('pricing.check');
         });

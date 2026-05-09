@@ -1,5 +1,6 @@
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslate } from '@/hooks/use-translate';
 import {
     Popover,
     PopoverContent,
@@ -22,6 +23,7 @@ export function LocationCombobox({
     onChange?: (val: string) => void;
     resetKey?: string;
 }) {
+    const { t } = useTranslate();
     const [open, setOpen] = useState(false);
     const [value, setValue] = useState(defaultValue);
     const [query, setQuery] = useState('');
@@ -91,19 +93,19 @@ return;
                         autoFocus
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Cari..."
+                        placeholder={t('location_combobox.search_placeholder')}
                         className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                     />
                 </div>
                 <div className="max-h-60 overflow-y-auto">
                     {loading && (
                         <p className="px-3 py-4 text-center text-sm text-muted-foreground">
-                            Memuat...
+                            {t('location_combobox.loading')}
                         </p>
                     )}
                     {!loading && filtered.length === 0 && (
                         <p className="px-3 py-4 text-center text-sm text-muted-foreground">
-                            Tidak ditemukan.
+                            {t('location_combobox.not_found')}
                         </p>
                     )}
                     {filtered.map((item) => (

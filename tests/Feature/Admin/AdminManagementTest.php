@@ -213,18 +213,20 @@ test('admin resource slugs are generated from names without manual input', funct
 test('admin can approve company verification and notify the owner', function () {
     $admin = User::factory()->admin()->create();
     $owner = User::factory()->employer()->create();
-    $trialPlan = PricingPlan::create([
-        'name' => 'Gratis / Trial',
-        'slug' => 'gratis-trial',
-        'price' => 0,
-        'duration_days' => 14,
-        'active_jobs_limit' => 3,
-        'recruiter_seat_limit' => 1,
-        'ai_screening_quota' => 0,
-        'talent_search_quota' => 1,
-        'features_json' => ['14 Hari Masa Aktif'],
-        'is_active' => true,
-    ]);
+    $trialPlan = PricingPlan::updateOrCreate(
+        ['slug' => 'gratis-trial'],
+        [
+            'name' => 'Gratis / Trial',
+            'price' => 0,
+            'duration_days' => 14,
+            'active_jobs_limit' => 3,
+            'recruiter_seat_limit' => 1,
+            'ai_screening_quota' => 0,
+            'talent_search_quota' => 1,
+            'features_json' => ['14 Hari Masa Aktif'],
+            'is_active' => true,
+        ]
+    );
     $company = Company::create([
         'owner_id' => $owner->id,
         'name' => 'Karivia Labs',
@@ -399,7 +401,7 @@ test('admin can create and view a pricing plan through dedicated pages', functio
         ])
         ->assertRedirect();
 
-    $plan = PricingPlan::firstOrFail();
+    $plan = PricingPlan::where('slug', 'growth')->firstOrFail();
 
     expect($plan->slug)->toBe('growth');
     expect($plan->features_json)->toBe([
@@ -480,23 +482,24 @@ test('admin can create and view candidate pricing menu through dedicated pages',
 
     $this->actingAs($admin)
         ->post(route('admin.candidate-pricing-menus.store'), [
-            'name' => 'Topup AI 5.000 Token',
-            'description' => 'Paket topup awal untuk kandidat.',
-            'price' => 5000,
-            'ai_token_amount' => 5000,
+            'name' => 'Paket Premium Kandidat',
+            'description' => 'Paket lengkap kandidat.',
+            'price' => 45000,
+            'ai_interview_quota' => 5,
             'cv_builder_quota' => 1,
-            'features' => "Tambah token AI\nRegenerasi CV Builder",
+            'validity_days' => 30,
+            'features' => "Simulasi AI Interview\nPembuatan CV ATS",
             'is_default_free' => false,
             'is_active' => true,
         ])
         ->assertRedirect();
 
-    $menu = CandidatePricingMenu::firstOrFail();
+    $menu = CandidatePricingMenu::where('slug', 'paket-premium-kandidat')->firstOrFail();
 
-    expect($menu->slug)->toBe('topup-ai-5000-token');
+    expect($menu->slug)->toBe('paket-premium-kandidat');
     expect($menu->features_json)->toBe([
-        'Tambah token AI',
-        'Regenerasi CV Builder',
+        'Simulasi AI Interview',
+        'Pembuatan CV ATS',
     ]);
 
     $this->actingAs($admin)
@@ -504,9 +507,9 @@ test('admin can create and view candidate pricing menu through dedicated pages',
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/candidate-pricing-menus/show')
-            ->where('menu.name', 'Topup AI 5.000 Token')
-            ->where('menu.price_label', 'Rp 5.000')
-            ->where('menu.ai_token_amount', 5000)
+            ->where('menu.name', 'Paket Premium Kandidat')
+            ->where('menu.price_label', 'Rp 45.000')
+            ->where('menu.ai_interview_quota', 5)
             ->where('menu.cv_builder_quota', 1)
         );
 });
@@ -535,12 +538,13 @@ test('admin can update candidate pricing menu from the edit page', function () {
 
     $this->actingAs($admin)
         ->patch(route('admin.candidate-pricing-menus.update', $menu), [
-            'name' => 'Topup AI 20.000 Token',
-            'description' => 'Paket hemat untuk kandidat aktif.',
-            'price' => 15000,
-            'ai_token_amount' => 20000,
+            'name' => 'Paket Career Bundle',
+            'description' => 'Paket bundling kandidat.',
+            'price' => 75000,
+            'ai_interview_quota' => 10,
             'cv_builder_quota' => 5,
-            'features' => "Token AI lebih besar\nBisa beberapa kali update",
+            'validity_days' => 60,
+            'features' => "Simulasi AI Interview 10x\nCV Builder",
             'is_default_free' => false,
             'is_active' => true,
         ])
@@ -548,14 +552,15 @@ test('admin can update candidate pricing menu from the edit page', function () {
 
     $menu->refresh();
 
-    expect($menu->name)->toBe('Topup AI 20.000 Token');
-    expect($menu->slug)->toBe('topup-ai-20000-token');
-    expect($menu->price)->toBe(15000);
-    expect($menu->ai_token_amount)->toBe(20000);
+    expect($menu->name)->toBe('Paket Career Bundle');
+    expect($menu->slug)->toBe('paket-career-bundle');
+    expect($menu->price)->toBe(75000);
+    expect($menu->ai_interview_quota)->toBe(10);
     expect($menu->cv_builder_quota)->toBe(5);
+    expect($menu->validity_days)->toBe(60);
     expect($menu->is_default_free)->toBeFalse();
     expect($menu->features_json)->toBe([
-        'Token AI lebih besar',
-        'Bisa beberapa kali update',
+        'Simulasi AI Interview 10x',
+        'CV Builder',
     ]);
 });

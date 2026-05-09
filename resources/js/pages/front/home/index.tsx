@@ -14,6 +14,11 @@ type HomeProps = {
         salary: string;
         is_saved: boolean;
     }>;
+    jobs_pagination?: {
+        current_page: number;
+        last_page: number;
+        has_more: boolean;
+    };
     stats: {
         active_jobs: number;
         active_companies: number;
@@ -32,15 +37,6 @@ type HomeProps = {
         hq_city: string | null;
         is_verified: boolean;
     }>;
-    latestCareerResources: Array<{
-        id: number;
-        title: string;
-        slug: string;
-        type: string;
-        category?: string | null;
-        thumbnail_path?: string | null;
-        published_at?: string | null;
-    }>;
     faqs: Array<{
         id: number;
         title: string;
@@ -50,20 +46,20 @@ type HomeProps = {
 
 export default function Home({
     jobs,
+    jobs_pagination,
     stats,
     industries,
     registeredCompanies,
-    latestCareerResources,
     faqs,
 }: HomeProps) {
     return (
         <HomeLayout>
             <HeroSection
                 jobs={jobs}
+                jobs_pagination={jobs_pagination}
                 stats={stats}
                 industries={industries}
                 registeredCompanies={registeredCompanies}
-                latestCareerResources={latestCareerResources}
                 faqs={faqs}
             />
         </HomeLayout>

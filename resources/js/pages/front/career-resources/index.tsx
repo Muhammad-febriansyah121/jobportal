@@ -11,6 +11,7 @@ import {
     X,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslate } from '@/hooks/use-translate';
 import HomeLayout from '@/layouts/front/home-layout';
 import { cn } from '@/lib/utils';
 import { index, show } from '@/routes/career-resources';
@@ -18,32 +19,27 @@ import { index, show } from '@/routes/career-resources';
 const TYPE_META: Record<
     string,
     {
-        label: string;
         Icon: React.ComponentType<{ className?: string }>;
         color: string;
         bg: string;
     }
 > = {
     article: {
-        label: 'Artikel',
         Icon: FileText,
         color: 'text-sky-600',
         bg: 'bg-sky-50',
     },
     guide: {
-        label: 'Panduan',
         Icon: BookOpen,
         color: 'text-emerald-600',
         bg: 'bg-emerald-50',
     },
     video: {
-        label: 'Video',
         Icon: PlayCircle,
         color: 'text-rose-600',
         bg: 'bg-rose-50',
     },
     template: {
-        label: 'Template',
         Icon: LayoutTemplate,
         color: 'text-violet-600',
         bg: 'bg-violet-50',
@@ -86,13 +82,13 @@ type IndexProps = {
 };
 
 function TypeBadge({ type }: { type: string }) {
+    const { t } = useTranslate();
     const meta = TYPE_META[type] ?? {
-        label: type,
         Icon: BookOpen,
         color: 'text-muted-foreground',
         bg: 'bg-muted',
     };
-    const { label, Icon, color, bg } = meta;
+    const { Icon, color, bg } = meta;
 
     return (
         <span
@@ -103,7 +99,7 @@ function TypeBadge({ type }: { type: string }) {
             )}
         >
             <Icon className="size-3" />
-            {label}
+            {t(`career_resources.index.type_${type}`)}
         </span>
     );
 }
@@ -128,7 +124,6 @@ function CategoryBadge({ category }: { category: string }) {
 
 function FeaturedCard({ resource }: { resource: Resource }) {
     const meta = TYPE_META[resource.type] ?? {
-        label: resource.type,
         Icon: BookOpen,
         color: 'text-muted-foreground',
         bg: 'bg-muted',
@@ -169,8 +164,8 @@ function FeaturedCard({ resource }: { resource: Resource }) {
 }
 
 function ResourceCard({ resource }: { resource: Resource }) {
+    const { t } = useTranslate();
     const meta = TYPE_META[resource.type] ?? {
-        label: resource.type,
         Icon: BookOpen,
         color: 'text-muted-foreground',
         bg: 'bg-muted',
@@ -215,7 +210,7 @@ function ResourceCard({ resource }: { resource: Resource }) {
                         {resource.published_at}
                     </p>
                     <span className="flex items-center gap-1 text-[11px] font-semibold text-primary opacity-0 transition group-hover:opacity-100">
-                        Baca <ChevronRight className="size-3" />
+                        {t('career_resources.index.read_more')} <ChevronRight className="size-3" />
                     </span>
                 </div>
             </div>
@@ -234,6 +229,7 @@ function Pagination({
     to: number | null;
     total: number;
 }) {
+    const { t } = useTranslate();
     const prevLink = links.find(
         (l) =>
             l.label.includes('Sebelumnya') ||
@@ -252,8 +248,8 @@ function Pagination({
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
             <p className="text-sm text-muted-foreground">
                 {from && to
-                    ? `Menampilkan ${from}–${to} dari ${total}`
-                    : `${total} konten`}
+                    ? t('career_resources.index.showing_range', { from, to, total })
+                    : t('career_resources.index.showing_total', { total })}
             </p>
             <div className="flex items-center gap-1">
                 <button
@@ -298,6 +294,7 @@ export default function CareerResourceIndex({
     types,
     categories,
 }: IndexProps) {
+    const { t } = useTranslate();
     const [search, setSearch] = useState(filters.search);
 
     const hasActive = filters.type || filters.category || filters.search;
@@ -323,7 +320,7 @@ export default function CareerResourceIndex({
 
     return (
         <HomeLayout>
-            <Head title="Sumber Karier" />
+            <Head title={t('career_resources.index.page_title')} />
 
             {/* Hero */}
             <section className="relative overflow-hidden bg-white pt-20 pb-4 text-center">
@@ -331,16 +328,14 @@ export default function CareerResourceIndex({
                 <div className="relative mx-auto max-w-3xl px-4">
                     <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold text-primary">
                         <Lightbulb className="size-3.5" />
-                        Karier Lebih Terarah
+                        {t('career_resources.index.hero_badge')}
                     </div>
                     <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-                        Panduan & Tips{' '}
-                        <span className="text-primary">Karier Terbaik</span>
+                        {t('career_resources.index.hero_title')}{' '}
+                        <span className="text-primary">{t('career_resources.index.hero_title_highlight')}</span>
                     </h1>
                     <p className="mt-4 text-base text-muted-foreground">
-                        Artikel, panduan, video, dan template siap pakai untuk
-                        membantu perjalanan kariermu dari awal hingga
-                        berkembang.
+                        {t('career_resources.index.hero_subtitle')}
                     </p>
 
                     {/* Hero search */}
@@ -356,7 +351,7 @@ export default function CareerResourceIndex({
                             <input
                                 className="h-11 w-full rounded-xl border border-border bg-white pr-4 pl-10 text-sm text-foreground placeholder-muted-foreground shadow-sm transition outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Cari artikel, panduan, template..."
+                                placeholder={t('career_resources.index.search_placeholder')}
                                 type="text"
                                 value={search}
                             />
@@ -365,7 +360,7 @@ export default function CareerResourceIndex({
                             className="h-11 rounded-xl bg-primary px-6 text-sm font-semibold text-white transition hover:bg-primary/90 active:scale-95"
                             type="submit"
                         >
-                            Cari
+                            {t('career_resources.index.search_button')}
                         </button>
                     </form>
                 </div>
@@ -377,7 +372,7 @@ export default function CareerResourceIndex({
                     {!isFiltered && featured.length > 0 && (
                         <div className="space-y-4">
                             <h2 className="text-lg font-bold text-foreground">
-                                Konten Terbaru
+                                {t('career_resources.index.featured_title')}
                             </h2>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {featured.map((r) => (
@@ -392,7 +387,6 @@ export default function CareerResourceIndex({
                         <div className="flex flex-wrap items-center gap-2">
                             {types.map((type) => {
                                 const meta = TYPE_META[type] ?? {
-                                    label: type,
                                     Icon: BookOpen,
                                     color: 'text-muted-foreground',
                                     bg: 'bg-muted',
@@ -414,7 +408,7 @@ export default function CareerResourceIndex({
                                         type="button"
                                     >
                                         <meta.Icon className="size-3.5" />
-                                        {meta.label}
+                                        {t(`career_resources.index.type_${type}`)}
                                     </button>
                                 );
                             })}
@@ -449,15 +443,12 @@ export default function CareerResourceIndex({
                                     onClick={clearAll}
                                     type="button"
                                 >
-                                    <X className="size-3" /> Reset
+                                    <X className="size-3" /> {t('career_resources.index.empty_reset')}
                                 </button>
                             )}
 
                             <span className="ml-auto text-sm text-muted-foreground">
-                                <span className="font-semibold text-foreground">
-                                    {resources.total}
-                                </span>{' '}
-                                konten
+                                {t('career_resources.index.content_count', { count: resources.total })}
                             </span>
                         </div>
                     </div>
@@ -467,16 +458,16 @@ export default function CareerResourceIndex({
                         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-white py-20 text-center">
                             <BookOpen className="size-12 text-muted-foreground/30" />
                             <p className="mt-3 text-base font-semibold text-foreground">
-                                Tidak ada konten ditemukan
+                                {t('career_resources.index.empty_title')}
                             </p>
                             <p className="mt-1 text-sm text-muted-foreground">
-                                Coba ubah kata kunci atau filter
+                                {t('career_resources.index.empty_subtitle')}
                             </p>
                             <button
                                 className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
                                 onClick={clearAll}
                             >
-                                Reset Filter
+                                {t('career_resources.index.empty_reset')}
                             </button>
                         </div>
                     ) : (

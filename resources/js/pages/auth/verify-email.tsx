@@ -1,5 +1,5 @@
 // Components
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, setLayoutProps } from '@inertiajs/react';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -9,6 +9,11 @@ import { send } from '@/routes/verification';
 
 export default function VerifyEmail({ status }: { status?: string }) {
     const { t } = useTranslate();
+
+    setLayoutProps({
+        title: t('auth.verify_email.layout_title'),
+        description: t('auth.verify_email.layout_description'),
+    });
 
     return (
         <>
@@ -41,8 +46,3 @@ export default function VerifyEmail({ status }: { status?: string }) {
     );
 }
 
-VerifyEmail.layout = {
-    title: 'Verify email',
-    description:
-        'Please verify your email address by clicking on the link we just emailed to you.',
-};

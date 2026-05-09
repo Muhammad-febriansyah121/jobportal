@@ -4,9 +4,11 @@ import {
     AlertTriangle,
     ArrowRight,
     CheckCircle2,
+    ChevronDown,
     Download,
     ExternalLink,
     Eye,
+    EyeOff,
     FileSearch,
     FileText,
     Files,
@@ -15,6 +17,7 @@ import {
     Linkedin,
     Mail,
     MapPin,
+    MoreVertical,
     Phone,
     Plus,
     Save,
@@ -41,14 +44,20 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
     Sheet,
     SheetContent,
     SheetDescription,
     SheetHeader,
     SheetTitle,
-    SheetTrigger,
 } from '@/components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslate } from '@/hooks/use-translate';
 import {
     builderDraft,
@@ -175,6 +184,24 @@ export default function CandidateCv({
 }: CvPageProps) {
     const { t } = useTranslate();
     const [isDrafting, setIsDrafting] = useState(false);
+    const [aiDraftSheetOpen, setAiDraftSheetOpen] = useState(false);
+    const [aiReviewSheetOpen, setAiReviewSheetOpen] = useState(false);
+    const [savedCvsSheetOpen, setSavedCvsSheetOpen] = useState(false);
+    const [previewVisible, setPreviewVisible] = useState(true);
+    const [openSections, setOpenSections] = useState<Set<string>>(
+        () => new Set(['data-dasar']),
+    );
+    const toggleSection = (key: string) => {
+        setOpenSections((prev) => {
+            const next = new Set(prev);
+            if (next.has(key)) {
+                next.delete(key);
+            } else {
+                next.add(key);
+            }
+            return next;
+        });
+    };
     const [previewCvUrl, setPreviewCvUrl] = useState<string | null>(
         () =>
             cvs.find((cv) => cv.is_primary && cv.is_pdf)?.preview_url ??
@@ -320,24 +347,99 @@ export default function CandidateCv({
             <Head title={t('candidate.cv_builder.page_title')} />
 
             <div className="space-y-5 p-4 md:p-6">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <Heading
                         title={t('candidate.cv_builder.page_title')}
                         description={t('candidate.cv_builder.page_description')}
                     />
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Sheet>
-                            <SheetTrigger asChild>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            type="button"
+                            onClick={saveBuilder}
+                            disabled={form.processing}
+                            size="sm"
+                        >
+                            <Save className="size-4" />
+                            {form.processing
+                                ? t('candidate.form.saving')
+                                : t('candidate.cv_builder.save')}
+                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                                 <Button
                                     type="button"
                                     variant="outline"
                                     size="sm"
+                                    className="gap-1.5"
+                                >
+                                    <MoreVertical className="size-4" />
+                                    {t('candidate.cv_builder.actions') !==
+                                    'candidate.cv_builder.actions'
+                                        ? t('candidate.cv_builder.actions')
+                                        : 'Aksi'}
+                                    <ChevronDown className="size-3.5" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                                <DropdownMenuLabel>
+                                    {t('candidate.cv_builder.actions_ai_label') !==
+                                    'candidate.cv_builder.actions_ai_label'
+                                        ? t('candidate.cv_builder.actions_ai_label')
+                                        : 'Bantuan AI'}
+                                </DropdownMenuLabel>
+                                <DropdownMenuItem
+                                    onClick={() => setAiDraftSheetOpen(true)}
                                 >
                                     <Wand2 className="size-4" />
                                     {t('candidate.cv_builder.ai_draft')}
-                                </Button>
-                            </SheetTrigger>
-                            <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => setAiReviewSheetOpen(true)}
+                                >
+                                    <FileSearch className="size-4" />
+                                    {t('candidate.cv_builder.ai_review')}
+                                    {form.data.ai_review ? (
+                                        <Badge className="ml-auto" variant="secondary">
+                                            {form.data.ai_review.score}%
+                                        </Badge>
+                                    ) : null}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuLabel>
+                                    {t('candidate.cv_builder.actions_files_label') !==
+                                    'candidate.cv_builder.actions_files_label'
+                                        ? t('candidate.cv_builder.actions_files_label')
+                                        : 'Berkas CV'}
+                                </DropdownMenuLabel>
+                                <DropdownMenuItem
+                                    onClick={() => setSavedCvsSheetOpen(true)}
+                                >
+                                    <Files className="size-4" />
+                                    {t('candidate.cvs.list_title')}
+                                    {cvs.length ? (
+                                        <Badge className="ml-auto" variant="secondary">
+                                            {cvs.length}
+                                        </Badge>
+                                    ) : null}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                    <a
+                                        href={builderPdf().url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        <Download className="size-4" />
+                                        {t('candidate.cv_builder.download_pdf')}
+                                    </a>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </div>
+
+                {/* AI Draft Sheet — controlled */}
+                <Sheet open={aiDraftSheetOpen} onOpenChange={setAiDraftSheetOpen}>
+                    <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
                                 <SheetHeader>
                                     <SheetTitle className="flex items-center gap-2">
                                         <Sparkles className="size-5 text-[#01296A]" />
@@ -574,22 +676,8 @@ export default function CandidateCv({
                             </SheetContent>
                         </Sheet>
 
-                        <Sheet>
-                            <SheetTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                >
-                                    <FileSearch className="size-4" />
-                                    {t('candidate.cv_builder.ai_review')}
-                                    {form.data.ai_review ? (
-                                        <Badge className="ml-1">
-                                            {form.data.ai_review.score}%
-                                        </Badge>
-                                    ) : null}
-                                </Button>
-                            </SheetTrigger>
+                {/* AI Review Sheet — controlled */}
+                <Sheet open={aiReviewSheetOpen} onOpenChange={setAiReviewSheetOpen}>
                             <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
                                 <SheetHeader>
                                     <SheetTitle>
@@ -658,22 +746,8 @@ export default function CandidateCv({
                             </SheetContent>
                         </Sheet>
 
-                        <Sheet>
-                            <SheetTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                >
-                                    <Files className="size-4" />
-                                    {t('candidate.cvs.list_title')}
-                                    {cvs.length ? (
-                                        <Badge className="ml-1">
-                                            {cvs.length}
-                                        </Badge>
-                                    ) : null}
-                                </Button>
-                            </SheetTrigger>
+                {/* Saved CVs Sheet — controlled */}
+                <Sheet open={savedCvsSheetOpen} onOpenChange={setSavedCvsSheetOpen}>
                             <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
                                 <SheetHeader>
                                     <SheetTitle>
@@ -865,26 +939,6 @@ export default function CandidateCv({
                             </SheetContent>
                         </Sheet>
 
-                        <Button
-                            type="button"
-                            onClick={saveBuilder}
-                            disabled={form.processing}
-                            size="sm"
-                        >
-                            <Save className="size-4" />
-                            {form.processing
-                                ? t('candidate.form.saving')
-                                : t('candidate.cv_builder.save')}
-                        </Button>
-                        <Button asChild variant="outline" size="sm">
-                            <a href={builderPdf().url} target="_blank">
-                                <Download className="size-4" />
-                                {t('candidate.cv_builder.download_pdf')}
-                            </a>
-                        </Button>
-                    </div>
-                </div>
-
                 <Card>
                     <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex-1 space-y-1">
@@ -930,97 +984,51 @@ export default function CandidateCv({
                     </Card>
                 ) : null}
 
-                <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+                <div
+                    className={`grid gap-6 ${previewVisible ? 'xl:grid-cols-[1.1fr_0.9fr]' : 'xl:grid-cols-1'}`}
+                >
                     <Card>
-                        <CardHeader className="space-y-2">
-                            <CardTitle>
-                                {t('candidate.cv_builder.editor_title')}
-                            </CardTitle>
-                            <CardDescription>
-                                {t('candidate.cv_builder.editor_description')}
-                            </CardDescription>
+                        <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                            <div className="space-y-1">
+                                <CardTitle>
+                                    {t('candidate.cv_builder.editor_title')}
+                                </CardTitle>
+                                <CardDescription>
+                                    {t('candidate.cv_builder.editor_description')}
+                                </CardDescription>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="hidden xl:inline-flex"
+                                onClick={() => setPreviewVisible((v) => !v)}
+                            >
+                                {previewVisible ? (
+                                    <>
+                                        <EyeOff className="size-3.5" />
+                                        Sembunyikan
+                                    </>
+                                ) : (
+                                    <>
+                                        <Eye className="size-3.5" />
+                                        Tampilkan Preview
+                                    </>
+                                )}
+                            </Button>
                         </CardHeader>
                         <CardContent className="space-y-5">
-                            <Tabs
-                                defaultValue="data-dasar"
-                                className="space-y-4"
-                            >
-                                <TabsList className="h-auto w-full flex-nowrap justify-start gap-2 overflow-x-auto bg-transparent p-0">
-                                    <TabsTrigger
-                                        value="data-dasar"
-                                        className="rounded-md border border-input px-3 py-1.5 data-[state=active]:border-primary data-[state=active]:text-primary"
-                                    >
-                                        {isDataDasarFilled ? (
+                            <div className="space-y-3">
+                                <AccordionSection
+                                    sectionKey="data-dasar"
+                                    title={t('candidate.cv_builder.tab_basics')}
+                                    open={openSections.has('data-dasar')}
+                                    onToggle={() => toggleSection('data-dasar')}
+                                    badge={
+                                        isDataDasarFilled ? (
                                             <CheckCircle2 className="size-3.5 text-emerald-600" />
-                                        ) : null}
-                                        {t('candidate.cv_builder.tab_basics')}
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="pengalaman"
-                                        className="rounded-md border border-input px-3 py-1.5 data-[state=active]:border-primary data-[state=active]:text-primary"
-                                    >
-                                        {t(
-                                            'candidate.cv_builder.tab_experience',
-                                        )}
-                                        {filledExperiences > 0 ? (
-                                            <Badge
-                                                variant="secondary"
-                                                className="ml-1.5 px-1.5"
-                                            >
-                                                {filledExperiences}
-                                            </Badge>
-                                        ) : null}
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="pendidikan"
-                                        className="rounded-md border border-input px-3 py-1.5 data-[state=active]:border-primary data-[state=active]:text-primary"
-                                    >
-                                        {t(
-                                            'candidate.cv_builder.tab_education',
-                                        )}
-                                        {filledEducations > 0 ? (
-                                            <Badge
-                                                variant="secondary"
-                                                className="ml-1.5 px-1.5"
-                                            >
-                                                {filledEducations}
-                                            </Badge>
-                                        ) : null}
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="proyek"
-                                        className="rounded-md border border-input px-3 py-1.5 data-[state=active]:border-primary data-[state=active]:text-primary"
-                                    >
-                                        {t('candidate.cv_builder.tab_projects')}
-                                        {filledProjects > 0 ? (
-                                            <Badge
-                                                variant="secondary"
-                                                className="ml-1.5 px-1.5"
-                                            >
-                                                {filledProjects}
-                                            </Badge>
-                                        ) : null}
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="sertifikasi"
-                                        className="rounded-md border border-input px-3 py-1.5 data-[state=active]:border-primary data-[state=active]:text-primary"
-                                    >
-                                        {t(
-                                            'candidate.cv_builder.tab_certifications',
-                                        )}
-                                        {filledCertifications > 0 ? (
-                                            <Badge
-                                                variant="secondary"
-                                                className="ml-1.5 px-1.5"
-                                            >
-                                                {filledCertifications}
-                                            </Badge>
-                                        ) : null}
-                                    </TabsTrigger>
-                                </TabsList>
-
-                                <TabsContent
-                                    value="data-dasar"
+                                        ) : null
+                                    }
                                     className="space-y-7"
                                 >
                                     <FormSection
@@ -1420,10 +1428,23 @@ export default function CandidateCv({
                                             t={t}
                                         />
                                     </FormSection>
-                                </TabsContent>
+                                </AccordionSection>
 
-                                <TabsContent
-                                    value="pengalaman"
+                                <AccordionSection
+                                    sectionKey="pengalaman"
+                                    title={t('candidate.cv_builder.tab_experience')}
+                                    open={openSections.has('pengalaman')}
+                                    onToggle={() => toggleSection('pengalaman')}
+                                    badge={
+                                        filledExperiences > 0 ? (
+                                            <Badge
+                                                variant="secondary"
+                                                className="ml-1 px-1.5"
+                                            >
+                                                {filledExperiences}
+                                            </Badge>
+                                        ) : null
+                                    }
                                     className="space-y-4"
                                 >
                                     <ArraySection
@@ -1659,10 +1680,23 @@ export default function CandidateCv({
                                             ),
                                         )}
                                     </ArraySection>
-                                </TabsContent>
+                                </AccordionSection>
 
-                                <TabsContent
-                                    value="pendidikan"
+                                <AccordionSection
+                                    sectionKey="pendidikan"
+                                    title={t('candidate.cv_builder.tab_education')}
+                                    open={openSections.has('pendidikan')}
+                                    onToggle={() => toggleSection('pendidikan')}
+                                    badge={
+                                        filledEducations > 0 ? (
+                                            <Badge
+                                                variant="secondary"
+                                                className="ml-1 px-1.5"
+                                            >
+                                                {filledEducations}
+                                            </Badge>
+                                        ) : null
+                                    }
                                     className="space-y-4"
                                 >
                                     <ArraySection
@@ -1862,10 +1896,23 @@ export default function CandidateCv({
                                             ),
                                         )}
                                     </ArraySection>
-                                </TabsContent>
+                                </AccordionSection>
 
-                                <TabsContent
-                                    value="proyek"
+                                <AccordionSection
+                                    sectionKey="proyek"
+                                    title={t('candidate.cv_builder.tab_projects')}
+                                    open={openSections.has('proyek')}
+                                    onToggle={() => toggleSection('proyek')}
+                                    badge={
+                                        filledProjects > 0 ? (
+                                            <Badge
+                                                variant="secondary"
+                                                className="ml-1 px-1.5"
+                                            >
+                                                {filledProjects}
+                                            </Badge>
+                                        ) : null
+                                    }
                                     className="space-y-4"
                                 >
                                     <ArraySection
@@ -2022,10 +2069,23 @@ export default function CandidateCv({
                                             ),
                                         )}
                                     </ArraySection>
-                                </TabsContent>
+                                </AccordionSection>
 
-                                <TabsContent
-                                    value="sertifikasi"
+                                <AccordionSection
+                                    sectionKey="sertifikasi"
+                                    title={t('candidate.cv_builder.tab_certifications')}
+                                    open={openSections.has('sertifikasi')}
+                                    onToggle={() => toggleSection('sertifikasi')}
+                                    badge={
+                                        filledCertifications > 0 ? (
+                                            <Badge
+                                                variant="secondary"
+                                                className="ml-1 px-1.5"
+                                            >
+                                                {filledCertifications}
+                                            </Badge>
+                                        ) : null
+                                    }
                                     className="space-y-4"
                                 >
                                     <ArraySection
@@ -2156,8 +2216,8 @@ export default function CandidateCv({
                                             ),
                                         )}
                                     </ArraySection>
-                                </TabsContent>
-                            </Tabs>
+                                </AccordionSection>
+                            </div>
 
                             <InputError
                                 message={
@@ -2189,33 +2249,51 @@ export default function CandidateCv({
                         </CardContent>
                     </Card>
 
-                    <div className="xl:sticky xl:top-4 xl:self-start">
-                        <Card>
-                            <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
-                                <div className="space-y-1">
-                                    <CardTitle>
-                                        {t(
-                                            'candidate.cv_builder.live_preview_title',
-                                        )}
-                                    </CardTitle>
-                                    <CardDescription>
-                                        {t(
-                                            'candidate.cv_builder.live_preview_description',
-                                        )}
-                                    </CardDescription>
-                                </div>
-                                <Button asChild size="sm" variant="outline">
-                                    <a href={builderPdf().url} target="_blank">
-                                        <Download className="size-4" />
-                                        PDF
-                                    </a>
-                                </Button>
-                            </CardHeader>
-                            <CardContent className="max-h-[82vh] overflow-y-auto p-0">
-                                <CvLivePreview data={form.data} t={t} />
-                            </CardContent>
-                        </Card>
-                    </div>
+                    {previewVisible ? (
+                        <div className="xl:sticky xl:top-4 xl:self-start">
+                            <Card>
+                                <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+                                    <div className="space-y-1">
+                                        <CardTitle>
+                                            {t(
+                                                'candidate.cv_builder.live_preview_title',
+                                            )}
+                                        </CardTitle>
+                                        <CardDescription>
+                                            {t(
+                                                'candidate.cv_builder.live_preview_description',
+                                            )}
+                                        </CardDescription>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <Button asChild size="sm" variant="outline">
+                                            <a
+                                                href={builderPdf().url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                            >
+                                                <Download className="size-4" />
+                                                PDF
+                                            </a>
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="ghost"
+                                            className="hidden xl:inline-flex"
+                                            onClick={() => setPreviewVisible(false)}
+                                            aria-label="Tutup preview"
+                                        >
+                                            <X className="size-4" />
+                                        </Button>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="max-h-[82vh] overflow-y-auto p-0">
+                                    <CvLivePreview data={form.data} t={t} />
+                                </CardContent>
+                            </Card>
+                        </div>
+                    ) : null}
                 </div>
             </div>
         </>
@@ -3156,6 +3234,52 @@ function KeywordMatchCard({
                             </span>
                         ))}
                     </div>
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
+function AccordionSection({
+    sectionKey,
+    title,
+    open,
+    onToggle,
+    badge,
+    children,
+    className,
+}: {
+    sectionKey: string;
+    title: string;
+    open: boolean;
+    onToggle: () => void;
+    badge?: React.ReactNode;
+    children: React.ReactNode;
+    className?: string;
+}) {
+    return (
+        <div className="overflow-hidden rounded-xl border bg-white">
+            <button
+                type="button"
+                onClick={onToggle}
+                aria-expanded={open}
+                aria-controls={`acc-${sectionKey}`}
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-muted/40"
+            >
+                <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    {title}
+                    {badge}
+                </span>
+                <ChevronDown
+                    className={`size-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`}
+                />
+            </button>
+            {open ? (
+                <div
+                    id={`acc-${sectionKey}`}
+                    className={`border-t bg-muted/10 p-4 sm:p-5 ${className ?? ''}`}
+                >
+                    {children}
                 </div>
             ) : null}
         </div>

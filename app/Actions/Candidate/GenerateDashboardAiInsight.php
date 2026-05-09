@@ -59,12 +59,15 @@ class GenerateDashboardAiInsight
             ->where('user_id', $candidate->user_id)
             ->where('feature', 'candidate_dashboard_insight')
             ->where('input_hash', $inputHash)
-            ->where('status', 'success')
+            ->whereIn('status', ['success', 'fallback'])
+            ->where('created_at', '>=', now()->subMinutes(15))
             ->latest()
             ->first();
 
         if ($cached !== null && is_array($cached->output_json)) {
-            return $this->normalizeOutput($cached->output_json + ['source' => 'ai']);
+            $source = $cached->status === 'success' ? 'ai' : 'fallback';
+
+            return $this->normalizeOutput($cached->output_json + ['source' => $source]);
         }
 
         $fallback = $this->fallbackInsight($candidate, $recommendedJobs, $activeApplications, $skills);
@@ -84,6 +87,7 @@ class GenerateDashboardAiInsight
             'output_json' => $output,
             'model_name' => $this->ai->modelName(),
             'status' => $status,
+            ...$this->ai->tokenUsage(),
         ]);
 
         return $this->normalizeOutput($output + ['source' => $status === 'success' ? 'ai' : 'computed']);

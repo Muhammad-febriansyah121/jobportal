@@ -95,7 +95,7 @@ class AdminSubscriptionController extends Controller
                         ['label' => 'Active jobs limit', 'value' => $subscription->plan?->active_jobs_limit ?? '-'],
                         ['label' => 'Recruiter seat limit', 'value' => $subscription->plan?->recruiter_seat_limit ?? '-'],
                         ['label' => 'AI screening quota', 'value' => $subscription->plan?->ai_screening_quota ?? '-'],
-                        ['label' => 'Talent search quota', 'value' => $subscription->plan?->talent_search_quota ?? '-'],
+                        ['label' => 'Job Invitation quota', 'value' => $subscription->plan?->talent_search_quota ?? '-'],
                     ],
                 ],
             ],

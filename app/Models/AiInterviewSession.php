@@ -67,6 +67,11 @@ class AiInterviewSession extends Model
         return $this->hasMany(AiInterviewRescheduleHistory::class, 'session_id');
     }
 
+    public function manualReviews(): HasMany
+    {
+        return $this->hasMany(AiInterviewManualReview::class, 'ai_interview_session_id');
+    }
+
     protected function casts(): array
     {
         return [

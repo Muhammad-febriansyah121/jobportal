@@ -22,10 +22,13 @@ use App\Http\Controllers\Admin\AdminPricingPlanController;
 use App\Http\Controllers\Admin\AdminReportController;
 use App\Http\Controllers\Admin\AdminSalaryInsightController;
 use App\Http\Controllers\Admin\AdminSkillController;
+use App\Http\Controllers\Admin\AdminSubIndustryController;
 use App\Http\Controllers\Admin\AdminSubscriptionController;
+use App\Http\Controllers\Admin\AdminSystemReviewController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminWebSettingController;
 use App\Http\Controllers\Admin\AdminWhatsAppController;
+use App\Http\Controllers\AiInterviewSimulatorController;
 use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Candidate\CandidateJobController;
@@ -53,14 +56,14 @@ Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
     ->name('password.email');
 
 Route::post('webhooks/pakasir', [PakasirWebhookController::class, 'handle'])
-    ->name('webhooks.pakasir')
-    ->withoutMiddleware(['web']);
+    ->name('webhooks.pakasir');
 
 Route::get('/', HomeController::class)->name('home');
 Route::get('/jobs', [HomeController::class, 'jobs'])->name('jobs.index');
 Route::get('/companies', [HomeController::class, 'companies'])->name('companies.index');
 Route::get('/companies/{company:slug}', [CompanyProfileController::class, 'show'])->name('companies.show');
 Route::get('/salary', [SalaryController::class, 'index'])->name('salary.index');
+Route::post('/salary/submissions', [SalaryController::class, 'store'])->name('salary.submissions.store');
 Route::get('/pricing', PricingController::class)->name('pricing');
 Route::get('/career-resources', [CareerResourceController::class, 'index'])->name('career-resources.index');
 Route::get('/career-resources/{careerResource:slug}', [CareerResourceController::class, 'show'])->name('career-resources.show');
@@ -70,6 +73,7 @@ Route::get('/privacy', [LegalPageController::class, 'privacy'])->name('privacy')
 Route::get('/about', [LegalPageController::class, 'about'])->name('about');
 Route::get('/contact', ContactController::class)->name('contact');
 Route::get('/cv-analyzer', CvAnalyzerController::class)->name('cv-analyzer');
+Route::get('/ai-interview-simulator', AiInterviewSimulatorController::class)->name('ai-interview-simulator');
 Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
 Route::get('/auth/google/redirect', [GoogleLoginController::class, 'redirect'])
     ->middleware('guest')
@@ -138,6 +142,9 @@ Route::prefix('admin')
             ->parameters(['assessment-questions' => 'assessmentQuestion'])
             ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
         Route::resource('industries', AdminIndustryController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::resource('sub-industries', AdminSubIndustryController::class)
+            ->parameters(['sub-industries' => 'subIndustry'])
+            ->only(['index', 'store', 'update', 'destroy']);
         Route::resource('company-sizes', AdminCompanySizeController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::resource('faqs', AdminFaqController::class)->only(['index', 'store', 'update', 'destroy']);
 
@@ -187,6 +194,10 @@ Route::prefix('admin')
         Route::get('company-reviews', [AdminCompanyReviewController::class, 'index'])->name('company-reviews.index');
         Route::patch('company-reviews/{companyReview}/approve', [AdminCompanyReviewController::class, 'approve'])->name('company-reviews.approve');
         Route::patch('company-reviews/{companyReview}/reject', [AdminCompanyReviewController::class, 'reject'])->name('company-reviews.reject');
+
+        Route::get('system-reviews', [AdminSystemReviewController::class, 'index'])->name('system-reviews.index');
+        Route::patch('system-reviews/{systemReview}/approve', [AdminSystemReviewController::class, 'approve'])->name('system-reviews.approve');
+        Route::patch('system-reviews/{systemReview}/reject', [AdminSystemReviewController::class, 'reject'])->name('system-reviews.reject');
 
         Route::resource('activity-logs', AdminActivityLogController::class)
             ->parameters(['activity-logs' => 'activityLog'])

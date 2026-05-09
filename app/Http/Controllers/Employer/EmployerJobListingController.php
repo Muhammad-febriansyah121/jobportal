@@ -200,6 +200,9 @@ class EmployerJobListingController extends Controller
                 'work_mode' => str($jobListing->work_mode)->headline()->toString(),
                 'job_type' => str($jobListing->job_type)->headline()->toString(),
                 'experience_level' => str($jobListing->experience_level)->headline()->toString(),
+                'qualification' => $jobListing->qualification,
+                'qualification_label' => $this->qualificationLabel($jobListing->qualification),
+                'experience_years' => $this->experienceYearsLabel($jobListing->experience_min_years, $jobListing->experience_max_years),
                 'location' => collect([$jobListing->location_city, $jobListing->location_province])->filter()->implode(', '),
                 'salary_range' => $this->salaryRange($jobListing->salary_min, $jobListing->salary_max),
                 'is_salary_visible' => $jobListing->is_salary_visible,
@@ -309,11 +312,15 @@ class EmployerJobListingController extends Controller
                 'work_mode' => $jobListing->work_mode,
                 'job_type' => $jobListing->job_type,
                 'experience_level' => $jobListing->experience_level,
+                'qualification' => $jobListing->qualification,
+                'experience_min_years' => $jobListing->experience_min_years,
+                'experience_max_years' => $jobListing->experience_max_years,
                 'salary_min' => $jobListing->salary_min,
                 'salary_max' => $jobListing->salary_max,
                 'salary_currency' => $jobListing->salary_currency,
                 'is_salary_visible' => $jobListing->is_salary_visible,
                 'is_anonymous' => (bool) $jobListing->is_anonymous,
+                'is_urgent' => (bool) $jobListing->is_urgent,
                 'response_sla_hours' => $jobListing->response_sla_hours,
                 'closes_at' => $jobListing->closes_at?->toDateString(),
                 'status' => $jobListing->status,
@@ -430,6 +437,31 @@ class EmployerJobListingController extends Controller
         return $format($minimum).' - '.$format($maximum);
     }
 
+    private function qualificationLabel(?string $qualification): ?string
+    {
+        return match ($qualification) {
+            'sma' => 'SMA/SMK',
+            'd3' => 'D3',
+            's1' => 'S1',
+            's2' => 'S2',
+            's3' => 'S3',
+            default => null,
+        };
+    }
+
+    private function experienceYearsLabel(?int $min, ?int $max): ?string
+    {
+        if ($min === null && $max === null) {
+            return null;
+        }
+
+        if ($min !== null && $max !== null && $min !== $max) {
+            return $min.'-'.$max;
+        }
+
+        return (string) ($min ?? $max);
+    }
+
     private function applicationStatusLabel(string $status): string
     {
         return [
@@ -494,6 +526,7 @@ class EmployerJobListingController extends Controller
     {
         $data['description'] = (string) ($data['description'] ?? '');
         $data['is_anonymous'] = (bool) ($data['is_anonymous'] ?? false);
+        $data['is_urgent'] = (bool) ($data['is_urgent'] ?? false);
 
         return $data;
     }

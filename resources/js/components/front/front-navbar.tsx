@@ -1,15 +1,9 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import {
-    BookOpen,
-    Briefcase,
-    Building2,
+    Bot,
     ChevronDown,
-    DollarSign,
-    Info,
     ScanSearch,
-    ScrollText,
-    ShieldCheck,
-    Tag,
+    Sparkles,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useRef, useState } from 'react';
@@ -30,7 +24,13 @@ import { index as companiesIndex } from '@/routes/companies';
 import { index as jobsIndex } from '@/routes/jobs';
 import type { Auth } from '@/types';
 
-type DropdownItem = { name: string; href: string; icon: React.ElementType; desc?: string };
+type DropdownItem = {
+    name: string;
+    href: string;
+    icon: React.ElementType;
+    desc?: string;
+    badge?: string;
+};
 
 function NavDropdown({ label, items, currentPath }: { label: string; items: DropdownItem[]; currentPath: string }) {
     const [open, setOpen] = useState(false);
@@ -80,8 +80,16 @@ clearTimeout(closeTimer.current);
                                 <span className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg ${active ? 'bg-primary/10' : 'bg-neutral-100'}`}>
                                     <item.icon className={`size-3.5 ${active ? 'text-primary' : 'text-neutral-500'}`} />
                                 </span>
-                                <span>
-                                    <span className="block text-sm font-medium leading-tight">{item.name}</span>
+                                <span className="min-w-0 flex-1">
+                                    <span className="flex items-center gap-1.5">
+                                        <span className="text-sm font-medium leading-tight">{item.name}</span>
+                                        {item.badge && (
+                                            <span className="inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-primary to-blue-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+                                                <Sparkles className="size-2.5" />
+                                                {item.badge}
+                                            </span>
+                                        )}
+                                    </span>
                                     {item.desc && <span className="mt-0.5 block text-xs text-neutral-400">{item.desc}</span>}
                                 </span>
                             </Link>
@@ -133,8 +141,16 @@ function MobileSection({ label, items, currentPath, onClose }: { label: string; 
                                         <span className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${active ? 'bg-primary/10' : 'bg-neutral-100'}`}>
                                             <item.icon className={`size-3.5 ${active ? 'text-primary' : 'text-neutral-500'}`} />
                                         </span>
-                                        <span>
-                                            <span className="block leading-tight">{item.name}</span>
+                                        <span className="min-w-0 flex-1">
+                                            <span className="flex items-center gap-1.5">
+                                                <span className="leading-tight">{item.name}</span>
+                                                {item.badge && (
+                                                    <span className="inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-primary to-blue-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+                                                        <Sparkles className="size-2.5" />
+                                                        {item.badge}
+                                                    </span>
+                                                )}
+                                            </span>
                                             {item.desc && <span className="block text-xs text-neutral-400">{item.desc}</span>}
                                         </span>
                                     </Link>
@@ -171,29 +187,20 @@ export default function FrontNavbar() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const { t } = useTranslate();
 
-    const cariKerjaItems = useMemo<DropdownItem[]>(
+    const aiToolsItems = useMemo<DropdownItem[]>(
         () => [
-            { name: t('front.nav.jobs'), href: jobsIndex().url, icon: Briefcase, desc: t('front.nav.jobs.desc') },
-            { name: t('front.nav.salary'), href: '/salary', icon: DollarSign, desc: t('front.nav.salary.desc') },
-            { name: t('front.nav.career_resources'), href: '/career-resources', icon: BookOpen, desc: t('front.nav.career_resources.desc') },
-            { name: t('front.nav.cv_analyzer'), href: '/cv-analyzer', icon: ScanSearch, desc: t('front.nav.cv_analyzer.desc') },
-        ],
-        [t],
-    );
-
-    const perusahaanItems = useMemo<DropdownItem[]>(
-        () => [
-            { name: t('front.nav.companies_list'), href: companiesIndex().url, icon: Building2, desc: t('front.nav.companies_list.desc') },
-            { name: t('front.nav.pricing'), href: '/pricing', icon: Tag, desc: t('front.nav.pricing.desc') },
-        ],
-        [t],
-    );
-
-    const profilItems = useMemo<DropdownItem[]>(
-        () => [
-            { name: t('front.nav.about'), href: '/about', icon: Info, desc: t('front.nav.about.desc') },
-            { name: t('front.nav.terms'), href: '/terms', icon: ScrollText, desc: t('front.nav.terms.desc') },
-            { name: t('front.nav.privacy'), href: '/privacy', icon: ShieldCheck, desc: t('front.nav.privacy.desc') },
+            {
+                name: t('front.nav.cv_analyzer'),
+                href: '/cv-analyzer',
+                icon: ScanSearch,
+                desc: t('front.nav.cv_analyzer.desc'),
+            },
+            {
+                name: t('front.nav.ai_interview'),
+                href: '/ai-interview-simulator',
+                icon: Bot,
+                desc: t('front.nav.ai_interview.desc'),
+            },
         ],
         [t],
     );
@@ -218,17 +225,33 @@ export default function FrontNavbar() {
                         <span className="relative z-10">{t('front.nav.home')}</span>
                     </a>
 
-                    <NavDropdown label={t('front.nav.profile')} items={profilItems} currentPath={currentPath} />
-                    <NavDropdown label={t('front.nav.find_job')} items={cariKerjaItems} currentPath={currentPath} />
-                    <NavDropdown label={t('front.nav.companies')} items={perusahaanItems} currentPath={currentPath} />
                     <a
-                        href="/contact"
+                        href={jobsIndex().url}
                         className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                            currentPath === '/contact' ? 'font-semibold text-primary' : 'text-neutral-700 hover:bg-gray-100 hover:text-neutral-900'
+                            currentPath.startsWith('/jobs') ? 'font-semibold text-primary' : 'text-neutral-700 hover:bg-gray-100 hover:text-neutral-900'
                         }`}
                     >
-                        {currentPath === '/contact' && <span className="absolute inset-0 rounded-full bg-primary/10" />}
-                        <span className="relative z-10">{t('front.nav.contact')}</span>
+                        {currentPath.startsWith('/jobs') && <span className="absolute inset-0 rounded-full bg-primary/10" />}
+                        <span className="relative z-10">{t('front.nav.jobs')}</span>
+                    </a>
+                    <a
+                        href={companiesIndex().url}
+                        className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                            currentPath.startsWith('/companies') ? 'font-semibold text-primary' : 'text-neutral-700 hover:bg-gray-100 hover:text-neutral-900'
+                        }`}
+                    >
+                        {currentPath.startsWith('/companies') && <span className="absolute inset-0 rounded-full bg-primary/10" />}
+                        <span className="relative z-10">{t('front.nav.companies')}</span>
+                    </a>
+                    <NavDropdown label={t('front.nav.ai_tools')} items={aiToolsItems} currentPath={currentPath} />
+                    <a
+                        href="/salary"
+                        className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                            currentPath === '/salary' ? 'font-semibold text-primary' : 'text-neutral-700 hover:bg-gray-100 hover:text-neutral-900'
+                        }`}
+                    >
+                        {currentPath === '/salary' && <span className="absolute inset-0 rounded-full bg-primary/10" />}
+                        <span className="relative z-10">{t('front.nav.salary_check')}</span>
                     </a>
                 </div>
 
@@ -294,22 +317,33 @@ export default function FrontNavbar() {
 
                     {/* Nav sections */}
                     <div className="w-full space-y-0.5 border-t border-neutral-100 pt-1">
-                        <MobileSection label={t('front.nav.profile')} items={profilItems} currentPath={currentPath} onClose={() => setMobileOpen(false)} />
-                        <MobileSection label={t('front.nav.find_job')} items={cariKerjaItems} currentPath={currentPath} onClose={() => setMobileOpen(false)} />
-                        <MobileSection label={t('front.nav.companies')} items={perusahaanItems} currentPath={currentPath} onClose={() => setMobileOpen(false)} />
                         <Link
-                            href="/contact"
+                            href={jobsIndex().url}
                             className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                                currentPath === '/contact' ? 'bg-primary/5 text-primary' : 'text-neutral-700 hover:bg-neutral-50'
+                                currentPath.startsWith('/jobs') ? 'bg-primary/5 text-primary' : 'text-neutral-700 hover:bg-neutral-50'
                             }`}
                             onClick={() => setMobileOpen(false)}
                         >
-                            <span className={`flex size-7 items-center justify-center rounded-lg ${currentPath === '/contact' ? 'bg-primary/10' : 'bg-neutral-100'}`}>
-                                <svg className={`size-3.5 ${currentPath === '/contact' ? 'text-primary' : 'text-neutral-500'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.09 3.4C1.07 2.18 2 1 3.22 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.09a16 16 0 0 0 6 6l.46-.46a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21 16z" />
-                                </svg>
-                            </span>
-                            {t('front.nav.contact')}
+                            {t('front.nav.jobs')}
+                        </Link>
+                        <Link
+                            href={companiesIndex().url}
+                            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                                currentPath.startsWith('/companies') ? 'bg-primary/5 text-primary' : 'text-neutral-700 hover:bg-neutral-50'
+                            }`}
+                            onClick={() => setMobileOpen(false)}
+                        >
+                            {t('front.nav.companies')}
+                        </Link>
+                        <MobileSection label={t('front.nav.ai_tools')} items={aiToolsItems} currentPath={currentPath} onClose={() => setMobileOpen(false)} />
+                        <Link
+                            href="/salary"
+                            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                                currentPath === '/salary' ? 'bg-primary/5 text-primary' : 'text-neutral-700 hover:bg-neutral-50'
+                            }`}
+                            onClick={() => setMobileOpen(false)}
+                        >
+                            {t('front.nav.salary_check')}
                         </Link>
                     </div>
 

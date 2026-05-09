@@ -11,6 +11,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useTranslate } from '@/hooks/use-translate';
 import { cleanPaginationLabel, shouldRenderPagination } from '@/lib/pagination';
 import { index, show } from '@/routes/candidate/messages';
 
@@ -53,6 +54,8 @@ export default function CandidateMessages({
     conversations,
     unread_total,
 }: MessagesPageProps) {
+    const { t } = useTranslate();
+
     function submitFilter(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
@@ -67,12 +70,12 @@ export default function CandidateMessages({
 
     return (
         <>
-            <Head title="Pesan" />
+            <Head title={t('candidate.messages.page_title')} />
 
             <div className="space-y-6 p-4 md:p-6">
                 <Heading
-                    title="Pesan"
-                    description="Pantau percakapan dengan recruiter dan update proses seleksi kamu."
+                    title={t('candidate.messages.page_title')}
+                    description={t('candidate.messages.page_description')}
                 />
 
                 <div className="grid gap-4 md:grid-cols-3">
@@ -82,16 +85,16 @@ export default function CandidateMessages({
                         </div>
                         <p className="text-2xl font-semibold">{unread_total}</p>
                         <p className="text-sm text-muted-foreground">
-                            Pesan belum dibaca
+                            {t('candidate.messages.unread_messages')}
                         </p>
                     </div>
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Cari percakapan</CardTitle>
+                        <CardTitle>{t('candidate.messages.search_title')}</CardTitle>
                         <CardDescription>
-                            Cari berdasarkan nama perusahaan atau posisi.
+                            {t('candidate.messages.search_description')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -105,11 +108,11 @@ export default function CandidateMessages({
                                     name="search"
                                     defaultValue={filters.search}
                                     className="pl-9"
-                                    placeholder="Cari perusahaan atau posisi"
+                                    placeholder={t('candidate.messages.search_placeholder')}
                                 />
                             </div>
                             <Button type="submit" variant="outline">
-                                Terapkan
+                                {t('candidate.messages.apply')}
                             </Button>
                         </form>
                     </CardContent>
@@ -129,10 +132,10 @@ export default function CandidateMessages({
                                 <MessageSquareText className="size-6" />
                             </div>
                             <h2 className="mt-4 text-lg font-semibold">
-                                Belum ada percakapan
+                                {t('candidate.messages.empty_title')}
                             </h2>
                             <p className="mx-auto mt-1 max-w-xl text-sm text-muted-foreground">
-                                Pesan dari recruiter akan muncul di sini.
+                                {t('candidate.messages.empty_description')}
                             </p>
                         </div>
                     )}
@@ -165,6 +168,8 @@ export default function CandidateMessages({
 }
 
 function ConversationRow({ conversation }: { conversation: ConversationRow }) {
+    const { t } = useTranslate();
+
     return (
         <Link
             href={show(conversation.id).url}
@@ -195,7 +200,7 @@ function ConversationRow({ conversation }: { conversation: ConversationRow }) {
 
                 {conversation.job_title && (
                     <p className="mt-1 text-xs text-[#64748b]">
-                        Posisi: {conversation.job_title}
+                        {t('candidate.messages.position')}: {conversation.job_title}
                     </p>
                 )}
 
@@ -207,12 +212,12 @@ function ConversationRow({ conversation }: { conversation: ConversationRow }) {
                                 : 'text-muted-foreground'
                         }`}
                     >
-                        {conversation.latest_message.is_mine ? 'Anda: ' : ''}
+                        {conversation.latest_message.is_mine ? t('candidate.messages.you') + ': ' : ''}
                         {conversation.latest_message.body}
                     </p>
                 ) : (
                     <p className="mt-1 text-sm text-muted-foreground italic">
-                        Belum ada pesan
+                        {t('candidate.messages.no_message')}
                     </p>
                 )}
             </div>

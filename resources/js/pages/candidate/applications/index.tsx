@@ -11,7 +11,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { useTranslate } from '@/hooks/use-translate';
-import { index, show, withdraw } from '@/routes/candidate/applications';
+import { index, show } from '@/routes/candidate/applications';
 import type { AdminPaginatedRows } from '@/types';
 
 type Application = {
@@ -52,8 +52,6 @@ const STATUS_TONES: Record<
     rejected: 'danger',
     withdrawn: 'neutral',
 };
-
-const TERMINAL_STATUSES = ['hired', 'rejected', 'withdrawn'];
 
 export default function CandidateApplicationsIndex({
     filters,
@@ -99,25 +97,6 @@ export default function CandidateApplicationsIndex({
                     icon: 'eye',
                     method: 'get' as const,
                 },
-                ...(!TERMINAL_STATUSES.includes(app.status)
-                    ? [
-                          {
-                              label: t(
-                                  'candidate.applications.action_withdraw',
-                              ),
-                              href: withdraw(app.id).url,
-                              icon: 'x',
-                              method: 'patch' as const,
-                              variant: 'destructive' as const,
-                              confirmTitle: t(
-                                  'candidate.applications.confirm_withdraw_title',
-                              ),
-                              confirmDescription: t(
-                                  'candidate.applications.confirm_withdraw_description',
-                              ),
-                          },
-                      ]
-                    : []),
             ],
         }));
 
@@ -203,11 +182,6 @@ export default function CandidateApplicationsIndex({
                                 <option value="rejected">
                                     {t(
                                         'candidate.applications.status_rejected',
-                                    )}
-                                </option>
-                                <option value="withdrawn">
-                                    {t(
-                                        'candidate.applications.status_withdrawn',
                                     )}
                                 </option>
                             </select>

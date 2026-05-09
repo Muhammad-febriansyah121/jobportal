@@ -19,11 +19,11 @@ class SalaryInsightFactory extends Factory
     public function definition(): array
     {
         $salaryMin = $this->faker->numberBetween(5_000_000, 15_000_000);
-        $salaryMedian = $salaryMin + $this->faker->numberBetween(2_000_000, 8_000_000);
-        $salaryMax = $salaryMedian + $this->faker->numberBetween(2_000_000, 10_000_000);
+        $salaryMax = $salaryMin + $this->faker->numberBetween(4_000_000, 18_000_000);
+        $experienceMin = $this->faker->numberBetween(0, 5);
+        $experienceMax = $experienceMin + $this->faker->numberBetween(0, 4);
 
         return [
-            'company_id' => null,
             'industry_id' => Industry::inRandomOrder()->value('id'),
             'job_title' => $this->faker->randomElement([
                 'Software Engineer',
@@ -60,8 +60,10 @@ class SalaryInsightFactory extends Factory
                 'Yogyakarta',
             ]),
             'salary_min' => $salaryMin,
-            'salary_median' => $salaryMedian,
             'salary_max' => $salaryMax,
+            'qualification' => $this->faker->randomElement(['sma', 'd3', 's1', 's2', 's3']),
+            'experience_min_years' => $experienceMin,
+            'experience_max_years' => $experienceMax,
             'source_count' => $this->faker->numberBetween(5, 200),
         ];
     }

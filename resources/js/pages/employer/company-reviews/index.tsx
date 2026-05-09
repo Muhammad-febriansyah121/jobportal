@@ -3,7 +3,6 @@ import {
     AlertTriangle,
     CheckCircle2,
     Clock,
-    MessageSquare,
     Star,
     XCircle,
 } from 'lucide-react';
@@ -24,6 +23,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { useTranslate } from '@/hooks/use-translate';
 import { approve, deleteReply, flag, index, reject, reply } from '@/routes/employer/reviews';
 import type { AdminPaginatedRows } from '@/types';
 
@@ -59,16 +59,6 @@ type EmployerReviewsProps = {
 
 type ActiveTab = 'pending' | 'approved';
 
-const APPROVED_COLUMNS = [
-    { key: 'candidate_name', label: 'Kandidat' },
-    { key: 'rating', label: 'Rating' },
-    { key: 'title', label: 'Judul' },
-    { key: 'review', label: 'Ulasan' },
-    { key: 'status_balasan', label: 'Balasan' },
-    { key: 'status_laporan', label: 'Laporan' },
-    { key: 'reviewed_at', label: 'Tanggal' },
-];
-
 function StarRating({ rating }: { rating: number }) {
     return (
         <div className="flex items-center gap-0.5">
@@ -83,7 +73,7 @@ function StarRating({ rating }: { rating: number }) {
     );
 }
 
-function toApprovedRows(reviews: ApprovedReview[]): AdminPaginatedRows['data'] {
+function toApprovedRows(reviews: ApprovedReview[], t: (key: string) => string): AdminPaginatedRows['data'] {
     return reviews.map((review) => {
         const isFlagPending = Boolean(review.flagged_at) && !review.flag_resolved_at;
         const hasReply = Boolean(review.employer_reply);
@@ -99,26 +89,25 @@ function toApprovedRows(reviews: ApprovedReview[]): AdminPaginatedRows['data'] {
                     : review.review
                 : '-',
             status_balasan: hasReply
-                ? { label: 'Sudah dibalas', tone: 'success' as const }
-                : { label: 'Belum dibalas', tone: 'neutral' as const },
+                ? { label: t('employer.company_reviews.replied'), tone: 'success' as const }
+                : { label: t('employer.company_reviews.not_replied'), tone: 'neutral' as const },
             status_laporan: isFlagPending
-                ? { label: 'Dilaporkan', tone: 'warning' as const }
+                ? { label: t('employer.company_reviews.reported'), tone: 'warning' as const }
                 : { label: '-', tone: 'neutral' as const },
             reviewed_at: review.reviewed_at ?? '-',
             actions: [
                 {
-                    label: hasReply ? 'Edit balasan' : 'Balas',
+                    label: hasReply ? t('employer.company_reviews.edit_reply') : t('employer.company_reviews.reply_action'),
                     href: reply(review.id).url,
                     icon: 'Pencil',
                     method: 'post' as const,
                     fields: [
                         {
                             name: 'employer_reply',
-                            label: 'Balasan',
+                            label: t('employer.company_reviews.reply'),
                             type: 'textarea' as const,
                             value: review.employer_reply ?? '',
-                            placeholder:
-                                'Tulis balasan profesional. Balasan ini tampil publik bersama ulasan.',
+                            placeholder: t('employer.company_reviews.reply_placeholder'),
                             required: true,
                         },
                     ],
@@ -126,33 +115,32 @@ function toApprovedRows(reviews: ApprovedReview[]): AdminPaginatedRows['data'] {
                 ...(hasReply
                     ? [
                           {
-                              label: 'Hapus balasan',
+                              label: t('employer.company_reviews.delete_reply'),
                               href: deleteReply(review.id).url,
                               icon: 'Trash',
                               method: 'delete' as const,
                               variant: 'destructive' as const,
-                              confirmTitle: 'Hapus balasan?',
-                              confirmDescription: 'Balasan akan dihapus dari ulasan ini.',
+                              confirmTitle: t('employer.company_reviews.delete_reply_title'),
+                              confirmDescription: t('employer.company_reviews.delete_reply_description'),
                           },
                       ]
                     : []),
                 ...(!isFlagPending
                     ? [
                           {
-                              label: 'Laporkan',
+                              label: t('employer.company_reviews.report_action'),
                               href: flag(review.id).url,
                               icon: 'Ban',
                               method: 'post' as const,
                               variant: 'outline' as const,
-                              confirmTitle: 'Laporkan ulasan?',
-                              confirmDescription: 'Tim admin akan meninjau ulasan ini.',
+                              confirmTitle: t('employer.company_reviews.report_title'),
+                              confirmDescription: t('employer.company_reviews.report_description'),
                               fields: [
                                   {
                                       name: 'flag_reason',
-                                      label: 'Alasan laporan',
+                                      label: t('employer.company_reviews.report_reason'),
                                       type: 'textarea' as const,
-                                      placeholder:
-                                          'Mis: berisi fitnah, bukan pekerja perusahaan kami, bahasa kasar...',
+                                      placeholder: t('employer.company_reviews.report_reason_placeholder'),
                                       required: true,
                                   },
                               ],
@@ -170,6 +158,7 @@ export default function EmployerCompanyReviewsIndex({
     reviews,
     stats,
 }: EmployerReviewsProps) {
+    const { t } = useTranslate();
     const [activeTab, setActiveTab] = useState<ActiveTab>(
         pending.length > 0 ? 'pending' : 'approved',
     );
@@ -177,8 +166,18 @@ export default function EmployerCompanyReviewsIndex({
     const [rejectReason, setRejectReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const approvedColumns = [
+        { key: 'candidate_name', label: t('employer.company_reviews.col_candidate') },
+        { key: 'rating', label: t('employer.company_reviews.col_rating') },
+        { key: 'title', label: t('employer.company_reviews.col_title') },
+        { key: 'review', label: t('employer.company_reviews.col_review') },
+        { key: 'status_balasan', label: t('employer.company_reviews.col_reply') },
+        { key: 'status_laporan', label: t('employer.company_reviews.col_report') },
+        { key: 'reviewed_at', label: t('employer.company_reviews.col_date') },
+    ];
+
     const approvedRows: AdminPaginatedRows = {
-        data: toApprovedRows(reviews.data),
+        data: toApprovedRows(reviews.data, t),
         links: reviews.links,
     };
 
@@ -210,12 +209,12 @@ export default function EmployerCompanyReviewsIndex({
 
     return (
         <>
-            <Head title="Ulasan Perusahaan" />
+            <Head title={t('employer.company_reviews.page_title')} />
 
             <div className="space-y-6 p-4 md:p-6">
                 <Heading
-                    title={`Ulasan untuk ${company.name}`}
-                    description="Pratinjau dan kelola ulasan dari kandidat. Ulasan yang disetujui akan tampil publik di profil perusahaan kamu."
+                    title={t('employer.company_reviews.page_heading', { company: company.name })}
+                    description={t('employer.company_reviews.page_description')}
                 />
 
                 {/* Stats strip */}
@@ -223,18 +222,18 @@ export default function EmployerCompanyReviewsIndex({
                     <div className="flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm shadow-xs">
                         <Star className="size-4 fill-amber-400 text-amber-400" />
                         <span className="font-bold">{stats.avg > 0 ? stats.avg : '-'}</span>
-                        <span className="text-muted-foreground">rating rata-rata</span>
+                        <span className="text-muted-foreground">{t('employer.company_reviews.rating_avg')}</span>
                     </div>
                     <div className="flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm shadow-xs">
                         <CheckCircle2 className="size-4 text-emerald-600" />
                         <span className="font-bold">{stats.total}</span>
-                        <span className="text-muted-foreground">ulasan publik</span>
+                        <span className="text-muted-foreground">{t('employer.company_reviews.public_count')}</span>
                     </div>
                     {stats.pending_count > 0 && (
                         <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm shadow-xs">
                             <Clock className="size-4 text-amber-600" />
                             <span className="font-bold text-amber-700">{stats.pending_count}</span>
-                            <span className="text-amber-600">menunggu pratinjau kamu</span>
+                            <span className="text-amber-600">{t('employer.company_reviews.pending_label')}</span>
                         </div>
                     )}
                 </div>
@@ -251,7 +250,7 @@ export default function EmployerCompanyReviewsIndex({
                         }`}
                     >
                         <Clock className="size-4" />
-                        Menunggu Pratinjau
+                        {t('employer.company_reviews.tab_pending')}
                         {pending.length > 0 && (
                             <Badge className="ml-1 bg-amber-500 px-1.5 py-0 text-[10px] text-white">
                                 {pending.length}
@@ -268,7 +267,7 @@ export default function EmployerCompanyReviewsIndex({
                         }`}
                     >
                         <CheckCircle2 className="size-4" />
-                        Disetujui
+                        {t('employer.company_reviews.tab_approved')}
                         {stats.total > 0 && (
                             <Badge variant="outline" className="ml-1 px-1.5 py-0 text-[10px]">
                                 {stats.total}
@@ -282,16 +281,18 @@ export default function EmployerCompanyReviewsIndex({
                     <div className="space-y-4">
                         {pending.length === 0 ? (
                             <EmptyState
-                                title="Tidak ada ulasan menunggu"
-                                description="Semua ulasan dari kandidat sudah diproses."
+                                title={t('employer.company_reviews.empty_pending_title')}
+                                description={t('employer.company_reviews.empty_pending_desc')}
                             />
                         ) : (
                             <>
                                 <div className="rounded-xl border border-[#01296a]/20 bg-[#01296a]/5 px-4 py-3 text-sm text-[#01296a]">
                                     <p>
-                                        Ulasan di bawah belum tampil publik. Tinjau isinya dan
-                                        <strong> setujui</strong> jika sesuai, atau{' '}
-                                        <strong>tolak</strong> jika tidak layak ditampilkan.
+                                        {t('employer.company_reviews.pending_notice_prefix')}{' '}
+                                        <strong>{t('employer.company_reviews.approve_lower')}</strong>{' '}
+                                        {t('employer.company_reviews.pending_notice_middle')}{' '}
+                                        <strong>{t('employer.company_reviews.reject_lower')}</strong>{' '}
+                                        {t('employer.company_reviews.pending_notice_suffix')}
                                     </p>
                                 </div>
 
@@ -311,7 +312,7 @@ export default function EmployerCompanyReviewsIndex({
                                                     </span>
                                                     <Badge className="border-amber-300 bg-amber-50 text-amber-700">
                                                         <Clock className="mr-1 size-3" />
-                                                        Menunggu
+                                                        {t('employer.company_reviews.status_waiting')}
                                                     </Badge>
                                                 </div>
                                             </div>
@@ -337,7 +338,7 @@ export default function EmployerCompanyReviewsIndex({
                                                     }}
                                                 >
                                                     <XCircle className="size-4" />
-                                                    Tolak
+                                                    {t('employer.company_reviews.btn_reject')}
                                                 </Button>
                                                 <Button
                                                     size="sm"
@@ -345,7 +346,7 @@ export default function EmployerCompanyReviewsIndex({
                                                     onClick={() => handleApprove(review.id)}
                                                 >
                                                     <CheckCircle2 className="size-4" />
-                                                    Setujui
+                                                    {t('employer.company_reviews.btn_approve')}
                                                 </Button>
                                             </div>
                                         </CardContent>
@@ -361,14 +362,14 @@ export default function EmployerCompanyReviewsIndex({
                     <div>
                         {reviews.data.length === 0 ? (
                             <EmptyState
-                                title="Belum ada ulasan publik"
-                                description="Ulasan yang kamu setujui akan muncul di sini."
+                                title={t('employer.company_reviews.empty_approved_title')}
+                                description={t('employer.company_reviews.empty_approved_desc')}
                             />
                         ) : (
                             <AdminDataTable
-                                columns={APPROVED_COLUMNS}
+                                columns={approvedColumns}
                                 rows={approvedRows}
-                                emptyState="Belum ada ulasan publik."
+                                emptyState={t('employer.company_reviews.empty_approved_table')}
                             />
                         )}
                     </div>
@@ -389,35 +390,34 @@ export default function EmployerCompanyReviewsIndex({
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <AlertTriangle className="size-5 text-red-500" />
-                            Tolak ulasan ini?
+                            {t('employer.company_reviews.reject_title')}
                         </DialogTitle>
                         <DialogDescription>
-                            Kandidat akan menerima notifikasi bahwa ulasannya tidak disetujui. Berikan
-                            alasan yang jelas.
+                            {t('employer.company_reviews.reject_desc')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2">
                         <label className="text-sm font-medium">
-                            Alasan penolakan <span className="text-red-500">*</span>
+                            {t('employer.company_reviews.reject_reason_label')} <span className="text-red-500">*</span>
                         </label>
                         <Textarea
                             value={rejectReason}
                             onChange={(e) => setRejectReason(e.target.value)}
-                            placeholder="Mis: ulasan tidak sesuai pengalaman nyata, mengandung bahasa tidak pantas..."
+                            placeholder={t('employer.company_reviews.reject_reason_placeholder')}
                             rows={4}
                         />
-                        <p className="text-xs text-muted-foreground">{rejectReason.length}/500 karakter (min. 10)</p>
+                        <p className="text-xs text-muted-foreground">{t('employer.company_reviews.reject_reason_counter', { length: rejectReason.length })}</p>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setRejectingId(null)}>
-                            Batal
+                            {t('employer.company_reviews.btn_cancel')}
                         </Button>
                         <Button
                             variant="destructive"
                             disabled={rejectReason.trim().length < 10 || isSubmitting}
                             onClick={handleReject}
                         >
-                            {isSubmitting ? 'Menolak…' : 'Tolak Ulasan'}
+                            {isSubmitting ? t('employer.company_reviews.btn_rejecting') : t('employer.company_reviews.btn_reject_confirm')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

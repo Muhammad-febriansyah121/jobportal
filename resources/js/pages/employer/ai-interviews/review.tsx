@@ -1,4 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
+import { useTranslate } from '@/hooks/use-translate';
 import {
     AlertTriangle,
     ArrowLeft,
@@ -151,22 +152,25 @@ function parseTranscript(raw: string): TranscriptLine[] {
         .filter((line): line is TranscriptLine => line !== null);
 }
 
-function formatDuration(seconds: number | null | undefined): string {
+type ReviewTFn = (key: string, replacements?: Record<string, string | number>) => string;
+
+function formatDuration(seconds: number | null | undefined, t: ReviewTFn): string {
     if (!seconds || seconds <= 0) {
         return '—';
     }
     const minutes = Math.floor(seconds / 60);
     const sec = seconds % 60;
     if (minutes === 0) {
-        return `${sec} dtk`;
+        return t('employer.ai_interview_review.duration_seconds', { sec });
     }
-    return `${minutes} mnt ${sec.toString().padStart(2, '0')} dtk`;
+    return t('employer.ai_interview_review.duration_minutes', { min: minutes, sec: sec.toString().padStart(2, '0') });
 }
 
 export default function EmployerAiInterviewReview({
     company,
     session,
 }: ReviewProps) {
+    const { t } = useTranslate();
     const [activeTab, setActiveTab] = useState('overview');
 
     const score = session.analysis?.fit_score ?? 0;
@@ -181,14 +185,18 @@ export default function EmployerAiInterviewReview({
         [session.live_transcript],
     );
 
-    const modeLabel = session.interview_mode === 'text' ? 'Teks' : 'Voice AI';
+    const modeLabel = session.interview_mode === 'text'
+        ? t('employer.ai_interview_review.mode_text')
+        : t('employer.ai_interview_review.mode_voice');
     const langLabel =
-        session.interview_language === 'en' ? 'English' : 'Bahasa Indonesia';
-    const verdict = verdictFromScore(score);
+        session.interview_language === 'en'
+            ? t('employer.ai_interview_review.lang_en')
+            : t('employer.ai_interview_review.lang_id');
+    const verdict = verdictFromScore(score, t);
 
     return (
         <>
-            <Head title={`Review · ${session.candidate.name}`} />
+            <Head title={t('employer.ai_interview_review.head_title', { name: session.candidate.name })} />
 
             <div className="min-h-screen bg-white p-4 md:p-6">
                 <div className="mx-auto max-w-6xl space-y-5">
@@ -200,7 +208,7 @@ export default function EmployerAiInterviewReview({
                                     className="inline-flex items-center gap-1 hover:text-foreground"
                                 >
                                     <ArrowLeft className="size-3.5" />
-                                    Lowongan
+                                    {t('employer.ai_interview_review.back_to_job')}
                                 </Link>
                             ) : null}
                             <span aria-hidden>·</span>
@@ -225,7 +233,7 @@ export default function EmployerAiInterviewReview({
                                     rel="noreferrer"
                                 >
                                     <Download className="size-4" />
-                                    Download PDF
+                                    {t('employer.ai_interview_review.download_pdf')}
                                 </a>
                             </Button>
                         </div>
@@ -260,7 +268,7 @@ export default function EmployerAiInterviewReview({
                                         .join(' · ')}
                                 </p>
                                 <p className="text-sm font-medium text-white/90">
-                                    Posisi:{' '}
+                                    {t('employer.ai_interview_review.position_label')}{' '}
                                     <span className="font-semibold">
                                         {session.job.title ?? '—'}
                                     </span>
@@ -274,7 +282,7 @@ export default function EmployerAiInterviewReview({
                                 {session.completed_at ? (
                                     <Badge className="border-0 bg-white/10 text-white">
                                         <Clock3 className="size-3" />
-                                        Selesai {session.completed_at}
+                                        {t('employer.ai_interview_review.completed_label')} {session.completed_at}
                                     </Badge>
                                 ) : null}
                                 {session.candidate.email ? (
@@ -283,7 +291,7 @@ export default function EmployerAiInterviewReview({
                                         className="inline-flex items-center gap-1 rounded-md bg-white/10 px-2 py-1 text-xs font-medium text-white/90 transition hover:bg-white/20"
                                     >
                                         <Mail className="size-3" />
-                                        Hubungi kandidat
+                                        {t('employer.ai_interview_review.contact_candidate')}
                                     </a>
                                 ) : null}
                             </div>
@@ -293,7 +301,7 @@ export default function EmployerAiInterviewReview({
                     <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
                         <KpiCard
                             icon={Star}
-                            label="Avg Skor Jawaban"
+                            label={t('employer.ai_interview_review.kpi_avg_score')}
                             value={
                                 session.metrics.avg_response_score !== null
                                     ? `${session.metrics.avg_response_score}`
@@ -309,7 +317,7 @@ export default function EmployerAiInterviewReview({
                         />
                         <KpiCard
                             icon={ClipboardList}
-                            label="Response Rate"
+                            label={t('employer.ai_interview_review.kpi_response_rate')}
                             value={`${session.metrics.response_rate}%`}
                             tone={
                                 session.metrics.response_rate >= 90
@@ -321,30 +329,31 @@ export default function EmployerAiInterviewReview({
                         />
                         <KpiCard
                             icon={MessageSquareText}
-                            label="Pertanyaan"
+                            label={t('employer.ai_interview_review.kpi_questions')}
                             value={`${session.metrics.answered_count}/${session.metrics.total_questions}`}
                         />
                         <KpiCard
                             icon={Type}
-                            label="Total Kata"
+                            label={t('employer.ai_interview_review.kpi_total_words')}
                             value={`${session.metrics.total_words.toLocaleString('id-ID')}`}
                             sub={`avg ${session.metrics.avg_words}`}
                         />
                         <KpiCard
                             icon={Timer}
-                            label="Durasi"
+                            label={t('employer.ai_interview_review.kpi_duration')}
                             value={formatDuration(
                                 session.metrics.duration_seconds,
+                                t,
                             )}
                             sub={
                                 session.duration_minutes
-                                    ? `alokasi ${session.duration_minutes} mnt`
+                                    ? t('employer.ai_interview_review.kpi_allocation', { minutes: session.duration_minutes })
                                     : undefined
                             }
                         />
                         <KpiCard
                             icon={Flame}
-                            label="Skip / Pendek"
+                            label={t('employer.ai_interview_review.kpi_skip_short')}
                             value={`${session.metrics.skipped_count} / ${session.responses.filter((r) => r.is_short).length}`}
                             tone={
                                 session.metrics.skipped_count +
@@ -364,7 +373,7 @@ export default function EmployerAiInterviewReview({
                                 <SignalCard
                                     tone="positive"
                                     icon={CheckCircle2}
-                                    title="Sinyal positif"
+                                    title={t('employer.ai_interview_review.signal_positive')}
                                     items={session.highlights}
                                 />
                             ) : null}
@@ -372,7 +381,7 @@ export default function EmployerAiInterviewReview({
                                 <SignalCard
                                     tone="warning"
                                     icon={AlertTriangle}
-                                    title="Perlu perhatian"
+                                    title={t('employer.ai_interview_review.signal_warning')}
                                     items={session.flags}
                                 />
                             ) : null}
@@ -385,7 +394,7 @@ export default function EmployerAiInterviewReview({
                                 <SectionTitle
                                     icon={Mic}
                                     eyebrow="Recording"
-                                    title="Rekaman Interview"
+                                    title={t('employer.ai_interview_review.recording_title')}
                                 />
                             </CardHeader>
                             <CardContent>
@@ -406,14 +415,14 @@ export default function EmployerAiInterviewReview({
                                 className="gap-2 data-[state=active]:bg-background"
                             >
                                 <Sparkles className="size-3.5" />
-                                Ringkasan
+                                {t('employer.ai_interview_review.tab_overview')}
                             </TabsTrigger>
                             <TabsTrigger
                                 value="responses"
                                 className="gap-2 data-[state=active]:bg-background"
                             >
                                 <FileText className="size-3.5" />
-                                Per Pertanyaan ({session.responses.length})
+                                {t('employer.ai_interview_review.tab_responses', { count: session.responses.length })}
                             </TabsTrigger>
                             {transcriptLines.length > 0 && (
                                 <TabsTrigger
@@ -421,7 +430,7 @@ export default function EmployerAiInterviewReview({
                                     className="gap-2 data-[state=active]:bg-background"
                                 >
                                     <MessageSquareText className="size-3.5" />
-                                    Transkrip
+                                    {t('employer.ai_interview_review.tab_transcript')}
                                 </TabsTrigger>
                             )}
                             <TabsTrigger
@@ -429,7 +438,7 @@ export default function EmployerAiInterviewReview({
                                 className="gap-2 data-[state=active]:bg-background"
                             >
                                 <ClipboardList className="size-3.5" />
-                                Detail Sesi
+                                {t('employer.ai_interview_review.tab_meta')}
                             </TabsTrigger>
                         </TabsList>
 
@@ -442,19 +451,19 @@ export default function EmployerAiInterviewReview({
                                     <CardHeader>
                                         <SectionTitle
                                             icon={Sparkles}
-                                            eyebrow="Executive brief"
-                                            title="Ringkasan AI"
+                                            eyebrow={t('employer.ai_interview_review.summary_eyebrow')}
+                                            title={t('employer.ai_interview_review.summary_title')}
                                         />
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         <p className="text-sm leading-7 text-foreground/85">
                                             {session.analysis?.summary ??
-                                                'Ringkasan AI belum tersedia untuk sesi ini.'}
+                                                t('employer.ai_interview_review.summary_empty')}
                                         </p>
                                         {session.analysis?.recommendation ? (
                                             <div className="rounded-lg border bg-muted/30 p-3 text-sm leading-6">
                                                 <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                                                    Rekomendasi AI
+                                                    {t('employer.ai_interview_review.recommendation_label')}
                                                 </p>
                                                 <p className="mt-1 font-medium">
                                                     {
@@ -472,8 +481,8 @@ export default function EmployerAiInterviewReview({
                                         <CardHeader>
                                             <SectionTitle
                                                 icon={Gauge}
-                                                eyebrow="Per kategori"
-                                                title="Performa per Kategori"
+                                                eyebrow={t('employer.ai_interview_review.category_eyebrow')}
+                                                title={t('employer.ai_interview_review.category_title')}
                                             />
                                         </CardHeader>
                                         <CardContent className="space-y-3">
@@ -494,8 +503,8 @@ export default function EmployerAiInterviewReview({
                                         <CardHeader>
                                             <SectionTitle
                                                 icon={PieChart}
-                                                eyebrow="Technical scorecard"
-                                                title="Kompetensi Teknis"
+                                                eyebrow={t('employer.ai_interview_review.scorecard_eyebrow')}
+                                                title={t('employer.ai_interview_review.scorecard_title')}
                                             />
                                         </CardHeader>
                                         <CardContent className="space-y-4">
@@ -534,13 +543,13 @@ export default function EmployerAiInterviewReview({
 
                             <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
                                 <InsightCard
-                                    title="Kekuatan"
+                                    title={t('employer.ai_interview_review.strengths_title')}
                                     icon={CheckCircle2}
                                     items={session.analysis?.strengths ?? []}
                                     tone="success"
                                 />
                                 <InsightCard
-                                    title="Area Validasi"
+                                    title={t('employer.ai_interview_review.validation_title')}
                                     icon={TrendingUp}
                                     items={session.analysis?.weaknesses ?? []}
                                     tone="warning"
@@ -552,14 +561,10 @@ export default function EmployerAiInterviewReview({
                                         </div>
                                         <div className="space-y-1">
                                             <h2 className="text-base font-semibold">
-                                                Kalibrasi keputusan
+                                                {t('employer.ai_interview_review.calibration_title')}
                                             </h2>
                                             <p className="text-xs leading-6 text-foreground/70">
-                                                Skor AI adalah sinyal awal —
-                                                pertimbangkan kebutuhan tim,
-                                                kultur, dan interview lanjutan
-                                                sebelum mengambil keputusan
-                                                final.
+                                                {t('employer.ai_interview_review.calibration_desc')}
                                             </p>
                                         </div>
                                     </CardContent>
@@ -585,8 +590,8 @@ export default function EmployerAiInterviewReview({
                                     <CardHeader>
                                         <SectionTitle
                                             icon={MessageSquareText}
-                                            eyebrow="Live transcript"
-                                            title="Rekaman percakapan"
+                                            eyebrow={t('employer.ai_interview_review.transcript_eyebrow')}
+                                            title={t('employer.ai_interview_review.transcript_title')}
                                         />
                                     </CardHeader>
                                     <CardContent>
@@ -630,7 +635,7 @@ export default function EmployerAiInterviewReview({
                                                             <p className="mb-1 text-[10px] font-semibold tracking-wider opacity-60 uppercase">
                                                                 {line.speaker ===
                                                                 'ai'
-                                                                    ? 'AI Interviewer'
+                                                                    ? t('employer.ai_interview_review.ai_interviewer')
                                                                     : session
                                                                           .candidate
                                                                           .name}
@@ -652,65 +657,66 @@ export default function EmployerAiInterviewReview({
                         >
                             <MetaItem
                                 icon={Briefcase}
-                                label="Posisi"
+                                label={t('employer.ai_interview_review.meta_position')}
                                 value={session.job.title ?? '—'}
                             />
                             <MetaItem
                                 icon={ShieldCheck}
-                                label="Status sesi"
+                                label={t('employer.ai_interview_review.meta_status')}
                                 value={session.status.replace('_', ' ')}
                                 capitalize
                             />
                             <MetaItem
                                 icon={Mic}
-                                label="Mode interview"
+                                label={t('employer.ai_interview_review.meta_mode')}
                                 value={`${modeLabel} · ${langLabel}`}
                             />
                             <MetaItem
                                 icon={Clock3}
-                                label="Mulai"
+                                label={t('employer.ai_interview_review.meta_started')}
                                 value={session.started_at ?? '—'}
                             />
                             <MetaItem
                                 icon={Clock3}
-                                label="Selesai"
+                                label={t('employer.ai_interview_review.meta_completed')}
                                 value={session.completed_at ?? '—'}
                             />
                             <MetaItem
                                 icon={Timer}
-                                label="Alokasi durasi"
+                                label={t('employer.ai_interview_review.meta_allocation')}
                                 value={
                                     session.duration_minutes
-                                        ? `${session.duration_minutes} menit`
+                                        ? t('employer.ai_interview_review.meta_allocation_value', { minutes: session.duration_minutes })
                                         : '—'
                                 }
                             />
                             <MetaItem
                                 icon={LineChart}
-                                label="Durasi aktual"
+                                label={t('employer.ai_interview_review.meta_actual_duration')}
                                 value={formatDuration(
                                     session.metrics.duration_seconds,
+                                    t,
                                 )}
                             />
                             <MetaItem
                                 icon={Type}
-                                label="Avg / Total kata"
+                                label={t('employer.ai_interview_review.meta_avg_total_words')}
                                 value={`${session.metrics.avg_words} / ${session.metrics.total_words.toLocaleString('id-ID')}`}
                             />
                             <MetaItem
                                 icon={Award}
-                                label="Jawaban terpanjang"
-                                value={`${session.metrics.longest_words} kata`}
+                                label={t('employer.ai_interview_review.meta_longest')}
+                                value={t('employer.ai_interview_review.meta_words', { count: session.metrics.longest_words })}
                             />
                             <MetaItem
                                 icon={Award}
-                                label="Jawaban terpendek"
-                                value={`${session.metrics.shortest_words} kata`}
+                                label={t('employer.ai_interview_review.meta_shortest')}
+                                value={t('employer.ai_interview_review.meta_words', { count: session.metrics.shortest_words })}
                             />
                             {session.voice ? (
                                 <MetaItem
                                     icon={Bot}
-                                    label="AI Voice"
+                                    label={t('employer.ai_interview_review.meta_voice')}
                                     value={session.voice}
                                     capitalize
                                 />
@@ -808,6 +814,7 @@ function KpiCard({
 }
 
 function CategoryScoreRow({ item }: { item: CategoryScore }) {
+    const { t } = useTranslate();
     const score = item.avg_score ?? 0;
     const styles = {
         good: {
@@ -840,7 +847,7 @@ function CategoryScoreRow({ item }: { item: CategoryScore }) {
                         {item.label}
                     </p>
                     <Badge variant="outline" className="text-[10px]">
-                        {item.answered}/{item.total} terjawab
+                        {t('employer.ai_interview_review.answered_label', { answered: item.answered, total: item.total })}
                     </Badge>
                 </div>
                 <Badge className={cn('text-xs', styles.badge)}>
@@ -965,6 +972,7 @@ function InsightCard({
     items: string[];
     tone: 'success' | 'warning';
 }) {
+    const { t } = useTranslate();
     return (
         <Card>
             <CardHeader>
@@ -972,8 +980,8 @@ function InsightCard({
                     icon={Icon}
                     eyebrow={
                         tone === 'success'
-                            ? 'Positive signals'
-                            : 'Follow-up notes'
+                            ? t('employer.ai_interview_review.signal_positive')
+                            : t('employer.ai_interview_review.signal_follow_up')
                     }
                     title={title}
                 />
@@ -1000,7 +1008,7 @@ function InsightCard({
                     </ul>
                 ) : (
                     <p className="text-sm text-muted-foreground">
-                        Belum ada insight.
+                        {t('employer.ai_interview_review.no_insight')}
                     </p>
                 )}
             </CardContent>
@@ -1009,6 +1017,7 @@ function InsightCard({
 }
 
 function ResponseCard({ response }: { response: Response }) {
+    const { t } = useTranslate();
     const [open, setOpen] = useState(false);
     const score = response.ai_score;
     const scoreClass =
@@ -1037,7 +1046,7 @@ function ResponseCard({ response }: { response: Response }) {
                 </span>
                 <div className="flex-1 space-y-1.5">
                     <p className="text-sm font-medium leading-snug">
-                        {response.question ?? 'Pertanyaan tidak tersedia'}
+                        {response.question ?? t('employer.ai_interview_review.question_not_available')}
                     </p>
                     <div className="flex flex-wrap items-center gap-1.5">
                         {response.category ? (
@@ -1053,12 +1062,12 @@ function ResponseCard({ response }: { response: Response }) {
                                 variant="outline"
                                 className="text-[10px] text-muted-foreground"
                             >
-                                Bobot {response.weight}%
+                                {t('employer.ai_interview_review.weight_label', { weight: response.weight })}
                             </Badge>
                         ) : null}
                         {response.is_skipped ? (
                             <Badge className="bg-rose-100 text-[10px] text-rose-800">
-                                Tidak dijawab
+                                {t('employer.ai_interview_review.not_answered_badge')}
                             </Badge>
                         ) : (
                             <>
@@ -1066,16 +1075,16 @@ function ResponseCard({ response }: { response: Response }) {
                                     variant="outline"
                                     className="text-[10px]"
                                 >
-                                    {response.word_count} kata
+                                    {t('employer.ai_interview_review.word_count_badge', { count: response.word_count })}
                                 </Badge>
                                 {response.is_short ? (
                                     <Badge className="bg-amber-100 text-[10px] text-amber-800">
-                                        Singkat
+                                        {t('employer.ai_interview_review.short_badge')}
                                     </Badge>
                                 ) : null}
                                 {response.is_strong ? (
                                     <Badge className="bg-emerald-100 text-[10px] text-emerald-800">
-                                        Elaboratif
+                                        {t('employer.ai_interview_review.elaborative_badge')}
                                     </Badge>
                                 ) : null}
                             </>
@@ -1106,19 +1115,19 @@ function ResponseCard({ response }: { response: Response }) {
                     {response.rubric ? (
                         <div className="rounded-lg border border-dashed bg-background px-3 py-2 text-xs leading-5 text-muted-foreground">
                             <span className="font-semibold text-foreground">
-                                Rubrik:
+                                {t('employer.ai_interview_review.rubric_label')}
                             </span>{' '}
                             {response.rubric}
                         </div>
                     ) : null}
                     <div>
                         <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                            Jawaban kandidat
+                            {t('employer.ai_interview_review.candidate_answer_label')}
                         </p>
                         <p className="mt-1 rounded-lg border bg-background p-3 text-sm leading-7 whitespace-pre-line">
                             {response.answer_text ?? (
                                 <span className="text-muted-foreground italic">
-                                    Belum ada jawaban.
+                                    {t('employer.ai_interview_review.no_answer')}
                                 </span>
                             )}
                         </p>
@@ -1170,17 +1179,17 @@ function MetaItem({
     );
 }
 
-function verdictFromScore(score: number): { label: string; bg: string } {
+function verdictFromScore(score: number, t: ReviewTFn): { label: string; bg: string } {
     if (score >= 80) {
-        return { label: 'Strong fit', bg: 'bg-emerald-500/30' };
+        return { label: t('employer.ai_interview_review.verdict_strong'), bg: 'bg-emerald-500/30' };
     }
     if (score >= 60) {
-        return { label: 'Potensial', bg: 'bg-amber-500/30' };
+        return { label: t('employer.ai_interview_review.verdict_potential'), bg: 'bg-amber-500/30' };
     }
     if (score >= 40) {
-        return { label: 'Perlu validasi', bg: 'bg-orange-500/30' };
+        return { label: t('employer.ai_interview_review.verdict_validation'), bg: 'bg-orange-500/30' };
     }
-    return { label: 'Tidak match', bg: 'bg-rose-500/30' };
+    return { label: t('employer.ai_interview_review.verdict_no_match'), bg: 'bg-rose-500/30' };
 }
 
 function toneFromScore(

@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'motion/react';
 import { useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -6,10 +6,6 @@ import { Marquee } from '@/components/ui/marquee';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import { useTranslate } from '@/hooks/use-translate';
 import { login } from '@/routes';
-import {
-    index as careerResourcesIndex,
-    show as careerResourcesShow,
-} from '@/routes/career-resources';
 import { save, unsave } from '@/routes/candidate/jobs';
 import { index as jobsIndex, show } from '@/routes/jobs';
 
@@ -18,6 +14,8 @@ type HeroJob = {
     slug: string;
     title: string;
     is_anonymous: boolean;
+    is_urgent?: boolean;
+    is_few_applicants?: boolean;
     company?: string | null;
     type: string;
     work_mode: string;
@@ -47,28 +45,24 @@ type RegisteredCompany = {
     is_verified: boolean;
 };
 
-type CareerResourceItem = {
-    id: number;
-    title: string;
-    slug: string;
-    type: string;
-    category?: string | null;
-    thumbnail_path?: string | null;
-    published_at?: string | null;
-};
-
 type FaqItem = {
     id: number;
     title: string;
     description: string;
 };
 
+type JobsPagination = {
+    current_page: number;
+    last_page: number;
+    has_more: boolean;
+};
+
 type HeroSectionProps = {
     jobs: HeroJob[];
+    jobs_pagination?: JobsPagination;
     stats: Stats;
     industries: Industry[];
     registeredCompanies: RegisteredCompany[];
-    latestCareerResources: CareerResourceItem[];
     faqs: FaqItem[];
 };
 
@@ -140,7 +134,7 @@ const TESTIMONIALS: Testimonial[] = [
     { id: 6, name: 'Putri Handayani', role: 'Marketing Manager', company: 'Grab', avatar: 'PH', rating: 5, text: 'Dashboard lamaran real-time bikin saya tahu persis di tahap mana setiap aplikasi. Tidak ada lagi ghosting dari recruiter!' },
     { id: 7, name: 'Fajar Nugroho', role: 'DevOps Engineer', company: 'Tiket.com', avatar: 'FN', rating: 5, text: 'AI Skill Assessment-nya membantu saya tahu gap skill apa yang perlu diisi. Sekarang sudah naik level ke senior engineer.' },
     { id: 8, name: 'Maya Kusuma', role: 'HR Specialist', company: 'BCA', avatar: 'MK', rating: 4, text: 'Sebagai HR, Karivia memudahkan kami menemukan kandidat berkualitas. Screening AI menghemat waktu kami 70% dibanding sebelumnya.' },
-    { id: 9, name: 'Hendra Wijaya', role: 'Finance Analyst', company: 'Mandiri', avatar: 'HW', rating: 5, text: 'Fresh graduate tapi bisa bersaing dengan kandidat berpengalaman berkat rekomendasi skill dan panduan karir dari AI Karivia.' },
+    { id: 9, name: 'Hendra Wijaya', role: 'Finance Analyst', company: 'Mandiri', avatar: 'HW', rating: 5, text: 'Fresh graduate tapi bisa bersaing dengan kandidat berpengalaman berkat rekomendasi pekerjaan yang sesuai dari AI Karivia.' },
     { id: 10, name: 'Lina Octavia', role: 'Content Strategist', company: 'Kompas', avatar: 'LO', rating: 5, text: 'Pindah kota dan cari kerja baru terasa mudah. Filter lokasi dan remote work-nya sangat membantu proses relokasi saya.' },
 ];
 
@@ -573,40 +567,6 @@ function CompanyCard({ company }: { company: RegisteredCompany }) {
     );
 }
 
-const RESOURCE_TYPE_META: Record<
-    string,
-    { labelKey: string; color: string; bg: string; gradient: string; icon: string }
-> = {
-    article: {
-        labelKey: 'home.resources.type.article',
-        color: 'text-sky-700',
-        bg: 'bg-sky-50',
-        gradient: 'from-sky-400/80 via-blue-500/60 to-indigo-600/80',
-        icon: 'M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 12h6m-6-4h4',
-    },
-    guide: {
-        labelKey: 'home.resources.type.guide',
-        color: 'text-emerald-700',
-        bg: 'bg-emerald-50',
-        gradient: 'from-emerald-400/80 via-teal-500/60 to-cyan-600/80',
-        icon: 'M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25',
-    },
-    video: {
-        labelKey: 'home.resources.type.video',
-        color: 'text-rose-700',
-        bg: 'bg-rose-50',
-        gradient: 'from-rose-400/80 via-pink-500/60 to-fuchsia-600/80',
-        icon: 'M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z',
-    },
-    template: {
-        labelKey: 'home.resources.type.template',
-        color: 'text-violet-700',
-        bg: 'bg-violet-50',
-        gradient: 'from-violet-400/80 via-purple-500/60 to-indigo-600/80',
-        icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
-    },
-};
-
 const AVATAR_COLORS = [
     'bg-red-500', 'bg-blue-500', 'bg-violet-500',
     'bg-emerald-500', 'bg-orange-500', 'bg-pink-500',
@@ -681,8 +641,8 @@ function HeroIllustration({ job, stats, companies }: HeroIllustrationProps) {
                 </div>
                 <div className="mt-2 h-px bg-gray-100 sm:mt-3" />
                 <div className="mt-2 flex gap-1.5 sm:mt-3">
-                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[9px] text-gray-500 sm:text-[10px]">AI Matched</span>
-                    <span className="rounded-full bg-primary/8 px-2 py-0.5 text-[9px] text-primary sm:text-[10px]">Top Pick</span>
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[9px] text-gray-500 sm:text-[10px]">{t('home.hero.card.ai_matched')}</span>
+                    <span className="rounded-full bg-primary/8 px-2 py-0.5 text-[9px] text-primary sm:text-[10px]">{t('home.hero.card.top_pick')}</span>
                 </div>
             </div>
 
@@ -697,7 +657,7 @@ function HeroIllustration({ job, stats, companies }: HeroIllustrationProps) {
                             <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                         </svg>
                     </div>
-                    <span className="text-[10px] font-bold text-gray-700 sm:text-xs">AI Interview Score</span>
+                    <span className="text-[10px] font-bold text-gray-700 sm:text-xs">{t('home.hero.card.interview_score_title')}</span>
                 </div>
                 <div className="mb-1.5 flex items-end gap-1 sm:mb-2">
                     <span className="text-3xl font-black tracking-tight text-primary sm:text-4xl">89</span>
@@ -818,19 +778,51 @@ function HeroIllustration({ job, stats, companies }: HeroIllustrationProps) {
 
 export default function HeroSection({
     jobs,
+    jobs_pagination,
     stats,
     industries,
     registeredCompanies,
-    latestCareerResources,
     faqs,
 }: HeroSectionProps) {
     const [search, setSearch] = useState('');
     const [openFaqId, setOpenFaqId] = useState<number | null>(null);
     const [location, setLocation] = useState('');
+    const [accumulatedJobs, setAccumulatedJobs] = useState<HeroJob[]>(jobs);
+    const [pagination, setPagination] = useState<JobsPagination | undefined>(jobs_pagination);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const initialJobsCountRef = useRef<number>(jobs.length);
     const { auth } = usePage<PageProps>().props;
     const isCandidate = auth?.user?.role === 'candidate';
     const industryScrollRef = useRef<HTMLDivElement>(null);
     const { t } = useTranslate();
+
+    const handleLoadMoreJobs = () => {
+        if (!pagination || !pagination.has_more || loadingMore) {
+            return;
+        }
+        const nextPage = pagination.current_page + 1;
+        setLoadingMore(true);
+        router.reload({
+            only: ['jobs', 'jobs_pagination'],
+            data: { jobs_page: nextPage },
+            preserveUrl: true,
+            onSuccess: (page) => {
+                const props = page.props as {
+                    jobs?: HeroJob[];
+                    jobs_pagination?: JobsPagination;
+                };
+                const newJobs = Array.isArray(props.jobs) ? props.jobs : [];
+                const newPagination = props.jobs_pagination;
+                if (newJobs.length > 0) {
+                    setAccumulatedJobs((prev) => [...prev, ...newJobs]);
+                }
+                if (newPagination) {
+                    setPagination(newPagination);
+                }
+            },
+            onFinish: () => setLoadingMore(false),
+        });
+    };
 
     const steps = useMemo(
         () =>
@@ -846,7 +838,8 @@ export default function HeroSection({
         industryScrollRef.current?.scrollBy({ left: dir === 'right' ? 320 : -320, behavior: 'smooth' });
     }
 
-    const featuredJobs = jobs.slice(0, 6);
+    const featuredJobs = accumulatedJobs;
+    const hasMoreJobs = pagination?.has_more ?? false;
 
     return (
         <>
@@ -1240,7 +1233,7 @@ export default function HeroSection({
                             whileInView="visible"
                             viewport={vp}
                         >
-                            {featuredJobs.map((job) => {
+                            {featuredJobs.map((job, jobIndex) => {
                                 const initials = job.is_anonymous
                                     ? '?'
                                     : (job.company ?? 'K')
@@ -1254,10 +1247,19 @@ export default function HeroSection({
                                     workModeStyle[job.work_mode] ??
                                     'bg-gray-100 text-gray-600 ring-1 ring-inset ring-gray-200';
 
+                                const isInitial = jobIndex < initialJobsCountRef.current;
+                                const motionProps = isInitial
+                                    ? { variants: staggerChild }
+                                    : {
+                                        initial: { opacity: 0, y: 16 },
+                                        animate: { opacity: 1, y: 0 },
+                                        transition: { duration: 0.35, ease: 'easeOut' as const },
+                                    };
+
                                 return (
                                     <motion.div
                                         key={job.id}
-                                        variants={staggerChild}
+                                        {...motionProps}
                                         className="group relative flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
                                     >
                                         {/* Stretched link — covers entire card */}
@@ -1266,6 +1268,21 @@ export default function HeroSection({
                                             className="absolute inset-0 rounded-2xl"
                                             aria-label={job.title}
                                         />
+
+                                        {(job.is_urgent || job.is_few_applicants) && (
+                                            <div className="relative z-10 flex flex-wrap gap-1.5">
+                                                {job.is_urgent && (
+                                                    <span className="inline-flex items-center gap-1 rounded-md bg-orange-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                                                        🔥 {t('front.jobs.card_urgent_badge')}
+                                                    </span>
+                                                )}
+                                                {job.is_few_applicants && (
+                                                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-400 px-2 py-0.5 text-[10px] font-bold text-amber-950">
+                                                        ⚡ {t('front.jobs.card_few_applicants_badge')}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
 
                                         {/* Header */}
                                         <div className="flex items-start gap-3">
@@ -1399,149 +1416,30 @@ export default function HeroSection({
                             </p>
                         </div>
                     )}
-                </div>
-            </section>
 
-            {/* ── Latest Career Resources ── */}
-            {latestCareerResources.length > 0 && (
-                <section className="bg-gray-50/60 px-4 py-16">
-                    <div className="mx-auto max-w-5xl">
-                        <motion.div
-                            className="mb-8 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"
-                            variants={fadeUp}
-                            initial="hidden"
-                            whileInView="visible"
-                            viewport={vp}
-                        >
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">
-                                    {t('home.resources.title')}
-                                </h2>
-                                <p className="mt-1 text-sm text-gray-500">
-                                    {t('home.resources.subtitle')}
-                                </p>
-                            </div>
-                            <Link
-                                href={careerResourcesIndex.url()}
-                                className="flex shrink-0 items-center gap-1.5 text-sm font-semibold text-primary transition hover:text-primary/80"
+                    {hasMoreJobs && (
+                        <div className="mt-8 flex justify-center">
+                            <button
+                                type="button"
+                                onClick={handleLoadMoreJobs}
+                                disabled={loadingMore}
+                                className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                             >
-                                {t('home.jobs.see_all')}
+                                {loadingMore ? t('home.jobs.loading_more') : t('home.jobs.load_more')}
                                 <svg
-                                    className="size-4"
+                                    className={`size-4 transition ${loadingMore ? 'animate-bounce' : ''}`}
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
                                 >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M9 5l7 7-7 7"
-                                    />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
-                            </Link>
-                        </motion.div>
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </section>
 
-                        <motion.div
-                            className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
-                            variants={staggerWrap}
-                            initial="hidden"
-                            whileInView="visible"
-                            viewport={vp}
-                        >
-                            {latestCareerResources.map((resource) => {
-                                const fallbackMeta = {
-                                    labelKey: '',
-                                    color: 'text-gray-600',
-                                    bg: 'bg-gray-100',
-                                    gradient: 'from-gray-400/80 via-gray-500/60 to-gray-600/80',
-                                    icon: 'M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25',
-                                };
-                                const meta = RESOURCE_TYPE_META[resource.type] ?? fallbackMeta;
-                                const metaLabel = meta.labelKey ? t(meta.labelKey) : resource.type;
-                                const ctaLabel = resource.type === 'video' ? t('home.resources.cta.watch') : resource.type === 'template' ? t('home.resources.cta.download') : t('home.resources.cta.read');
-                                return (
-                                    <motion.div key={resource.id} variants={staggerChild}>
-                                    <Link
-                                        href={careerResourcesShow.url(resource.slug)}
-                                        className="group flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5"
-                                    >
-                                        {/* Thumbnail */}
-                                        <div className="relative h-44 overflow-hidden">
-                                            {resource.thumbnail_path ? (
-                                                <>
-                                                    <img
-                                                        src={`/storage/${resource.thumbnail_path}`}
-                                                        alt={resource.title}
-                                                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                                                    />
-                                                    <div className="absolute inset-0 bg-linear-to-t from-black/30 to-transparent" />
-                                                </>
-                                            ) : (
-                                                <div className={`relative flex h-full items-center justify-center overflow-hidden bg-linear-to-br ${meta.gradient}`}>
-                                                    <div className="absolute -top-6 -right-6 h-28 w-28 rounded-full bg-white/10" />
-                                                    <div className="absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-white/10" />
-                                                    <div className="relative flex flex-col items-center gap-2">
-                                                        <div className="flex size-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
-                                                            <svg className="size-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d={meta.icon} />
-                                                            </svg>
-                                                        </div>
-                                                        <span className="text-[10px] font-bold tracking-widest text-white/80 uppercase">{metaLabel}</span>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {/* Type pill */}
-                                            <div className="absolute top-3 left-3">
-                                                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide shadow-sm ${resource.thumbnail_path ? 'bg-white/90 backdrop-blur-sm ' + meta.color : 'bg-white/25 text-white backdrop-blur-sm'}`}>
-                                                    {metaLabel}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Body */}
-                                        <div className="flex flex-1 flex-col p-4">
-                                            {/* Category + date */}
-                                            <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
-                                                {resource.category && (
-                                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${meta.bg} ${meta.color}`}>
-                                                        {resource.category}
-                                                    </span>
-                                                )}
-                                                {resource.published_at && (
-                                                    <span className="text-[10px] text-gray-400">
-                                                        {new Date(resource.published_at).toLocaleDateString('id-ID', {
-                                                            day: 'numeric',
-                                                            month: 'short',
-                                                            year: 'numeric',
-                                                        })}
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {/* Title */}
-                                            <h3 className="line-clamp-2 flex-1 text-sm font-bold leading-snug text-gray-900 transition-colors group-hover:text-primary">
-                                                {resource.title}
-                                            </h3>
-
-                                            {/* CTA row */}
-                                            <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3">
-                                                <span className={`text-[11px] font-semibold ${meta.color}`}>{ctaLabel} {t('home.resources.cta_more')}</span>
-                                                <div className={`flex size-7 items-center justify-center rounded-full transition-transform duration-200 group-hover:translate-x-0.5 ${meta.bg}`}>
-                                                    <svg className={`size-3.5 ${meta.color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                                                    </svg>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </Link>
-                                    </motion.div>
-                                );
-                            })}
-                        </motion.div>
-                    </div>
-                </section>
-            )}
 
             {/* ── AI Interview Simulator ── */}
             <section className="overflow-hidden bg-white px-4 py-20">
@@ -1595,7 +1493,7 @@ export default function HeroSection({
                             </ul>
                             <div className="mt-8">
                                 <Link
-                                    href={isCandidate ? '/candidate/ai-interviews' : login()}
+                                    href="/ai-interview-simulator"
                                     className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/25 transition hover:bg-primary/90"
                                 >
                                     {t('home.ai_interview.cta')}
@@ -1750,41 +1648,6 @@ export default function HeroSection({
                             </div>
                         </motion.div>
 
-                        {/* Card 2: AI Personal Coach — dark */}
-                        <motion.div variants={staggerChild} className="relative overflow-hidden rounded-3xl bg-primary p-6 shadow-sm">
-                            <div className="pointer-events-none absolute -top-10 -right-10 size-40 rounded-full bg-white/5 blur-3xl" />
-                            <div className="mb-1 flex size-10 items-center justify-center rounded-2xl bg-white/15">
-                                <svg className="size-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                                </svg>
-                            </div>
-                            <h3 className="mt-3 text-base font-bold text-white">{t('home.features.coach.title')}</h3>
-                            <p className="mt-2 text-xs leading-relaxed text-white/70">
-                                {t('home.features.coach.desc')}
-                            </p>
-                            <Link
-                                href={isCandidate ? '/candidate/career-coach' : login()}
-                                className="mt-5 flex items-center justify-between rounded-xl bg-white/15 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-white/25"
-                            >
-                                {t('home.features.coach.cta')}
-                                <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                            </Link>
-                            <div className="mt-5 space-y-2 opacity-70">
-                                <div className="flex justify-end">
-                                    <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-white/20 px-3 py-2">
-                                        <p className="text-[10px] text-white">{t('home.features.coach.chat_user')}</p>
-                                    </div>
-                                </div>
-                                <div className="flex">
-                                    <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-white/10 px-3 py-2">
-                                        <p className="text-[10px] leading-relaxed text-white/80">{t('home.features.coach.chat_bot')}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-
                         {/* Card 3: Trusted by Leaders */}
                         <motion.div variants={staggerChild} className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
                             <div className="mb-1 flex size-10 items-center justify-center rounded-2xl bg-amber-50">
@@ -1829,51 +1692,6 @@ export default function HeroSection({
                             </div>
                         </motion.div>
 
-                        {/* Card 4: Career Growth Analytics — dark, col-span-2 */}
-                        <motion.div variants={staggerChild} className="relative overflow-hidden rounded-3xl bg-gray-900 p-6 shadow-sm sm:col-span-2">
-                            <div className="pointer-events-none absolute -top-16 -right-16 size-56 rounded-full bg-primary/20 blur-3xl" />
-                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                                <div>
-                                    <div className="mb-1 flex size-10 items-center justify-center rounded-2xl bg-white/10">
-                                        <svg className="size-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-                                        </svg>
-                                    </div>
-                                    <h3 className="mt-3 text-base font-bold text-white">{t('home.features.analytics.title')}</h3>
-                                    <p className="mt-2 text-xs leading-relaxed text-gray-400">
-                                        {t('home.features.analytics.desc')}
-                                    </p>
-                                    <ul className="mt-4 space-y-2">
-                                        {[t('home.features.analytics.tag1'), t('home.features.analytics.tag2')].map((item) => (
-                                            <li key={item} className="flex items-center gap-2 text-xs text-gray-300">
-                                                <div className="size-1.5 shrink-0 rounded-full bg-primary-400" />
-                                                {item}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                {/* Bar chart — industries by job count */}
-                                <div className="flex items-end justify-around gap-1.5 rounded-2xl bg-white/5 px-4 pb-3 pt-6">
-                                    {(() => {
-                                        const chartData = industries.slice(0, 7);
-                                        const maxCount = Math.max(...chartData.map((ind) => ind.jobs_count), 1);
-                                        return chartData.map((ind, i) => (
-                                            <div key={ind.id} className="flex flex-1 flex-col items-center gap-1.5" title={ind.name}>
-                                                <div
-                                                    className="w-full rounded-t-lg transition-all"
-                                                    style={{
-                                                        height: `${Math.max(Math.round((ind.jobs_count / maxCount) * 90), 8)}px`,
-                                                        background: i === chartData.length - 1
-                                                            ? 'linear-gradient(to top, #3B82F6, #93C5FD)'
-                                                            : 'rgba(255,255,255,0.15)',
-                                                    }}
-                                                />
-                                            </div>
-                                        ));
-                                    })()}
-                                </div>
-                            </div>
-                        </motion.div>
                     </motion.div>
                 </div>
             </section>
@@ -2113,41 +1931,43 @@ export default function HeroSection({
                 </div>
             </section>
 
-            {/* ── Testimonials ── */}
-            <section className="overflow-hidden bg-gray-50/60 py-16">
-                <motion.div
-                    className="mx-auto mb-10 max-w-2xl px-4 text-center"
-                    variants={fadeUp}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={vp}
-                >
-                    <p className="mb-2 text-xs font-semibold tracking-widest text-primary uppercase">{t('home.testimonials.eyebrow')}</p>
-                    <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">
-                        {t('home.testimonials.title')}
-                    </h2>
-                    <p className="mt-2 text-sm text-gray-500">
-                        {t('home.testimonials.subtitle')}
-                    </p>
-                </motion.div>
+            {/* ── Testimonials (hidden — pending real review system) ── */}
+            {false && (
+                <section className="overflow-hidden bg-gray-50/60 py-16">
+                    <motion.div
+                        className="mx-auto mb-10 max-w-2xl px-4 text-center"
+                        variants={fadeUp}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={vp}
+                    >
+                        <p className="mb-2 text-xs font-semibold tracking-widest text-primary uppercase">{t('home.testimonials.eyebrow')}</p>
+                        <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+                            {t('home.testimonials.title')}
+                        </h2>
+                        <p className="mt-2 text-sm text-gray-500">
+                            {t('home.testimonials.subtitle')}
+                        </p>
+                    </motion.div>
 
-                <div className="relative flex flex-col gap-3">
-                    {/* Fade edges */}
-                    <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-linear-to-r from-gray-50/60 to-transparent" />
-                    <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-linear-to-l from-gray-50/60 to-transparent" />
+                    <div className="relative flex flex-col gap-3">
+                        {/* Fade edges */}
+                        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-linear-to-r from-gray-50/60 to-transparent" />
+                        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-linear-to-l from-gray-50/60 to-transparent" />
 
-                    <Marquee pauseOnHover repeat={3} className="[--duration:40s] [--gap:0.75rem]">
-                        {TESTIMONIALS.slice(0, 5).map((t) => (
-                            <TestimonialCard key={t.id} testimonial={t} />
-                        ))}
-                    </Marquee>
-                    <Marquee reverse pauseOnHover repeat={3} className="[--duration:45s] [--gap:0.75rem]">
-                        {TESTIMONIALS.slice(5).map((t) => (
-                            <TestimonialCard key={t.id} testimonial={t} />
-                        ))}
-                    </Marquee>
-                </div>
-            </section>
+                        <Marquee pauseOnHover repeat={3} className="[--duration:40s] [--gap:0.75rem]">
+                            {TESTIMONIALS.slice(0, 5).map((t) => (
+                                <TestimonialCard key={t.id} testimonial={t} />
+                            ))}
+                        </Marquee>
+                        <Marquee reverse pauseOnHover repeat={3} className="[--duration:45s] [--gap:0.75rem]">
+                            {TESTIMONIALS.slice(5).map((t) => (
+                                <TestimonialCard key={t.id} testimonial={t} />
+                            ))}
+                        </Marquee>
+                    </div>
+                </section>
+            )}
 
             {/* ── FAQ ── */}
             {faqs.length > 0 && (

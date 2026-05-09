@@ -132,6 +132,80 @@ test('employer can create and publish a job listing', function () {
     expect($job->published_at)->not->toBeNull();
 });
 
+test('employer can save qualification and experience years range on job listing', function () {
+    $employer = User::factory()->employer()->create();
+    $industry = Industry::create([
+        'name' => 'Teknologi Qualification',
+        'slug' => 'teknologi-qualification',
+    ]);
+
+    Company::create([
+        'owner_id' => $employer->id,
+        'industry_id' => $industry->id,
+        'name' => 'Karivia Qual',
+        'slug' => 'karivia-qual',
+        'verification_status' => 'approved',
+        'is_verified' => true,
+    ]);
+
+    actingAs($employer)
+        ->post(route('employer.jobs.store'), [
+            'title' => 'Senior Backend Engineer',
+            'industry_id' => $industry->id,
+            'description' => 'Bangun API.',
+            'required_qualifications' => 'Laravel 5 tahun.',
+            'work_mode' => 'hybrid',
+            'job_type' => 'full_time',
+            'experience_level' => 'senior',
+            'qualification' => 's1',
+            'experience_min_years' => 5,
+            'experience_max_years' => 7,
+            'salary_min' => 25000000,
+            'salary_max' => 30000000,
+            'salary_currency' => 'IDR',
+            'is_salary_visible' => true,
+        ])
+        ->assertRedirect(route('employer.jobs.index'));
+
+    $job = JobListing::query()->where('title', 'Senior Backend Engineer')->first();
+
+    expect($job)->not->toBeNull();
+    expect($job?->qualification)->toBe('s1');
+    expect($job?->experience_min_years)->toBe(5);
+    expect($job?->experience_max_years)->toBe(7);
+});
+
+test('experience max years must be greater than or equal to min', function () {
+    $employer = User::factory()->employer()->create();
+    $industry = Industry::create([
+        'name' => 'Teknologi Exp Validation',
+        'slug' => 'teknologi-exp-validation',
+    ]);
+
+    Company::create([
+        'owner_id' => $employer->id,
+        'industry_id' => $industry->id,
+        'name' => 'Karivia Exp',
+        'slug' => 'karivia-exp',
+        'verification_status' => 'approved',
+        'is_verified' => true,
+    ]);
+
+    actingAs($employer)
+        ->post(route('employer.jobs.store'), [
+            'title' => 'Bad Range Engineer',
+            'industry_id' => $industry->id,
+            'work_mode' => 'remote',
+            'job_type' => 'full_time',
+            'experience_level' => 'mid',
+            'experience_min_years' => 5,
+            'experience_max_years' => 2,
+            'salary_currency' => 'IDR',
+            'is_salary_visible' => true,
+        ])
+        ->assertSessionHasErrors(['experience_max_years']);
+});
+
 test('employer can save draft job listing without description', function () {
     $employer = User::factory()->employer()->create();
     $industry = Industry::create([
@@ -1308,6 +1382,12 @@ test('employer can search talent from candidate profiles', function () {
                 ],
             ]));
         $mock->shouldReceive('modelName')->andReturn('test-ai');
+        $mock->shouldReceive('tokenUsage')->andReturn([
+            'prompt_tokens' => 380,
+            'completion_tokens' => 120,
+            'reasoning_tokens' => null,
+            'total_tokens' => 500,
+        ]);
     });
 
     actingAs($employer)
@@ -1376,6 +1456,12 @@ test('employer can save and shortlist candidate from talent search', function ()
     $this->mock(AiService::class, function ($mock): void {
         $mock->shouldReceive('chat')->andReturn(null);
         $mock->shouldReceive('modelName')->andReturn('test-ai');
+        $mock->shouldReceive('tokenUsage')->andReturn([
+            'prompt_tokens' => null,
+            'completion_tokens' => null,
+            'reasoning_tokens' => null,
+            'total_tokens' => null,
+        ]);
     });
 
     actingAs($employer)
@@ -1445,6 +1531,12 @@ test('employer can view dedicated talent pool page with saved candidates only', 
     $this->mock(AiService::class, function ($mock): void {
         $mock->shouldReceive('chat')->andReturn(null);
         $mock->shouldReceive('modelName')->andReturn('test-ai');
+        $mock->shouldReceive('tokenUsage')->andReturn([
+            'prompt_tokens' => null,
+            'completion_tokens' => null,
+            'reasoning_tokens' => null,
+            'total_tokens' => null,
+        ]);
     });
 
     actingAs($employer)

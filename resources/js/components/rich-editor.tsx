@@ -14,6 +14,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import { useTranslate } from '@/hooks/use-translate';
 
 interface RichEditorProps {
     value: string;
@@ -86,7 +87,7 @@ const TOOLBAR_GROUPS: ToolbarItem[][] = [
             label: 'Link',
             icon: Link2,
             command: 'createLink',
-            prompt: 'Masukkan URL:',
+            prompt: 'rich_editor.link_prompt',
         },
         { label: 'Undo', icon: Undo2, command: 'undo' },
         { label: 'Redo', icon: Redo2, command: 'redo' },
@@ -100,6 +101,7 @@ export function RichEditor({
     minHeight = '480px',
     placeholder,
 }: RichEditorProps) {
+    const { t } = useTranslate();
     const editorRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -111,10 +113,10 @@ export function RichEditor({
     function runCommand(
         command: string,
         commandValue?: string,
-        prompt?: string,
+        promptKey?: string,
     ) {
-        const val = prompt
-            ? (window.prompt(prompt) ?? undefined)
+        const val = promptKey
+            ? (window.prompt(t(promptKey)) ?? undefined)
             : commandValue;
         editorRef.current?.focus();
         document.execCommand(command, false, val);

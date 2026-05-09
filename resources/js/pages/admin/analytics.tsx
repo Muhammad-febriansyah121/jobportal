@@ -1,4 +1,5 @@
 import { Head } from '@inertiajs/react';
+import { useTranslate } from '@/hooks/use-translate';
 import type { ApexOptions } from 'apexcharts';
 import {
     Activity,
@@ -123,12 +124,13 @@ function fmtIDR(value: number): string {
 }
 
 function Empty({ height = 200 }: { height?: number }) {
+    const { t } = useTranslate();
     return (
         <div
             className="flex items-center justify-center text-sm text-muted-foreground"
             style={{ height }}
         >
-            Belum ada data.
+            {t('admin.analytics.charts.no_data')}
         </div>
     );
 }
@@ -154,10 +156,10 @@ function KpiCard({
             <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                        <p className="text-[11px] font-medium uppercase leading-tight tracking-wide text-muted-foreground">
+                        <p className="text-[11px] leading-tight font-medium tracking-wide text-muted-foreground uppercase">
                             {label}
                         </p>
-                        <p className="mt-2 text-2xl font-bold tabular-nums leading-none">
+                        <p className="mt-2 text-2xl leading-none font-bold tabular-nums">
                             {value}
                         </p>
                     </div>
@@ -181,6 +183,7 @@ export default function AdminAnalytics({
     subscriptionsByPlan,
     aiByFeature,
 }: AnalyticsProps) {
+    const { t } = useTranslate();
     const mrr = subscriptionsByPlan.reduce(
         (s, p) => s + p.price * p.active_count,
         0,
@@ -188,7 +191,7 @@ export default function AdminAnalytics({
 
     const kpiCards = [
         {
-            label: 'Total User',
+            label: t('admin.analytics.kpi.total_users'),
             value: totals.users.toLocaleString('id-ID'),
             icon: Users,
             accent: 'bg-blue-500',
@@ -196,7 +199,7 @@ export default function AdminAnalytics({
             iconColor: 'text-blue-600',
         },
         {
-            label: 'Lowongan Live',
+            label: t('admin.analytics.kpi.jobs_live'),
             value: totals.jobs_live.toLocaleString('id-ID'),
             icon: Briefcase,
             accent: 'bg-violet-500',
@@ -204,7 +207,7 @@ export default function AdminAnalytics({
             iconColor: 'text-violet-600',
         },
         {
-            label: 'Lamaran Bulan Ini',
+            label: t('admin.analytics.kpi.applications_month'),
             value: totals.applications_month.toLocaleString('id-ID'),
             icon: Activity,
             accent: 'bg-emerald-500',
@@ -212,7 +215,7 @@ export default function AdminAnalytics({
             iconColor: 'text-emerald-600',
         },
         {
-            label: 'Revenue Total',
+            label: t('admin.analytics.kpi.revenue_total'),
             value: fmtIDR(summary.subscription_revenue),
             icon: CreditCard,
             accent: 'bg-amber-500',
@@ -220,7 +223,7 @@ export default function AdminAnalytics({
             iconColor: 'text-amber-600',
         },
         {
-            label: 'Subscription Aktif',
+            label: t('admin.analytics.kpi.active_subscriptions'),
             value: totals.active_subscriptions.toLocaleString('id-ID'),
             icon: TrendingUp,
             accent: 'bg-sky-500',
@@ -228,7 +231,7 @@ export default function AdminAnalytics({
             iconColor: 'text-sky-600',
         },
         {
-            label: 'Antrian Verifikasi',
+            label: t('admin.analytics.kpi.verification_queue'),
             value: totals.verification_queue.toLocaleString('id-ID'),
             icon: ShieldCheck,
             accent: 'bg-rose-500',
@@ -309,7 +312,7 @@ export default function AdminAnalytics({
                         show: true,
                         total: {
                             show: true,
-                            label: 'Aktif',
+                            label: t('admin.analytics.charts.active'),
                             fontSize: '11px',
                             color: '#6b7280',
                             formatter: () => `${totals.active_subscriptions}`,
@@ -320,7 +323,13 @@ export default function AdminAnalytics({
             },
         },
         dataLabels: { enabled: false },
-        tooltip: { theme: 'light', y: { formatter: (v) => `${v} subscriber` } },
+        tooltip: {
+            theme: 'light',
+            y: {
+                formatter: (v) =>
+                    `${v} ${t('admin.analytics.charts.subscriber')}`,
+            },
+        },
     };
 
     // ── Application funnel (column) ──
@@ -333,12 +342,12 @@ export default function AdminAnalytics({
         'hired',
     ];
     const funnelLabelMap: Record<string, string> = {
-        applied: 'Melamar',
-        screened: 'Seleksi',
-        shortlisted: 'Shortlist',
-        interview: 'Interview',
-        offer: 'Penawaran',
-        hired: 'Diterima',
+        applied: t('admin.analytics.funnel.applied'),
+        screened: t('admin.analytics.funnel.screened'),
+        shortlisted: t('admin.analytics.funnel.shortlisted'),
+        interview: t('admin.analytics.funnel.interview'),
+        offer: t('admin.analytics.funnel.offer'),
+        hired: t('admin.analytics.funnel.hired'),
     };
     const funnelOptions: ApexOptions = {
         chart: { ...BASE_CHART, type: 'bar' },
@@ -365,7 +374,13 @@ export default function AdminAnalytics({
         yaxis: { labels: { style: { fontSize: '11px' } } },
         grid: { borderColor: '#f1f5f9', strokeDashArray: 3 },
         legend: { show: false },
-        tooltip: { theme: 'light', y: { formatter: (v) => `${v} pelamar` } },
+        tooltip: {
+            theme: 'light',
+            y: {
+                formatter: (v) =>
+                    `${v} ${t('admin.analytics.charts.applicant')}`,
+            },
+        },
     };
 
     // ── Status distribution donut ──
@@ -380,14 +395,14 @@ export default function AdminAnalytics({
         withdrawn: C.gray,
     };
     const statusLabelMap: Record<string, string> = {
-        applied: 'Melamar',
-        screened: 'Seleksi',
-        shortlisted: 'Shortlist',
-        interview: 'Interview',
-        offer: 'Penawaran',
-        hired: 'Diterima',
-        rejected: 'Ditolak',
-        withdrawn: 'Undur Diri',
+        applied: t('admin.analytics.funnel.applied'),
+        screened: t('admin.analytics.funnel.screened'),
+        shortlisted: t('admin.analytics.funnel.shortlisted'),
+        interview: t('admin.analytics.funnel.interview'),
+        offer: t('admin.analytics.funnel.offer'),
+        hired: t('admin.analytics.funnel.hired'),
+        rejected: t('admin.analytics.funnel.rejected'),
+        withdrawn: t('admin.analytics.funnel.withdrawn'),
     };
     const statusEntries = Object.entries(applicationFunnel).filter(
         ([, v]) => v > 0,
@@ -405,7 +420,7 @@ export default function AdminAnalytics({
                         show: true,
                         total: {
                             show: true,
-                            label: 'Total',
+                            label: t('admin.analytics.charts.total'),
                             fontSize: '11px',
                             color: '#6b7280',
                         },
@@ -415,7 +430,13 @@ export default function AdminAnalytics({
             },
         },
         dataLabels: { enabled: false },
-        tooltip: { theme: 'light', y: { formatter: (v) => `${v} lamaran` } },
+        tooltip: {
+            theme: 'light',
+            y: {
+                formatter: (v) =>
+                    `${v} ${t('admin.analytics.charts.application')}`,
+            },
+        },
     };
 
     // ── Top industries (horizontal bar) ──
@@ -440,14 +461,17 @@ export default function AdminAnalytics({
         },
         yaxis: { labels: { style: { fontSize: '11px' } } },
         grid: { show: false },
-        tooltip: { theme: 'light', y: { formatter: (v) => `${v} lowongan` } },
+        tooltip: {
+            theme: 'light',
+            y: { formatter: (v) => `${v} ${t('admin.analytics.charts.job')}` },
+        },
     };
 
     // ── Work mode pie ──
     const workModeMap: Record<string, string> = {
-        remote: 'Remote',
-        hybrid: 'Hybrid',
-        onsite: 'Onsite',
+        remote: t('admin.analytics.work_mode.remote'),
+        hybrid: t('admin.analytics.work_mode.hybrid'),
+        onsite: t('admin.analytics.work_mode.onsite'),
     };
     const workModeEntries = Object.entries(jobsByWorkMode).filter(
         ([, v]) => v > 0,
@@ -461,7 +485,10 @@ export default function AdminAnalytics({
             enabled: true,
             formatter: (v) => `${Number(v).toFixed(0)}%`,
         },
-        tooltip: { theme: 'light', y: { formatter: (v) => `${v} lowongan` } },
+        tooltip: {
+            theme: 'light',
+            y: { formatter: (v) => `${v} ${t('admin.analytics.charts.job')}` },
+        },
     };
 
     // ── AI stacked bar ──
@@ -489,27 +516,27 @@ export default function AdminAnalytics({
 
     const metricRows = [
         {
-            label: 'Conversion Rate (view → apply)',
+            label: t('admin.analytics.metrics.conversion_rate'),
             value: `${summary.conversion_apply}%`,
             color: '',
         },
         {
-            label: 'Perusahaan Terverifikasi',
+            label: t('admin.analytics.metrics.verified_companies'),
             value: totals.verified_companies.toLocaleString('id-ID'),
             color: '',
         },
         {
-            label: 'Report Pending',
+            label: t('admin.analytics.metrics.report_pending'),
             value: `${summary.report_pending}`,
             color: 'text-amber-600',
         },
         {
-            label: 'AI Gagal',
+            label: t('admin.analytics.metrics.ai_failed'),
             value: `${summary.ai_failed}`,
             color: 'text-rose-600',
         },
         {
-            label: 'Payment Pending',
+            label: t('admin.analytics.metrics.payment_pending'),
             value: `${totals.pending_payments}`,
             color: 'text-amber-600',
         },
@@ -517,17 +544,16 @@ export default function AdminAnalytics({
 
     return (
         <>
-            <Head title="Platform Analytics" />
+            <Head title={t('admin.analytics.title')} />
 
             <div className="flex flex-col gap-6 p-4 sm:p-6">
                 {/* Header */}
                 <div className="border-b pb-5">
                     <h1 className="text-2xl font-bold tracking-tight">
-                        Platform Analytics
+                        {t('admin.analytics.title')}
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Ringkasan performa platform — pertumbuhan, revenue,
-                        rekrutmen, dan penggunaan AI.
+                        {t('admin.analytics.subtitle')}
                     </p>
                 </div>
 
@@ -542,11 +568,10 @@ export default function AdminAnalytics({
                 <Card className="shadow-sm">
                     <CardHeader className="pb-0">
                         <CardTitle className="text-sm font-semibold">
-                            Platform Growth
+                            {t('admin.analytics.growth.title')}
                         </CardTitle>
                         <CardDescription>
-                            Pertumbuhan user, lowongan, dan lamaran selama 6
-                            bulan terakhir.
+                            {t('admin.analytics.growth.desc')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="pt-2">
@@ -554,19 +579,21 @@ export default function AdminAnalytics({
                             type="area"
                             series={[
                                 {
-                                    name: 'User',
+                                    name: t('admin.analytics.charts.user'),
                                     data: (series.users ?? []).map(
                                         (p) => p.total,
                                     ),
                                 },
                                 {
-                                    name: 'Lowongan',
+                                    name: t('admin.analytics.charts.job'),
                                     data: (series.jobs ?? []).map(
                                         (p) => p.total,
                                     ),
                                 },
                                 {
-                                    name: 'Lamaran',
+                                    name: t(
+                                        'admin.analytics.charts.application',
+                                    ),
                                     data: (series.applications ?? []).map(
                                         (p) => p.total,
                                     ),
@@ -585,15 +612,17 @@ export default function AdminAnalytics({
                             <div className="flex items-start justify-between gap-2">
                                 <div>
                                     <CardTitle className="text-sm font-semibold">
-                                        Revenue Trend
+                                        {t('admin.analytics.revenue.title')}
                                     </CardTitle>
                                     <CardDescription>
-                                        Pendapatan 6 bulan terakhir.
+                                        {t('admin.analytics.revenue.desc')}
                                     </CardDescription>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                                        Total
+                                    <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+                                        {t(
+                                            'admin.analytics.revenue.total_label',
+                                        )}
                                     </p>
                                     <p className="text-base font-bold text-emerald-600">
                                         Rp{' '}
@@ -612,7 +641,9 @@ export default function AdminAnalytics({
                                     type="area"
                                     series={[
                                         {
-                                            name: 'Revenue',
+                                            name: t(
+                                                'admin.analytics.charts.revenue',
+                                            ),
                                             data: revenueSeries.map(
                                                 (p) => p.total,
                                             ),
@@ -630,15 +661,19 @@ export default function AdminAnalytics({
                             <div className="flex items-start justify-between gap-2">
                                 <div>
                                     <CardTitle className="text-sm font-semibold">
-                                        Subscription per Plan
+                                        {t(
+                                            'admin.analytics.subscription.title',
+                                        )}
                                     </CardTitle>
                                     <CardDescription>
-                                        Distribusi subscriber aktif per paket.
+                                        {t('admin.analytics.subscription.desc')}
                                     </CardDescription>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                                        Est. MRR
+                                    <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+                                        {t(
+                                            'admin.analytics.subscription.est_mrr',
+                                        )}
                                     </p>
                                     <p className="text-base font-bold text-[#1E4D96]">
                                         Rp {mrr.toLocaleString('id-ID')}
@@ -666,10 +701,10 @@ export default function AdminAnalytics({
                     <Card className="shadow-sm">
                         <CardHeader className="pb-0">
                             <CardTitle className="text-sm font-semibold">
-                                Application Funnel
+                                {t('admin.analytics.funnel.title')}
                             </CardTitle>
                             <CardDescription>
-                                Jumlah pelamar di setiap tahap rekrutmen.
+                                {t('admin.analytics.funnel.desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="pt-2">
@@ -677,10 +712,11 @@ export default function AdminAnalytics({
                                 type="bar"
                                 series={[
                                     {
-                                        name: 'Pelamar',
+                                        name: t(
+                                            'admin.analytics.charts.applicant',
+                                        ),
                                         data: funnelOrder.map(
-                                            (k) =>
-                                                applicationFunnel[k] ?? 0,
+                                            (k) => applicationFunnel[k] ?? 0,
                                         ),
                                     },
                                 ]}
@@ -693,11 +729,10 @@ export default function AdminAnalytics({
                     <Card className="shadow-sm">
                         <CardHeader className="pb-0">
                             <CardTitle className="text-sm font-semibold">
-                                Distribusi Status Lamaran
+                                {t('admin.analytics.status_dist.title')}
                             </CardTitle>
                             <CardDescription>
-                                Persentase lamaran berdasarkan status
-                                keseluruhan.
+                                {t('admin.analytics.status_dist.desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="pt-2">
@@ -720,10 +755,10 @@ export default function AdminAnalytics({
                     <Card className="shadow-sm">
                         <CardHeader className="pb-0">
                             <CardTitle className="text-sm font-semibold">
-                                Top 10 Industri
+                                {t('admin.analytics.top_industries.title')}
                             </CardTitle>
                             <CardDescription>
-                                Industri dengan lowongan published terbanyak.
+                                {t('admin.analytics.top_industries.desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="pt-2">
@@ -734,7 +769,9 @@ export default function AdminAnalytics({
                                     type="bar"
                                     series={[
                                         {
-                                            name: 'Lowongan',
+                                            name: t(
+                                                'admin.analytics.charts.job',
+                                            ),
                                             data: industries.map(
                                                 (i) => i.total,
                                             ),
@@ -751,10 +788,10 @@ export default function AdminAnalytics({
                         <Card className="shadow-sm">
                             <CardHeader className="pb-0">
                                 <CardTitle className="text-sm font-semibold">
-                                    Mode Kerja
+                                    {t('admin.analytics.work_mode.title')}
                                 </CardTitle>
                                 <CardDescription>
-                                    Distribusi lowongan berdasarkan tipe kerja.
+                                    {t('admin.analytics.work_mode.desc')}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="pt-2">
@@ -776,7 +813,7 @@ export default function AdminAnalytics({
                         <Card className="shadow-sm">
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-semibold">
-                                    Metrik Kunci
+                                    {t('admin.analytics.metrics.title')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3 pt-0">
@@ -805,11 +842,10 @@ export default function AdminAnalytics({
                     <Card className="shadow-sm">
                         <CardHeader className="pb-0">
                             <CardTitle className="text-sm font-semibold">
-                                AI Feature Usage
+                                {t('admin.analytics.ai_usage.title')}
                             </CardTitle>
                             <CardDescription>
-                                Perbandingan request sukses dan gagal per fitur
-                                AI.
+                                {t('admin.analytics.ai_usage.desc')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="pt-2">
@@ -817,11 +853,15 @@ export default function AdminAnalytics({
                                 type="bar"
                                 series={[
                                     {
-                                        name: 'Sukses',
+                                        name: t(
+                                            'admin.analytics.charts.success',
+                                        ),
                                         data: aiByFeature.map((f) => f.success),
                                     },
                                     {
-                                        name: 'Gagal',
+                                        name: t(
+                                            'admin.analytics.charts.failed',
+                                        ),
                                         data: aiByFeature.map((f) => f.failed),
                                     },
                                 ]}

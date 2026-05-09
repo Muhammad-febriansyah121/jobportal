@@ -1,12 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
-import {
-    CheckIcon,
-    Coins,
-    MinusIcon,
-    ReceiptText,
-    Sparkles,
-    Wallet,
-} from 'lucide-react';
+import { useTranslate } from '@/hooks/use-translate';
+import { CalendarClock, CheckIcon, Coins, Info, ReceiptText, Sparkles, Wallet } from 'lucide-react';
 import type { ComponentType } from 'react';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
@@ -20,7 +14,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { index as cvBuilderIndex } from '@/routes/candidate/cvs';
-import { purchase as purchasePricing } from '@/routes/candidate/pricing';
+import { claimTrial as claimTrialPricing, purchase as purchasePricing } from '@/routes/candidate/pricing';
 
 type CandidatePricingMenu = {
     id: number;
@@ -30,13 +24,20 @@ type CandidatePricingMenu = {
     price_label: string;
     ai_token_amount: number;
     cv_builder_quota: number;
+    ai_interview_quota?: number;
+    validity_days?: number;
     features: string[];
     is_default_free: boolean;
+    is_trial?: boolean;
+    trial_claimable?: boolean;
 };
 
 type CandidateWallet = {
     ai_token_balance: number;
     cv_builder_quota_balance: number;
+    ai_interview_quota_balance: number;
+    ai_interview_quota_expires_at: string | null;
+    cv_builder_quota_expires_at: string | null;
     draft_token_cost: number;
     draft_quota_cost: number;
 };
@@ -44,6 +45,7 @@ type CandidateWallet = {
 type CandidatePricingPageProps = {
     wallet: CandidateWallet;
     menus: CandidatePricingMenu[];
+    hasClaimedTrial?: boolean;
     pendingTopup?: {
         id: number;
         order_id: string;
@@ -67,54 +69,26 @@ type CandidatePricingPageProps = {
 export default function CandidatePricing({
     wallet,
     menus,
+    hasClaimedTrial = false,
     pendingTopup,
     recentTransactions,
 }: CandidatePricingPageProps) {
+    const { t } = useTranslate();
     const buyMenu = (menuId: number) => {
         router.post(purchasePricing(menuId).url);
     };
-
-    const comparisonRows: Array<{
-        label: string;
-        get: (m: CandidatePricingMenu) => string | boolean | null;
-    }> = [
-        {
-            label: 'Harga',
-            get: (m) => m.price_label,
-        },
-        {
-            label: 'Token AI',
-            get: (m) =>
-                m.ai_token_amount === 0
-                    ? null
-                    : m.ai_token_amount.toLocaleString('id-ID') + ' token',
-        },
-        {
-            label: 'Kuota CV Builder',
-            get: (m) => `${m.cv_builder_quota}x`,
-        },
-        {
-            label: 'Template CV ATS-Friendly',
-            get: (_) => true,
-        },
-        {
-            label: 'Optimasi AI',
-            get: (m) => m.ai_token_amount > 0,
-        },
-        {
-            label: 'Regenerasi Draft',
-            get: (m) => m.ai_token_amount > 0,
-        },
-    ];
+    const claimTrial = (menuId: number) => {
+        router.post(claimTrialPricing(menuId).url, {}, { preserveScroll: true });
+    };
 
     return (
         <>
-            <Head title="Paket & Saldo" />
+            <Head title={t('candidate.pricing.page_title')} />
 
             <div className="space-y-8 p-4 md:p-6">
                 <Heading
-                    title="Paket & Saldo"
-                    description="Free 1x CV Builder, selanjutnya bisa topup token AI + kuota CV Builder."
+                    title={t('candidate.pricing.page_title')}
+                    description={t('candidate.pricing.page_description')}
                 />
 
                 {/* Wallet balance */}
@@ -122,29 +96,36 @@ export default function CandidatePricing({
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-base">
                             <Wallet className="size-4 text-[#01296A]" />
-                            Saldo Saat Ini
+                            {t('candidate.pricing.current_balance')}
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="grid gap-3 md:grid-cols-3">
-                        <Metric
-                            icon={Coins}
-                            label="Token AI"
-                            value={wallet.ai_token_balance.toLocaleString(
-                                'id-ID',
-                            )}
-                        />
-                        <Metric
-                            icon={Sparkles}
-                            label="Kuota CV Builder"
-                            value={wallet.cv_builder_quota_balance.toLocaleString(
-                                'id-ID',
-                            )}
-                        />
-                        <Metric
-                            icon={ReceiptText}
-                            label="Biaya per Draft"
-                            value={`${wallet.draft_token_cost.toLocaleString('id-ID')} token + ${wallet.draft_quota_cost} kuota`}
-                        />
+                    <CardContent className="space-y-3">
+                        <div className="grid gap-3 md:grid-cols-2">
+                            <Metric
+                                icon={Sparkles}
+                                label={t('candidate.pricing.cv_builder_quota')}
+                                value={wallet.cv_builder_quota_balance.toLocaleString(
+                                    'id-ID',
+                                )}
+                            />
+                            <Metric
+                                icon={ReceiptText}
+                                label={t('candidate.pricing.cost_per_draft')}
+                                value={t('candidate.pricing.cost_per_draft_quota_only', { quota: wallet.draft_quota_cost })}
+                            />
+                        </div>
+
+                        {(wallet.ai_interview_quota_expires_at || wallet.cv_builder_quota_expires_at) ? (
+                            <ExpiryAlert
+                                cvExpiresAt={wallet.cv_builder_quota_expires_at}
+                                interviewExpiresAt={wallet.ai_interview_quota_expires_at}
+                            />
+                        ) : null}
+
+                        <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+                            <Info className="mt-0.5 size-3.5 shrink-0" />
+                            <span>{t('candidate.pricing.topup_accumulative_note')}</span>
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -152,12 +133,11 @@ export default function CandidatePricing({
                 {pendingTopup?.payment_url ? (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Pembayaran Pending</CardTitle>
+                            <CardTitle>{t('candidate.pricing.pending_title')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <p className="text-sm text-muted-foreground">
-                                Order {pendingTopup.order_id} dibuat{' '}
-                                {pendingTopup.created_at ?? '-'}.
+                                {t('candidate.pricing.order_created', { order: pendingTopup.order_id, time: pendingTopup.created_at ?? '-' })}
                             </p>
                             <div className="flex flex-wrap gap-2">
                                 <Button asChild>
@@ -166,7 +146,7 @@ export default function CandidatePricing({
                                         target="_blank"
                                         rel="noreferrer"
                                     >
-                                        Lanjutkan Pembayaran
+                                        {t('candidate.pricing.continue_payment')}
                                     </a>
                                 </Button>
                                 <Button
@@ -179,11 +159,11 @@ export default function CandidatePricing({
                                         )
                                     }
                                 >
-                                    Cek Status Pembayaran
+                                    {t('candidate.pricing.check_payment_status')}
                                 </Button>
                                 <Button asChild variant="outline">
                                     <Link href={cvBuilderIndex()}>
-                                        Kembali ke CV Builder
+                                        {t('candidate.pricing.back_to_cv_builder')}
                                     </Link>
                                 </Button>
                             </div>
@@ -193,7 +173,7 @@ export default function CandidatePricing({
 
                 {/* Plan cards */}
                 <div>
-                    <h2 className="mb-4 text-lg font-semibold">Pilih Paket</h2>
+                    <h2 className="mb-4 text-lg font-semibold">{t('candidate.pricing.plans_title')}</h2>
                     <div className="grid gap-5 lg:grid-cols-3">
                         {menus.map((menu) => {
                             const isPopular =
@@ -212,7 +192,7 @@ export default function CandidatePricing({
                                     {isPopular && (
                                         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
                                             <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#01296A] shadow-sm">
-                                                ✦ Terpopuler
+                                                {t('candidate.pricing.most_popular')}
                                             </span>
                                         </div>
                                     )}
@@ -220,7 +200,15 @@ export default function CandidatePricing({
                                     {menu.is_default_free && (
                                         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
                                             <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700 shadow-sm">
-                                                Gratis
+                                                {t('candidate.pricing.free')}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {menu.is_trial && !menu.is_default_free && (
+                                        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                                            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700 shadow-sm">
+                                                {t('candidate.pricing.trial_badge')}
                                             </span>
                                         </div>
                                     )}
@@ -252,14 +240,14 @@ export default function CandidatePricing({
                                         >
                                             <Coins className="size-3.5" />
                                             {menu.ai_token_amount === 0
-                                                ? 'Tanpa token AI'
-                                                : `${menu.ai_token_amount.toLocaleString('id-ID')} Token AI`}
+                                                ? t('candidate.pricing.without_ai_token')
+                                                : t('candidate.pricing.ai_token_amount', { count: menu.ai_token_amount.toLocaleString('id-ID') })}
                                         </span>
                                         <span
                                             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${isPopular ? 'bg-white/15 text-white' : 'bg-muted/60 text-foreground'}`}
                                         >
                                             <Sparkles className="size-3.5" />
-                                            {menu.cv_builder_quota}x CV Builder
+                                            {t('candidate.pricing.cv_builder_count', { count: menu.cv_builder_quota })}
                                         </span>
                                     </div>
 
@@ -296,8 +284,26 @@ export default function CandidatePricing({
                                             disabled
                                             className="w-full cursor-not-allowed rounded-xl border border-dashed border-muted-foreground/20 bg-muted/30 py-3 text-center text-sm font-bold text-muted-foreground/60"
                                         >
-                                            Paket otomatis diberikan
+                                            {t('candidate.pricing.default_plan_auto')}
                                         </button>
+                                    ) : menu.is_trial ? (
+                                        menu.trial_claimable ? (
+                                            <button
+                                                onClick={() => claimTrial(menu.id)}
+                                                className="w-full rounded-xl bg-amber-500 py-3 text-center text-sm font-bold text-white transition-all hover:bg-amber-600 active:scale-[0.98]"
+                                            >
+                                                {t('candidate.pricing.try_free')}
+                                            </button>
+                                        ) : (
+                                            <button
+                                                disabled
+                                                className="w-full cursor-not-allowed rounded-xl border border-dashed border-muted-foreground/20 bg-muted/30 py-3 text-center text-sm font-bold text-muted-foreground/60"
+                                            >
+                                                {hasClaimedTrial
+                                                    ? t('candidate.pricing.trial_claimed')
+                                                    : t('candidate.pricing.trial_unavailable')}
+                                            </button>
+                                        )
                                     ) : (
                                         <button
                                             onClick={() => buyMenu(menu.id)}
@@ -307,7 +313,7 @@ export default function CandidatePricing({
                                                     : 'bg-[#01296A] text-white hover:bg-[#001D4D]'
                                             }`}
                                         >
-                                            Topup Sekarang
+                                            {t('candidate.pricing.topup_now')}
                                         </button>
                                     )}
                                 </div>
@@ -316,161 +322,26 @@ export default function CandidatePricing({
                     </div>
                 </div>
 
-                {/* Comparison table */}
-                <div>
-                    <div className="mb-6 text-center">
-                        <h2 className="text-xl font-bold text-foreground">
-                            Perbandingan Paket
-                        </h2>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Bandingkan fitur setiap paket sebelum melakukan
-                            topup.
-                        </p>
-                    </div>
-
-                    <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-120">
-                                <thead>
-                                    <tr>
-                                        <th className="w-44 border-b border-border px-6 py-4 text-left text-sm font-semibold text-muted-foreground">
-                                            Fitur
-                                        </th>
-                                        {menus.map((menu) => {
-                                            const isPopular =
-                                                !menu.is_default_free &&
-                                                menu.ai_token_amount === 5000;
-                                            return (
-                                                <th
-                                                    key={menu.id}
-                                                    className={`border-b border-border px-4 py-4 text-center ${isPopular ? 'bg-[#01296A]/5' : ''}`}
-                                                >
-                                                    <p
-                                                        className={`text-sm font-bold ${isPopular ? 'text-[#01296A]' : 'text-foreground'}`}
-                                                    >
-                                                        {menu.name}
-                                                    </p>
-                                                    <p
-                                                        className={`mt-0.5 text-xs font-medium ${isPopular ? 'text-[#01296A]/70' : 'text-muted-foreground'}`}
-                                                    >
-                                                        {menu.price_label}
-                                                    </p>
-                                                </th>
-                                            );
-                                        })}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {comparisonRows.map((row, i) => (
-                                        <tr
-                                            key={row.label}
-                                            className={
-                                                i % 2 === 1
-                                                    ? 'bg-gray-50/60'
-                                                    : 'bg-white'
-                                            }
-                                        >
-                                            <td className="px-6 py-4 text-sm font-medium text-foreground">
-                                                {row.label}
-                                            </td>
-                                            {menus.map((menu) => {
-                                                const isPopular =
-                                                    !menu.is_default_free &&
-                                                    menu.ai_token_amount ===
-                                                        5000;
-                                                const val = row.get(menu);
-                                                return (
-                                                    <td
-                                                        key={menu.id}
-                                                        className={`px-4 py-4 text-center text-sm ${isPopular ? 'bg-[#01296A]/5' : ''}`}
-                                                    >
-                                                        {val === true ? (
-                                                            <CheckIcon
-                                                                className="mx-auto size-5 text-[#01296A]"
-                                                                strokeWidth={
-                                                                    2.5
-                                                                }
-                                                            />
-                                                        ) : val === false ? (
-                                                            <MinusIcon className="mx-auto size-4 text-muted-foreground/30" />
-                                                        ) : val === null ? (
-                                                            <MinusIcon className="mx-auto size-4 text-muted-foreground/30" />
-                                                        ) : (
-                                                            <span
-                                                                className={`font-medium ${isPopular ? 'text-[#01296A]' : 'text-foreground'}`}
-                                                            >
-                                                                {val as string}
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                );
-                                            })}
-                                        </tr>
-                                    ))}
-
-                                    {/* CTA row */}
-                                    <tr className="border-t border-border">
-                                        <td className="px-6 py-5" />
-                                        {menus.map((menu) => {
-                                            const isPopular =
-                                                !menu.is_default_free &&
-                                                menu.ai_token_amount === 5000;
-                                            return (
-                                                <td
-                                                    key={menu.id}
-                                                    className={`px-4 py-5 text-center ${isPopular ? 'bg-[#01296A]/5' : ''}`}
-                                                >
-                                                    {menu.is_default_free ? (
-                                                        <span className="text-xs text-muted-foreground">
-                                                            Otomatis
-                                                        </span>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() =>
-                                                                buyMenu(menu.id)
-                                                            }
-                                                            className={`rounded-xl px-4 py-2 text-xs font-bold transition-all active:scale-[0.98] ${
-                                                                isPopular
-                                                                    ? 'bg-[#01296A] text-white hover:bg-[#001D4D]'
-                                                                    : 'border border-[#01296A] text-[#01296A] hover:bg-[#01296A]/5'
-                                                            }`}
-                                                        >
-                                                            Topup
-                                                        </button>
-                                                    )}
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Transaction history */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base">
-                            Riwayat Wallet
+                            {t('candidate.pricing.wallet_history')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         {recentTransactions.length ? (
                             <div className="overflow-x-auto rounded-lg border">
-                                <Table className="min-w-160">
+                                <Table className="min-w-120">
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Sumber</TableHead>
-                                            <TableHead>Waktu</TableHead>
+                                            <TableHead>{t('candidate.pricing.col_source')}</TableHead>
+                                            <TableHead>{t('candidate.pricing.col_time')}</TableHead>
                                             <TableHead className="text-right">
-                                                Token
+                                                {t('candidate.pricing.quota')}
                                             </TableHead>
                                             <TableHead className="text-right">
-                                                Kuota
-                                            </TableHead>
-                                            <TableHead className="text-right">
-                                                Status
+                                                {t('candidate.pricing.status')}
                                             </TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -485,16 +356,6 @@ export default function CandidatePricing({
                                                         {transaction.created_at ??
                                                             '-'}
                                                     </TableCell>
-                                                    <TableCell className="text-right font-semibold">
-                                                        {transaction.ai_token_delta >
-                                                        0
-                                                            ? '+'
-                                                            : ''}
-                                                        {transaction.ai_token_delta.toLocaleString(
-                                                            'id-ID',
-                                                        )}{' '}
-                                                        token
-                                                    </TableCell>
                                                     <TableCell className="text-right text-muted-foreground">
                                                         {transaction.cv_builder_quota_delta >
                                                         0
@@ -503,7 +364,7 @@ export default function CandidatePricing({
                                                         {
                                                             transaction.cv_builder_quota_delta
                                                         }{' '}
-                                                        kuota
+                                                        {t('candidate.pricing.unit.quota')}
                                                     </TableCell>
                                                     <TableCell className="text-right">
                                                         <span
@@ -530,7 +391,7 @@ export default function CandidatePricing({
                             </div>
                         ) : (
                             <p className="text-sm text-muted-foreground">
-                                Belum ada transaksi wallet.
+                                {t('candidate.pricing.empty_wallet_history')}
                             </p>
                         )}
                     </CardContent>
@@ -556,6 +417,55 @@ function Metric({
                 {label}
             </p>
             <p className="mt-2 text-base font-bold">{value}</p>
+        </div>
+    );
+}
+
+function ExpiryAlert({
+    cvExpiresAt,
+    interviewExpiresAt,
+}: {
+    cvExpiresAt: string | null;
+    interviewExpiresAt: string | null;
+}) {
+    const { t } = useTranslate();
+    const earliest = [cvExpiresAt, interviewExpiresAt]
+        .filter((v): v is string => Boolean(v))
+        .map((v) => new Date(v))
+        .sort((a, b) => a.getTime() - b.getTime())[0];
+
+    if (!earliest) return null;
+
+    const daysLeft = Math.ceil(
+        (earliest.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+    );
+    const formatted = new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+    }).format(earliest);
+
+    const isExpired = daysLeft <= 0;
+    const isWarning = daysLeft > 0 && daysLeft <= 7;
+    const tone = isExpired
+        ? 'border-red-200 bg-red-50 text-red-900'
+        : isWarning
+          ? 'border-amber-200 bg-amber-50 text-amber-900'
+          : 'border-emerald-200 bg-emerald-50 text-emerald-900';
+
+    return (
+        <div
+            className={`flex items-start gap-2 rounded-md border px-3 py-2 text-xs ${tone}`}
+        >
+            <CalendarClock className="mt-0.5 size-3.5 shrink-0" />
+            <span>
+                {isExpired
+                    ? t('candidate.pricing.expiry_expired', { date: formatted })
+                    : t('candidate.pricing.expiry_active', {
+                          date: formatted,
+                          days: daysLeft,
+                      })}
+            </span>
         </div>
     );
 }

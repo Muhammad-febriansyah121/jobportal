@@ -2,6 +2,7 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { Bell, LogOut, Search, UserRound } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { Button } from '@/components/ui/button';
+import { useTranslate } from '@/hooks/use-translate';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -10,6 +11,14 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from '@/components/ui/sheet';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { cn } from '@/lib/utils';
@@ -35,6 +44,7 @@ export function AppSidebarHeader({
 }: {
     breadcrumbs?: BreadcrumbItemType[];
 }) {
+    const { t } = useTranslate();
     const { auth, header_notifications } = usePage<{
         auth: Auth;
         header_notifications?: {
@@ -48,7 +58,7 @@ export function AppSidebarHeader({
     const candidateHeadline =
         typeof auth.user?.headline === 'string'
             ? auth.user.headline
-            : 'Kandidat Pilihan';
+            : t('app_header.role_candidate_default');
     const handleLogout = () => {
         cleanup();
         router.flushAll();
@@ -56,9 +66,9 @@ export function AppSidebarHeader({
     const roleLabel = isCandidate
         ? candidateHeadline
         : isEmployer
-          ? 'Pemberi Kerja'
+          ? t('app_header.role_employer')
           : auth.user?.role === 'admin'
-            ? 'Administrator'
+            ? t('app_header.role_admin')
             : 'Karivia';
     const profileHref = isCandidate
         ? candidateProfileEdit()
@@ -66,12 +76,12 @@ export function AppSidebarHeader({
           ? employerCompanyEdit()
           : settingsProfileEdit();
     const searchPlaceholder = isCandidate
-        ? 'Cari pekerjaan, perusahaan, atau skill...'
+        ? t('app_header.search_candidate')
         : isEmployer
-          ? 'Cari kandidat atau posisi...'
+          ? t('app_header.search_employer')
           : auth.user?.role === 'admin'
-            ? 'Cari user, perusahaan, atau lowongan...'
-            : 'Cari sesuatu disini...';
+            ? t('app_header.search_admin')
+            : t('app_header.search_default');
     const notifications = Array.isArray(header_notifications?.items)
         ? header_notifications.items
         : [];
@@ -100,13 +110,13 @@ export function AppSidebarHeader({
                     triggerClassName="h-11 rounded-lg bg-[#f4f7fa] text-[#4b5565] hover:bg-[#eaf2ff] hover:text-[#01296A]"
                 />
 
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                <Sheet>
+                    <SheetTrigger asChild>
                         <Button
                             variant="ghost"
                             size="icon"
                             className="relative h-11 w-11 rounded-lg bg-[#f4f7fa] text-[#667085] hover:bg-[#eaf2ff] hover:text-[#01296A]"
-                            aria-label="Notifikasi"
+                            aria-label={t('shared.notification_bell')}
                         >
                             <Bell className="size-5" />
                             {unreadNotificationCount > 0 ? (
@@ -117,35 +127,31 @@ export function AppSidebarHeader({
                                 </span>
                             ) : null}
                         </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                        align="end"
-                        className="w-[min(92vw,360px)] rounded-lg border-[#e8edf3] p-2"
+                    </SheetTrigger>
+                    <SheetContent
+                        side="right"
+                        className="flex w-full flex-col gap-0 p-0 sm:max-w-sm"
                     >
-                        <div className="px-2 py-1">
-                            <p className="text-sm font-bold text-[#111827]">
-                                Notifikasi
-                            </p>
-                            <p className="text-xs text-[#8490a3]">
+                        <SheetHeader className="border-b border-[#e8edf3] px-5 py-4">
+                            <SheetTitle className="text-base font-bold text-[#111827]">
+                                {t('app_header.notifications_title')}
+                            </SheetTitle>
+                            <SheetDescription className="text-xs text-[#8490a3]">
                                 {unreadNotificationCount > 0
-                                    ? `${unreadNotificationCount} notifikasi belum dibaca`
-                                    : 'Belum ada notifikasi baru'}
-                            </p>
-                        </div>
-                        <DropdownMenuSeparator />
-                        <div className="max-h-80 overflow-y-auto">
+                                    ? t('app_header.notifications_unread', { count: unreadNotificationCount })
+                                    : t('app_header.notifications_none')}
+                            </SheetDescription>
+                        </SheetHeader>
+                        <div className="flex-1 overflow-y-auto p-3">
                             {notifications.length === 0 ? (
-                                <div className="rounded-md px-3 py-6 text-center text-sm text-[#8490a3]">
-                                    Belum ada notifikasi.
+                                <div className="rounded-md px-3 py-10 text-center text-sm text-[#8490a3]">
+                                    {t('app_header.notifications_empty')}
                                 </div>
                             ) : (
-                                notifications.map((notification) => (
-                                    <DropdownMenuItem
-                                        key={notification.id}
-                                        asChild
-                                        className="p-0 focus:bg-transparent"
-                                    >
+                                <div className="space-y-1">
+                                    {notifications.map((notification) => (
                                         <Link
+                                            key={notification.id}
                                             href={notification.href}
                                             prefetch
                                             onClick={cleanup}
@@ -173,15 +179,16 @@ export function AppSidebarHeader({
                                                 {notification.time_label ??
                                                     getNotificationTypeLabel(
                                                         notification.type,
+                                                        t,
                                                     )}
                                             </p>
                                         </Link>
-                                    </DropdownMenuItem>
-                                ))
+                                    ))}
+                                </div>
                             )}
                         </div>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                    </SheetContent>
+                </Sheet>
                 <div className="hidden h-10 w-px bg-[#e8edf3] md:block" />
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -194,8 +201,16 @@ export function AppSidebarHeader({
                                     {roleLabel}
                                 </span>
                             </span>
-                            <span className="flex size-11 items-center justify-center rounded-full border-2 border-[#d6e0f5] bg-[#1E4D96] text-sm font-bold text-white">
-                                {getInitials(auth.user?.name ?? 'Karivia')}
+                            <span className="flex size-11 items-center justify-center overflow-hidden rounded-full border-2 border-[#d6e0f5] bg-[#1E4D96] text-sm font-bold text-white">
+                                {auth.user?.avatar_url ? (
+                                    <img
+                                        src={auth.user.avatar_url}
+                                        alt={auth.user.name ?? 'Karivia'}
+                                        className="size-full object-cover"
+                                    />
+                                ) : (
+                                    getInitials(auth.user?.name ?? 'Karivia')
+                                )}
                             </span>
                         </button>
                     </DropdownMenuTrigger>
@@ -211,7 +226,7 @@ export function AppSidebarHeader({
                                 className="flex cursor-pointer items-center rounded-md px-2 py-2 text-sm font-semibold"
                             >
                                 <UserRound className="mr-2 size-4" />
-                                Profil
+                                {t('app_header.profile_link')}
                             </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -224,7 +239,7 @@ export function AppSidebarHeader({
                                 data-test="logout-button"
                             >
                                 <LogOut className="mr-2 size-4" />
-                                Logout
+                                {t('common.logout')}
                             </Link>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -243,21 +258,24 @@ function getInitials(name: string): string {
         .join('');
 }
 
-function getNotificationTypeLabel(type: string): string {
+function getNotificationTypeLabel(type: string, t: (key: string) => string): string {
+    const msg = t('app_header.notification_type_messages');
+    const interview = t('app_header.notification_type_interview');
+    const aiInterview = t('app_header.notification_type_ai_interview');
     return (
         {
-            unread_messages: 'Pesan',
-            upcoming_interviews: 'Interview',
-            interview_scheduled: 'Interview',
-            ai_interview_scheduled: 'AI Interview',
-            ai_interview_confirmed: 'AI Interview',
-            ai_interview_declined: 'AI Interview',
-            ai_interview_completed: 'AI Interview',
-            ai_interview_reschedule_requested: 'AI Interview',
-            ai_interview_reschedule_approved: 'AI Interview',
-            ai_interview_reschedule_rejected: 'AI Interview',
-            application_submitted: 'Lamaran',
-            company_verification: 'Verifikasi',
-        }[type] ?? 'Aktivitas'
+            unread_messages: msg,
+            upcoming_interviews: interview,
+            interview_scheduled: interview,
+            ai_interview_scheduled: aiInterview,
+            ai_interview_confirmed: aiInterview,
+            ai_interview_declined: aiInterview,
+            ai_interview_completed: aiInterview,
+            ai_interview_reschedule_requested: aiInterview,
+            ai_interview_reschedule_approved: aiInterview,
+            ai_interview_reschedule_rejected: aiInterview,
+            application_submitted: t('app_header.notification_type_application'),
+            company_verification: t('app_header.notification_type_verification'),
+        }[type] ?? t('app_header.notification_type_activity')
     );
 }

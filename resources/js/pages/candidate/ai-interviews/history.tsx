@@ -57,6 +57,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTranslate } from '@/hooks/use-translate';
 import {
     destroy,
     feedback,
@@ -93,162 +94,166 @@ type HistoryProps = {
     };
 };
 
-const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
-    { value: 'all', label: 'Semua status' },
-    { value: 'scheduled', label: 'Terjadwal' },
-    { value: 'in_progress', label: 'Sedang berlangsung' },
-    { value: 'completed', label: 'Selesai' },
-    { value: 'declined', label: 'Ditolak' },
-];
-
-const MODE_OPTIONS: Array<{ value: string; label: string }> = [
-    { value: 'all', label: 'Semua mode' },
-    { value: 'text', label: 'Teks' },
-    { value: 'voice', label: 'Voice AI' },
-];
+type TranslateFn = (key: string) => string;
 
 const DELETABLE_STATUSES = ['completed', 'declined', 'cancelled'];
 
-const columns: ColumnDef<Session>[] = [
-    {
-        accessorKey: 'job_title',
-        header: ({ column }) => (
-            <Button
-                variant="ghost"
-                size="sm"
-                className="-ml-3 h-8 font-semibold"
-                onClick={() =>
-                    column.toggleSorting(column.getIsSorted() === 'asc')
-                }
-            >
-                Posisi
-                <ArrowUpDown className="size-3.5" />
-            </Button>
-        ),
-        cell: ({ row }) => (
-            <div className="space-y-0.5">
-                <p className="font-semibold text-foreground">
-                    {row.original.job_title ?? '—'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                    {row.original.company ?? '—'}
-                </p>
-            </div>
-        ),
-    },
-    {
-        id: 'tanggal',
-        accessorFn: (row) =>
-            row.completed_at ?? row.started_at ?? row.scheduled_at ?? null,
-        header: ({ column }) => (
-            <Button
-                variant="ghost"
-                size="sm"
-                className="-ml-3 h-8 font-semibold"
-                onClick={() =>
-                    column.toggleSorting(column.getIsSorted() === 'asc')
-                }
-            >
-                Tanggal
-                <ArrowUpDown className="size-3.5" />
-            </Button>
-        ),
-        cell: ({ getValue }) => (
-            <span className="text-sm text-muted-foreground">
-                {(getValue() as string | null) ?? '—'}
-            </span>
-        ),
-    },
-    {
-        accessorKey: 'duration_minutes',
-        header: 'Durasi',
-        cell: ({ getValue }) => {
-            const val = getValue() as number | null;
-            return (
-                <span className="text-sm text-muted-foreground">
-                    {val ? `${val} menit` : '—'}
-                </span>
-            );
-        },
-    },
-    {
-        accessorKey: 'interview_mode',
-        header: 'Mode',
-        cell: ({ getValue }) => {
-            const mode = getValue() as string | null;
-            return (
-                <Badge variant="outline" className="gap-1">
-                    {mode === 'text' ? (
-                        <>
-                            <FileText className="size-3" />
-                            Teks
-                        </>
-                    ) : (
-                        <>
-                            <Headphones className="size-3" />
-                            Voice AI
-                        </>
-                    )}
-                </Badge>
-            );
-        },
-    },
-    {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ getValue }) => (
-            <StatusBadge status={getValue() as string} />
-        ),
-    },
-    {
-        id: 'actions',
-        header: '',
-        cell: ({ row, table }) => {
-            const session = row.original;
-            const { onDeleteRequest } = table.options.meta as { onDeleteRequest: (id: number) => void };
-            return (
-                <div className="flex items-center justify-end gap-2">
-                    {session.status === 'completed' && (
-                        <Button asChild size="sm" variant="secondary">
-                            <Link href={feedback(session.id)}>Feedback</Link>
-                        </Button>
-                    )}
-                    <Button
-                        asChild
-                        size="sm"
-                        variant="outline"
-                        className="gap-1.5"
-                    >
-                        <Link href={show(session.id)}>
-                            <ExternalLink className="size-3.5" />
-                            Buka
-                        </Link>
-                    </Button>
-                    {DELETABLE_STATUSES.includes(session.status) && (
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                            onClick={() => onDeleteRequest(session.id)}
-                        >
-                            <Trash2 className="size-3.5" />
-                        </Button>
-                    )}
+function buildColumns(t: TranslateFn, onDeleteRequest: (id: number) => void): ColumnDef<Session>[] {
+    return [
+        {
+            accessorKey: 'job_title',
+            header: ({ column }) => (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-3 h-8 font-semibold"
+                    onClick={() =>
+                        column.toggleSorting(column.getIsSorted() === 'asc')
+                    }
+                >
+                    {t('candidate.ai_interview_history.col_position')}
+                    <ArrowUpDown className="size-3.5" />
+                </Button>
+            ),
+            cell: ({ row }) => (
+                <div className="space-y-0.5">
+                    <p className="font-semibold text-foreground">
+                        {row.original.job_title ?? '—'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                        {row.original.company ?? '—'}
+                    </p>
                 </div>
-            );
+            ),
         },
-    },
-];
+        {
+            id: 'tanggal',
+            accessorFn: (row) =>
+                row.completed_at ?? row.started_at ?? row.scheduled_at ?? null,
+            header: ({ column }) => (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-3 h-8 font-semibold"
+                    onClick={() =>
+                        column.toggleSorting(column.getIsSorted() === 'asc')
+                    }
+                >
+                    {t('candidate.ai_interview_history.col_date')}
+                    <ArrowUpDown className="size-3.5" />
+                </Button>
+            ),
+            cell: ({ getValue }) => (
+                <span className="text-sm text-muted-foreground">
+                    {(getValue() as string | null) ?? '—'}
+                </span>
+            ),
+        },
+        {
+            accessorKey: 'duration_minutes',
+            header: t('candidate.ai_interview_history.col_duration'),
+            cell: ({ getValue }) => {
+                const val = getValue() as number | null;
+                return (
+                    <span className="text-sm text-muted-foreground">
+                        {val ? `${val} menit` : '—'}
+                    </span>
+                );
+            },
+        },
+        {
+            accessorKey: 'interview_mode',
+            header: t('candidate.ai_interview_history.col_mode'),
+            cell: ({ getValue }) => {
+                const mode = getValue() as string | null;
+                return (
+                    <Badge variant="outline" className="gap-1">
+                        {mode === 'text' ? (
+                            <>
+                                <FileText className="size-3" />
+                                {t('candidate.ai_interview_history.mode_text')}
+                            </>
+                        ) : (
+                            <>
+                                <Headphones className="size-3" />
+                                {t('candidate.ai_interview_history.mode_voice')}
+                            </>
+                        )}
+                    </Badge>
+                );
+            },
+        },
+        {
+            accessorKey: 'status',
+            header: t('candidate.ai_interview_history.col_status'),
+            cell: ({ getValue }) => (
+                <StatusBadge status={getValue() as string} />
+            ),
+        },
+        {
+            id: 'actions',
+            header: '',
+            cell: ({ row }) => {
+                const session = row.original;
+                return (
+                    <div className="flex items-center justify-end gap-2">
+                        {session.status === 'completed' && (
+                            <Button asChild size="sm" variant="secondary">
+                                <Link href={feedback(session.id)}>{t('candidate.ai_interview_history.btn_feedback')}</Link>
+                            </Button>
+                        )}
+                        <Button
+                            asChild
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5"
+                        >
+                            <Link href={show(session.id)}>
+                                <ExternalLink className="size-3.5" />
+                                {t('candidate.ai_interview_history.btn_open')}
+                            </Link>
+                        </Button>
+                        {DELETABLE_STATUSES.includes(session.status) && (
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                onClick={() => onDeleteRequest(session.id)}
+                            >
+                                <Trash2 className="size-3.5" />
+                            </Button>
+                        )}
+                    </div>
+                );
+            },
+        },
+    ];
+}
 
 export default function CandidateAiInterviewHistory({
     sessions,
     filters,
     stats,
 }: HistoryProps) {
+    const { t } = useTranslate();
     const [sorting, setSorting] = useState<SortingState>([]);
     const [globalFilter, setGlobalFilter] = useState('');
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [deleting, setDeleting] = useState(false);
+
+    const statusOptions = [
+        { value: 'all', label: t('candidate.ai_interview_history.status_all') },
+        { value: 'scheduled', label: t('candidate.ai_interview_history.status_scheduled') },
+        { value: 'in_progress', label: t('candidate.ai_interview_history.status_in_progress') },
+        { value: 'completed', label: t('candidate.ai_interview_history.status_completed') },
+        { value: 'declined', label: t('candidate.ai_interview_history.status_declined') },
+    ];
+
+    const modeOptions = [
+        { value: 'all', label: t('candidate.ai_interview_history.mode_all') },
+        { value: 'text', label: t('candidate.ai_interview_history.mode_text') },
+        { value: 'voice', label: t('candidate.ai_interview_history.mode_voice') },
+    ];
 
     const handleDelete = () => {
         if (!deleteId) { return; }
@@ -275,6 +280,8 @@ export default function CandidateAiInterviewHistory({
         );
     };
 
+    const columns = buildColumns(t, (id) => setDeleteId(id));
+
     const table = useReactTable({
         data: sessions,
         columns,
@@ -286,7 +293,6 @@ export default function CandidateAiInterviewHistory({
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         initialState: { pagination: { pageSize: 10 } },
-        meta: { onDeleteRequest: (id: number) => setDeleteId(id) },
     });
 
     const pageCount = table.getPageCount();
@@ -294,17 +300,17 @@ export default function CandidateAiInterviewHistory({
 
     return (
         <>
-            <Head title="Riwayat Latihan AI" />
+            <Head title={t('candidate.ai_interview_history.page_title')} />
             <div className="space-y-6 p-4 md:p-6">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <Heading
-                        title="Riwayat Latihan AI"
-                        description="Daftar sesi simulasi & interview AI dari semua lamaran kamu."
+                        title={t('candidate.ai_interview_history.heading_title')}
+                        description={t('candidate.ai_interview_history.heading_desc')}
                     />
                     <Button asChild variant="outline">
                         <Link href={simulatorIndex().url}>
                             <ArrowLeft className="size-4" />
-                            Kembali ke AI Simulator
+                            {t('candidate.ai_interview_history.btn_back')}
                         </Link>
                     </Button>
                 </div>
@@ -313,24 +319,24 @@ export default function CandidateAiInterviewHistory({
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <StatCard
                         icon={Sparkles}
-                        label="Total sesi"
+                        label={t('candidate.ai_interview_history.stat_total')}
                         value={stats.total}
                     />
                     <StatCard
                         icon={CheckCircle2}
-                        label="Selesai"
+                        label={t('candidate.ai_interview_history.stat_completed')}
                         value={stats.completed}
                         tone="text-green-700"
                     />
                     <StatCard
                         icon={PlayCircle}
-                        label="Sedang berjalan"
+                        label={t('candidate.ai_interview_history.stat_in_progress')}
                         value={stats.in_progress}
                         tone="text-blue-700"
                     />
                     <StatCard
                         icon={Clock3}
-                        label="Terjadwal"
+                        label={t('candidate.ai_interview_history.stat_scheduled')}
                         value={stats.scheduled}
                         tone="text-amber-700"
                     />
@@ -339,7 +345,7 @@ export default function CandidateAiInterviewHistory({
                 {/* DataTable */}
                 <Card>
                     <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <CardTitle>Daftar sesi</CardTitle>
+                        <CardTitle>{t('candidate.ai_interview_history.card_title')}</CardTitle>
                         <div className="flex flex-wrap gap-2">
                             <Select
                                 value={filters.status || 'all'}
@@ -348,10 +354,10 @@ export default function CandidateAiInterviewHistory({
                                 }
                             >
                                 <SelectTrigger className="w-44">
-                                    <SelectValue placeholder="Status" />
+                                    <SelectValue placeholder={t('candidate.ai_interviews.filter_status_placeholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {STATUS_OPTIONS.map((opt) => (
+                                    {statusOptions.map((opt) => (
                                         <SelectItem
                                             key={opt.value}
                                             value={opt.value}
@@ -368,10 +374,10 @@ export default function CandidateAiInterviewHistory({
                                 }
                             >
                                 <SelectTrigger className="w-40">
-                                    <SelectValue placeholder="Mode" />
+                                    <SelectValue placeholder={t('candidate.ai_interviews.filter_mode_placeholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {MODE_OPTIONS.map((opt) => (
+                                    {modeOptions.map((opt) => (
                                         <SelectItem
                                             key={opt.value}
                                             value={opt.value}
@@ -390,7 +396,7 @@ export default function CandidateAiInterviewHistory({
                             <div className="relative w-full max-w-sm">
                                 <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                                 <Input
-                                    placeholder="Cari posisi atau perusahaan..."
+                                    placeholder={t('candidate.ai_interview_history.search_placeholder')}
                                     value={globalFilter}
                                     onChange={(e) =>
                                         setGlobalFilter(e.target.value)
@@ -400,7 +406,7 @@ export default function CandidateAiInterviewHistory({
                             </div>
                             <div className="ml-auto flex items-center gap-2">
                                 <span className="text-sm text-muted-foreground">
-                                    Baris:
+                                    {t('candidate.ai_interview_history.rows_label')}
                                 </span>
                                 <Select
                                     value={String(
@@ -482,7 +488,7 @@ export default function CandidateAiInterviewHistory({
                                                 colSpan={columns.length}
                                                 className="py-16 text-center text-muted-foreground"
                                             >
-                                                Belum ada riwayat sesi.
+                                                {t('candidate.ai_interview_history.empty_text')}
                                             </TableCell>
                                         </TableRow>
                                     )}
@@ -494,7 +500,7 @@ export default function CandidateAiInterviewHistory({
                         {pageCount > 1 && (
                             <div className="flex items-center justify-between">
                                 <p className="text-sm text-muted-foreground">
-                                    Halaman {pageIndex + 1} dari {pageCount}
+                                    {t('candidate.ai_interview_history.page_label', { current: String(pageIndex + 1), total: String(pageCount) })}
                                 </p>
                                 <div className="flex items-center gap-2">
                                     <Button
@@ -505,7 +511,7 @@ export default function CandidateAiInterviewHistory({
                                         }
                                         disabled={!table.getCanPreviousPage()}
                                     >
-                                        Sebelumnya
+                                        {t('candidate.ai_interview_history.btn_prev')}
                                     </Button>
                                     <Button
                                         variant="outline"
@@ -513,7 +519,7 @@ export default function CandidateAiInterviewHistory({
                                         onClick={() => table.nextPage()}
                                         disabled={!table.getCanNextPage()}
                                     >
-                                        Selanjutnya
+                                        {t('candidate.ai_interview_history.btn_next')}
                                     </Button>
                                 </div>
                             </div>
@@ -524,17 +530,17 @@ export default function CandidateAiInterviewHistory({
             <Dialog open={deleteId !== null} onOpenChange={(open) => { if (!open) { setDeleteId(null); } }}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Hapus sesi interview?</DialogTitle>
+                        <DialogTitle>{t('candidate.ai_interview_history.delete_title')}</DialogTitle>
                         <DialogDescription>
-                            Data sesi ini, termasuk rekaman dan feedback AI, akan dihapus permanen dan tidak bisa dipulihkan.
+                            {t('candidate.ai_interview_history.delete_desc')}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setDeleteId(null)} disabled={deleting}>
-                            Batal
+                            {t('candidate.ai_interview_history.btn_cancel')}
                         </Button>
                         <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-                            {deleting ? 'Menghapus...' : 'Hapus'}
+                            {deleting ? t('candidate.ai_interview_history.btn_deleting') : t('candidate.ai_interview_history.btn_delete')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

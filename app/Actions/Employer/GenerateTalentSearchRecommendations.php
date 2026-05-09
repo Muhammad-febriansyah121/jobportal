@@ -40,18 +40,34 @@ class GenerateTalentSearchRecommendations
                 ->values()
                 ->all(),
         ];
-        $inputHash = hash('sha256', json_encode($input, JSON_THROW_ON_ERROR));
+
+        $cacheKeyInput = [
+            'filters' => $filters,
+            'candidate_ids' => $candidates->pluck('id')->sort()->values()->all(),
+        ];
+        $inputHash = hash('sha256', json_encode($cacheKeyInput, JSON_THROW_ON_ERROR));
 
         $cached = AiAuditLog::query()
             ->where('user_id', $user->id)
             ->where('feature', 'employer_talent_search_rerank')
             ->where('input_hash', $inputHash)
-            ->where('status', 'success')
+            ->whereIn('status', ['success', 'fallback'])
+            ->where('created_at', '>=', now()->subMinutes(15))
             ->latest()
             ->first();
 
-        if ($cached !== null && is_array($cached->output_json)) {
-            return $this->applyRankings($candidates, $cached->output_json, 'ai');
+        if ($cached !== null) {
+            if ($cached->status === 'success' && is_array($cached->output_json)) {
+                return $this->applyRankings($candidates, $cached->output_json, 'ai');
+            }
+
+            return $candidates
+                ->map(fn (array $candidate): array => $candidate + [
+                    'match_source' => $candidate['match_source'] ?? 'computed',
+                    'match_reason' => $candidate['match_reason'] ?? null,
+                ])
+                ->sortByDesc('match_score')
+                ->values();
         }
 
         $result = $this->ai->chat([
@@ -167,6 +183,7 @@ PROMPT;
             'output_json' => $output,
             'model_name' => $this->ai->modelName(),
             'status' => $status,
+            ...$this->ai->tokenUsage(),
         ]);
     }
 }

@@ -104,6 +104,12 @@ type AiInterviewIndexProps = {
             question_counts: number[];
             duration_minutes: number[];
             quick_starts: QuickStartPreset[];
+            quota: {
+                balance: number;
+                expires_at: string | null;
+                expires_label: string | null;
+                topup_url: string;
+            };
         };
     };
 };
@@ -152,6 +158,30 @@ export default function CandidateAiInterviewIndex({
                             {t('candidate.ai_interviews.btn_history')}
                         </Link>
                     </Button>
+                </div>
+
+                <div className="flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 md:flex-row md:items-center md:justify-between">
+                    <div className="space-y-1">
+                        <p className="text-sm font-semibold text-primary">
+                            Sisa kuota simulasi: {setup.options.quota.balance}x
+                        </p>
+                        {setup.options.quota.expires_label ? (
+                            <p className="text-xs text-muted-foreground">
+                                Berlaku sampai {setup.options.quota.expires_label}
+                            </p>
+                        ) : (
+                            <p className="text-xs text-muted-foreground">
+                                Topup paket Jobseeker untuk 5x simulasi/bulan.
+                            </p>
+                        )}
+                    </div>
+                    {setup.options.quota.balance < 1 ? (
+                        <Button asChild size="sm">
+                            <Link href={setup.options.quota.topup_url}>
+                                Topup Sekarang
+                            </Link>
+                        </Button>
+                    ) : null}
                 </div>
 
                 <Tabs defaultValue="interview">
@@ -229,7 +259,7 @@ function MockInterviewSection({
     defaults: AiInterviewIndexProps['setup']['defaults'];
     candidateHeadline?: string | null;
 }) {
-    const { t } = useTranslate();
+    const { t, locale } = useTranslate();
     const [showCustom, setShowCustom] = useState(false);
 
     return (
@@ -453,30 +483,14 @@ function MockInterviewSection({
                                                 )}
                                             </select>
                                         </FormRow>
-                                        <FormRow
-                                            label={t(
-                                                'candidate.ai_interviews.label_language',
-                                            )}
-                                        >
-                                            <select
-                                                name="interview_language"
-                                                defaultValue={
-                                                    defaults.interview_language
-                                                }
-                                                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                                            >
-                                                {interviewLanguages.map(
-                                                    (option) => (
-                                                        <option
-                                                            key={option.value}
-                                                            value={option.value}
-                                                        >
-                                                            {option.label}
-                                                        </option>
-                                                    ),
-                                                )}
-                                            </select>
-                                        </FormRow>
+                                        {/* Language picker hidden — auto-detected from user locale (navbar flag). */}
+                                        <input
+                                            type="hidden"
+                                            name="interview_language"
+                                            value={
+                                                locale === 'en' ? 'en' : 'id'
+                                            }
+                                        />
                                         <FormRow
                                             label={t(
                                                 'candidate.ai_interviews.label_duration',

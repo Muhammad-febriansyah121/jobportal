@@ -20,6 +20,7 @@ import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { RichEditor } from '@/components/rich-editor';
 import { Card, CardContent } from '@/components/ui/card';
+import { useTranslate } from '@/hooks/use-translate';
 import { update as settingsUpdate } from '@/routes/admin/settings';
 
 type Tab = { key: string; label: string; icon: React.ElementType };
@@ -170,6 +171,7 @@ function AiApiKeyInput({
     value: string;
     onChange: (v: string) => void;
 }) {
+    const { t } = useTranslate();
     const [show, setShow] = useState(false);
 
     return (
@@ -186,7 +188,7 @@ function AiApiKeyInput({
                 onClick={() => setShow((prev) => !prev)}
                 className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
                 tabIndex={-1}
-                aria-label={show ? 'Sembunyikan API key' : 'Tampilkan API key'}
+                aria-label={show ? t('admin.settings.input.hide_api_key') : t('admin.settings.input.show_api_key')}
             >
                 {show ? (
                     <EyeOff className="size-4" />
@@ -209,6 +211,7 @@ function ImageUpload({
     onFileSelect: (file: File | null) => void;
     aspectHint?: string;
 }) {
+    const { t } = useTranslate();
     const inputRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<string | null>(
         storageUrl(currentPath),
@@ -287,10 +290,10 @@ inputRef.current.value = '';
                             <Upload className="size-5" />
                         </div>
                         <p className="text-sm font-medium">
-                            Klik atau drag & drop gambar
+                            {t('admin.settings.image_upload.drag_drop')}
                         </p>
                         {aspectHint && <p className="text-xs">{aspectHint}</p>}
-                        <p className="text-xs">PNG, JPG, WEBP</p>
+                        <p className="text-xs">{t('admin.settings.image_upload.formats')}</p>
                     </div>
                 )}
                 <input
@@ -306,6 +309,7 @@ inputRef.current.value = '';
 }
 
 export default function AdminSettings({ settings }: SettingsProps) {
+    const { t } = useTranslate();
     const get = (key: string) => settings[key] ?? '';
 
     const { data, setData, post, processing, transform } = useForm<
@@ -360,13 +364,13 @@ export default function AdminSettings({ settings }: SettingsProps) {
     const [activeTab, setActiveTab] = useState('umum');
 
     const tabs: Tab[] = [
-        { key: 'umum', label: 'Umum', icon: Globe },
-        { key: 'media', label: 'Media', icon: ImageIcon },
-        { key: 'sosial', label: 'Sosial & Kontak', icon: Share2 },
-        { key: 'tentang', label: 'Tentang Kami', icon: Building2 },
-        { key: 'ai', label: 'AI', icon: Bot },
-        { key: 'pembayaran', label: 'Pembayaran', icon: CreditCard },
-        { key: 'sistem', label: 'Sistem', icon: ShieldOff },
+        { key: 'umum', label: t('admin.settings.tabs.general'), icon: Globe },
+        { key: 'media', label: t('admin.settings.tabs.media'), icon: ImageIcon },
+        { key: 'sosial', label: t('admin.settings.tabs.social'), icon: Share2 },
+        { key: 'tentang', label: t('admin.settings.tabs.about'), icon: Building2 },
+        { key: 'ai', label: t('admin.settings.tabs.ai'), icon: Bot },
+        { key: 'pembayaran', label: t('admin.settings.tabs.payment'), icon: CreditCard },
+        { key: 'sistem', label: t('admin.settings.tabs.system'), icon: ShieldOff },
     ];
 
     const str = (key: string) => (data[key] as string) ?? '';
@@ -395,7 +399,7 @@ export default function AdminSettings({ settings }: SettingsProps) {
                 toast.error(
                     typeof firstError === 'string'
                         ? firstError
-                        : 'Periksa kembali pengaturan yang diisi.',
+                        : t('admin.settings.error_message'),
                 );
             },
         });
@@ -403,7 +407,7 @@ export default function AdminSettings({ settings }: SettingsProps) {
 
     return (
         <>
-            <Head title="Setting Web" />
+            <Head title={t('admin.settings.title')} />
 
             <form onSubmit={handleSubmit}>
                 <div className="flex flex-col gap-6 p-6">
@@ -411,11 +415,10 @@ export default function AdminSettings({ settings }: SettingsProps) {
                     <div className="flex items-center justify-between border-b pb-5">
                         <div>
                             <h1 className="text-2xl font-semibold tracking-normal">
-                                Setting Web
+                                {t('admin.settings.title')}
                             </h1>
                             <p className="mt-1 text-sm text-muted-foreground">
-                                Kelola konfigurasi umum, tampilan, dan informasi
-                                platform Karivia.
+                                {t('admin.settings.subtitle')}
                             </p>
                         </div>
                         <button
@@ -423,7 +426,7 @@ export default function AdminSettings({ settings }: SettingsProps) {
                             disabled={processing}
                             className="rounded-lg bg-[#1E4D96] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#001D4D] disabled:opacity-60"
                         >
-                            {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
+                            {processing ? t('admin.settings.saving') : t('admin.settings.save_changes')}
                         </button>
                     </div>
 
@@ -439,40 +442,40 @@ export default function AdminSettings({ settings }: SettingsProps) {
                         <div
                             className={`mt-5 flex flex-col gap-5 ${activeTab === 'umum' ? '' : 'hidden'}`}
                         >
-                            <Section icon={Globe} title="Identitas Situs">
-                                <Field label="Nama Situs">
+                            <Section icon={Globe} title={t('admin.settings.general.identity')}>
+                                <Field label={t('admin.settings.general.site_name')}>
                                     <Input
                                         value={str('site_name')}
                                         onChange={set('site_name')}
                                         placeholder="Karivia"
                                     />
                                 </Field>
-                                <Field label="Tagline">
+                                <Field label={t('admin.settings.general.tagline')}>
                                     <Input
                                         value={str('site_tagline')}
                                         onChange={set('site_tagline')}
                                         placeholder="Job Portal Terpercaya"
                                     />
                                 </Field>
-                                <Field label="Deskripsi Singkat" full>
+                                <Field label={t('admin.settings.general.description')} full>
                                     <Textarea
                                         value={str('site_description')}
                                         onChange={set('site_description')}
-                                        placeholder="Deskripsi situs..."
+                                        placeholder={t('admin.settings.general.desc_placeholder')}
                                     />
                                 </Field>
-                                <Field label="Meta Description" full>
+                                <Field label={t('admin.settings.general.meta_desc')} full>
                                     <Textarea
                                         value={str('site_meta_description')}
                                         onChange={set('site_meta_description')}
-                                        placeholder="Meta description untuk SEO..."
+                                        placeholder={t('admin.settings.general.meta_desc_placeholder')}
                                     />
                                 </Field>
-                                <Field label="Meta Keywords" full>
+                                <Field label={t('admin.settings.general.meta_keywords')} full>
                                     <Input
                                         value={str('site_meta_keywords')}
                                         onChange={set('site_meta_keywords')}
-                                        placeholder="lowongan kerja, job portal, ..."
+                                        placeholder={t('admin.settings.general.meta_keys_placeholder')}
                                     />
                                 </Field>
                             </Section>
@@ -482,9 +485,9 @@ export default function AdminSettings({ settings }: SettingsProps) {
                         <div
                             className={`mt-5 flex flex-col gap-5 ${activeTab === 'media' ? '' : 'hidden'}`}
                         >
-                            <Section icon={ImageIcon} title="Media & Gambar">
+                            <Section icon={ImageIcon} title={t('admin.settings.media.title')}>
                                 <ImageUpload
-                                    label="Logo Situs"
+                                    label={t('admin.settings.media.logo')}
                                     currentPath={
                                         settings['site_logo_url'] ?? null
                                     }
@@ -494,10 +497,10 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                             file as never,
                                         )
                                     }
-                                    aspectHint="Disarankan: 200×60px"
+                                    aspectHint={t('admin.settings.media.logo_hint')}
                                 />
                                 <ImageUpload
-                                    label="Favicon"
+                                    label={t('admin.settings.media.favicon')}
                                     currentPath={
                                         settings['site_favicon_url'] ?? null
                                     }
@@ -507,11 +510,11 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                             file as never,
                                         )
                                     }
-                                    aspectHint="Disarankan: 32×32px atau 64×64px"
+                                    aspectHint={t('admin.settings.media.favicon_hint')}
                                 />
                                 <div className="sm:col-span-2">
                                     <ImageUpload
-                                        label="Banner Halaman Login"
+                                        label={t('admin.settings.media.login_banner')}
                                         currentPath={
                                             settings['login_banner_url'] ?? null
                                         }
@@ -521,7 +524,7 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                                 file as never,
                                             )
                                         }
-                                        aspectHint="Disarankan: 1200×800px"
+                                        aspectHint={t('admin.settings.media.login_banner_hint')}
                                     />
                                 </div>
                             </Section>
@@ -531,36 +534,36 @@ export default function AdminSettings({ settings }: SettingsProps) {
                         <div
                             className={`mt-5 flex flex-col gap-5 ${activeTab === 'sosial' ? '' : 'hidden'}`}
                         >
-                            <Section icon={Share2} title="Media Sosial">
-                                <Field label="Facebook URL">
+                            <Section icon={Share2} title={t('admin.settings.social.title')}>
+                                <Field label={t('admin.settings.social.facebook')}>
                                     <Input
                                         value={str('facebook_url')}
                                         onChange={set('facebook_url')}
                                         placeholder="https://facebook.com/..."
                                     />
                                 </Field>
-                                <Field label="Instagram URL">
+                                <Field label={t('admin.settings.social.instagram')}>
                                     <Input
                                         value={str('instagram_url')}
                                         onChange={set('instagram_url')}
                                         placeholder="https://instagram.com/..."
                                     />
                                 </Field>
-                                <Field label="LinkedIn URL">
+                                <Field label={t('admin.settings.social.linkedin')}>
                                     <Input
                                         value={str('linkedin_url')}
                                         onChange={set('linkedin_url')}
                                         placeholder="https://linkedin.com/company/..."
                                     />
                                 </Field>
-                                <Field label="Twitter / X URL">
+                                <Field label={t('admin.settings.social.twitter')}>
                                     <Input
                                         value={str('twitter_url')}
                                         onChange={set('twitter_url')}
                                         placeholder="https://x.com/..."
                                     />
                                 </Field>
-                                <Field label="YouTube URL">
+                                <Field label={t('admin.settings.social.youtube')}>
                                     <Input
                                         value={str('youtube_url')}
                                         onChange={set('youtube_url')}
@@ -569,8 +572,8 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                 </Field>
                             </Section>
 
-                            <Section icon={Mail} title="Kontak">
-                                <Field label="Email Support">
+                            <Section icon={Mail} title={t('admin.settings.contact.title')}>
+                                <Field label={t('admin.settings.contact.email')}>
                                     <Input
                                         value={str('support_email')}
                                         onChange={set('support_email')}
@@ -578,14 +581,14 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                         placeholder="support@karivia.id"
                                     />
                                 </Field>
-                                <Field label="Nomor Telepon">
+                                <Field label={t('admin.settings.contact.phone')}>
                                     <Input
                                         value={str('support_phone')}
                                         onChange={set('support_phone')}
                                         placeholder="+62 21 1234 5678"
                                     />
                                 </Field>
-                                <Field label="Nomor WhatsApp">
+                                <Field label={t('admin.settings.contact.whatsapp')}>
                                     <Input
                                         value={str('whatsapp_number')}
                                         onChange={set('whatsapp_number')}
@@ -601,61 +604,61 @@ export default function AdminSettings({ settings }: SettingsProps) {
                         >
                             <Section
                                 icon={Building2}
-                                title="Halaman Tentang Kami"
+                                title={t('admin.settings.about.title')}
                             >
-                                <Field label="Judul">
+                                <Field label={t('admin.settings.about.page_title')}>
                                     <Input
                                         value={str('about_title')}
                                         onChange={set('about_title')}
-                                        placeholder="Tentang Karivia"
+                                        placeholder={t('admin.settings.about.title_placeholder')}
                                     />
                                 </Field>
-                                <Field label="Tagline">
+                                <Field label={t('admin.settings.general.tagline')}>
                                     <Input
                                         value={str('about_tagline')}
                                         onChange={set('about_tagline')}
-                                        placeholder="Tagline halaman about..."
+                                        placeholder={t('admin.settings.about.tagline_placeholder')}
                                     />
                                 </Field>
-                                <Field label="Jumlah Karyawan">
+                                <Field label={t('admin.settings.about.employee_count')}>
                                     <Input
                                         value={str('about_employee_count')}
                                         onChange={set('about_employee_count')}
-                                        placeholder="50+ orang"
+                                        placeholder={t('admin.settings.about.employee_count_placeholder')}
                                     />
                                 </Field>
-                                <Field label="Tahun Berdiri">
+                                <Field label={t('admin.settings.about.founded_year')}>
                                     <Input
                                         value={str('about_founded_year')}
                                         onChange={set('about_founded_year')}
                                         placeholder="2023"
                                     />
                                 </Field>
-                                <Field label="Kantor Pusat">
+                                <Field label={t('admin.settings.about.headquarters')}>
                                     <Input
                                         value={str('about_headquarters')}
                                         onChange={set('about_headquarters')}
                                         placeholder="Jakarta, Indonesia"
                                     />
                                 </Field>
-                                <Field label="Deskripsi" full>
+                                <Field label={t('admin.settings.about.description')} full>
                                     <RichEditor
                                         value={str('about_description')}
                                         onChange={set('about_description')}
-                                        placeholder="Deskripsi singkat perusahaan..."
+                                        placeholder={t('admin.settings.about.desc_placeholder')}
                                         minHeight="160px"
                                     />
                                 </Field>
-                                <Field label="Konten (HTML)" full>
+                                <Field label={t('admin.settings.about.content')} full>
                                     <RichEditor
                                         value={str('about_content')}
                                         onChange={set('about_content')}
-                                        placeholder="Tulis konten tentang perusahaan..."
+                                        placeholder={t('admin.settings.about.content_placeholder')}
                                         minHeight="320px"
                                     />
                                 </Field>
                                 <ImageUpload
-                                    label="Hero Image"
+                                    label={t('admin.settings.about.hero_image')}
                                     currentPath={
                                         settings['about_hero_image'] ?? null
                                     }
@@ -665,10 +668,10 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                             file as never,
                                         )
                                     }
-                                    aspectHint="Disarankan: 1200×600px"
+                                    aspectHint={t('admin.settings.about.hero_hint')}
                                 />
                                 <ImageUpload
-                                    label="Office Image"
+                                    label={t('admin.settings.about.office_image')}
                                     currentPath={
                                         settings['about_office_image'] ?? null
                                     }
@@ -678,7 +681,7 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                             file as never,
                                         )
                                     }
-                                    aspectHint="Disarankan: 800×600px"
+                                    aspectHint={t('admin.settings.about.office_hint')}
                                 />
                             </Section>
                         </div>
@@ -687,46 +690,40 @@ export default function AdminSettings({ settings }: SettingsProps) {
                         <div
                             className={`mt-5 flex flex-col gap-5 ${activeTab === 'ai' ? '' : 'hidden'}`}
                         >
-                            <Section icon={Bot} title="AI API Key">
-                                <Field label="Model AI" full>
+                            <Section icon={Bot} title={t('admin.settings.ai.title')}>
+                                <Field label={t('admin.settings.ai.model')} full>
                                     <Input
                                         value={str('ai_model')}
                                         onChange={set('ai_model')}
                                         placeholder="gpt-5"
                                     />
                                     <p className="mt-1.5 text-xs text-muted-foreground">
-                                        Gunakan nama model persis seperti yang
-                                        didukung provider API kamu. Contoh:
-                                        gpt-5.
+                                        {t('admin.settings.ai.model_hint')}
                                     </p>
                                 </Field>
-                                <Field label="API Key" full>
+                                <Field label={t('admin.settings.ai.api_key')} full>
                                     <AiApiKeyInput
                                         value={str('ai_api_key')}
                                         onChange={set('ai_api_key')}
                                     />
                                     <p className="mt-1.5 text-xs text-muted-foreground">
-                                        Disimpan terenkripsi. API key digunakan
-                                        untuk fitur AI Summary, AI Insight, AI
-                                        Interview, dan AI Matching. Jangan
-                                        bagikan key ini kepada siapapun.
+                                        {t('admin.settings.ai.api_key_hint')}
                                     </p>
                                 </Field>
                             </Section>
 
-                            <Section icon={Bot} title="WhatsApp Gateway">
-                                <Field label="Gateway URL" full>
+                            <Section icon={Bot} title={t('admin.settings.wa_gateway.title')}>
+                                <Field label={t('admin.settings.wa_gateway.url')} full>
                                     <Input
                                         value={str('whatsapp_gateway_url')}
                                         onChange={set('whatsapp_gateway_url')}
                                         placeholder="http://127.0.0.1:3000"
                                     />
                                     <p className="mt-1.5 text-xs text-muted-foreground">
-                                        Base URL service WA gateway untuk fitur
-                                        notifikasi employer.
+                                        {t('admin.settings.wa_gateway.url_hint')}
                                     </p>
                                 </Field>
-                                <Field label="Gateway API Key" full>
+                                <Field label={t('admin.settings.wa_gateway.api_key')} full>
                                     <AiApiKeyInput
                                         value={str('whatsapp_gateway_api_key')}
                                         onChange={set(
@@ -742,26 +739,24 @@ export default function AdminSettings({ settings }: SettingsProps) {
                         <div
                             className={`mt-5 flex flex-col gap-5 ${activeTab === 'pembayaran' ? '' : 'hidden'}`}
                         >
-                            <Section icon={CreditCard} title="Pakasir">
-                                <Field label="Project Slug" full>
+                            <Section icon={CreditCard} title={t('admin.settings.payment.title')}>
+                                <Field label={t('admin.settings.payment.project_slug')} full>
                                     <Input
                                         value={str('pakasir_project')}
                                         onChange={set('pakasir_project')}
                                         placeholder="jobportal"
                                     />
                                     <p className="mt-1.5 text-xs text-muted-foreground">
-                                        Slug proyek Pakasir kamu. Terlihat di
-                                        dashboard app.pakasir.com.
+                                        {t('admin.settings.payment.project_slug_hint')}
                                     </p>
                                 </Field>
-                                <Field label="API Key" full>
+                                <Field label={t('admin.settings.ai.api_key')} full>
                                     <AiApiKeyInput
                                         value={str('pakasir_api_key')}
                                         onChange={set('pakasir_api_key')}
                                     />
                                     <p className="mt-1.5 text-xs text-muted-foreground">
-                                        API key dari dashboard Pakasir. Jangan
-                                        bagikan key ini kepada siapapun.
+                                        {t('admin.settings.payment.api_key_hint')}
                                     </p>
                                 </Field>
                             </Section>
@@ -771,8 +766,8 @@ export default function AdminSettings({ settings }: SettingsProps) {
                         <div
                             className={`mt-5 flex flex-col gap-5 ${activeTab === 'sistem' ? '' : 'hidden'}`}
                         >
-                            <Section icon={ShieldOff} title="Mode Maintenance">
-                                <Field label="Status Maintenance" full>
+                            <Section icon={ShieldOff} title={t('admin.settings.system.maintenance_title')}>
+                                <Field label={t('admin.settings.system.maintenance_status')} full>
                                     <label className="flex cursor-pointer items-center gap-3">
                                         <div className="relative shrink-0">
                                             <input
@@ -798,22 +793,22 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                         </div>
                                         <span className="text-sm">
                                             {data['maintenance_mode']
-                                                ? 'Aktif — situs dalam mode maintenance'
-                                                : 'Tidak aktif'}
+                                                ? t('admin.settings.system.maintenance_active')
+                                                : t('admin.settings.system.maintenance_inactive')}
                                         </span>
                                     </label>
                                 </Field>
-                                <Field label="Pesan Maintenance" full>
+                                <Field label={t('admin.settings.system.maintenance_message')} full>
                                     <Textarea
                                         value={str('maintenance_message')}
                                         onChange={set('maintenance_message')}
-                                        placeholder="Website sedang dalam pemeliharaan..."
+                                        placeholder={t('admin.settings.system.maintenance_message_placeholder')}
                                     />
                                 </Field>
                             </Section>
 
-                            <Section icon={MapPin} title="Peta Kantor">
-                                <Field label="Google Maps Embed URL" full>
+                            <Section icon={MapPin} title={t('admin.settings.system.maps_title')}>
+                                <Field label={t('admin.settings.system.maps_url')} full>
                                     <Textarea
                                         value={str('office_maps_embed_url')}
                                         onChange={set('office_maps_embed_url')}
@@ -824,7 +819,7 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                 {str('office_maps_embed_url') && (
                                     <div className="sm:col-span-2">
                                         <p className="mb-2 text-xs text-muted-foreground">
-                                            Preview:
+                                            {t('admin.settings.system.maps_preview')}
                                         </p>
                                         <iframe
                                             src={str('office_maps_embed_url')}
@@ -836,15 +831,15 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                 )}
                             </Section>
 
-                            <Section icon={KeyRound} title="Google reCAPTCHA">
-                                <Field label="Site Key">
+                            <Section icon={KeyRound} title={t('admin.settings.system.recaptcha_title')}>
+                                <Field label={t('admin.settings.system.recaptcha_site')}>
                                     <Input
                                         value={str('recaptcha_site_key')}
                                         onChange={set('recaptcha_site_key')}
                                         placeholder="Site key reCAPTCHA..."
                                     />
                                 </Field>
-                                <Field label="Secret Key">
+                                <Field label={t('admin.settings.system.recaptcha_secret')}>
                                     <Input
                                         value={str('recaptcha_secret_key')}
                                         onChange={set('recaptcha_secret_key')}
@@ -854,18 +849,18 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                 </Field>
                             </Section>
 
-                            <Section icon={KeyRound} title="Google Login">
-                                <Field label="Google OAuth Client ID" full>
+                            <Section icon={KeyRound} title={t('admin.settings.system.google_login')}>
+                                <Field label={t('admin.settings.system.google_client_id')} full>
                                     <Input
                                         value={str('google_login_client_id')}
                                         onChange={set('google_login_client_id')}
                                         placeholder="304084128651-xxxx.apps.googleusercontent.com"
                                     />
                                     <p className="mt-1.5 text-xs text-muted-foreground">
-                                        OAuth Client ID tipe Web Application dari Google Cloud Console.
+                                        {t('admin.settings.system.google_client_id_hint')}
                                     </p>
                                 </Field>
-                                <Field label="Google OAuth Client Secret" full>
+                                <Field label={t('admin.settings.system.google_client_secret')} full>
                                     <Input
                                         value={str('google_login_client_secret')}
                                         onChange={set('google_login_client_secret')}
@@ -873,24 +868,24 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                         type="password"
                                     />
                                     <p className="mt-1.5 text-xs text-muted-foreground">
-                                        Client Secret dari Google Cloud Console. Jangan bagikan ke siapapun.
+                                        {t('admin.settings.system.google_client_secret_hint')}
                                     </p>
                                 </Field>
                             </Section>
 
-                            <Section icon={BookOpen} title="Legal & Kebijakan">
-                                <Field label="Judul Halaman Privasi">
+                            <Section icon={BookOpen} title={t('admin.settings.legal.title')}>
+                                <Field label={t('admin.settings.legal.privacy_title')}>
                                     <Input
                                         value={str('privacy_title')}
                                         onChange={set('privacy_title')}
-                                        placeholder="Kebijakan Privasi Karivia"
+                                        placeholder={t('admin.settings.legal.privacy_placeholder')}
                                     />
                                 </Field>
-                                <Field label="Judul Halaman Syarat & Ketentuan">
+                                <Field label={t('admin.settings.legal.terms_title')}>
                                     <Input
                                         value={str('terms_title')}
                                         onChange={set('terms_title')}
-                                        placeholder="Syarat & Ketentuan Penggunaan"
+                                        placeholder={t('admin.settings.legal.terms_placeholder')}
                                     />
                                 </Field>
                             </Section>

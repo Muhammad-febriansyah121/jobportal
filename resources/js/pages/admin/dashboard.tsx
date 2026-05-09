@@ -1,4 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
+import { useTranslate } from '@/hooks/use-translate';
 import type { ApexOptions } from 'apexcharts';
 import {
     AlertTriangle,
@@ -64,7 +65,11 @@ type DashboardProps = {
         jobs: SeriesPoint[];
     };
     aiUsageByFeature: Array<{ feature: string; total: number }>;
-    conversionFunnel: { applications: number; interviews: number; hired: number };
+    conversionFunnel: {
+        applications: number;
+        interviews: number;
+        hired: number;
+    };
     topJobs: Array<{
         id: number;
         title: string;
@@ -113,11 +118,15 @@ function fmtMonth(value: string): string {
     if (!year || !month) return value;
     const d = new Date(Date.UTC(Number(year), Number(month) - 1, 1));
     if (Number.isNaN(d.getTime())) return value;
-    return new Intl.DateTimeFormat('id-ID', { month: 'short', timeZone: 'UTC' }).format(d);
+    return new Intl.DateTimeFormat('id-ID', {
+        month: 'short',
+        timeZone: 'UTC',
+    }).format(d);
 }
 
 function fmtIDR(value: number): string {
-    if (value >= 1_000_000_000) return `Rp ${(value / 1_000_000_000).toFixed(1)}M`;
+    if (value >= 1_000_000_000)
+        return `Rp ${(value / 1_000_000_000).toFixed(1)}M`;
     if (value >= 1_000_000) return `Rp ${(value / 1_000_000).toFixed(1)}jt`;
     if (value >= 1_000) return `Rp ${(value / 1_000).toFixed(0)}rb`;
     return `Rp ${value.toLocaleString('id-ID')}`;
@@ -135,6 +144,7 @@ export default function AdminDashboard({
     topCompanies,
     recentRegistrations,
 }: DashboardProps) {
+    const { t } = useTranslate();
     const aiSuccessRate =
         metrics.ai_usage.total > 0
             ? (metrics.ai_usage.success / metrics.ai_usage.total) * 100
@@ -142,7 +152,8 @@ export default function AdminDashboard({
 
     const revenueChangePercent =
         metrics.subscription_revenue_prev_month > 0
-            ? ((metrics.subscription_revenue_month - metrics.subscription_revenue_prev_month) /
+            ? ((metrics.subscription_revenue_month -
+                  metrics.subscription_revenue_prev_month) /
                   metrics.subscription_revenue_prev_month) *
               100
             : null;
@@ -154,23 +165,27 @@ export default function AdminDashboard({
 
     return (
         <>
-            <Head title="Dashboard Admin" />
+            <Head title={t('admin.dashboard.title')} />
             <div className="flex flex-col gap-8 p-4 md:p-6">
-
                 {/* ─── Hero ─── */}
                 <section className="relative overflow-hidden rounded-2xl border bg-[#01296a] px-6 py-5 text-white shadow-sm">
                     <div className="relative z-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-widest text-white/50">Admin Panel</p>
-                            <h1 className="mt-1 text-2xl font-bold tracking-tight">Dashboard Admin</h1>
+                            <p className="text-xs font-semibold tracking-widest text-white/50 uppercase">
+                                {t('admin.dashboard.admin_panel')}
+                            </p>
+                            <h1 className="mt-1 text-2xl font-bold tracking-tight">
+                                {t('admin.dashboard.title')}
+                            </h1>
                             <p className="mt-1 text-sm text-white/65">
-                                Ringkasan operasional, pendapatan, dan performa platform.
+                                {t('admin.dashboard.subtitle')}
                             </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge className="border-white/20 bg-white/10 text-white hover:bg-white/20">
                                 <CheckCircle2 className="mr-1 size-3.5 text-emerald-300" />
-                                AI Sukses {aiSuccessRate.toFixed(1)}%
+                                {t('admin.dashboard.ai_success')}{' '}
+                                {aiSuccessRate.toFixed(1)}%
                             </Badge>
                             <Button
                                 asChild
@@ -180,13 +195,13 @@ export default function AdminDashboard({
                             >
                                 <Link href={adminAnalytics()}>
                                     <ChartColumn className="mr-1.5 size-4" />
-                                    Analytics Detail
+                                    {t('admin.dashboard.analytics_detail')}
                                 </Link>
                             </Button>
                         </div>
                     </div>
-                    <div className="pointer-events-none absolute -right-10 -top-10 size-52 rounded-full bg-white/5" />
-                    <div className="pointer-events-none absolute -bottom-8 right-36 size-36 rounded-full bg-white/5" />
+                    <div className="pointer-events-none absolute -top-10 -right-10 size-52 rounded-full bg-white/5" />
+                    <div className="pointer-events-none absolute right-36 -bottom-8 size-36 rounded-full bg-white/5" />
                 </section>
 
                 {/* ─── Alert / Priority Panel ─── */}
@@ -194,21 +209,31 @@ export default function AdminDashboard({
                     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {metrics.pending_company_verifications > 0 && (
                             <AlertCard
-                                href={adminCompanyVerifications({ query: { status: 'pending' } })}
+                                href={adminCompanyVerifications({
+                                    query: { status: 'pending' },
+                                })}
                                 icon={FileCheck2}
                                 count={metrics.pending_company_verifications}
-                                label="Verifikasi Menunggu"
-                                sub="Perusahaan belum diverifikasi"
+                                label={t(
+                                    'admin.dashboard.alerts.pending_verification',
+                                )}
+                                sub={t(
+                                    'admin.dashboard.alerts.pending_verification_sub',
+                                )}
                                 color="amber"
                             />
                         )}
                         {metrics.pending_reports > 0 && (
                             <AlertCard
-                                href={adminReports({ query: { status: 'open' } })}
+                                href={adminReports({
+                                    query: { status: 'open' },
+                                })}
                                 icon={AlertTriangle}
                                 count={metrics.pending_reports}
-                                label="Laporan Terbuka"
-                                sub="Perlu ditangani segera"
+                                label={t('admin.dashboard.alerts.open_reports')}
+                                sub={t(
+                                    'admin.dashboard.alerts.open_reports_sub',
+                                )}
                                 color="red"
                             />
                         )}
@@ -217,8 +242,8 @@ export default function AdminDashboard({
                                 href={adminAiAuditLogs()}
                                 icon={Bot}
                                 count={metrics.ai_usage.failed}
-                                label="AI Gagal"
-                                sub="Lihat audit log AI"
+                                label={t('admin.dashboard.alerts.ai_failed')}
+                                sub={t('admin.dashboard.alerts.ai_failed_sub')}
                                 color="orange"
                             />
                         )}
@@ -227,58 +252,90 @@ export default function AdminDashboard({
 
                 {/* ─── Revenue KPIs ─── */}
                 <section className="space-y-4">
-                    <SectionLabel>Pendapatan &amp; Langganan</SectionLabel>
+                    <SectionLabel>
+                        {t('admin.dashboard.revenue.title')}
+                    </SectionLabel>
 
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <KpiCard
-                            label="Pendapatan Bulan Ini"
+                            label={t('admin.dashboard.revenue.this_month')}
                             value={fmtIDR(metrics.subscription_revenue_month)}
                             icon={TrendingUp}
                             sub={
                                 revenueChangePercent === null ? (
-                                    <span className="text-xs text-muted-foreground">Belum ada data bulan lalu</span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {t(
+                                            'admin.dashboard.revenue.no_data_last_month',
+                                        )}
+                                    </span>
                                 ) : revenueChangePercent === 0 ? (
                                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <Minus className="size-3" /> Tidak ada perubahan
+                                        <Minus className="size-3" />{' '}
+                                        {t('admin.dashboard.revenue.no_change')}
                                     </span>
                                 ) : revenueChangePercent > 0 ? (
                                     <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
-                                        <ArrowUpRight className="size-3.5" />
-                                        +{revenueChangePercent.toFixed(1)}%
-                                        <span className="font-normal text-muted-foreground">vs bulan lalu</span>
+                                        <ArrowUpRight className="size-3.5" />+
+                                        {revenueChangePercent.toFixed(1)}%
+                                        <span className="font-normal text-muted-foreground">
+                                            {t(
+                                                'admin.dashboard.revenue.vs_last_month',
+                                            )}
+                                        </span>
                                     </span>
                                 ) : (
                                     <span className="flex items-center gap-1 text-xs font-semibold text-red-500">
                                         <ArrowDownRight className="size-3.5" />
                                         {revenueChangePercent.toFixed(1)}%
-                                        <span className="font-normal text-muted-foreground">vs bulan lalu</span>
+                                        <span className="font-normal text-muted-foreground">
+                                            {t(
+                                                'admin.dashboard.revenue.vs_last_month',
+                                            )}
+                                        </span>
                                     </span>
                                 )
                             }
                         />
                         <KpiCard
-                            label="Total Pendapatan"
+                            label={t('admin.dashboard.revenue.total')}
                             value={fmtIDR(metrics.subscription_revenue_total)}
                             icon={Banknote}
-                            sub={<span className="text-xs text-muted-foreground">Semua waktu · hanya subscription</span>}
+                            sub={
+                                <span className="text-xs text-muted-foreground">
+                                    {t('admin.dashboard.revenue.all_time_sub')}
+                                </span>
+                            }
                         />
                         <KpiCard
-                            label="Langganan Aktif"
-                            value={metrics.active_subscriptions.toLocaleString('id-ID')}
+                            label={t('admin.dashboard.revenue.active_subs')}
+                            value={metrics.active_subscriptions.toLocaleString(
+                                'id-ID',
+                            )}
                             icon={WalletCards}
                             sub={
-                                <Link href={adminAnalytics()} className="text-xs text-primary-600 hover:underline">
-                                    Lihat detail →
+                                <Link
+                                    href={adminAnalytics()}
+                                    className="text-xs text-primary-600 hover:underline"
+                                >
+                                    {t('admin.dashboard.revenue.view_detail')}
                                 </Link>
                             }
                         />
                         <KpiCard
-                            label="Langganan Baru"
-                            value={metrics.new_subscriptions_month.toLocaleString('id-ID')}
+                            label={t('admin.dashboard.revenue.new_subs')}
+                            value={metrics.new_subscriptions_month.toLocaleString(
+                                'id-ID',
+                            )}
                             icon={Plus}
                             iconBg="bg-emerald-50 dark:bg-emerald-950/30"
                             iconColor="text-emerald-600"
-                            sub={<span className="text-xs text-muted-foreground">Bulan ini</span>}
+                            sub={
+                                <span className="text-xs text-muted-foreground">
+                                    {t(
+                                        'admin.dashboard.revenue.this_month_sub',
+                                    )}
+                                </span>
+                            }
                         />
                     </div>
 
@@ -286,7 +343,11 @@ export default function AdminDashboard({
                     <div className="grid gap-4 xl:grid-cols-5">
                         <Card className="xl:col-span-3">
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-base font-semibold">Tren Pendapatan 6 Bulan</CardTitle>
+                                <CardTitle className="text-base font-semibold">
+                                    {t(
+                                        'admin.dashboard.revenue.trend_6_months',
+                                    )}
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <RevenueBarChart points={revenueSeries} />
@@ -294,7 +355,9 @@ export default function AdminDashboard({
                         </Card>
                         <Card className="xl:col-span-2">
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-base font-semibold">Pendapatan per Paket</CardTitle>
+                                <CardTitle className="text-base font-semibold">
+                                    {t('admin.dashboard.revenue.per_plan')}
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <RevenueDonutChart data={revenueByPlan} />
@@ -305,23 +368,25 @@ export default function AdminDashboard({
 
                 {/* ─── Operasional (grid 3) ─── */}
                 <section className="space-y-4">
-                    <SectionLabel>Operasional Platform</SectionLabel>
+                    <SectionLabel>
+                        {t('admin.dashboard.ops.title')}
+                    </SectionLabel>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         <StatCard
-                            label="Total Pengguna"
+                            label={t('admin.dashboard.ops.total_users')}
                             value={metrics.total_users}
-                            sub={`${metrics.total_candidates.toLocaleString('id-ID')} kandidat`}
+                            sub={`${metrics.total_candidates.toLocaleString('id-ID')} ${t('admin.dashboard.ops.candidates')}`}
                             icon={Users}
                             href={adminUsers()}
                         />
                         <StatCard
-                            label="Total Perusahaan"
+                            label={t('admin.dashboard.ops.total_companies')}
                             value={metrics.total_companies}
                             icon={Building2}
                             href={adminCompanies()}
                         />
                         <StatCard
-                            label="Lowongan Aktif"
+                            label={t('admin.dashboard.ops.active_jobs')}
                             value={metrics.active_jobs}
                             icon={BriefcaseBusiness}
                             href={adminJobs({ query: { status: 'published' } })}
@@ -331,7 +396,9 @@ export default function AdminDashboard({
 
                 {/* ─── Platform Growth Chart ─── */}
                 <section className="space-y-4">
-                    <SectionLabel>Pertumbuhan Platform 6 Bulan</SectionLabel>
+                    <SectionLabel>
+                        {t('admin.dashboard.growth.title')}
+                    </SectionLabel>
                     <Card>
                         <CardContent className="pt-4">
                             <GrowthAreaChart series={registrationSeries} />
@@ -341,12 +408,16 @@ export default function AdminDashboard({
 
                 {/* ─── Conversion Funnel ─── */}
                 <section className="space-y-4">
-                    <SectionLabel>Conversion Funnel</SectionLabel>
+                    <SectionLabel>
+                        {t('admin.dashboard.funnel.title')}
+                    </SectionLabel>
                     <Card>
                         <CardContent className="pt-6">
                             <div className="flex flex-col items-stretch gap-0 sm:flex-row sm:items-center">
                                 <FunnelStep
-                                    label="Total Lamaran"
+                                    label={t(
+                                        'admin.dashboard.funnel.total_applications',
+                                    )}
                                     value={conversionFunnel.applications}
                                     icon={ClipboardList}
                                     color="bg-[#01296a]"
@@ -354,12 +425,16 @@ export default function AdminDashboard({
                                 <FunnelArrow
                                     rate={
                                         conversionFunnel.applications > 0
-                                            ? (conversionFunnel.interviews / conversionFunnel.applications) * 100
+                                            ? (conversionFunnel.interviews /
+                                                  conversionFunnel.applications) *
+                                              100
                                             : 0
                                     }
                                 />
                                 <FunnelStep
-                                    label="Dapat Interview"
+                                    label={t(
+                                        'admin.dashboard.funnel.interviewed',
+                                    )}
                                     value={conversionFunnel.interviews}
                                     icon={Users}
                                     color="bg-blue-500"
@@ -367,12 +442,14 @@ export default function AdminDashboard({
                                 <FunnelArrow
                                     rate={
                                         conversionFunnel.interviews > 0
-                                            ? (conversionFunnel.hired / conversionFunnel.interviews) * 100
+                                            ? (conversionFunnel.hired /
+                                                  conversionFunnel.interviews) *
+                                              100
                                             : 0
                                     }
                                 />
                                 <FunnelStep
-                                    label="Diterima (Hired)"
+                                    label={t('admin.dashboard.funnel.hired')}
                                     value={conversionFunnel.hired}
                                     icon={Handshake}
                                     color="bg-emerald-500"
@@ -384,22 +461,39 @@ export default function AdminDashboard({
 
                 {/* ─── Leaderboard ─── */}
                 <section className="space-y-4">
-                    <SectionLabel>Leaderboard Aktivitas</SectionLabel>
+                    <SectionLabel>
+                        {t('admin.dashboard.leaderboard.title')}
+                    </SectionLabel>
                     <div className="grid gap-6 xl:grid-cols-2">
                         <Card>
                             <CardHeader className="pb-3">
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="text-base font-semibold">
-                                        Top Lowongan (Lamaran Terbanyak)
+                                        {t(
+                                            'admin.dashboard.leaderboard.top_jobs',
+                                        )}
                                     </CardTitle>
-                                    <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
-                                        <Link href={adminJobs()}>Semua →</Link>
+                                    <Button
+                                        asChild
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 text-xs"
+                                    >
+                                        <Link href={adminJobs()}>
+                                            {t(
+                                                'admin.dashboard.leaderboard.see_all',
+                                            )}
+                                        </Link>
                                     </Button>
                                 </div>
                             </CardHeader>
                             <CardContent className="space-y-1 pt-0">
                                 {topJobs.length === 0 ? (
-                                    <p className="py-4 text-center text-sm text-muted-foreground">Belum ada data.</p>
+                                    <p className="py-4 text-center text-sm text-muted-foreground">
+                                        {t(
+                                            'admin.dashboard.leaderboard.no_data',
+                                        )}
+                                    </p>
                                 ) : (
                                     topJobs.map((job, i) => (
                                         <div
@@ -410,14 +504,22 @@ export default function AdminDashboard({
                                                 {i + 1}
                                             </span>
                                             <div className="min-w-0 flex-1">
-                                                <p className="truncate text-sm font-medium">{job.title}</p>
-                                                <p className="truncate text-xs text-muted-foreground">{job.company}</p>
+                                                <p className="truncate text-sm font-medium">
+                                                    {job.title}
+                                                </p>
+                                                <p className="truncate text-xs text-muted-foreground">
+                                                    {job.company}
+                                                </p>
                                             </div>
                                             <div className="shrink-0 text-right">
                                                 <p className="text-sm font-bold text-[#01296a]">
                                                     {job.applications_count}
                                                 </p>
-                                                <p className="text-[10px] text-muted-foreground">lamaran</p>
+                                                <p className="text-[10px] text-muted-foreground">
+                                                    {t(
+                                                        'admin.dashboard.leaderboard.applications',
+                                                    )}
+                                                </p>
                                             </div>
                                         </div>
                                     ))
@@ -429,16 +531,31 @@ export default function AdminDashboard({
                             <CardHeader className="pb-3">
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="text-base font-semibold">
-                                        Top Perusahaan (Lowongan Terbanyak)
+                                        {t(
+                                            'admin.dashboard.leaderboard.top_companies',
+                                        )}
                                     </CardTitle>
-                                    <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
-                                        <Link href={adminCompanies()}>Semua →</Link>
+                                    <Button
+                                        asChild
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 text-xs"
+                                    >
+                                        <Link href={adminCompanies()}>
+                                            {t(
+                                                'admin.dashboard.leaderboard.see_all',
+                                            )}
+                                        </Link>
                                     </Button>
                                 </div>
                             </CardHeader>
                             <CardContent className="space-y-1 pt-0">
                                 {topCompanies.length === 0 ? (
-                                    <p className="py-4 text-center text-sm text-muted-foreground">Belum ada data.</p>
+                                    <p className="py-4 text-center text-sm text-muted-foreground">
+                                        {t(
+                                            'admin.dashboard.leaderboard.no_data',
+                                        )}
+                                    </p>
                                 ) : (
                                     topCompanies.map((company, i) => (
                                         <div
@@ -450,13 +567,19 @@ export default function AdminDashboard({
                                             </span>
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-center gap-1.5">
-                                                    <p className="truncate text-sm font-medium">{company.name}</p>
-                                                    {company.verification_status === 'approved' && (
+                                                    <p className="truncate text-sm font-medium">
+                                                        {company.name}
+                                                    </p>
+                                                    {company.verification_status ===
+                                                        'approved' && (
                                                         <CheckCircle2 className="size-3 shrink-0 text-emerald-500" />
                                                     )}
                                                     {!company.is_active && (
-                                                        <Badge variant="destructive" className="h-4 px-1 text-[9px]">
-                                                            Suspend
+                                                        <Badge
+                                                            variant="destructive"
+                                                            className="h-4 px-1 text-[9px]"
+                                                        >
+                                                            {t('admin.dashboard.leaderboard.suspend')}
                                                         </Badge>
                                                     )}
                                                 </div>
@@ -469,7 +592,11 @@ export default function AdminDashboard({
                                                 <p className="text-sm font-bold text-[#01296a]">
                                                     {company.job_listings_count}
                                                 </p>
-                                                <p className="text-[10px] text-muted-foreground">lowongan</p>
+                                                <p className="text-[10px] text-muted-foreground">
+                                                    {t(
+                                                        'admin.dashboard.leaderboard.jobs',
+                                                    )}
+                                                </p>
                                             </div>
                                         </div>
                                     ))
@@ -485,11 +612,15 @@ export default function AdminDashboard({
                     <Card>
                         <CardHeader className="pb-0">
                             <div className="flex items-center justify-between">
-                                <CardTitle className="text-base font-semibold">Penggunaan AI per Fitur</CardTitle>
+                                <CardTitle className="text-base font-semibold">
+                                    {t('admin.dashboard.ai_usage.title')}
+                                </CardTitle>
                                 <Button asChild variant="outline" size="sm">
                                     <Link href={adminAiAuditLogs()}>
                                         <Bot className="mr-1.5 size-3.5" />
-                                        Lihat audit
+                                        {t(
+                                            'admin.dashboard.ai_usage.view_audit',
+                                        )}
                                     </Link>
                                 </Button>
                             </div>
@@ -505,10 +636,21 @@ export default function AdminDashboard({
                             <div className="flex items-center justify-between">
                                 <CardTitle className="flex items-center gap-2 text-base font-semibold">
                                     <UserPlus className="size-4 text-[#01296a]" />
-                                    Pendaftar Terbaru
+                                    {t(
+                                        'admin.dashboard.recent_registrations.title',
+                                    )}
                                 </CardTitle>
-                                <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
-                                    <Link href={adminUsers()}>Semua user →</Link>
+                                <Button
+                                    asChild
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 text-xs"
+                                >
+                                    <Link href={adminUsers()}>
+                                        {t(
+                                            'admin.dashboard.recent_registrations.see_all',
+                                        )}
+                                    </Link>
                                 </Button>
                             </div>
                         </CardHeader>
@@ -516,29 +658,47 @@ export default function AdminDashboard({
                             <div className="divide-y">
                                 {recentRegistrations.length === 0 ? (
                                     <p className="py-4 text-center text-sm text-muted-foreground">
-                                        Belum ada pendaftar baru.
+                                        {t(
+                                            'admin.dashboard.recent_registrations.no_data',
+                                        )}
                                     </p>
                                 ) : (
                                     recentRegistrations.map((user) => (
-                                        <div key={user.id} className="flex items-center gap-3 py-2.5">
+                                        <div
+                                            key={user.id}
+                                            className="flex items-center gap-3 py-2.5"
+                                        >
                                             <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#01296a]/10 text-xs font-bold text-[#01296a]">
-                                                {user.name.charAt(0).toUpperCase()}
+                                                {user.name
+                                                    .charAt(0)
+                                                    .toUpperCase()}
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <p className="truncate text-sm font-medium">{user.name}</p>
-                                                <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                                                <p className="truncate text-sm font-medium">
+                                                    {user.name}
+                                                </p>
+                                                <p className="truncate text-xs text-muted-foreground">
+                                                    {user.email}
+                                                </p>
                                             </div>
                                             <div className="shrink-0 text-right">
                                                 <Badge
                                                     variant="outline"
                                                     className={cn(
                                                         'text-[10px] capitalize',
-                                                        user.role === 'candidate'
+                                                        user.role ===
+                                                            'candidate'
                                                             ? 'border-blue-200 bg-blue-50 text-blue-700'
                                                             : 'border-emerald-200 bg-emerald-50 text-emerald-700',
                                                     )}
                                                 >
-                                                    {user.role === 'candidate' ? 'Kandidat' : 'Employer'}
+                                                    {user.role === 'candidate'
+                                                        ? t(
+                                                              'admin.dashboard.recent_registrations.candidate',
+                                                          )
+                                                        : t(
+                                                              'admin.dashboard.recent_registrations.employer',
+                                                          )}
                                                 </Badge>
                                                 <p className="mt-0.5 text-[10px] text-muted-foreground">
                                                     {user.created_at}
@@ -559,11 +719,12 @@ export default function AdminDashboard({
 /* ─── Chart components ─── */
 
 function RevenueBarChart({ points }: { points: SeriesPoint[] }) {
+    const { t } = useTranslate();
     const hasData = points.some((p) => p.total > 0);
     if (!hasData) {
         return (
             <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-                Belum ada data pendapatan.
+                {t('admin.dashboard.charts.no_revenue_data')}
             </div>
         );
     }
@@ -604,16 +765,26 @@ function RevenueBarChart({ points }: { points: SeriesPoint[] }) {
             type="bar"
             height={200}
             options={options}
-            series={[{ name: 'Pendapatan', data: points.map((p) => p.total) }]}
+            series={[
+                {
+                    name: t('admin.dashboard.charts.revenue'),
+                    data: points.map((p) => p.total),
+                },
+            ]}
         />
     );
 }
 
-function RevenueDonutChart({ data }: { data: Array<{ plan: string; total: number; count: number }> }) {
+function RevenueDonutChart({
+    data,
+}: {
+    data: Array<{ plan: string; total: number; count: number }>;
+}) {
+    const { t } = useTranslate();
     if (!data.length) {
         return (
             <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-                Belum ada data paket.
+                {t('admin.dashboard.charts.no_plan_data')}
             </div>
         );
     }
@@ -642,10 +813,13 @@ function RevenueDonutChart({ data }: { data: Array<{ plan: string; total: number
                         show: true,
                         total: {
                             show: true,
-                            label: 'Total',
+                            label: t('admin.dashboard.charts.total'),
                             formatter: (w) =>
                                 fmtIDR(
-                                    w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0),
+                                    w.globals.seriesTotals.reduce(
+                                        (a: number, b: number) => a + b,
+                                        0,
+                                    ),
                                 ),
                         },
                     },
@@ -670,8 +844,13 @@ function RevenueDonutChart({ data }: { data: Array<{ plan: string; total: number
 function GrowthAreaChart({
     series,
 }: {
-    series: { users: SeriesPoint[]; companies: SeriesPoint[]; jobs: SeriesPoint[] };
+    series: {
+        users: SeriesPoint[];
+        companies: SeriesPoint[];
+        jobs: SeriesPoint[];
+    };
 }) {
+    const { t } = useTranslate();
     const categories = series.users.map((p) => fmtMonth(p.month));
     const hasData =
         series.users.some((p) => p.total > 0) ||
@@ -681,7 +860,7 @@ function GrowthAreaChart({
     if (!hasData) {
         return (
             <div className="flex h-56 items-center justify-center text-sm text-muted-foreground">
-                Belum ada data pertumbuhan.
+                {t('admin.dashboard.charts.no_growth_data')}
             </div>
         );
     }
@@ -727,19 +906,33 @@ function GrowthAreaChart({
             height={240}
             options={options}
             series={[
-                { name: 'Pengguna', data: series.users.map((p) => p.total) },
-                { name: 'Perusahaan', data: series.companies.map((p) => p.total) },
-                { name: 'Lowongan', data: series.jobs.map((p) => p.total) },
+                {
+                    name: t('admin.dashboard.charts.users'),
+                    data: series.users.map((p) => p.total),
+                },
+                {
+                    name: t('admin.dashboard.charts.companies'),
+                    data: series.companies.map((p) => p.total),
+                },
+                {
+                    name: t('admin.dashboard.charts.job'),
+                    data: series.jobs.map((p) => p.total),
+                },
             ]}
         />
     );
 }
 
-function AiUsageBarChart({ data }: { data: Array<{ feature: string; total: number }> }) {
+function AiUsageBarChart({
+    data,
+}: {
+    data: Array<{ feature: string; total: number }>;
+}) {
+    const { t } = useTranslate();
     if (!data.length) {
         return (
             <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-                Belum ada audit AI.
+                {t('admin.dashboard.charts.no_ai_data')}
             </div>
         );
     }
@@ -771,7 +964,12 @@ function AiUsageBarChart({ data }: { data: Array<{ feature: string; total: numbe
         yaxis: {
             labels: { style: { fontSize: '11px' } },
         },
-        grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+        grid: {
+            borderColor: '#f1f5f9',
+            strokeDashArray: 4,
+            xaxis: { lines: { show: true } },
+            yaxis: { lines: { show: false } },
+        },
         tooltip: {
             y: { formatter: (val) => val.toLocaleString('id-ID') + ' request' },
         },
@@ -784,7 +982,12 @@ function AiUsageBarChart({ data }: { data: Array<{ feature: string; total: numbe
             type="bar"
             height={chartHeight}
             options={options}
-            series={[{ name: 'Request', data: data.map((d) => d.total) }]}
+            series={[
+                {
+                    name: t('admin.dashboard.charts.request'),
+                    data: data.map((d) => d.total),
+                },
+            ]}
         />
     );
 }
@@ -794,7 +997,7 @@ function AiUsageBarChart({ data }: { data: Array<{ feature: string; total: numbe
 function SectionLabel({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex items-center gap-3">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <h2 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
                 {children}
             </h2>
             <div className="h-px flex-1 bg-border" />
@@ -854,7 +1057,12 @@ function AlertCard({
                 styles.wrap,
             )}
         >
-            <div className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg', styles.icon)}>
+            <div
+                className={cn(
+                    'flex size-9 shrink-0 items-center justify-center rounded-lg',
+                    styles.icon,
+                )}
+            >
                 <Icon className={cn('size-4', styles.iconColor)} />
             </div>
             <div className="min-w-0">
@@ -864,7 +1072,10 @@ function AlertCard({
                 <p className={cn('truncate text-xs', styles.sub)}>{sub}</p>
             </div>
             <ArrowUpRight
-                className={cn('ml-auto size-4 shrink-0 opacity-0 transition-opacity group-hover:opacity-100', styles.arrow)}
+                className={cn(
+                    'ml-auto size-4 shrink-0 opacity-0 transition-opacity group-hover:opacity-100',
+                    styles.arrow,
+                )}
             />
         </Link>
     );
@@ -889,7 +1100,12 @@ function KpiCard({
         <article className="rounded-xl border bg-white p-4 shadow-xs dark:bg-card">
             <div className="flex items-start justify-between gap-2">
                 <p className="text-sm text-muted-foreground">{label}</p>
-                <div className={cn('flex size-8 shrink-0 items-center justify-center rounded-lg', iconBg)}>
+                <div
+                    className={cn(
+                        'flex size-8 shrink-0 items-center justify-center rounded-lg',
+                        iconBg,
+                    )}
+                >
                     <Icon className={cn('size-4', iconColor)} />
                 </div>
             </div>
@@ -912,6 +1128,7 @@ function StatCard({
     icon: LucideIcon;
     href: { url: string } | string;
 }) {
+    const { t } = useTranslate();
     const url = typeof href === 'string' ? href : href.url;
     return (
         <article className="rounded-xl border bg-white p-4 shadow-xs dark:bg-card">
@@ -921,10 +1138,17 @@ function StatCard({
                     <Icon className="size-4 text-[#01296a]" />
                 </div>
             </div>
-            <p className="mt-3 text-2xl font-bold tracking-tight">{value.toLocaleString('id-ID')}</p>
+            <p className="mt-3 text-2xl font-bold tracking-tight">
+                {value.toLocaleString('id-ID')}
+            </p>
             {sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
-            <Button asChild variant="ghost" size="sm" className="mt-2 h-7 px-0 text-xs">
-                <Link href={url}>Lihat data →</Link>
+            <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="mt-2 h-7 px-0 text-xs"
+            >
+                <Link href={url}>{t('admin.dashboard.ops.view_data')}</Link>
             </Button>
         </article>
     );
@@ -943,10 +1167,17 @@ function FunnelStep({
 }) {
     return (
         <div className="flex flex-1 flex-col items-center gap-2 rounded-xl bg-muted/30 p-4 text-center">
-            <div className={cn('flex size-10 items-center justify-center rounded-full text-white', color)}>
+            <div
+                className={cn(
+                    'flex size-10 items-center justify-center rounded-full text-white',
+                    color,
+                )}
+            >
                 <Icon className="size-5" />
             </div>
-            <p className="text-2xl font-black tracking-tight">{value.toLocaleString('id-ID')}</p>
+            <p className="text-2xl font-black tracking-tight">
+                {value.toLocaleString('id-ID')}
+            </p>
             <p className="text-xs font-medium text-muted-foreground">{label}</p>
         </div>
     );
@@ -959,7 +1190,11 @@ function FunnelArrow({ rate }: { rate: number }) {
             <span
                 className={cn(
                     'text-[11px] font-bold',
-                    rate >= 50 ? 'text-emerald-600' : rate >= 20 ? 'text-amber-500' : 'text-red-500',
+                    rate >= 50
+                        ? 'text-emerald-600'
+                        : rate >= 20
+                          ? 'text-amber-500'
+                          : 'text-red-500',
                 )}
             >
                 {rate.toFixed(0)}%

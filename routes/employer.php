@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\Employer\EmployerAiInterviewController;
+use App\Http\Controllers\Employer\EmployerAiInterviewManualReviewController;
 use App\Http\Controllers\Employer\EmployerAnalyticsController;
 use App\Http\Controllers\Employer\EmployerApplicationController;
 use App\Http\Controllers\Employer\EmployerBillingCancelController;
+use App\Http\Controllers\Employer\EmployerBillingClaimTrialController;
 use App\Http\Controllers\Employer\EmployerBillingController;
 use App\Http\Controllers\Employer\EmployerBillingPurchaseController;
 use App\Http\Controllers\Employer\EmployerCandidateActionController;
@@ -11,6 +13,7 @@ use App\Http\Controllers\Employer\EmployerCompanyController;
 use App\Http\Controllers\Employer\EmployerCompanyReviewController;
 use App\Http\Controllers\Employer\EmployerCompanyVerificationController;
 use App\Http\Controllers\Employer\EmployerDashboardController;
+use App\Http\Controllers\Employer\EmployerEmailSettingsController;
 use App\Http\Controllers\Employer\EmployerGoogleCalendarController;
 use App\Http\Controllers\Employer\EmployerInterviewController;
 use App\Http\Controllers\Employer\EmployerJobListingController;
@@ -45,6 +48,9 @@ Route::prefix('employer')
         Route::post('messages/{conversation}/messages', [EmployerMessageController::class, 'store'])->name('messages.store');
         Route::get('analytics', EmployerAnalyticsController::class)->name('analytics.index');
         Route::get('billing', EmployerBillingController::class)->name('billing.index');
+        Route::get('settings/email', [EmployerEmailSettingsController::class, 'edit'])->name('email-settings.edit');
+        Route::patch('settings/email', [EmployerEmailSettingsController::class, 'update'])->name('email-settings.update');
+        Route::post('settings/email/test', [EmployerEmailSettingsController::class, 'test'])->name('email-settings.test');
         Route::get('whatsapp', [EmployerWhatsAppController::class, 'edit'])->name('whatsapp.edit');
         Route::patch('whatsapp', [EmployerWhatsAppController::class, 'update'])->name('whatsapp.update');
         Route::post('whatsapp/test', [EmployerWhatsAppController::class, 'sendTest'])->name('whatsapp.test');
@@ -69,14 +75,18 @@ Route::prefix('employer')
         Route::patch('message-templates/{messageTemplate}', [EmployerMessageTemplateController::class, 'update'])->name('message-templates.update');
         Route::delete('message-templates/{messageTemplate}', [EmployerMessageTemplateController::class, 'destroy'])->name('message-templates.destroy');
         Route::post('billing/purchase/{pricingPlan}', EmployerBillingPurchaseController::class)->name('billing.purchase');
+        Route::post('billing/claim-trial/{pricingPlan}', EmployerBillingClaimTrialController::class)->name('billing.claim-trial');
         Route::post('billing/payment/{payment}/cancel', EmployerBillingCancelController::class)->name('billing.payment.cancel');
         Route::get('talent-search', [EmployerWorkspaceController::class, 'talentSearch'])->name('talent-search.index');
         Route::get('talent-pool', [EmployerWorkspaceController::class, 'talentPool'])->name('talent-pool.index');
+        Route::get('talent-search/{candidateProfile}', [EmployerWorkspaceController::class, 'showTalent'])->name('talent-search.show');
+        Route::get('talent-search/{candidateProfile}/match', [EmployerWorkspaceController::class, 'matchTalent'])->name('talent-search.match');
         Route::post('talent-search/{candidateProfile}/save', [EmployerTalentSearchActionController::class, 'save'])->name('talent-search.save');
         Route::delete('talent-search/{candidateProfile}/save', [EmployerTalentSearchActionController::class, 'unsave'])->name('talent-search.unsave');
         Route::post('talent-search/{candidateProfile}/shortlist', [EmployerTalentSearchActionController::class, 'shortlist'])->name('talent-search.shortlist');
         Route::delete('talent-search/{candidateProfile}/shortlist', [EmployerTalentSearchActionController::class, 'unshortlist'])->name('talent-search.unshortlist');
         Route::post('talent-search/{candidateProfile}/contact', [EmployerTalentSearchActionController::class, 'contact'])->name('talent-search.contact');
+        Route::post('talent-search/{candidateProfile}/unlock', [EmployerTalentSearchActionController::class, 'unlock'])->name('talent-search.unlock');
 
         Route::resource('team', EmployerTeamController::class)
             ->parameters(['team' => 'teamMember'])
@@ -104,4 +114,6 @@ Route::prefix('employer')
         Route::patch('ai-interviews/{aiInterviewSession}/reject', [EmployerAiInterviewController::class, 'reject'])->name('ai-interviews.reject');
         Route::patch('ai-interviews/{aiInterviewSession}/reschedule/approve', [EmployerAiInterviewController::class, 'approveReschedule'])->name('ai-interviews.reschedule.approve');
         Route::patch('ai-interviews/{aiInterviewSession}/reschedule/reject', [EmployerAiInterviewController::class, 'rejectReschedule'])->name('ai-interviews.reschedule.reject');
+        Route::post('ai-interviews/{aiInterviewSession}/manual-review', [EmployerAiInterviewManualReviewController::class, 'store'])->name('ai-interviews.manual-review.store');
+        Route::delete('ai-interviews/{aiInterviewSession}/manual-review/{manualReview}', [EmployerAiInterviewManualReviewController::class, 'destroy'])->name('ai-interviews.manual-review.destroy');
     });

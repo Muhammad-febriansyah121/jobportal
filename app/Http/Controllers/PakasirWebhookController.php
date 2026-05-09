@@ -107,14 +107,22 @@ class PakasirWebhookController extends Controller
                     return;
                 }
 
+                $validityDays = (int) ($freshTransaction->pricingMenu?->validity_days ?? 0);
                 $freshTransaction->update([
                     'status' => 'paid',
                     'paid_at' => $completedAt ?: now(),
+                    'expires_at' => $validityDays > 0 ? now()->addDays($validityDays) : null,
                 ]);
+
+                $aiInterviewDelta = (int) $freshTransaction->ai_interview_quota_delta;
 
                 $candidate->forceFill([
                     'ai_token_balance' => max(0, (int) $candidate->ai_token_balance + (int) $freshTransaction->ai_token_delta),
                     'cv_builder_quota_balance' => max(0, (int) $candidate->cv_builder_quota_balance + (int) $freshTransaction->cv_builder_quota_delta),
+                    'ai_interview_quota_balance' => max(0, (int) $candidate->ai_interview_quota_balance + $aiInterviewDelta),
+                    'ai_interview_quota_expires_at' => $aiInterviewDelta > 0 && $validityDays > 0
+                        ? now()->addDays($validityDays)
+                        : $candidate->ai_interview_quota_expires_at,
                 ])->save();
             });
 

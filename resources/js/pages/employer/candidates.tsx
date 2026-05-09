@@ -46,6 +46,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { formatAvailability } from '@/lib/availability';
 import { cn } from '@/lib/utils';
 import { cleanPaginationLabel, shouldRenderPagination } from '@/lib/pagination';
 import { show as showAiInterview } from '@/routes/employer/ai-interviews';
@@ -472,6 +473,25 @@ export default function EmployerCandidates({
 
     const closeInterviewDialog = () => {
         setInterviewTarget(null);
+    };
+
+    const switchToAiInterview = (application: CandidateApplication) => {
+        if (application.job.id == null) {
+            toast.error(t('employer.candidates.toast_same_job'));
+            return;
+        }
+        bulkForm.setData({
+            application_ids: [application.id],
+            interview_mode: 'voice',
+            scheduled_at: defaultDateTimeLocal(),
+            duration_minutes: 30,
+            meeting_url: '',
+            voice: 'marin',
+            questions: baseQuestions.map((q) => ({ ...q })),
+        });
+        setSelectedIds([application.id]);
+        closeInterviewDialog();
+        setBulkOpen(true);
     };
 
     const openWhatsappDialog = (application: CandidateApplication) => {
@@ -1112,10 +1132,14 @@ export default function EmployerCandidates({
                                             {t('employer.candidates.bulk_ai_followup')}
                                         </label>
                                     </div>
-                                    <FieldGroup label={t('employer.candidates.bulk_rubric')}>
+                                    <FieldGroup
+                                        label={t('employer.candidates.bulk_rubric')}
+                                        hint={t('employer.candidates.bulk_rubric_hint')}
+                                    >
                                         <Textarea
                                             value={q.rubric}
                                             className="min-h-20"
+                                            placeholder={t('employer.candidates.bulk_rubric_placeholder')}
                                             onChange={(e) =>
                                                 updateBulkQuestion(
                                                     idx,
@@ -1293,7 +1317,7 @@ export default function EmployerCandidates({
                     <form className="space-y-5" onSubmit={submitInterview}>
                         <div className="space-y-2">
                             <Label>{t('employer.candidates.interview_mode_label')}</Label>
-                            <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="grid gap-3 sm:grid-cols-3">
                                 <label
                                     className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 ${interviewForm.data.mode === 'online' ? 'border-primary-500 bg-primary-50/50' : 'border-border'}`}
                                 >
@@ -1344,6 +1368,24 @@ export default function EmployerCandidates({
                                         </p>
                                     </div>
                                 </label>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        interviewTarget &&
+                                        switchToAiInterview(interviewTarget)
+                                    }
+                                    className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-gradient-to-br from-primary-50/40 to-transparent p-4 text-left transition hover:border-primary-300 hover:from-primary-50"
+                                >
+                                    <Sparkles className="mt-0.5 size-4 shrink-0 text-primary-600" />
+                                    <div>
+                                        <p className="font-medium">
+                                            {t('employer.candidates.interview_mode_ai')}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {t('employer.candidates.interview_mode_ai_desc')}
+                                        </p>
+                                    </div>
+                                </button>
                             </div>
                             <InputError message={interviewForm.errors.mode} />
                         </div>
@@ -1506,11 +1548,13 @@ function FieldGroup({
     label,
     error,
     required,
+    hint,
     children,
 }: {
     label: string;
     error?: string;
     required?: boolean;
+    hint?: string;
     children: React.ReactNode;
 }) {
     return (
@@ -1519,6 +1563,9 @@ function FieldGroup({
                 {label}
                 {required ? <span className="text-red-500"> *</span> : null}
             </Label>
+            {hint ? (
+                <p className="text-xs text-muted-foreground">{hint}</p>
+            ) : null}
             {children}
             {error ? <InputError message={error} /> : null}
         </div>
@@ -1666,7 +1713,10 @@ function CandidateRow({
                                 <span>•</span>
                                 <span>
                                     {t('employer.candidates.row_available')}{' '}
-                                    {application.candidate.availability}
+                                    {formatAvailability(
+                                        application.candidate.availability,
+                                        t,
+                                    )}
                                 </span>
                             </div>
                         </div>

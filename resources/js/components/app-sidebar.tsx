@@ -11,14 +11,17 @@ import {
     ChevronRight,
     ClipboardCheck,
     ClipboardList,
+    Compass,
     CreditCard,
     FileCheck2,
+    FileSearch,
     FileText,
     GraduationCap,
     Grid2X2,
     LayoutGrid,
     Library,
     LogOut,
+    Mail,
     MessageSquare,
     MessageSquareText,
     PlusCircle,
@@ -30,6 +33,7 @@ import {
     Scale,
     ShieldAlert,
     ShieldCheck,
+    Sparkles,
     Tags,
     Users,
     UserRound,
@@ -85,9 +89,11 @@ import { index as adminCompanies } from '@/routes/admin/companies';
 import { index as adminCompanySizes } from '@/routes/admin/company-sizes';
 import { index as adminCompanyVerifications } from '@/routes/admin/company-verifications';
 import { index as adminCompanyReviews } from '@/routes/admin/company-reviews';
+import { index as adminSystemReviews } from '@/routes/admin/system-reviews';
 import { index as adminContactMessages } from '@/routes/admin/contact-messages';
 import { index as adminFaqs } from '@/routes/admin/faqs';
 import { index as adminIndustries } from '@/routes/admin/industries';
+import { index as adminSubIndustries } from '@/routes/admin/sub-industries';
 import { index as adminJobs } from '@/routes/admin/jobs';
 import { index as adminLaporan } from '@/routes/admin/laporan';
 import { edit as adminLegalPrivacy } from '@/routes/admin/legal/privacy';
@@ -100,21 +106,25 @@ import { index as adminSkills } from '@/routes/admin/skills';
 import { index as adminSubscriptions } from '@/routes/admin/subscriptions';
 import { index as adminUsers } from '@/routes/admin/users';
 import { edit as adminWhatsApp } from '@/routes/admin/whatsapp';
+import { cvAnalyzer } from '@/routes';
 import { dashboard as candidateDashboard } from '@/routes/candidate';
 import { index as candidateAiInterviews } from '@/routes/candidate/ai-interviews';
 import { index as candidateApplications } from '@/routes/candidate/applications';
 import { index as candidateCareerCoach } from '@/routes/candidate/career-coach';
+import { index as candidateCompanyReviews } from '@/routes/candidate/company-reviews';
 import { builderPage as candidateCvBuilder } from '@/routes/candidate/cvs';
 import { index as candidateInterviews } from '@/routes/candidate/interviews';
 import { index as candidateMessages } from '@/routes/candidate/messages';
 import { edit as candidateOnboardingEdit } from '@/routes/candidate/onboarding';
 import { index as candidatePricing } from '@/routes/candidate/pricing';
 import { index as candidateSavedJobs } from '@/routes/candidate/saved-jobs';
+import { index as candidateSystemReviews } from '@/routes/candidate/system-reviews';
 import { dashboard as employerDashboard } from '@/routes/employer';
 import { index as employerAnalytics } from '@/routes/employer/analytics';
 import { index as employerBilling } from '@/routes/employer/billing';
 import { index as employerCandidates } from '@/routes/employer/candidates';
 import { edit as employerCompanyEdit } from '@/routes/employer/company';
+import { edit as employerEmailSettings } from '@/routes/employer/email-settings';
 import {
     create as employerJobsCreate,
     index as employerJobs,
@@ -230,6 +240,7 @@ function AdminSidebar() {
                     { title: t('nav.admin.skills'), href: adminSkills(), icon: Tags },
                     { title: t('nav.admin.assessment_questions'), href: adminAssessmentQuestions(), icon: ClipboardList },
                     { title: t('nav.admin.industries'), href: adminIndustries(), icon: Library },
+                    { title: t('nav.admin.sub_industries'), href: adminSubIndustries(), icon: Library },
                     { title: t('nav.admin.company_sizes'), href: adminCompanySizes(), icon: Building2 },
                     { title: t('nav.admin.salary_insights'), href: adminSalaryInsights(), icon: BarChart3 },
                 ],
@@ -254,6 +265,7 @@ function AdminSidebar() {
             {
                 title: t('nav.section.system'),
                 items: [
+                    { title: t('nav.admin.system_reviews'), href: adminSystemReviews(), icon: Sparkles },
                     { title: t('nav.admin.company_reviews'), href: adminCompanyReviews(), icon: Star },
                     { title: t('nav.admin.ai_audit'), href: adminAiAuditLogs(), icon: Bot },
                     { title: t('nav.admin.activity_log'), href: adminActivityLogs(), icon: Activity },
@@ -312,12 +324,15 @@ function AdminSidebar() {
                 </div>
             </SidebarContent>
 
-            <SidebarFooter className="border-t border-[#eef2f6] bg-white p-4">
-                <div className="flex items-center justify-between px-2">
+            <SidebarFooter className="border-t border-[#eef2f6] bg-white p-4 group-data-[collapsible=icon]:p-2">
+                <div className="flex items-center justify-between px-2 group-data-[collapsible=icon]:hidden">
                     <span className="text-[11px] font-semibold tracking-[0.18em] text-[#8490a3] uppercase">
                         {t('language.label')}
                     </span>
                     <LanguageSwitcher align="end" variant="inline" />
+                </div>
+                <div className="hidden justify-center group-data-[collapsible=icon]:flex">
+                    <LanguageSwitcher align="end" variant="icon" />
                 </div>
             </SidebarFooter>
         </Sidebar>
@@ -486,16 +501,46 @@ function CandidateSidebar() {
                 label: t('nav.section.career_prep'),
                 items: [
                     {
+                        key: 'ai_simulator',
+                        title: t('nav.candidate.ai_simulator'),
+                        href: candidateAiInterviews(),
+                        icon: Bot,
+                        lockWhenProfileIncomplete: true,
+                    },
+                    {
                         title: t('nav.candidate.cv_builder'),
                         href: candidateCvBuilder(),
                         icon: FileText,
                         lockWhenProfileIncomplete: true,
                     },
+                    // Sembunyikan dulu — masih in-progress; aktifkan kembali bila sudah siap.
+                    // {
+                    //     title: t('nav.candidate.cv_analyzer'),
+                    //     href: cvAnalyzer(),
+                    //     icon: FileSearch,
+                    //     lockWhenProfileIncomplete: true,
+                    // },
                     {
-                        key: 'ai_simulator',
-                        title: t('nav.candidate.ai_simulator'),
-                        href: candidateAiInterviews(),
-                        icon: Bot,
+                        title: t('nav.candidate.career_coach'),
+                        href: candidateCareerCoach(),
+                        icon: Compass,
+                        lockWhenProfileIncomplete: true,
+                    },
+                ],
+            },
+            {
+                label: t('nav.section.reviews'),
+                items: [
+                    {
+                        title: t('nav.candidate.system_reviews'),
+                        href: candidateSystemReviews(),
+                        icon: Sparkles,
+                        lockWhenProfileIncomplete: true,
+                    },
+                    {
+                        title: t('nav.candidate.company_reviews'),
+                        href: candidateCompanyReviews(),
+                        icon: Star,
                         lockWhenProfileIncomplete: true,
                     },
                 ],
@@ -779,6 +824,7 @@ function EmployerSidebar() {
                     { title: t('nav.employer.reviews'), href: employerReviews(), icon: Star },
                     { title: t('nav.employer.team'), href: employerTeam(), icon: Users },
                     { title: t('nav.employer.billing'), href: employerBilling(), icon: CreditCard },
+                    { title: t('nav.employer.email_settings'), href: employerEmailSettings(), icon: Mail },
                 ],
             },
         ],
@@ -912,8 +958,16 @@ function EmployerSidebar() {
                                     size="lg"
                                     className="h-14 rounded-lg p-0 group-data-[collapsible=icon]:justify-center hover:bg-[#eaf2ff] data-[state=open]:bg-[#eaf2ff]"
                                 >
-                                    <span className="flex size-11 items-center justify-center rounded-full bg-[#1E4D96] text-sm font-bold text-white">
-                                        {getInitials(auth.user?.name ?? 'HR')}
+                                    <span className="flex size-11 items-center justify-center overflow-hidden rounded-full bg-[#1E4D96] text-sm font-bold text-white">
+                                        {auth.user?.avatar_url ? (
+                                            <img
+                                                src={auth.user.avatar_url}
+                                                alt={auth.user.name ?? 'HR'}
+                                                className="size-full object-cover"
+                                            />
+                                        ) : (
+                                            getInitials(auth.user?.name ?? 'HR')
+                                        )}
                                     </span>
                                     <span className="grid flex-1 text-left group-data-[collapsible=icon]:hidden">
                                         <span className="truncate text-sm font-bold text-[#1f2937]">
@@ -981,12 +1035,12 @@ function SidebarBrandMark({
     siteName: string;
 }) {
     return (
-        <span className="flex h-16 w-full items-center justify-center overflow-hidden">
+        <span className="flex h-16 w-full items-center justify-center overflow-hidden px-1">
             {logoUrl ? (
                 <img
                     src={logoUrl}
                     alt={`${siteName} logo`}
-                    className="h-full w-full object-cover"
+                    className="h-full max-h-14 w-full object-contain"
                 />
             ) : (
                 <Rocket className="size-5 text-[#01296A]" />

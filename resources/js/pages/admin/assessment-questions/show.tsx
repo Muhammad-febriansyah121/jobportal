@@ -33,6 +33,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { index } from '@/routes/admin/assessment-questions';
+import { useTranslate } from '@/hooks/use-translate';
 
 type Question = {
     id: number;
@@ -84,6 +85,7 @@ export default function AdminAssessmentQuestionShow({
     index_url,
     create_url,
 }: Props) {
+    const { t } = useTranslate();
     const [search, setSearch] = useState(filters.search);
     const [difficulty, setDifficulty] = useState(filters.difficulty || 'all');
     const [status, setStatus] = useState(filters.status || 'all');
@@ -123,20 +125,19 @@ export default function AdminAssessmentQuestionShow({
 
     return (
         <>
-            <Head title={`Bank Soal — ${skill.name}`} />
+            <Head title={t("admin.assessment.show.title", { skill: skill.name })} />
             <div className="flex flex-col gap-6 p-6">
                 <AdminPageHeader
-                    title={`Bank Soal: ${skill.name}`}
-                    description={`${questions.total} soal tersedia. Kelola, edit, atau hapus soal untuk skill ini.`}
+                    title={t("admin.assessment.show.title", { skill: skill.name })}
+                    description={t("admin.assessment.show.desc", { total: questions.total })}
                     backHref={index_url}
-                    actions={
-                        <Button asChild>
-                            <Link href={create_url}>
-                                <Plus className="size-4" />
-                                Tambah / Generate Soal
-                            </Link>
-                        </Button>
-                    }
+                    actions={[
+                        {
+                            label: t('admin.assessment.index.btn_add'),
+                            icon: 'plus',
+                            href: create_url,
+                        },
+                    ]}
                 />
 
                 {/* Filters */}
@@ -147,7 +148,7 @@ export default function AdminAssessmentQuestionShow({
                             <Input
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Cari pertanyaan..."
+                                placeholder={t("admin.assessment.show.search_placeholder")}
                                 className="w-64 pl-9"
                             />
                         </div>
@@ -164,10 +165,10 @@ export default function AdminAssessmentQuestionShow({
                         }}
                     >
                         <SelectTrigger className="w-36">
-                            <SelectValue placeholder="Level" />
+                            <SelectValue placeholder={t("admin.assessment.show.filter_level")} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">Semua level</SelectItem>
+                            <SelectItem value="all">{t("admin.assessment.show.filter_level_all")}</SelectItem>
                             <SelectItem value="easy">Easy</SelectItem>
                             <SelectItem value="medium">Medium</SelectItem>
                             <SelectItem value="hard">Hard</SelectItem>
@@ -182,12 +183,12 @@ export default function AdminAssessmentQuestionShow({
                         }}
                     >
                         <SelectTrigger className="w-36">
-                            <SelectValue placeholder="Status" />
+                            <SelectValue placeholder={t("admin.assessment.show.filter_status")} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">Semua status</SelectItem>
-                            <SelectItem value="active">Aktif</SelectItem>
-                            <SelectItem value="inactive">Nonaktif</SelectItem>
+                            <SelectItem value="all">{t("admin.assessment.show.filter_status_all")}</SelectItem>
+                            <SelectItem value="active">{t("admin.assessment.show.status_active")}</SelectItem>
+                            <SelectItem value="inactive">{t("admin.assessment.show.status_inactive")}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -198,7 +199,7 @@ export default function AdminAssessmentQuestionShow({
                         <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
                             <Brain className="size-10 text-muted-foreground/40" />
                             <div>
-                                <p className="font-semibold">Belum ada soal</p>
+                                <p className="font-semibold">{t("admin.assessment.show.empty_title")}</p>
                                 <p className="mt-1 text-sm text-muted-foreground">
                                     Generate soal dengan AI atau tambah manual.
                                 </p>
@@ -249,7 +250,7 @@ export default function AdminAssessmentQuestionShow({
             <Dialog open={deletingId !== null} onOpenChange={(open) => !open && setDeletingId(null)}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Hapus soal?</DialogTitle>
+                        <DialogTitle>{t("admin.assessment.show.dialog_delete_title")}</DialogTitle>
                         <DialogDescription>
                             Soal ini akan dihapus permanen dari bank soal.
                         </DialogDescription>
@@ -277,6 +278,7 @@ function QuestionCard({
     number: number;
     onDelete: () => void;
 }) {
+    const { t } = useTranslate();
     const diff = DIFFICULTY_CONFIG[question.difficulty] ?? DIFFICULTY_CONFIG.medium;
 
     return (
@@ -290,7 +292,7 @@ function QuestionCard({
                 ) : (
                     <CircleX className="size-3.5" />
                 )}
-                {question.is_active ? 'Aktif' : 'Nonaktif'}
+                {question.is_active ? t('admin.assessment.show.status_active') : t('admin.assessment.show.status_inactive')}
                 <span className="ml-auto flex items-center gap-2 font-normal">
                     <span className={`rounded px-1.5 py-0.5 text-xs font-semibold ${diff.className}`}>
                         {diff.label}

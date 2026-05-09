@@ -81,6 +81,7 @@ class ParseUploadedCvJob implements ShouldQueue
             'output_json' => $parsed,
             'model_name' => $ai->modelName(),
             'status' => 'success',
+            ...$ai->tokenUsage(),
         ]);
     }
 

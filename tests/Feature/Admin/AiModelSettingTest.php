@@ -59,3 +59,87 @@ test('ai service uses ai model from settings', function () {
         return $request->data()['model'] === 'gpt-5';
     });
 });
+
+test('ai service captures token usage from chat response', function () {
+    Setting::set('ai_api_key', 'test-key');
+    Setting::set('ai_model', 'gpt-5');
+
+    Http::fake([
+        '*' => Http::response([
+            'choices' => [
+                ['message' => ['content' => 'ok']],
+            ],
+            'usage' => [
+                'prompt_tokens' => 123,
+                'completion_tokens' => 45,
+                'total_tokens' => 168,
+                'completion_tokens_details' => [
+                    'reasoning_tokens' => 12,
+                ],
+            ],
+        ]),
+    ]);
+
+    $aiService = app(AiService::class);
+    $result = $aiService->chat([
+        ['role' => 'user', 'content' => 'Halo'],
+    ]);
+
+    expect($result)->toBe('ok');
+    expect($aiService->tokenUsage())->toBe([
+        'prompt_tokens' => 123,
+        'completion_tokens' => 45,
+        'reasoning_tokens' => 12,
+        'total_tokens' => 168,
+    ]);
+});
+
+test('ai service resets token usage when api key missing', function () {
+    Setting::set('ai_api_key', '');
+
+    $aiService = app(AiService::class);
+    $result = $aiService->chat([
+        ['role' => 'user', 'content' => 'Halo'],
+    ]);
+
+    expect($result)->toBeNull();
+    expect($aiService->tokenUsage())->toBe([
+        'prompt_tokens' => null,
+        'completion_tokens' => null,
+        'reasoning_tokens' => null,
+        'total_tokens' => null,
+    ]);
+});
+
+test('ai service captures token usage from chatJson response', function () {
+    Setting::set('ai_api_key', 'test-key');
+    Setting::set('ai_model', 'gpt-5');
+
+    Http::fake([
+        '*' => Http::response([
+            'choices' => [
+                ['message' => ['content' => json_encode(['answer' => 'ok'])]],
+            ],
+            'usage' => [
+                'prompt_tokens' => 200,
+                'completion_tokens' => 60,
+                'total_tokens' => 260,
+            ],
+        ]),
+    ]);
+
+    $aiService = app(AiService::class);
+    $result = $aiService->chatJson(
+        [['role' => 'user', 'content' => 'Halo']],
+        ['type' => 'object', 'properties' => ['answer' => ['type' => 'string']], 'required' => ['answer'], 'additionalProperties' => false],
+        'demo_schema',
+    );
+
+    expect($result)->toBe(['answer' => 'ok']);
+    expect($aiService->tokenUsage())->toMatchArray([
+        'prompt_tokens' => 200,
+        'completion_tokens' => 60,
+        'reasoning_tokens' => null,
+        'total_tokens' => 260,
+    ]);
+});

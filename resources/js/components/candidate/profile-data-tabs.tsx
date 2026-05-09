@@ -8,46 +8,47 @@ import {
     UserRound,
 } from 'lucide-react';
 import { useCurrentUrl } from '@/hooks/use-current-url';
+import { useTranslate } from '@/hooks/use-translate';
 import { cn } from '@/lib/utils';
 import { index as cvsIndex } from '@/routes/candidate/cvs';
 import { index as experiencesIndex } from '@/routes/candidate/experiences';
 import { index as educationsIndex } from '@/routes/candidate/educations';
 import { edit as profileEdit } from '@/routes/candidate/profile';
 import { index as skillsIndex } from '@/routes/candidate/skills';
-import type { SharedData } from '@/types';
 
 export function ProfileDataTabs() {
+    const { t } = useTranslate();
     const { isCurrentUrl } = useCurrentUrl();
-    const { auth } = usePage<SharedData>().props;
+    const { auth } = usePage<{ auth: any }>().props;
     const counts = auth.candidate_profile_counts;
 
     const tabs = [
         {
-            title: 'Profil',
+            title: t('settings_layout.nav_profile'),
             href: profileEdit(),
             icon: UserRound,
             count: null,
         },
         {
-            title: 'Pengalaman Kerja',
+            title: t('settings_layout.nav_experiences'),
             href: experiencesIndex(),
             icon: BriefcaseBusiness,
             count: counts?.experiences ?? null,
         },
         {
-            title: 'Pendidikan',
+            title: t('settings_layout.nav_educations'),
             href: educationsIndex(),
             icon: GraduationCap,
             count: counts?.educations ?? null,
         },
         {
-            title: 'Skill',
+            title: t('settings_layout.nav_skills'),
             href: skillsIndex(),
             icon: Tags,
             count: counts?.skills ?? null,
         },
         {
-            title: 'CV',
+            title: t('settings_layout.nav_cv'),
             href: cvsIndex(),
             icon: FileText,
             count: counts?.cvs ?? null,
@@ -58,7 +59,7 @@ export function ProfileDataTabs() {
         <div className="border-b">
             <nav
                 className="-mb-px flex gap-1 overflow-x-auto"
-                aria-label="Tabs data profil"
+                aria-label={t('candidate.profile_tabs.aria_label')}
             >
                 {tabs.map((tab) => {
                     const active = isCurrentUrl(tab.href);

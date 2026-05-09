@@ -1,6 +1,6 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { useTranslate } from '@/hooks/use-translate';
-import { Banknote, Briefcase, FileText, MapPin, Settings2 } from 'lucide-react';
+import { Banknote, Briefcase, FileText, MapPin, Settings2, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import EmployerJobListingController from '@/actions/App/Http/Controllers/Employer/EmployerJobListingController';
@@ -46,11 +46,15 @@ type JobFormProps = {
         work_mode: string;
         job_type: string;
         experience_level: string;
+        qualification?: string | null;
+        experience_min_years?: number | null;
+        experience_max_years?: number | null;
         salary_min?: number | null;
         salary_max?: number | null;
         salary_currency: string;
         is_salary_visible: boolean;
         is_anonymous: boolean;
+        is_urgent: boolean;
         response_sla_hours?: number | null;
         closes_at?: string | null;
         status: string;
@@ -183,6 +187,9 @@ export default function EmployerJobForm({
             salary_currency: 3,
             salary_min: 3,
             salary_max: 3,
+            qualification: 3,
+            experience_min_years: 3,
+            experience_max_years: 3,
             is_salary_visible: 3,
             response_sla_hours: 4,
             closes_at: 4,
@@ -382,15 +389,15 @@ export default function EmployerJobForm({
                                                 options={[
                                                     {
                                                         value: 'remote',
-                                                        label: 'Remote',
+                                                        label: t('employer.job_form.work_mode_remote'),
                                                     },
                                                     {
                                                         value: 'hybrid',
-                                                        label: 'Hybrid',
+                                                        label: t('employer.job_form.work_mode_hybrid'),
                                                     },
                                                     {
                                                         value: 'onsite',
-                                                        label: 'Onsite',
+                                                        label: t('employer.job_form.work_mode_onsite'),
                                                     },
                                                 ]}
                                             />
@@ -409,23 +416,23 @@ export default function EmployerJobForm({
                                                 options={[
                                                     {
                                                         value: 'full_time',
-                                                        label: 'Full Time',
+                                                        label: t('employer.job_form.job_type_full_time'),
                                                     },
                                                     {
                                                         value: 'part_time',
-                                                        label: 'Part Time',
+                                                        label: t('employer.job_form.job_type_part_time'),
                                                     },
                                                     {
                                                         value: 'contract',
-                                                        label: 'Contract',
+                                                        label: t('employer.job_form.job_type_contract'),
                                                     },
                                                     {
                                                         value: 'internship',
-                                                        label: 'Internship',
+                                                        label: t('employer.job_form.job_type_internship'),
                                                     },
                                                     {
                                                         value: 'freelance',
-                                                        label: 'Freelance',
+                                                        label: t('employer.job_form.job_type_freelance'),
                                                     },
                                                 ]}
                                             />
@@ -555,6 +562,21 @@ export default function EmployerJobForm({
                                         />
                                     </Field>
 
+                                </CardContent>
+                            </Card>
+
+                            {/* Benefit & Tunjangan */}
+                            <Card className={currentStep === 2 ? '' : 'hidden'}>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-base">
+                                        <Sparkles className="size-4 text-primary" />
+                                        {t('employer.job_form.card_benefits_title')}
+                                    </CardTitle>
+                                    <CardDescription>
+                                        {t('employer.job_form.card_benefits_desc')}
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
                                     <Field
                                         label={t('employer.job_form.field_benefits')}
                                         name="benefits"
@@ -565,7 +587,7 @@ export default function EmployerJobForm({
                                             name="benefits"
                                             defaultValue={job?.benefits ?? ''}
                                             placeholder={t('employer.job_form.field_benefits_placeholder')}
-                                            minHeightClass="min-h-32"
+                                            minHeightClass="min-h-40"
                                         />
                                     </Field>
                                 </CardContent>
@@ -634,59 +656,144 @@ export default function EmployerJobForm({
                                 <CardContent className="space-y-5">
                                     <div className="grid gap-4 md:grid-cols-3">
                                         <Field
-                                            label={t('employer.job_form.field_currency')}
-                                            name="salary_currency"
-                                            error={errors.salary_currency}
-                                            required
+                                            label={t('employer.job_form.field_qualification')}
+                                            name="qualification"
+                                            error={errors.qualification}
                                         >
                                             <SelectField
-                                                name="salary_currency"
+                                                name="qualification"
                                                 defaultValue={
-                                                    job?.salary_currency ??
-                                                    'IDR'
+                                                    job?.qualification ?? ''
                                                 }
                                                 options={[
                                                     {
-                                                        value: 'IDR',
-                                                        label: 'IDR — Rupiah',
+                                                        value: '',
+                                                        label: t('employer.job_form.qualification_placeholder'),
                                                     },
                                                     {
-                                                        value: 'USD',
-                                                        label: 'USD — Dollar',
+                                                        value: 'sma',
+                                                        label: t('employer.job_form.qualification_sma'),
                                                     },
                                                     {
-                                                        value: 'SGD',
-                                                        label: 'SGD — Singapore Dollar',
+                                                        value: 'd3',
+                                                        label: t('employer.job_form.qualification_d3'),
+                                                    },
+                                                    {
+                                                        value: 's1',
+                                                        label: t('employer.job_form.qualification_s1'),
+                                                    },
+                                                    {
+                                                        value: 's2',
+                                                        label: t('employer.job_form.qualification_s2'),
+                                                    },
+                                                    {
+                                                        value: 's3',
+                                                        label: t('employer.job_form.qualification_s3'),
                                                     },
                                                 ]}
                                             />
                                         </Field>
                                         <Field
-                                            label={t('employer.job_form.field_salary_min')}
-                                            name="salary_min"
-                                            error={errors.salary_min}
+                                            label={t('employer.job_form.field_experience_min_years')}
+                                            name="experience_min_years"
+                                            error={errors.experience_min_years}
                                         >
-                                            <RupiahInput
-                                                name="salary_min"
+                                            <Input
+                                                type="number"
+                                                inputMode="numeric"
+                                                min={0}
+                                                max={50}
+                                                name="experience_min_years"
                                                 defaultValue={
-                                                    job?.salary_min ?? null
+                                                    job?.experience_min_years ??
+                                                    ''
                                                 }
-                                                placeholder={t('employer.job_form.field_salary_min_placeholder')}
+                                                placeholder="0"
                                             />
                                         </Field>
                                         <Field
-                                            label={t('employer.job_form.field_salary_max')}
-                                            name="salary_max"
-                                            error={errors.salary_max}
+                                            label={t('employer.job_form.field_experience_max_years')}
+                                            name="experience_max_years"
+                                            error={errors.experience_max_years}
                                         >
-                                            <RupiahInput
-                                                name="salary_max"
+                                            <Input
+                                                type="number"
+                                                inputMode="numeric"
+                                                min={0}
+                                                max={50}
+                                                name="experience_max_years"
                                                 defaultValue={
-                                                    job?.salary_max ?? null
+                                                    job?.experience_max_years ??
+                                                    ''
                                                 }
-                                                placeholder={t('employer.job_form.field_salary_max_placeholder')}
+                                                placeholder="5"
                                             />
                                         </Field>
+                                    </div>
+
+                                    <div className="space-y-3 rounded-lg border bg-muted/10 p-4">
+                                        <div className="flex items-center gap-2">
+                                            <Banknote className="size-4 text-primary" />
+                                            <h4 className="text-sm font-semibold text-foreground">
+                                                {t('employer.job_form.salary_range_title')}
+                                            </h4>
+                                        </div>
+                                        <div className="grid gap-4 md:grid-cols-3">
+                                            <Field
+                                                label={t('employer.job_form.field_currency')}
+                                                name="salary_currency"
+                                                error={errors.salary_currency}
+                                                required
+                                            >
+                                                <SelectField
+                                                    name="salary_currency"
+                                                    defaultValue={
+                                                        job?.salary_currency ??
+                                                        'IDR'
+                                                    }
+                                                    options={[
+                                                        {
+                                                            value: 'IDR',
+                                                            label: t('employer.job_form.currency_idr'),
+                                                        },
+                                                        {
+                                                            value: 'USD',
+                                                            label: t('employer.job_form.currency_usd'),
+                                                        },
+                                                        {
+                                                            value: 'SGD',
+                                                            label: t('employer.job_form.currency_sgd'),
+                                                        },
+                                                    ]}
+                                                />
+                                            </Field>
+                                            <Field
+                                                label={t('employer.job_form.field_salary_min')}
+                                                name="salary_min"
+                                                error={errors.salary_min}
+                                            >
+                                                <RupiahInput
+                                                    name="salary_min"
+                                                    defaultValue={
+                                                        job?.salary_min ?? null
+                                                    }
+                                                    placeholder={t('employer.job_form.field_salary_min_placeholder')}
+                                                />
+                                            </Field>
+                                            <Field
+                                                label={t('employer.job_form.field_salary_max')}
+                                                name="salary_max"
+                                                error={errors.salary_max}
+                                            >
+                                                <RupiahInput
+                                                    name="salary_max"
+                                                    defaultValue={
+                                                        job?.salary_max ?? null
+                                                    }
+                                                    placeholder={t('employer.job_form.field_salary_max_placeholder')}
+                                                />
+                                            </Field>
+                                        </div>
                                     </div>
 
                                     <div className="flex items-start gap-3 rounded-lg border bg-muted/20 p-4">
@@ -805,6 +912,41 @@ export default function EmployerJobForm({
                                                 }
                                             />
                                         </Field>
+                                    </div>
+
+                                    <div className="mt-5 flex items-start gap-3 rounded-lg border border-orange-200 bg-orange-50 p-4">
+                                        <input
+                                            type="hidden"
+                                            name="is_urgent"
+                                            value="0"
+                                        />
+                                        <input
+                                            type="checkbox"
+                                            id="is_urgent"
+                                            name="is_urgent"
+                                            value="1"
+                                            defaultChecked={
+                                                job?.is_urgent ?? false
+                                            }
+                                            className="mt-0.5 size-4 rounded border-input accent-orange-500"
+                                        />
+                                        <div className="flex-1">
+                                            <label
+                                                htmlFor="is_urgent"
+                                                className="flex cursor-pointer items-center gap-2 text-sm font-medium text-foreground"
+                                            >
+                                                {t('employer.job_form.urgent_label')}
+                                                <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-700">
+                                                    🔥 {t('employer.job_form.urgent_badge')}
+                                                </span>
+                                            </label>
+                                            <p className="mt-0.5 text-xs text-muted-foreground">
+                                                {t('employer.job_form.urgent_desc')}
+                                            </p>
+                                        </div>
+                                        <InputError
+                                            message={errors.is_urgent}
+                                        />
                                     </div>
                                 </CardContent>
                             </Card>

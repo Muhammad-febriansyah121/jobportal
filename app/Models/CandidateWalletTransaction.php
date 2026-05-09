@@ -14,10 +14,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'source',
     'ai_token_delta',
     'cv_builder_quota_delta',
+    'ai_interview_quota_delta',
     'amount',
     'status',
     'meta_json',
     'paid_at',
+    'expires_at',
 ])]
 class CandidateWalletTransaction extends Model
 {
@@ -36,6 +38,7 @@ class CandidateWalletTransaction extends Model
         return [
             'meta_json' => 'array',
             'paid_at' => 'datetime',
+            'expires_at' => 'datetime',
         ];
     }
 }

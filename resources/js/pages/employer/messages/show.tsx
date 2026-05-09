@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Send } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { useTranslate } from '@/hooks/use-translate';
 import { index, show, store } from '@/routes/employer/messages';
 
 type MessageItem = {
@@ -30,6 +31,7 @@ export default function EmployerMessageShow({
     conversation,
     messages,
 }: ShowPageProps) {
+    const { t } = useTranslate();
     const { data, setData, post, processing, reset, errors } = useForm({
         body: '',
     });
@@ -50,7 +52,7 @@ export default function EmployerMessageShow({
 
     return (
         <>
-            <Head title={`Pesan — ${conversation.candidate.name}`} />
+            <Head title={`${t('employer.messages_show.message_title')} — ${conversation.candidate.name}`} />
 
             <div className="flex h-[calc(100dvh-4rem)] flex-col">
                 {/* Header */}
@@ -77,7 +79,7 @@ export default function EmployerMessageShow({
                         )}
                         {conversation.job_title && (
                             <p className="truncate text-xs text-[#64748b]">
-                                Lowongan: {conversation.job_title}
+                                {t('employer.messages_show.job_label')} {conversation.job_title}
                             </p>
                         )}
                     </div>
@@ -88,7 +90,7 @@ export default function EmployerMessageShow({
                     {messages.length === 0 ? (
                         <div className="flex h-full items-center justify-center">
                             <p className="text-sm text-muted-foreground">
-                                Belum ada pesan. Mulai percakapan sekarang.
+                                {t('employer.messages_show.empty_state')}
                             </p>
                         </div>
                     ) : (
@@ -105,7 +107,7 @@ export default function EmployerMessageShow({
                         <textarea
                             value={data.body}
                             onChange={(e) => setData('body', e.target.value)}
-                            placeholder="Tulis pesan..."
+                            placeholder={t('employer.messages_show.message_placeholder')}
                             className="max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                             rows={1}
                             onKeyDown={(e) => {

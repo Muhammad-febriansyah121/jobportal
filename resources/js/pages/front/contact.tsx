@@ -3,6 +3,7 @@ import { Form, Head, usePage } from '@inertiajs/react';
 import { CheckCircle2, ChevronDown, Facebook, Instagram, Linkedin, Mail, MapPin, MessageCircle, Phone, Send, Sparkles, Twitter, Youtube } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import HomeLayout from '@/layouts/front/home-layout';
+import { useTranslate } from '@/hooks/use-translate';
 
 declare global {
     interface Window {
@@ -40,14 +41,6 @@ const socialLinks = [
     { key: 'youtube_url', icon: Youtube, label: 'YouTube', color: 'hover:text-red-600' },
 ] as const;
 
-const subjectOptions = [
-    'Pertanyaan Umum',
-    'Laporan Masalah / Bug',
-    'Kerjasama & Partnership',
-    'Masukan & Saran',
-    'Informasi Paket & Harga',
-    'Lainnya',
-];
 
 export default function Contact({
     faqs,
@@ -65,9 +58,19 @@ export default function Contact({
     recaptcha_site_key = '',
     recaptcha_enabled = false,
 }: ContactProps) {
+    const { t } = useTranslate();
     const { props } = usePage<{ flash: { success?: string } }>();
     const recaptchaInputRef = useRef<HTMLInputElement>(null);
     const formRef = useRef<FormComponentRef>(null);
+
+    const subjectOptions = [
+        t('front.contact.subject_general'),
+        t('front.contact.subject_bug'),
+        t('front.contact.subject_partnership'),
+        t('front.contact.subject_feedback'),
+        t('front.contact.subject_pricing'),
+        t('front.contact.subject_other'),
+    ];
 
     useEffect(() => {
         if (!recaptcha_enabled || !recaptcha_site_key) return;
@@ -95,15 +98,15 @@ export default function Contact({
     const waHref = whatsapp_number ? `https://wa.me/${whatsapp_number.replace(/\D/g, '')}` : null;
 
     const contactItems = [
-        support_email && { icon: <Mail className="size-5 text-primary-600" />, label: 'Email', value: support_email, href: `mailto:${support_email}`, hint: 'Balas dalam 1×24 jam' },
-        support_phone && { icon: <Phone className="size-5 text-primary-600" />, label: 'Telepon', value: support_phone, href: `tel:${support_phone.replace(/\s/g, '')}`, hint: 'Senin–Jumat, 09.00–18.00 WIB' },
-        waHref && { icon: <MessageCircle className="size-5 text-green-600" />, label: 'WhatsApp', value: support_phone || whatsapp_number, href: waHref, hint: 'Chat langsung', external: true },
-        address && { icon: <MapPin className="size-5 text-primary-600" />, label: 'Alamat', value: address, hint: 'Kunjungi kantor kami' },
+        support_email && { icon: <Mail className="size-5 text-primary-600" />, label: t('front.contact.contact_email_label'), value: support_email, href: `mailto:${support_email}`, hint: t('front.contact.contact_email_hint') },
+        support_phone && { icon: <Phone className="size-5 text-primary-600" />, label: t('front.contact.contact_phone_label'), value: support_phone, href: `tel:${support_phone.replace(/\s/g, '')}`, hint: t('front.contact.contact_phone_hint') },
+        waHref && { icon: <MessageCircle className="size-5 text-green-600" />, label: t('front.contact.contact_wa_label'), value: support_phone || whatsapp_number, href: waHref, hint: t('front.contact.contact_wa_hint'), external: true },
+        address && { icon: <MapPin className="size-5 text-primary-600" />, label: t('front.contact.contact_address_label'), value: address, hint: t('front.contact.contact_address_hint') },
     ].filter(Boolean) as { icon: React.ReactNode; label: string; value: string; href?: string; hint?: string; external?: boolean }[];
 
     return (
         <HomeLayout>
-            <Head title="Kontak Kami" />
+            <Head title={t('front.contact.head_title')} />
 
             {/* Hero */}
             <section className="relative overflow-hidden bg-white pt-20 pb-14 text-center">
@@ -111,13 +114,14 @@ export default function Contact({
                 <div className="relative mx-auto max-w-2xl px-4">
                     <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-4 py-1.5 text-xs font-semibold text-primary-600">
                         <Sparkles className="size-3.5" />
-                        Kami siap membantu kamu
+                        {t('front.contact.hero_badge')}
                     </div>
                     <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-                        Hubungi <span className="text-primary-600">Kami</span>
+                        {t('front.contact.hero_title_prefix')}{' '}
+                        <span className="text-primary-600">{t('front.contact.hero_title_highlight')}</span>
                     </h1>
                     <p className="mt-4 text-base text-slate-500">
-                        Ada pertanyaan, masukan, atau butuh bantuan? Tim {site_name} selalu siap membantu.
+                        {t('front.contact.hero_subtitle', { site_name })}
                     </p>
                 </div>
             </section>
@@ -129,14 +133,14 @@ export default function Contact({
 
                         {/* Left — Form card */}
                         <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-                            <h2 className="text-xl font-bold text-slate-900">Kirim Pesan</h2>
-                            <p className="mt-1 text-sm text-slate-500">Isi form di bawah, kami akan membalas pesanmu segera.</p>
+                            <h2 className="text-xl font-bold text-slate-900">{t('front.contact.form_title')}</h2>
+                            <p className="mt-1 text-sm text-slate-500">{t('front.contact.form_subtitle')}</p>
 
                             {props.flash?.success ? (
                                 <div className="mt-6 flex items-start gap-4 rounded-xl border border-emerald-200 bg-emerald-50 p-5">
                                     <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-600" />
                                     <div>
-                                        <p className="font-semibold text-emerald-800">Pesan Terkirim!</p>
+                                        <p className="font-semibold text-emerald-800">{t('front.contact.success_heading')}</p>
                                         <p className="mt-0.5 text-sm text-emerald-700">{props.flash.success}</p>
                                     </div>
                                 </div>
@@ -146,28 +150,28 @@ export default function Contact({
                                         <>
                                             <input ref={recaptchaInputRef} type="hidden" name="recaptcha_token" defaultValue="" />
                                             <div className="grid gap-4 sm:grid-cols-2">
-                                                <Field label="Nama Lengkap" error={errors.name}>
-                                                    <input name="name" type="text" placeholder="Nama kamu" className="input-field" required />
+                                                <Field label={t('front.contact.field_name')} error={errors.name}>
+                                                    <input name="name" type="text" placeholder={t('front.contact.field_name_placeholder')} className="input-field" required />
                                                 </Field>
-                                                <Field label="Email" error={errors.email}>
-                                                    <input name="email" type="email" placeholder="email@contoh.com" className="input-field" required />
+                                                <Field label={t('front.contact.field_email')} error={errors.email}>
+                                                    <input name="email" type="email" placeholder={t('front.contact.field_email_placeholder')} className="input-field" required />
                                                 </Field>
                                             </div>
                                             <div className="grid gap-4 sm:grid-cols-2">
-                                                <Field label="No. Telepon (opsional)" error={errors.phone}>
+                                                <Field label={t('front.contact.field_phone')} error={errors.phone}>
                                                     <input name="phone" type="tel" placeholder="08xxxxxxxxxx" className="input-field" />
                                                 </Field>
-                                                <Field label="Subjek" error={errors.subject}>
+                                                <Field label={t('front.contact.field_subject')} error={errors.subject}>
                                                     <select name="subject" className="input-field" required>
-                                                        <option value="">Pilih subjek...</option>
+                                                        <option value="">{t('front.contact.field_subject_placeholder')}</option>
                                                         {subjectOptions.map((opt) => (
                                                             <option key={opt} value={opt}>{opt}</option>
                                                         ))}
                                                     </select>
                                                 </Field>
                                             </div>
-                                            <Field label="Pesan" error={errors.message}>
-                                                <textarea name="message" rows={5} placeholder="Tulis pesanmu di sini..." className="input-field resize-none" required />
+                                            <Field label={t('front.contact.field_message')} error={errors.message}>
+                                                <textarea name="message" rows={5} placeholder={t('front.contact.field_message_placeholder')} className="input-field resize-none" required />
                                             </Field>
                                             <button
                                                 type="submit"
@@ -176,13 +180,13 @@ export default function Contact({
                                                 className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary-600 text-sm font-bold text-white shadow-sm transition hover:bg-primary-700 active:scale-[0.98] disabled:opacity-70 sm:w-auto sm:px-8"
                                             >
                                                 <Send className="size-4" />
-                                                {processing ? 'Mengirim...' : 'Kirim Pesan'}
+                                                {processing ? t('front.contact.submit_loading') : t('front.contact.submit')}
                                             </button>
                                             {recaptcha_enabled && (
                                                 <p className="text-xs text-slate-400">
-                                                    Dilindungi oleh reCAPTCHA.{' '}
-                                                    <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline hover:text-slate-600">Privasi</a>
-                                                    {' '}& <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline hover:text-slate-600">Syarat</a> berlaku.
+                                                    {t('front.contact.recaptcha_intro')}{' '}
+                                                    <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline hover:text-slate-600">{t('front.contact.recaptcha_privacy')}</a>
+                                                    {' '}& <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline hover:text-slate-600">{t('front.contact.recaptcha_terms')}</a> {t('front.contact.recaptcha_apply')}.
                                                 </p>
                                             )}
                                         </>
@@ -196,7 +200,7 @@ export default function Contact({
 
                             {/* Contact info */}
                             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                                <h3 className="mb-4 text-sm font-bold text-slate-900">Info Kontak</h3>
+                                <h3 className="mb-4 text-sm font-bold text-slate-900">{t('front.contact.info_title')}</h3>
                                 <div className="space-y-4">
                                     {contactItems.map(({ icon, label, value, href, hint, external }) => {
                                         const content = (
@@ -223,7 +227,7 @@ export default function Contact({
 
                             {/* Social media */}
                             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                                <h3 className="mb-4 text-sm font-bold text-slate-900">Ikuti Kami</h3>
+                                <h3 className="mb-4 text-sm font-bold text-slate-900">{t('front.contact.social_title')}</h3>
                                 <div className="flex flex-wrap gap-2">
                                     {socialLinks.map(({ key, icon: Icon, label }) => {
                                         const url = socials[key];
@@ -249,7 +253,7 @@ export default function Contact({
                                 <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
                                     <iframe
                                         src={maps_embed_url}
-                                        title="Lokasi Kantor"
+                                        title={t('front.contact.map_title')}
                                         className="h-48 w-full"
                                         loading="lazy"
                                         allowFullScreen
@@ -268,10 +272,10 @@ export default function Contact({
                     <div className="mx-auto max-w-3xl">
                         <div className="mb-10 text-center">
                             <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-                                Pertanyaan yang Sering Diajukan
+                                {t('front.contact.faq_title')}
                             </h2>
                             <p className="mt-2 text-sm text-slate-500">
-                                Tidak menemukan jawabanmu? Kirim pesan ke kami di atas.
+                                {t('front.contact.faq_subtitle')}
                             </p>
                         </div>
                         <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -285,17 +289,17 @@ export default function Contact({
             <section className="bg-primary-600 px-4 py-14 text-center">
                 <div className="mx-auto max-w-xl">
                     <h2 className="text-2xl font-bold text-white sm:text-3xl">
-                        Bergabung dengan {site_name} Sekarang
+                        {t('front.contact.cta_title', { site_name })}
                     </h2>
                     <p className="mt-3 text-sm text-primary-100">
-                        Temukan ribuan lowongan kerja terbaik atau mulai rekrut talenta impian kamu bersama kami.
+                        {t('front.contact.cta_subtitle')}
                     </p>
                     <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
                         <a href="/jobs" className="inline-flex h-11 items-center justify-center rounded-xl bg-white px-6 text-sm font-bold text-primary-600 shadow-sm transition hover:bg-primary-50 active:scale-95">
-                            Cari Lowongan
+                            {t('front.contact.cta_find_jobs')}
                         </a>
                         <a href="/pricing" className="inline-flex h-11 items-center justify-center rounded-xl border border-white/40 bg-white/10 px-6 text-sm font-bold text-white backdrop-blur transition hover:bg-white/20 active:scale-95">
-                            Untuk Perusahaan
+                            {t('front.contact.cta_for_companies')}
                         </a>
                     </div>
                 </div>

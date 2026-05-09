@@ -7,6 +7,7 @@ import {
     XIcon,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslate } from '@/hooks/use-translate';
 import HomeLayout from '@/layouts/front/home-layout';
 import { register } from '@/routes';
 
@@ -24,17 +25,33 @@ type Plan = {
     active_jobs_limit: number;
     recruiter_seat_limit: number;
     ai_screening_quota: number;
+    ai_interview_quota: number;
     talent_search_quota: number;
     features: PlanFeature[];
 };
 
-type Props = {
-    plans: Plan[];
+type CandidateMenu = {
+    id: number;
+    name: string;
+    slug: string;
+    description: string | null;
+    price: number;
+    ai_interview_quota: number;
+    cv_builder_quota: number;
+    validity_days: number;
+    features: string[];
 };
 
-function formatPrice(price: number): string {
+type Props = {
+    plans: Plan[];
+    candidateMenus: CandidateMenu[];
+};
+
+type TranslateFn = (key: string, replacements?: Record<string, string | number>) => string;
+
+function formatPrice(price: number, t: TranslateFn): string {
     if (price === 0) {
-        return 'Gratis';
+        return t('front.pricing.free');
     }
 
     return new Intl.NumberFormat('id-ID', {
@@ -44,61 +61,62 @@ function formatPrice(price: number): string {
     }).format(price);
 }
 
-function formatDuration(days: number): string {
+function formatDuration(days: number, t: TranslateFn): string {
     if (days === 14) {
-        return '14 Hari';
+        return t('front.pricing.duration_14_days');
     }
 
     if (days === 30) {
-        return '1 Bulan';
+        return t('front.pricing.duration_1_month');
     }
 
     if (days === 90) {
-        return '3 Bulan';
+        return t('front.pricing.duration_3_months');
     }
 
     if (days === 180) {
-        return '6 Bulan';
+        return t('front.pricing.duration_6_months');
     }
 
     if (days === 365) {
-        return '1 Tahun';
+        return t('front.pricing.duration_1_year');
     }
 
-    return `${days} Hari`;
+    return t('front.pricing.duration_n_days', { days });
 }
 
 const POPULAR_SLUG = 'medium';
 
-const faqs = [
-    {
-        q: 'Apakah saya bisa upgrade atau downgrade paket?',
-        a: 'Ya, kamu bisa upgrade ke paket yang lebih tinggi kapan saja. Sisa masa aktif paket lama akan diperhitungkan secara proporsional.',
-    },
-    {
-        q: 'Metode pembayaran apa saja yang diterima?',
-        a: 'Kami menerima transfer bank, virtual account, kartu kredit/debit, serta dompet digital seperti GoPay, OVO, dan Dana.',
-    },
-    {
-        q: 'Apakah ada refund jika saya tidak puas?',
-        a: 'Kami menawarkan garansi uang kembali dalam 7 hari setelah pembelian jika kamu belum menggunakan fitur berbayar apapun.',
-    },
-    {
-        q: 'Apakah lowongan saya langsung tayang setelah membeli paket?',
-        a: 'Ya, setelah pembayaran dikonfirmasi lowongan kamu langsung aktif dan bisa dilihat oleh kandidat di platform kami.',
-    },
-    {
-        q: 'Apa perbedaan Job Posting Reguler dan Premium?',
-        a: 'Job Posting Premium ditampilkan di bagian teratas hasil pencarian dan mendapat label "Premium" sehingga lebih banyak dilihat oleh kandidat.',
-    },
-    {
-        q: 'Apakah paket Gratis perlu kartu kredit?',
-        a: 'Tidak. Paket Gratis (Trial) bisa langsung digunakan tanpa memasukkan informasi pembayaran apapun.',
-    },
-];
-
 function FaqList() {
+    const { t } = useTranslate();
     const [open, setOpen] = useState<number | null>(null);
+
+    const faqs = [
+        {
+            q: t('front.pricing.faq_upgrade_q'),
+            a: t('front.pricing.faq_upgrade_a'),
+        },
+        {
+            q: t('front.pricing.faq_payment_q'),
+            a: t('front.pricing.faq_payment_a'),
+        },
+        {
+            q: t('front.pricing.faq_refund_q'),
+            a: t('front.pricing.faq_refund_a'),
+        },
+        {
+            q: t('front.pricing.faq_publish_q'),
+            a: t('front.pricing.faq_publish_a'),
+        },
+        {
+            q: t('front.pricing.faq_premium_q'),
+            a: t('front.pricing.faq_premium_a'),
+        },
+        {
+            q: t('front.pricing.faq_freeplan_q'),
+            a: t('front.pricing.faq_freeplan_a'),
+        },
+    ];
 
     return (
         <div className="divide-y divide-border rounded-2xl border border-border">
@@ -129,41 +147,51 @@ function FaqList() {
     );
 }
 
-const comparisonRows = [
-    {
-        label: 'Masa Aktif',
-        get: (p: Plan) => formatDuration(p.duration_days),
-    },
-    {
-        label: 'Job Posting Aktif',
-        get: (p: Plan) => `${p.active_jobs_limit} lowongan`,
-    },
-    {
-        label: 'Recruiter Seat',
-        get: (p: Plan) => `${p.recruiter_seat_limit} akun`,
-    },
-    {
-        label: 'AI Screening',
-        get: (p: Plan) =>
-            p.ai_screening_quota === 0 ? null : `${p.ai_screening_quota}x`,
-    },
-    {
-        label: 'Talent Search',
-        get: (p: Plan) => `${p.talent_search_quota}x`,
-    },
-    {
-        label: 'Unlimited Lamaran',
-        get: (_: Plan) => true,
-    },
-];
+export default function Pricing({ plans, candidateMenus }: Props) {
+    const { t } = useTranslate();
 
-export default function Pricing({ plans }: Props) {
-    const topPlans = plans.filter((p) => p.slug !== 'gratis-trial');
+    const topPlans = plans.filter(
+        (p) => p.slug !== 'gratis-trial' && p.slug !== 'enterprise',
+    );
     const freePlan = plans.find((p) => p.slug === 'gratis-trial');
+    const enterprisePlan = plans.find((p) => p.slug === 'enterprise');
+    const comparisonPlans = plans.filter((p) => p.slug !== 'enterprise');
+
+    const comparisonRows = [
+        {
+            label: t('front.pricing.row_active_period'),
+            get: (p: Plan) => formatDuration(p.duration_days, t),
+        },
+        {
+            label: t('front.pricing.row_active_jobs'),
+            get: (p: Plan) => t('front.pricing.value_jobs', { count: p.active_jobs_limit }),
+        },
+        {
+            label: t('front.pricing.row_recruiter_seat'),
+            get: (p: Plan) => t('front.pricing.value_accounts', { count: p.recruiter_seat_limit }),
+        },
+        {
+            label: 'Interview AI',
+            get: (p: Plan) =>
+                p.ai_interview_quota === 0 ? null : `${p.ai_interview_quota}x`,
+        },
+        {
+            label: 'Job Invitation',
+            get: (p: Plan) => `${p.talent_search_quota}x`,
+        },
+        {
+            label: 'Job Matching',
+            get: (_: Plan) => true,
+        },
+        {
+            label: t('front.pricing.row_unlimited_applications'),
+            get: (_: Plan) => true,
+        },
+    ];
 
     return (
         <HomeLayout>
-            <Head title="Pricing" />
+            <Head title={t('front.pricing.head_title')} />
 
             {/* Hero */}
             <section className="relative overflow-hidden bg-white pt-20 pb-4 text-center">
@@ -171,14 +199,13 @@ export default function Pricing({ plans }: Props) {
                 <div className="relative mx-auto max-w-3xl px-4">
                     <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold text-primary">
                         <SparklesIcon className="size-3.5" />
-                        Harga Transparan, Tanpa Biaya Tersembunyi
+                        {t('front.pricing.hero_badge')}
                     </div>
                     <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-                        Paket untuk Setiap Skala Bisnis
+                        {t('front.pricing.hero_title')}
                     </h1>
                     <p className="mt-4 text-base text-muted-foreground">
-                        Mulai gratis, upgrade kapan saja sesuai kebutuhan
-                        rekrutmen kamu.
+                        {t('front.pricing.hero_subtitle')}
                     </p>
                 </div>
             </section>
@@ -202,7 +229,7 @@ export default function Pricing({ plans }: Props) {
                                     {isPopular && (
                                         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
                                             <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-primary shadow-sm">
-                                                ✦ Terpopuler
+                                                ✦ {t('front.pricing.popular_badge')}
                                             </span>
                                         </div>
                                     )}
@@ -217,7 +244,7 @@ export default function Pricing({ plans }: Props) {
                                             <span
                                                 className={`text-4xl font-extrabold ${isPopular ? 'text-white' : 'text-foreground'}`}
                                             >
-                                                {formatPrice(plan.price)}
+                                                {formatPrice(plan.price, t)}
                                             </span>
                                             {plan.price > 0 && (
                                                 <span
@@ -226,6 +253,7 @@ export default function Pricing({ plans }: Props) {
                                                     /
                                                     {formatDuration(
                                                         plan.duration_days,
+                                                        t,
                                                     )}
                                                 </span>
                                             )}
@@ -233,8 +261,9 @@ export default function Pricing({ plans }: Props) {
                                         <p
                                             className={`mt-1 text-xs ${isPopular ? 'text-white/60' : 'text-muted-foreground'}`}
                                         >
-                                            {formatDuration(plan.duration_days)}{' '}
-                                            masa aktif
+                                            {t('front.pricing.duration_active', {
+                                                duration: formatDuration(plan.duration_days, t),
+                                            })}
                                         </p>
                                     </div>
 
@@ -295,7 +324,7 @@ export default function Pricing({ plans }: Props) {
                                                 : 'bg-primary text-white hover:bg-primary/90'
                                         }`}
                                     >
-                                        Pilih Paket
+                                        {t('front.pricing.choose_plan')}
                                     </Link>
                                 </div>
                             );
@@ -309,7 +338,7 @@ export default function Pricing({ plans }: Props) {
                                 <p className="font-semibold text-foreground">
                                     {freePlan.name}
                                     <span className="ml-2 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">
-                                        Gratis
+                                        {t('front.pricing.free')}
                                     </span>
                                 </p>
                                 <p className="mt-0.5 text-sm text-muted-foreground">
@@ -323,7 +352,33 @@ export default function Pricing({ plans }: Props) {
                                 href={register({ query: { type: 'employer' } })}
                                 className="shrink-0 rounded-xl border border-border bg-white px-6 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-gray-100"
                             >
-                                Mulai Gratis
+                                {t('front.pricing.start_free')}
+                            </Link>
+                        </div>
+                    )}
+
+                    {/* Enterprise plan strip */}
+                    {enterprisePlan && (
+                        <div className="mt-4 flex flex-col items-center justify-between gap-4 rounded-2xl border border-primary/30 bg-primary/5 px-8 py-5 sm:flex-row">
+                            <div>
+                                <p className="font-semibold text-foreground">
+                                    {enterprisePlan.name}
+                                    <span className="ml-2 rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-white">
+                                        Costume Plan
+                                    </span>
+                                </p>
+                                <p className="mt-0.5 text-sm text-muted-foreground">
+                                    {enterprisePlan.features
+                                        .filter((f) => f.included)
+                                        .map((f) => f.label)
+                                        .join(' · ')}
+                                </p>
+                            </div>
+                            <Link
+                                href="/contact"
+                                className="shrink-0 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+                            >
+                                Hubungi Tim Sales
                             </Link>
                         </div>
                     )}
@@ -335,11 +390,10 @@ export default function Pricing({ plans }: Props) {
                 <div className="mx-auto max-w-6xl px-4">
                     <div className="mb-10 text-center">
                         <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-                            Perbandingan Lengkap
+                            {t('front.pricing.compare_title')}
                         </h2>
                         <p className="mt-2 text-sm text-muted-foreground">
-                            Pilih paket yang paling sesuai dengan kebutuhan tim
-                            rekrutmen kamu.
+                            {t('front.pricing.compare_subtitle')}
                         </p>
                     </div>
 
@@ -349,9 +403,9 @@ export default function Pricing({ plans }: Props) {
                                 <thead>
                                     <tr>
                                         <th className="w-44 border-b border-border px-6 py-5 text-left text-sm font-semibold text-muted-foreground">
-                                            Fitur
+                                            {t('front.pricing.feature_col')}
                                         </th>
-                                        {plans.map((plan) => (
+                                        {comparisonPlans.map((plan) => (
                                             <th
                                                 key={plan.id}
                                                 className={`border-b border-border px-4 py-5 text-center ${
@@ -369,9 +423,10 @@ export default function Pricing({ plans }: Props) {
                                                     className={`mt-0.5 text-xs font-medium ${plan.slug === POPULAR_SLUG ? 'text-primary/70' : 'text-muted-foreground'}`}
                                                 >
                                                     {plan.price === 0
-                                                        ? 'Gratis'
+                                                        ? t('front.pricing.free')
                                                         : formatPrice(
                                                               plan.price,
+                                                              t,
                                                           )}
                                                 </p>
                                             </th>
@@ -391,7 +446,7 @@ export default function Pricing({ plans }: Props) {
                                             <td className="px-6 py-4 text-sm font-medium text-foreground">
                                                 {row.label}
                                             </td>
-                                            {plans.map((plan) => {
+                                            {comparisonPlans.map((plan) => {
                                                 const val = row.get(plan);
 
                                                 return (
@@ -424,7 +479,7 @@ export default function Pricing({ plans }: Props) {
                                     {/* CTA row */}
                                     <tr className="border-t border-border">
                                         <td className="px-6 py-5" />
-                                        {plans.map((plan) => (
+                                        {comparisonPlans.map((plan) => (
                                             <td
                                                 key={plan.id}
                                                 className={`px-4 py-5 text-center ${plan.slug === POPULAR_SLUG ? 'bg-primary/5' : ''}`}
@@ -443,8 +498,8 @@ export default function Pricing({ plans }: Props) {
                                                     }`}
                                                 >
                                                     {plan.price === 0
-                                                        ? 'Mulai Gratis'
-                                                        : 'Pilih Paket'}
+                                                        ? t('front.pricing.start_free')
+                                                        : t('front.pricing.choose_plan')}
                                                 </Link>
                                             </td>
                                         ))}
@@ -453,18 +508,151 @@ export default function Pricing({ plans }: Props) {
                             </table>
                         </div>
                     </div>
+
+                    {/* Keterangan fitur */}
+                    <div className="mt-8 rounded-2xl border border-border bg-white p-6 shadow-sm sm:p-8">
+                        <h3 className="text-base font-bold text-foreground sm:text-lg">
+                            Keterangan Fitur
+                        </h3>
+                        <dl className="mt-5 grid gap-5 sm:grid-cols-2">
+                            <div>
+                                <dt className="text-sm font-semibold text-primary">
+                                    Job Invitation
+                                </dt>
+                                <dd className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                                    Cari resume online jobseeker/kandidat yang
+                                    potensial dan tawarkan pekerjaan. Untuk
+                                    privasi kandidat, email dan nomor WhatsApp
+                                    di-hide pada halaman pencarian (akan tampil
+                                    setelah kandidat menerima undangan).
+                                </dd>
+                            </div>
+                            <div>
+                                <dt className="text-sm font-semibold text-primary">
+                                    Interview AI
+                                </dt>
+                                <dd className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                                    Bisa melakukan interview dengan AI untuk
+                                    melakukan screening kandidat lebih dulu
+                                    sebelum interview manusia.
+                                </dd>
+                            </div>
+                            <div>
+                                <dt className="text-sm font-semibold text-primary">
+                                    Job Matching
+                                </dt>
+                                <dd className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                                    Melakukan pencocokan otomatis antara
+                                    kebutuhan lowongan dengan lamaran yang
+                                    di-apply oleh kandidat.
+                                </dd>
+                            </div>
+                            <div>
+                                <dt className="text-sm font-semibold text-primary">
+                                    Unlimited Job Applications
+                                </dt>
+                                <dd className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                                    Tidak ada batasan jumlah lamaran yang
+                                    diterima per lowongan, semua kandidat
+                                    yang melamar bisa kamu kelola.
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
                 </div>
             </section>
+
+            {/* Buat Jobseeker */}
+            {candidateMenus.length > 0 && (
+                <section className="bg-white py-16">
+                    <div className="mx-auto max-w-4xl px-4">
+                        <div className="mb-10 text-center">
+                            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold text-primary">
+                                <SparklesIcon className="size-3.5" />
+                                Buat Jobseeker
+                            </div>
+                            <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
+                                Paket untuk Pencari Kerja
+                            </h2>
+                            <p className="mt-2 text-sm text-muted-foreground">
+                                Tingkatkan peluang lolos interview dengan latihan AI.
+                            </p>
+                        </div>
+
+                        <div className="grid gap-5 sm:grid-cols-1 md:grid-cols-2">
+                            {candidateMenus.map((menu) => (
+                                <div
+                                    key={menu.id}
+                                    className="relative flex flex-col rounded-2xl border border-border bg-white p-6 shadow-sm transition-all hover:shadow-md"
+                                >
+                                    <div className="mb-5">
+                                        <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
+                                            {menu.name}
+                                        </p>
+                                        <div className="mt-3">
+                                            <span className="text-4xl font-extrabold text-foreground">
+                                                {formatPrice(menu.price, t)}
+                                            </span>
+                                            {menu.validity_days > 0 && (
+                                                <span className="ml-1 text-sm text-muted-foreground">
+                                                    /{' '}
+                                                    {formatDuration(
+                                                        menu.validity_days,
+                                                        t,
+                                                    )}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {menu.description && (
+                                            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                                                {menu.description}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <ul className="mb-6 flex flex-1 flex-col gap-3">
+                                        {menu.features.map((feature) => (
+                                            <li
+                                                key={feature}
+                                                className="flex items-start gap-2.5 text-sm"
+                                            >
+                                                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                                    <CheckIcon
+                                                        className="size-2.5"
+                                                        strokeWidth={3}
+                                                    />
+                                                </span>
+                                                <span className="text-foreground">
+                                                    {feature}
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    <Link
+                                        href={register({
+                                            query: { type: 'candidate' },
+                                        })}
+                                        className="block w-full rounded-xl bg-primary py-3 text-center text-sm font-bold text-white transition-all hover:bg-primary/90 active:scale-[0.98]"
+                                    >
+                                        Daftar &amp; Topup
+                                    </Link>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {/* FAQ */}
             <section className="bg-white py-16">
                 <div className="mx-auto max-w-2xl px-4">
                     <div className="mb-10 text-center">
                         <h2 className="text-2xl font-bold text-foreground sm:text-3xl">
-                            Pertanyaan yang Sering Diajukan
+                            {t('front.pricing.faq_title')}
                         </h2>
                         <p className="mt-2 text-sm text-muted-foreground">
-                            Belum menemukan jawaban? Hubungi kami di{' '}
+                            {t('front.pricing.faq_contact')}{' '}
                             <a
                                 href="mailto:support@karivia.id"
                                 className="text-primary hover:underline"

@@ -31,7 +31,7 @@ class SaveCandidateProfileRequest extends FormRequest
             'expected_salary_min' => ['nullable', 'integer', 'min:0'],
             'expected_salary_max' => ['nullable', 'integer', 'min:0', 'gte:expected_salary_min'],
             'work_mode_pref' => ['required', Rule::in(['remote', 'hybrid', 'onsite', 'any'])],
-            'availability' => ['nullable', 'string', 'max:255'],
+            'availability' => ['nullable', Rule::in(['none', 'lt_1_month', '1_month', '2_months', 'gt_2_months'])],
             'preferred_industry_id' => ['nullable', 'integer', 'exists:industries,id'],
             'preferred_role' => ['nullable', 'string', 'max:255'],
             'linkedin_url' => ['nullable', 'url', 'max:255'],

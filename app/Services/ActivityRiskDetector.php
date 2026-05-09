@@ -32,6 +32,7 @@ class ActivityRiskDetector
             'output_json' => $output,
             'model_name' => $aiOutput === null ? 'heuristic-fallback' : $this->aiService->modelName(),
             'status' => $aiOutput === null ? 'ai_unavailable' : 'success',
+            ...$this->aiService->tokenUsage(),
         ]);
     }
 
