@@ -1,2 +1,6 @@
+allowBuilds:
+  '@firebase/util': true
+  protobufjs: true
+  unrs-resolver: true
 publicHoistPattern:
   - '@inertiajs/core'

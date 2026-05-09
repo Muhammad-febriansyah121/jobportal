@@ -1,0 +1,39 @@
+server {
+
+    listen 443 ssl;
+    server_name karivia.id www.karivia.id;
+
+    root /var/www/public;
+    index index.php index.html;
+
+    ssl_certificate /etc/letsencrypt/live/karivia.id/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/karivia.id/privkey.pem;
+
+    client_max_body_size 100M;
+
+    fastcgi_buffers 16 16k;
+    fastcgi_buffer_size 32k;
+    proxy_buffer_size 128k;
+    proxy_buffers 4 256k;
+    proxy_busy_buffers_size 256k;
+    large_client_header_buffers 4 16k;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+
+        include fastcgi_params;
+
+        fastcgi_pass app:9000;
+
+        fastcgi_index index.php;
+
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}

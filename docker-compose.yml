@@ -1,0 +1,95 @@
+services:
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: karivia-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - /etc/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - app
+    networks:
+      - karivia
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: karivia-app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    depends_on:
+      - mariadb
+      - redis
+    networks:
+      - karivia
+
+  queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: karivia-queue
+    restart: unless-stopped
+    working_dir: /var/www
+    command: php artisan queue:work --tries=3 --timeout=90
+    volumes:
+      - ./:/var/www
+    depends_on:
+      - mariadb
+      - redis
+    networks:
+      - karivia
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: karivia-scheduler
+    restart: unless-stopped
+    working_dir: /var/www
+    command: sh -c "while true; do php artisan schedule:run; sleep 60; done"
+    volumes:
+      - ./:/var/www
+    depends_on:
+      - mariadb
+      - redis
+    networks:
+      - karivia
+
+  mariadb:
+    image: mariadb:11
+    container_name: karivia-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: karivia
+      MYSQL_USER: karivia
+      MYSQL_PASSWORD: passwordku
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - karivia
+
+  redis:
+    image: redis:7-alpine
+    container_name: karivia-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - karivia
+
+volumes:
+  mariadb_data:
+  redis_data:
+
+networks:
+  karivia:
