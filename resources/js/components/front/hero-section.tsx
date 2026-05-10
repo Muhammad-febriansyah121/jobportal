@@ -176,7 +176,6 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
                 </div>
                 <div className="min-w-0 flex-1">
                     <p className="truncate text-[13px] font-semibold text-gray-900">{testimonial.name}</p>
-                    <p className="truncate text-[11px] text-gray-400">{testimonial.role} · {testimonial.company}</p>
                 </div>
                 <div className="shrink-0 rounded-full bg-emerald-50 p-1" title={t('home.hero.card.verified')}>
                     <svg className="size-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">

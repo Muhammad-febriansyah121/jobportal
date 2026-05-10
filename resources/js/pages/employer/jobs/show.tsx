@@ -547,7 +547,8 @@ export default function EmployerJobShow({
                     </div>
                 </div>
 
-                {/* AI Interview summary */}
+                {/* AI Interview summary — sementara di-hide */}
+                {false && (
                 <Card className="shadow-xs">
                     <CardHeader className="border-b">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -595,8 +596,10 @@ export default function EmployerJobShow({
                         </div>
                     </CardHeader>
                 </Card>
+                )}
 
-                {/* Recent applications */}
+                {/* Recent applications — sementara di-hide */}
+                {false && (
                 <Card className="shadow-xs">
                     <CardHeader className="border-b">
                         <div className="flex items-center gap-3">
@@ -744,6 +747,7 @@ export default function EmployerJobShow({
                         )}
                     </CardContent>
                 </Card>
+                )}
             </div>
 
         </>

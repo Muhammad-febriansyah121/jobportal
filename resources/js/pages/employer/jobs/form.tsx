@@ -112,22 +112,36 @@ export default function EmployerJobForm({
     ] as const;
 
     const readFieldValue = (name: string): string => {
-        const element = document.querySelector(
-            `[name=\"${name}\"]`,
-        ) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null;
+        const elements = document.querySelectorAll(
+            `[name="${name}"]`,
+        );
 
-        if (element === null) {
-            return '';
+        for (const element of Array.from(elements)) {
+            if (
+                element instanceof HTMLInputElement &&
+                element.type === 'checkbox'
+            ) {
+                if (element.checked) {
+                    return '1';
+                }
+
+                continue;
+            }
+
+            if (
+                element instanceof HTMLInputElement ||
+                element instanceof HTMLSelectElement ||
+                element instanceof HTMLTextAreaElement
+            ) {
+                const value = element.value?.trim() ?? '';
+
+                if (value !== '') {
+                    return value;
+                }
+            }
         }
 
-        if (
-            element instanceof HTMLInputElement &&
-            element.type === 'checkbox'
-        ) {
-            return element.checked ? '1' : '';
-        }
-
-        return element.value.trim();
+        return '';
     };
 
     const validateStep = (step: number): boolean => {

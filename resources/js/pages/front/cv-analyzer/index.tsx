@@ -18,6 +18,7 @@ import {
 import { motion } from 'motion/react';
 import { useRef, useState } from 'react';
 import HomeLayout from '@/layouts/front/home-layout';
+import { Marquee } from '@/components/ui/marquee';
 import { useTranslate } from '@/hooks/use-translate';
 import { login, register } from '@/routes';
 import type { Auth } from '@/types';
@@ -424,32 +425,32 @@ export default function CvAnalyzerPage() {
                         <p className="mt-3 text-sm text-gray-500">{t('front.cv_analyzer.section_testimonials_desc')}</p>
                     </motion.div>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                        {testimonials.map((testimonial, i) => (
-                            <motion.div
-                                key={testimonial.name}
-                                {...fadeUp(i * 0.08)}
-                                className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
-                            >
-                                <div className="flex text-amber-400">
-                                    {Array.from({ length: 5 }).map((_, j) => (
-                                        <svg key={j} className="size-4 fill-current" viewBox="0 0 20 20">
-                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                        </svg>
-                                    ))}
-                                </div>
-                                <p className="flex-1 text-sm leading-relaxed text-gray-600">"{testimonial.text}"</p>
-                                <div className="flex items-center gap-3 border-t border-gray-100 pt-3">
-                                    <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                                        {testimonial.name[0]}
+                    <div className="relative">
+                        <Marquee pauseOnHover repeat={2} className="[--duration:60s]">
+                            {testimonials.map((testimonial) => (
+                                <div
+                                    key={testimonial.name}
+                                    className="flex w-[320px] shrink-0 flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
+                                >
+                                    <div className="flex text-amber-400">
+                                        {Array.from({ length: 5 }).map((_, j) => (
+                                            <svg key={j} className="size-4 fill-current" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                            </svg>
+                                        ))}
                                     </div>
-                                    <div>
+                                    <p className="flex-1 text-sm leading-relaxed text-gray-600">"{testimonial.text}"</p>
+                                    <div className="flex items-center gap-3 border-t border-gray-100 pt-3">
+                                        <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                                            {testimonial.name[0]}
+                                        </div>
                                         <p className="text-xs font-semibold text-gray-900">{testimonial.name}</p>
-                                        <p className="text-[11px] text-gray-400">{testimonial.role} · {testimonial.company}</p>
                                     </div>
                                 </div>
-                            </motion.div>
-                        ))}
+                            ))}
+                        </Marquee>
+                        <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-linear-to-r from-gray-50/60 to-transparent" />
+                        <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-linear-to-l from-gray-50/60 to-transparent" />
                     </div>
                 </div>
             </section>
