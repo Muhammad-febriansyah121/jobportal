@@ -15,8 +15,16 @@ class PakasirService
 
     public function __construct()
     {
-        $this->project = Setting::get('pakasir_project', '');
-        $this->apiKey = Setting::get('pakasir_api_key', '');
+        $configProject = trim((string) config('services.pakasir.project'));
+        $configKey = trim((string) config('services.pakasir.api_key'));
+
+        $this->project = $configProject !== ''
+            ? $configProject
+            : (string) Setting::get('pakasir_project', '');
+
+        $this->apiKey = $configKey !== ''
+            ? $configKey
+            : (string) Setting::get('pakasir_api_key', '');
     }
 
     /**

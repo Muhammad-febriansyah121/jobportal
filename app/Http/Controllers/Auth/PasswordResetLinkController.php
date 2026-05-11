@@ -63,7 +63,10 @@ class PasswordResetLinkController extends Controller
             return;
         }
 
-        $defaultSessionId = trim((string) Setting::get('whatsapp_gateway_default_session_id', config('services.whatsapp.default_session_id')));
+        $configSessionId = trim((string) config('services.whatsapp.default_session_id'));
+        $defaultSessionId = $configSessionId !== ''
+            ? $configSessionId
+            : trim((string) Setting::get('whatsapp_gateway_default_session_id', ''));
 
         if ($defaultSessionId === '') {
             return;

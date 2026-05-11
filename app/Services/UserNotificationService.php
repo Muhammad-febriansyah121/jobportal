@@ -63,7 +63,10 @@ class UserNotificationService
      */
     private function sendWhatsAppCopy(User $user, string $type, string $title, ?string $message, array $data): void
     {
-        $defaultSessionId = trim((string) Setting::get('whatsapp_gateway_default_session_id', config('services.whatsapp.default_session_id')));
+        $configSessionId = trim((string) config('services.whatsapp.default_session_id'));
+        $defaultSessionId = $configSessionId !== ''
+            ? $configSessionId
+            : trim((string) Setting::get('whatsapp_gateway_default_session_id', ''));
 
         if ($user->role === 'employer') {
             $settings = is_array($user->notification_settings) ? $user->notification_settings : [];

@@ -70,7 +70,10 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::loginView(function (Request $request) {
             $recaptchaSiteKey = Setting::where('key', 'recaptcha_site_key')->value('value') ?? '';
             $recaptchaSecretKey = Setting::where('key', 'recaptcha_secret_key')->value('value') ?? '';
-            $googleLoginClientId = trim((string) (Setting::where('key', 'google_login_client_id')->value('value') ?? ''));
+            $configClientId = trim((string) config('services.google_login.client_id'));
+            $googleLoginClientId = $configClientId !== ''
+                ? $configClientId
+                : trim((string) (Setting::where('key', 'google_login_client_id')->value('value') ?? ''));
             $recaptchaEnabled = ! empty($recaptchaSiteKey) && ! empty($recaptchaSecretKey);
             $redirect = $request->query('redirect');
 
@@ -107,7 +110,10 @@ class FortifyServiceProvider extends ServiceProvider
             $recaptchaSiteKey = Setting::where('key', 'recaptcha_site_key')->value('value') ?? '';
             $recaptchaSecretKey = Setting::where('key', 'recaptcha_secret_key')->value('value') ?? '';
             $recaptchaEnabled = ! empty($recaptchaSiteKey) && ! empty($recaptchaSecretKey);
-            $googleLoginClientId = trim((string) (Setting::where('key', 'google_login_client_id')->value('value') ?? ''));
+            $configClientId = trim((string) config('services.google_login.client_id'));
+            $googleLoginClientId = $configClientId !== ''
+                ? $configClientId
+                : trim((string) (Setting::where('key', 'google_login_client_id')->value('value') ?? ''));
 
             $page = match ((string) $request->query('type')) {
                 'candidate' => 'auth/register-candidate',

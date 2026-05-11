@@ -14,10 +14,28 @@ use Illuminate\Validation\ValidationException;
 
 class GoogleLoginController extends Controller
 {
+    private function googleClientId(): string
+    {
+        $fromConfig = trim((string) config('services.google_login.client_id'));
+
+        return $fromConfig !== ''
+            ? $fromConfig
+            : trim((string) Setting::get('google_login_client_id', ''));
+    }
+
+    private function googleClientSecret(): string
+    {
+        $fromConfig = trim((string) config('services.google_login.client_secret'));
+
+        return $fromConfig !== ''
+            ? $fromConfig
+            : trim((string) Setting::get('google_login_client_secret', ''));
+    }
+
     public function redirect(Request $request): RedirectResponse
     {
-        $clientId = trim((string) Setting::get('google_login_client_id', ''));
-        $clientSecret = trim((string) Setting::get('google_login_client_secret', ''));
+        $clientId = $this->googleClientId();
+        $clientSecret = $this->googleClientSecret();
 
         if ($clientId === '' || $clientSecret === '') {
             return to_route('login')->withErrors([
@@ -55,8 +73,8 @@ class GoogleLoginController extends Controller
             ]);
         }
 
-        $clientId = trim((string) Setting::get('google_login_client_id', ''));
-        $clientSecret = trim((string) Setting::get('google_login_client_secret', ''));
+        $clientId = $this->googleClientId();
+        $clientSecret = $this->googleClientSecret();
 
         if ($clientId === '' || $clientSecret === '') {
             return to_route('login')->withErrors([
@@ -113,7 +131,7 @@ class GoogleLoginController extends Controller
 
     private function authenticateFromIdToken(Request $request, string $idToken, bool $remember, string $intent = 'login'): RedirectResponse
     {
-        $configuredClientId = trim((string) Setting::get('google_login_client_id', ''));
+        $configuredClientId = $this->googleClientId();
         if ($configuredClientId === '') {
             throw ValidationException::withMessages([
                 'google' => 'Login Google belum dikonfigurasi oleh admin.',

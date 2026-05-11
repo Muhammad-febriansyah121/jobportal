@@ -10,7 +10,6 @@ use App\Models\AiCareerCoachingMessage;
 use App\Models\AiCareerCoachingSession;
 use App\Models\AiCareerRecommendation;
 use App\Models\CandidateProfile;
-use App\Models\Setting;
 use App\Services\AiService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -76,7 +75,7 @@ class CandidateCareerCoachController extends Controller
                 : [],
             'targetRecommendation' => $this->resolveTargetRecommendation($candidate),
             'quickPrompts' => $latestQuickPrompts,
-            'aiEnabled' => filled(Setting::get('ai_api_key')),
+            'aiEnabled' => $this->ai->isConfigured(),
             'cvReview' => $cvReview,
         ]);
     }
@@ -229,7 +228,7 @@ class CandidateCareerCoachController extends Controller
     ): array {
         $fallbackReply = 'Saya catat. Lengkapi profil dan target peran agar rekomendasi karier berikutnya makin presisi.';
         $defaultPrompts = $this->defaultQuickPrompts();
-        $apiKeyMissing = ! filled(Setting::get('ai_api_key'));
+        $apiKeyMissing = ! $this->ai->isConfigured();
 
         $candidate->loadMissing(['skills', 'experiences', 'preferredIndustry']);
         $context = $this->buildContext($candidate);

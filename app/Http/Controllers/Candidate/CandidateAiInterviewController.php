@@ -617,7 +617,11 @@ class CandidateAiInterviewController extends Controller
             ]);
         }
 
-        $apiKey = trim((string) Setting::get('ai_api_key', ''));
+        $apiKey = trim((string) config('services.openai.api_key'));
+
+        if ($apiKey === '') {
+            $apiKey = trim((string) Setting::get('ai_api_key', ''));
+        }
 
         if (($aiInterviewSession->interview_mode ?? 'voice') === 'text') {
             return response()->json([

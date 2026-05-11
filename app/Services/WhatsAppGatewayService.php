@@ -178,34 +178,36 @@ class WhatsAppGatewayService
 
     private function baseUrl(): string
     {
-        $fromSetting = trim((string) Setting::get('whatsapp_gateway_url', ''));
         $fromConfig = trim((string) config('services.whatsapp.base_url'));
-        $value = $fromSetting !== '' ? $fromSetting : $fromConfig;
+        $fromSetting = trim((string) Setting::get('whatsapp_gateway_url', ''));
+        $value = $fromConfig !== '' ? $fromConfig : $fromSetting;
 
         return rtrim($value, '/');
     }
 
     private function apiKey(): string
     {
-        $fromSetting = trim((string) Setting::get('whatsapp_gateway_api_key', ''));
         $fromConfig = trim((string) config('services.whatsapp.api_key'));
+        $fromSetting = trim((string) Setting::get('whatsapp_gateway_api_key', ''));
 
-        return $fromSetting !== '' ? $fromSetting : $fromConfig;
+        return $fromConfig !== '' ? $fromConfig : $fromSetting;
     }
 
     private function connectTimeout(): int
     {
+        $fromConfig = (int) config('services.whatsapp.connect_timeout', 0);
         $fromSetting = (int) Setting::get('whatsapp_gateway_connect_timeout', 0);
-        $fromConfig = (int) config('services.whatsapp.connect_timeout', 3);
+        $value = $fromConfig > 0 ? $fromConfig : $fromSetting;
 
-        return max(1, $fromSetting > 0 ? $fromSetting : $fromConfig);
+        return max(1, $value > 0 ? $value : 3);
     }
 
     private function timeout(): int
     {
+        $fromConfig = (int) config('services.whatsapp.timeout', 0);
         $fromSetting = (int) Setting::get('whatsapp_gateway_timeout', 0);
-        $fromConfig = (int) config('services.whatsapp.timeout', 10);
+        $value = $fromConfig > 0 ? $fromConfig : $fromSetting;
 
-        return max(1, $fromSetting > 0 ? $fromSetting : $fromConfig);
+        return max(1, $value > 0 ? $value : 10);
     }
 }

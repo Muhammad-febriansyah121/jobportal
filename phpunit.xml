@@ -32,5 +32,17 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="OPENAI_API_KEY" value=""/>
+        <env name="OPENAI_MODEL" value=""/>
+        <env name="OPENAI_API_URL" value=""/>
+        <env name="GOOGLE_LOGIN_CLIENT_ID" value=""/>
+        <env name="GOOGLE_LOGIN_CLIENT_SECRET" value=""/>
+        <env name="PAKASIR_PROJECT" value=""/>
+        <env name="PAKASIR_API_KEY" value=""/>
+        <env name="WHATSAPP_GATEWAY_URL" value=""/>
+        <env name="WHATSAPP_GATEWAY_API_KEY" value=""/>
+        <env name="WHATSAPP_GATEWAY_DEFAULT_SESSION_ID" value=""/>
+        <env name="WHATSAPP_GATEWAY_CONNECT_TIMEOUT" value="0"/>
+        <env name="WHATSAPP_GATEWAY_TIMEOUT" value="0"/>
     </php>
 </phpunit>

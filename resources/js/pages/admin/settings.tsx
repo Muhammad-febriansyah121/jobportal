@@ -368,8 +368,9 @@ export default function AdminSettings({ settings }: SettingsProps) {
         { key: 'media', label: t('admin.settings.tabs.media'), icon: ImageIcon },
         { key: 'sosial', label: t('admin.settings.tabs.social'), icon: Share2 },
         { key: 'tentang', label: t('admin.settings.tabs.about'), icon: Building2 },
-        { key: 'ai', label: t('admin.settings.tabs.ai'), icon: Bot },
-        { key: 'pembayaran', label: t('admin.settings.tabs.payment'), icon: CreditCard },
+        // Tab AI & Pembayaran disembunyikan — secret dikelola via .env
+        // { key: 'ai', label: t('admin.settings.tabs.ai'), icon: Bot },
+        // { key: 'pembayaran', label: t('admin.settings.tabs.payment'), icon: CreditCard },
         { key: 'sistem', label: t('admin.settings.tabs.system'), icon: ShieldOff },
     ];
 
@@ -849,29 +850,32 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                 </Field>
                             </Section>
 
-                            <Section icon={KeyRound} title={t('admin.settings.system.google_login')}>
-                                <Field label={t('admin.settings.system.google_client_id')} full>
-                                    <Input
-                                        value={str('google_login_client_id')}
-                                        onChange={set('google_login_client_id')}
-                                        placeholder="304084128651-xxxx.apps.googleusercontent.com"
-                                    />
-                                    <p className="mt-1.5 text-xs text-muted-foreground">
-                                        {t('admin.settings.system.google_client_id_hint')}
-                                    </p>
-                                </Field>
-                                <Field label={t('admin.settings.system.google_client_secret')} full>
-                                    <Input
-                                        value={str('google_login_client_secret')}
-                                        onChange={set('google_login_client_secret')}
-                                        placeholder="GOCSPX-xxxx..."
-                                        type="password"
-                                    />
-                                    <p className="mt-1.5 text-xs text-muted-foreground">
-                                        {t('admin.settings.system.google_client_secret_hint')}
-                                    </p>
-                                </Field>
-                            </Section>
+                            {/* Section Google Login disembunyikan — Client ID/Secret dikelola via .env */}
+                            <div className="hidden">
+                                <Section icon={KeyRound} title={t('admin.settings.system.google_login')}>
+                                    <Field label={t('admin.settings.system.google_client_id')} full>
+                                        <Input
+                                            value={str('google_login_client_id')}
+                                            onChange={set('google_login_client_id')}
+                                            placeholder="304084128651-xxxx.apps.googleusercontent.com"
+                                        />
+                                        <p className="mt-1.5 text-xs text-muted-foreground">
+                                            {t('admin.settings.system.google_client_id_hint')}
+                                        </p>
+                                    </Field>
+                                    <Field label={t('admin.settings.system.google_client_secret')} full>
+                                        <Input
+                                            value={str('google_login_client_secret')}
+                                            onChange={set('google_login_client_secret')}
+                                            placeholder="GOCSPX-xxxx..."
+                                            type="password"
+                                        />
+                                        <p className="mt-1.5 text-xs text-muted-foreground">
+                                            {t('admin.settings.system.google_client_secret_hint')}
+                                        </p>
+                                    </Field>
+                                </Section>
+                            </div>
 
                             <Section icon={BookOpen} title={t('admin.settings.legal.title')}>
                                 <Field label={t('admin.settings.legal.privacy_title')}>

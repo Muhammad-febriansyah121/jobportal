@@ -24,11 +24,32 @@ class AiService
         'total_tokens' => null,
     ];
 
+    public function isConfigured(): bool
+    {
+        return $this->apiKey() !== null;
+    }
+
     public function modelName(): string
     {
-        $model = trim((string) Setting::get('ai_model', self::DEFAULT_MODEL));
+        $fromConfig = trim((string) config('services.openai.model'));
+        $model = $fromConfig !== ''
+            ? $fromConfig
+            : trim((string) Setting::get('ai_model', self::DEFAULT_MODEL));
 
         return $model !== '' ? $model : self::DEFAULT_MODEL;
+    }
+
+    private function apiKey(): ?string
+    {
+        $fromConfig = trim((string) config('services.openai.api_key'));
+
+        if ($fromConfig !== '') {
+            return $fromConfig;
+        }
+
+        $fromSetting = trim((string) Setting::get('ai_api_key', ''));
+
+        return $fromSetting !== '' ? $fromSetting : null;
     }
 
     /**
@@ -47,10 +68,10 @@ class AiService
     {
         $this->resetUsage();
 
-        $apiKey = Setting::get('ai_api_key');
+        $apiKey = $this->apiKey();
 
-        if (! $apiKey) {
-            Log::warning('AiService: ai_api_key not configured in settings.');
+        if ($apiKey === null) {
+            Log::warning('AiService: OpenAI API key not configured (env OPENAI_API_KEY or setting ai_api_key).');
 
             return null;
         }
@@ -103,10 +124,10 @@ class AiService
     {
         $this->resetUsage();
 
-        $apiKey = Setting::get('ai_api_key');
+        $apiKey = $this->apiKey();
 
-        if (! $apiKey) {
-            Log::warning('AiService: ai_api_key not configured in settings.');
+        if ($apiKey === null) {
+            Log::warning('AiService: OpenAI API key not configured (env OPENAI_API_KEY or setting ai_api_key).');
 
             return null;
         }
@@ -216,10 +237,16 @@ class AiService
 
     private function endpointUrl(): string
     {
-        $configuredUrl = trim((string) Setting::get('ai_api_url', ''));
+        $fromConfig = trim((string) config('services.openai.api_url'));
 
-        if ($configuredUrl !== '') {
-            return $configuredUrl;
+        if ($fromConfig !== '') {
+            return $fromConfig;
+        }
+
+        $fromSetting = trim((string) Setting::get('ai_api_url', ''));
+
+        if ($fromSetting !== '') {
+            return $fromSetting;
         }
 
         return self::API_URL;

@@ -10,7 +10,6 @@ use App\Models\AiAuditLog;
 use App\Models\AiCareerRecommendation;
 use App\Models\CandidateProfile;
 use App\Models\LearningPathStep;
-use App\Models\Setting;
 use App\Services\AiService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -58,7 +57,7 @@ class CandidateCareerPathController extends Controller
             ],
             'paths' => $paths->map(fn (AiCareerRecommendation $path) => $this->presentPath($path))->values(),
             'activePath' => $activePath ? $this->presentPath($activePath, withSteps: true) : null,
-            'aiEnabled' => filled(Setting::get('ai_api_key')),
+            'aiEnabled' => $this->ai->isConfigured(),
             'cvReview' => $cvReview,
         ]);
     }
@@ -215,7 +214,7 @@ class CandidateCareerPathController extends Controller
      */
     private function generateFromAi(int $userId, array $promptPayload): ?array
     {
-        if (! filled(Setting::get('ai_api_key'))) {
+        if (! $this->ai->isConfigured()) {
             return null;
         }
 

@@ -13,7 +13,6 @@ use App\Jobs\ParseUploadedCvJob;
 use App\Models\AiAuditLog;
 use App\Models\CandidateCv;
 use App\Models\CandidateProfile;
-use App\Models\Setting;
 use App\Services\AiService;
 use App\Support\SimplePdfDocument;
 use Illuminate\Http\RedirectResponse;
@@ -84,7 +83,7 @@ class CandidateCvController extends Controller
                 $candidate
             ),
             'builderUpdatedAt' => $candidate->cv_builder_updated_at?->format('d M Y H:i'),
-            'aiEnabled' => filled(Setting::get('ai_api_key')),
+            'aiEnabled' => $this->ai->isConfigured(),
             'wallet' => [
                 'ai_token_balance' => (int) $candidate->ai_token_balance,
                 'cv_builder_quota_balance' => (int) $candidate->cv_builder_quota_balance,
@@ -115,7 +114,7 @@ class CandidateCvController extends Controller
 
         $resolveCandidateProfile->refreshCompletion($candidate);
 
-        if (filled(Setting::get('ai_api_key'))) {
+        if ($this->ai->isConfigured()) {
             try {
                 ParseUploadedCvJob::dispatchSync($cv, $candidate);
                 $resolveCandidateProfile->refreshCompletion($candidate->refresh());

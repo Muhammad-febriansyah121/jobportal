@@ -14,7 +14,10 @@ class AdminWhatsAppController extends Controller
 {
     public function edit(WhatsAppGatewayService $whatsApp): Response
     {
-        $sessionId = trim((string) Setting::get('whatsapp_gateway_default_session_id', config('services.whatsapp.default_session_id')));
+        $configSessionId = trim((string) config('services.whatsapp.default_session_id'));
+        $sessionId = $configSessionId !== ''
+            ? $configSessionId
+            : trim((string) Setting::get('whatsapp_gateway_default_session_id', ''));
         $session = $sessionId === '' ? null : $whatsApp->getSession($sessionId);
 
         return Inertia::render('admin/whatsapp', [
@@ -44,7 +47,10 @@ class AdminWhatsAppController extends Controller
             'phone_number' => ['required', 'string', 'max:30'],
         ]);
 
-        $sessionId = trim((string) Setting::get('whatsapp_gateway_default_session_id', config('services.whatsapp.default_session_id')));
+        $configSessionId = trim((string) config('services.whatsapp.default_session_id'));
+        $sessionId = $configSessionId !== ''
+            ? $configSessionId
+            : trim((string) Setting::get('whatsapp_gateway_default_session_id', ''));
 
         if (! $whatsApp->isConfigured()) {
             Inertia::flash('toast', ['type' => 'error', 'message' => 'Gateway WhatsApp belum dikonfigurasi.']);
@@ -121,7 +127,10 @@ class AdminWhatsAppController extends Controller
 
     public function reconnect(WhatsAppGatewayService $whatsApp): RedirectResponse
     {
-        $sessionId = trim((string) Setting::get('whatsapp_gateway_default_session_id', config('services.whatsapp.default_session_id')));
+        $configSessionId = trim((string) config('services.whatsapp.default_session_id'));
+        $sessionId = $configSessionId !== ''
+            ? $configSessionId
+            : trim((string) Setting::get('whatsapp_gateway_default_session_id', ''));
 
         if ($sessionId === '') {
             Inertia::flash('toast', ['type' => 'error', 'message' => 'Session ID belum tersedia.']);
@@ -144,7 +153,10 @@ class AdminWhatsAppController extends Controller
 
     public function disconnect(WhatsAppGatewayService $whatsApp): RedirectResponse
     {
-        $sessionId = trim((string) Setting::get('whatsapp_gateway_default_session_id', config('services.whatsapp.default_session_id')));
+        $configSessionId = trim((string) config('services.whatsapp.default_session_id'));
+        $sessionId = $configSessionId !== ''
+            ? $configSessionId
+            : trim((string) Setting::get('whatsapp_gateway_default_session_id', ''));
 
         if ($sessionId !== '') {
             $whatsApp->deleteSession($sessionId);
