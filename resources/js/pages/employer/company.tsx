@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { useTranslate } from '@/hooks/use-translate';
 import { edit } from '@/routes/employer/company';
 import { index as verificationIndex } from '@/routes/employer/verification';
@@ -67,6 +68,11 @@ export default function EmployerCompany({
     const [selectedProvince, setSelectedProvince] = useState(
         company?.hq_province ?? '',
     );
+    const [descriptionHtml, setDescriptionHtml] = useState(
+        company?.description ?? '',
+    );
+    const [cultureHtml, setCultureHtml] = useState(company?.culture ?? '');
+    const [benefitsHtml, setBenefitsHtml] = useState(company?.benefits ?? '');
 
     return (
         <>
@@ -227,15 +233,16 @@ export default function EmployerCompany({
                                                 name="description"
                                                 error={errors.description}
                                             >
-                                                <textarea
+                                                <input
+                                                    type="hidden"
                                                     name="description"
-                                                    defaultValue={
-                                                        company?.description ??
-                                                        ''
-                                                    }
-                                                    rows={5}
-                                                    className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                                    value={descriptionHtml}
+                                                />
+                                                <RichTextEditor
+                                                    value={descriptionHtml}
+                                                    onChange={setDescriptionHtml}
                                                     placeholder={t('employer.company.description_placeholder')}
+                                                    minHeightClass="min-h-32"
                                                 />
                                             </Field>
 
@@ -246,15 +253,16 @@ export default function EmployerCompany({
                                                     error={errors.culture}
                                                     hint={t('employer.company.culture_hint')}
                                                 >
-                                                    <textarea
+                                                    <input
+                                                        type="hidden"
                                                         name="culture"
-                                                        defaultValue={
-                                                            company?.culture ??
-                                                            ''
-                                                        }
-                                                        rows={5}
-                                                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                                        value={cultureHtml}
+                                                    />
+                                                    <RichTextEditor
+                                                        value={cultureHtml}
+                                                        onChange={setCultureHtml}
                                                         placeholder={t('employer.company.culture_placeholder')}
+                                                        minHeightClass="min-h-32"
                                                     />
                                                 </Field>
 
@@ -264,15 +272,16 @@ export default function EmployerCompany({
                                                     error={errors.benefits}
                                                     hint={t('employer.company.benefits_hint')}
                                                 >
-                                                    <textarea
+                                                    <input
+                                                        type="hidden"
                                                         name="benefits"
-                                                        defaultValue={
-                                                            company?.benefits ??
-                                                            ''
-                                                        }
-                                                        rows={5}
-                                                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                                        value={benefitsHtml}
+                                                    />
+                                                    <RichTextEditor
+                                                        value={benefitsHtml}
+                                                        onChange={setBenefitsHtml}
                                                         placeholder={t('employer.company.benefits_placeholder')}
+                                                        minHeightClass="min-h-32"
                                                     />
                                                 </Field>
                                             </div>
@@ -647,7 +656,7 @@ function ImageUploadField({
                     preview
                         ? 'border-transparent'
                         : 'border-input bg-muted/30 hover:border-ring hover:bg-muted/50'
-                } ${isSquare ? 'aspect-square w-32' : 'aspect-4/1 w-full'}`}
+                } ${isSquare ? 'aspect-square w-full max-w-xs' : 'aspect-4/1 w-full'}`}
                 onClick={() => inputRef.current?.click()}
             >
                 {preview ? (
@@ -659,8 +668,8 @@ function ImageUploadField({
                         />
                         {/* Hover overlay */}
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                            <Upload className="size-5 text-white" />
-                            <span className="text-xs font-medium text-white">
+                            <Upload className="size-6 text-white" />
+                            <span className="text-sm font-medium text-white">
                                 {t('employer.company.change_image')}
                             </span>
                         </div>
@@ -668,24 +677,22 @@ function ImageUploadField({
                         <button
                             type="button"
                             onClick={handleClear}
-                            className="absolute top-1.5 right-1.5 z-10 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/80"
+                            className="absolute top-2 right-2 z-10 rounded-full bg-black/60 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/80"
                             title={t('employer.company.remove_image')}
                         >
-                            <X className="size-3.5" />
+                            <X className="size-4" />
                         </button>
                     </>
                 ) : (
                     <div className="flex size-full flex-col items-center justify-center gap-2 p-4 text-muted-foreground">
-                        <ImageIcon className={isSquare ? 'size-7' : 'size-8'} />
+                        <ImageIcon className="size-8" />
                         <div className="text-center">
                             <p className="text-sm font-medium">
                                 {t('employer.company.upload_click')}
                             </p>
-                            {!isSquare && (
-                                <p className="mt-0.5 text-xs">
-                                    {t('employer.company.upload_drag')}
-                                </p>
-                            )}
+                            <p className="mt-0.5 text-xs">
+                                {t('employer.company.upload_drag')}
+                            </p>
                         </div>
                     </div>
                 )}

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\UserNotification;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
@@ -19,13 +20,13 @@ class NotificationController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function markAllAsRead(Request $request): JsonResponse
+    public function markAllAsRead(Request $request): RedirectResponse
     {
         UserNotification::query()
             ->where('user_id', $request->user()->id)
             ->where('is_read', false)
             ->update(['is_read' => true]);
 
-        return response()->json(['ok' => true]);
+        return back();
     }
 }
