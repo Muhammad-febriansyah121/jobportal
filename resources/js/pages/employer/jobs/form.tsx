@@ -133,7 +133,8 @@ export default function EmployerJobForm({
                 element instanceof HTMLSelectElement ||
                 element instanceof HTMLTextAreaElement
             ) {
-                const value = element.value?.trim() ?? '';
+                const raw = element.value;
+                const value = typeof raw === 'string' ? raw.trim() : '';
 
                 if (value !== '') {
                     return value;
@@ -1313,11 +1314,13 @@ function RichTextEditor({
                     focused && 'ring-[3px] ring-ring/50',
                 )}
             />
-            {!value.trim() && !focused && placeholder && (
-                <p className="pointer-events-none -mt-10 px-3 pb-2 text-sm text-muted-foreground">
-                    {placeholder}
-                </p>
-            )}
+            {!(typeof value === 'string' ? value.trim() : '') &&
+                !focused &&
+                placeholder && (
+                    <p className="pointer-events-none -mt-10 px-3 pb-2 text-sm text-muted-foreground">
+                        {placeholder}
+                    </p>
+                )}
         </div>
     );
 }

@@ -41,6 +41,7 @@ use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LegalPageController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PakasirWebhookController;
 use App\Http\Controllers\PricingController;
 use App\Http\Controllers\RegionController;
@@ -97,6 +98,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('device-tokens', [DeviceTokenController::class, 'store'])->name('device-tokens.store');
     Route::delete('device-tokens', [DeviceTokenController::class, 'destroy'])->name('device-tokens.destroy');
+
+    Route::patch('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::patch('notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 });
 
 Route::prefix('admin')

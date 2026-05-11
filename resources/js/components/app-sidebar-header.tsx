@@ -1,5 +1,5 @@
-import { Link, router, usePage } from '@inertiajs/react';
-import { Bell, LogOut, Search, UserRound } from 'lucide-react';
+import { Link, router, useHttp, usePage } from '@inertiajs/react';
+import { Bell, CheckCheck, LogOut, Search, UserRound } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { Button } from '@/components/ui/button';
 import { useTranslate } from '@/hooks/use-translate';
@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { logout } from '@/routes';
 import { edit as candidateProfileEdit } from '@/routes/candidate/profile';
 import { edit as employerCompanyEdit } from '@/routes/employer/company';
+import { read as markNotificationRead, readAll as markAllNotificationsRead } from '@/routes/notifications';
 import { edit as settingsProfileEdit } from '@/routes/profile';
 import type { Auth, BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
@@ -89,6 +90,45 @@ export function AppSidebarHeader({
         0,
         Number(header_notifications?.unread_count ?? 0),
     );
+    const { submit: submitHttp } = useHttp();
+
+    const extractNotificationId = (id: string): number | null => {
+        if (!id.startsWith('notif-')) {
+            return null;
+        }
+
+        const parsed = Number(id.slice('notif-'.length));
+
+        return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    const handleNotificationClick = (notification: HeaderNotification): void => {
+        cleanup();
+
+        const dbId = extractNotificationId(notification.id);
+
+        if (dbId === null || notification.is_read) {
+            return;
+        }
+
+        void submitHttp(markNotificationRead(dbId)).catch(() => undefined);
+    };
+
+    const handleMarkAllRead = (): void => {
+        if (unreadNotificationCount === 0) {
+            return;
+        }
+
+        router.patch(
+            markAllNotificationsRead(),
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+                only: ['header_notifications'],
+            },
+        );
+    };
 
     return (
         <header className="flex h-18 shrink-0 items-center justify-between gap-4 border-b border-[#e8edf3] bg-white px-4 py-3 transition-[width,height] ease-linear md:px-8 md:py-0">
@@ -133,14 +173,28 @@ export function AppSidebarHeader({
                         className="flex w-full flex-col gap-0 p-0 sm:max-w-sm"
                     >
                         <SheetHeader className="border-b border-[#e8edf3] px-5 py-4">
-                            <SheetTitle className="text-base font-bold text-[#111827]">
-                                {t('app_header.notifications_title')}
-                            </SheetTitle>
-                            <SheetDescription className="text-xs text-[#8490a3]">
-                                {unreadNotificationCount > 0
-                                    ? t('app_header.notifications_unread', { count: unreadNotificationCount })
-                                    : t('app_header.notifications_none')}
-                            </SheetDescription>
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex flex-col gap-1">
+                                    <SheetTitle className="text-base font-bold text-[#111827]">
+                                        {t('app_header.notifications_title')}
+                                    </SheetTitle>
+                                    <SheetDescription className="text-xs text-[#8490a3]">
+                                        {unreadNotificationCount > 0
+                                            ? t('app_header.notifications_unread', { count: unreadNotificationCount })
+                                            : t('app_header.notifications_none')}
+                                    </SheetDescription>
+                                </div>
+                                {unreadNotificationCount > 0 ? (
+                                    <button
+                                        type="button"
+                                        onClick={handleMarkAllRead}
+                                        className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-[#01296A] transition hover:bg-[#eaf2ff]"
+                                    >
+                                        <CheckCheck className="size-3.5" />
+                                        {t('app_header.notifications_mark_all_read')}
+                                    </button>
+                                ) : null}
+                            </div>
                         </SheetHeader>
                         <div className="flex-1 overflow-y-auto p-3">
                             {notifications.length === 0 ? (
@@ -154,7 +208,11 @@ export function AppSidebarHeader({
                                             key={notification.id}
                                             href={notification.href}
                                             prefetch
-                                            onClick={cleanup}
+                                            onClick={() =>
+                                                handleNotificationClick(
+                                                    notification,
+                                                )
+                                            }
                                             className={cn(
                                                 'flex w-full flex-col gap-1 rounded-md px-3 py-2.5 transition',
                                                 notification.is_read

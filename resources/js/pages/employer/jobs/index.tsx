@@ -7,10 +7,22 @@ import {
     Filter,
     Pencil,
     Plus,
+    Send,
     Trash2,
 } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import Heading from '@/components/heading';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,6 +54,7 @@ import {
     destroy,
     edit,
     index,
+    publish,
     show,
 } from '@/routes/employer/jobs';
 
@@ -80,6 +93,11 @@ export default function EmployerJobsIndex({
     jobs,
 }: JobsIndexProps) {
     const { t } = useTranslate();
+    const [publishJob, setPublishJob] = useState<{
+        id: number;
+        title: string;
+    } | null>(null);
+
     const handleClose = (jobId: number): void => {
         router.patch(
             close(jobId),
@@ -110,6 +128,26 @@ export default function EmployerJobsIndex({
                 );
             },
         });
+    };
+
+    const handlePublish = (jobId: number): void => {
+        router.patch(
+            publish(jobId),
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => setPublishJob(null),
+                onError: (errors) => {
+                    setPublishJob(null);
+                    toast.error(
+                        resolveErrorMessage(
+                            errors,
+                            t('employer.jobs_index.publish_job_failed'),
+                        ),
+                    );
+                },
+            },
+        );
     };
 
     return (
@@ -343,6 +381,27 @@ export default function EmployerJobsIndex({
                                                         {job.status ===
                                                         'draft' ? (
                                                             <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+                                                                onClick={() =>
+                                                                    setPublishJob(
+                                                                        {
+                                                                            id: job.id,
+                                                                            title: job.title,
+                                                                        },
+                                                                    )
+                                                                }
+                                                            >
+                                                                <Send className="size-4" />
+                                                                {t(
+                                                                    'employer.jobs_index.publish_action',
+                                                                )}
+                                                            </Button>
+                                                        ) : null}
+                                                        {job.status ===
+                                                        'draft' ? (
+                                                            <Button
                                                                 variant="destructive"
                                                                 size="sm"
                                                                 onClick={() =>
@@ -429,6 +488,37 @@ export default function EmployerJobsIndex({
                     </CardContent>
                 </Card>
             </div>
+
+            <AlertDialog
+                open={publishJob !== null}
+                onOpenChange={(open) => !open && setPublishJob(null)}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            {t('employer.jobs_index.publish_dialog_title')}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {t('employer.jobs_index.publish_dialog_desc', {
+                                title: publishJob?.title ?? '',
+                            })}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>
+                            {t('employer.jobs_index.btn_cancel')}
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-emerald-600 hover:bg-emerald-700"
+                            onClick={() =>
+                                publishJob && handlePublish(publishJob.id)
+                            }
+                        >
+                            {t('employer.jobs_index.btn_confirm_publish')}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }

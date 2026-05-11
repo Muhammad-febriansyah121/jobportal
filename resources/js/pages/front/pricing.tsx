@@ -1,12 +1,21 @@
 import { Head, Link } from '@inertiajs/react';
 import {
+    ArrowRightIcon,
+    BotIcon,
+    BriefcaseIcon,
+    CalendarDaysIcon,
     CheckIcon,
     ChevronDownIcon,
+    InfinityIcon,
     MinusIcon,
+    SendIcon,
     SparklesIcon,
+    StarIcon,
+    TargetIcon,
     XIcon,
+    ZapIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ComponentType } from 'react';
 import { useTranslate } from '@/hooks/use-translate';
 import HomeLayout from '@/layouts/front/home-layout';
 import { register } from '@/routes';
@@ -87,6 +96,39 @@ function formatDuration(days: number, t: TranslateFn): string {
 
 const POPULAR_SLUG = 'medium';
 
+type IconType = ComponentType<{ className?: string; strokeWidth?: number }>;
+
+function getFeatureIcon(label: string): IconType {
+    const lower = label.toLowerCase();
+
+    if (lower.includes('masa aktif') || lower.includes('hari') || lower.includes('bulan ')) {
+        return CalendarDaysIcon;
+    }
+
+    if (lower.includes('job posting') || lower.includes('lowongan')) {
+        return BriefcaseIcon;
+    }
+
+    if (lower.includes('job invitation') || lower.includes('undangan')) {
+        return SendIcon;
+    }
+
+    if (lower.includes('interview ai') || lower.includes('ai interview')) {
+        return BotIcon;
+    }
+
+    if (lower.includes('job matching') || lower.includes('matching')) {
+        return TargetIcon;
+    }
+
+    if (lower.includes('unlimited')) {
+        return InfinityIcon;
+    }
+
+    return CheckIcon;
+}
+
+
 function FaqList() {
     const { t } = useTranslate();
     const [open, setOpen] = useState<number | null>(null);
@@ -150,11 +192,12 @@ function FaqList() {
 export default function Pricing({ plans, candidateMenus }: Props) {
     const { t } = useTranslate();
 
-    const topPlans = plans.filter(
-        (p) => p.slug !== 'gratis-trial' && p.slug !== 'enterprise',
-    );
-    const freePlan = plans.find((p) => p.slug === 'gratis-trial');
+    const paidPlans = plans
+        .filter((p) => p.slug !== 'gratis-trial' && p.slug !== 'enterprise')
+        .sort((a, b) => a.price - b.price);
     const enterprisePlan = plans.find((p) => p.slug === 'enterprise');
+    const topPlans = enterprisePlan ? [...paidPlans, enterprisePlan] : paidPlans;
+    const freePlan = plans.find((p) => p.slug === 'gratis-trial');
     const comparisonPlans = plans.filter((p) => p.slug !== 'enterprise');
 
     const comparisonRows = [
@@ -194,137 +237,228 @@ export default function Pricing({ plans, candidateMenus }: Props) {
             <Head title={t('front.pricing.head_title')} />
 
             {/* Hero */}
-            <section className="relative overflow-hidden bg-white pt-20 pb-4 text-center">
-                <div className="pointer-events-none absolute -top-24 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
-                <div className="relative mx-auto max-w-3xl px-4">
-                    <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold text-primary">
+            <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 via-white to-white pt-32 pb-12 text-center md:pt-36">
+                <div className="pointer-events-none absolute -top-32 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
+                <div className="pointer-events-none absolute top-40 left-10 hidden h-32 w-32 rounded-full bg-blue-400/10 blur-3xl md:block" />
+                <div className="pointer-events-none absolute top-20 right-10 hidden h-40 w-40 rounded-full bg-indigo-400/10 blur-3xl md:block" />
+                <div className="relative mx-auto max-w-4xl px-4">
+                    <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-white/80 px-4 py-1.5 text-xs font-semibold text-primary shadow-sm backdrop-blur">
                         <SparklesIcon className="size-3.5" />
                         {t('front.pricing.hero_badge')}
                     </div>
-                    <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl">
                         {t('front.pricing.hero_title')}
                     </h1>
-                    <p className="mt-4 text-base text-muted-foreground">
+                    <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground">
                         {t('front.pricing.hero_subtitle')}
                     </p>
                 </div>
             </section>
 
             {/* Main pricing cards */}
-            <section className="bg-white py-12">
+            <section className="bg-white pb-12">
                 <div className="mx-auto max-w-6xl px-4">
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                        {topPlans.map((plan) => {
+                    <div className="grid grid-cols-1 gap-6 pt-6 sm:grid-cols-2 lg:grid-cols-6">
+                        {topPlans.map((plan, index) => {
                             const isPopular = plan.slug === POPULAR_SLUG;
+                            const isEnterprise = plan.slug === 'enterprise';
+                            const total = topPlans.length;
+                            const isLastOrphan =
+                                total % 2 === 1 && index === total - 1;
+                            const lgStart =
+                                total === 5 && index === 3
+                                    ? 'lg:col-start-2'
+                                    : total === 5 && index === 4
+                                      ? 'lg:col-start-4'
+                                      : total === 4 && index === 3
+                                        ? 'lg:col-start-3'
+                                        : '';
 
                             return (
                                 <div
                                     key={plan.id}
-                                    className={`relative flex flex-col rounded-2xl border p-6 transition-all ${
+                                    className={`group relative flex min-w-0 flex-col rounded-3xl p-6 transition-all duration-300 sm:p-7 lg:col-span-2 ${lgStart} ${
+                                        isLastOrphan ? 'sm:col-span-2 sm:max-w-md sm:justify-self-center lg:max-w-none lg:justify-self-stretch' : ''
+                                    } ${
                                         isPopular
-                                            ? 'border-primary bg-primary text-white shadow-2xl shadow-primary/25'
-                                            : 'border-border bg-white shadow-sm hover:shadow-md'
+                                            ? 'bg-gradient-to-br from-primary via-primary to-[#01296A] text-white shadow-2xl shadow-primary/30'
+                                            : isEnterprise
+                                              ? 'border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 via-white to-primary/5 hover:-translate-y-1 hover:border-primary/60 hover:shadow-xl'
+                                              : 'border border-slate-200/70 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl'
                                     }`}
                                 >
                                     {isPopular && (
-                                        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                                            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-primary shadow-sm">
-                                                ✦ {t('front.pricing.popular_badge')}
-                                            </span>
-                                        </div>
+                                        <>
+                                            <div className="pointer-events-none absolute -top-10 left-1/2 h-32 w-48 -translate-x-1/2 rounded-full bg-white/10 blur-3xl" />
+                                            <div className="absolute -top-3.5 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap">
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-white px-3.5 py-1 text-[11px] font-bold text-primary shadow-lg shadow-primary/20">
+                                                    <StarIcon
+                                                        className="size-3 fill-amber-400 text-amber-400"
+                                                        strokeWidth={1.5}
+                                                    />
+                                                    {t('front.pricing.popular_badge')}
+                                                </span>
+                                            </div>
+                                        </>
                                     )}
 
-                                    <div className="mb-5">
-                                        <p
-                                            className={`text-xs font-bold tracking-widest uppercase ${isPopular ? 'text-white/70' : 'text-muted-foreground'}`}
-                                        >
-                                            {plan.name}
-                                        </p>
-                                        <div className="mt-3">
-                                            <span
-                                                className={`text-4xl font-extrabold ${isPopular ? 'text-white' : 'text-foreground'}`}
+                                    <div className="relative mb-6">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p
+                                                className={`text-[11px] font-bold tracking-[0.18em] uppercase ${isPopular ? 'text-white/70' : 'text-primary'}`}
                                             >
-                                                {formatPrice(plan.price, t)}
-                                            </span>
-                                            {plan.price > 0 && (
-                                                <span
-                                                    className={`ml-1 text-sm ${isPopular ? 'text-white/60' : 'text-muted-foreground'}`}
-                                                >
-                                                    /
-                                                    {formatDuration(
-                                                        plan.duration_days,
-                                                        t,
-                                                    )}
+                                                {plan.name}
+                                            </p>
+                                            {!isEnterprise &&
+                                                plan.duration_days >= 90 && (
+                                                    <span
+                                                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                                            isPopular
+                                                                ? 'bg-white/15 text-white'
+                                                                : 'bg-emerald-50 text-emerald-700'
+                                                        }`}
+                                                    >
+                                                        <ZapIcon
+                                                            className="size-2.5"
+                                                            strokeWidth={3}
+                                                        />
+                                                        Hemat
+                                                    </span>
+                                                )}
+                                            {isEnterprise && (
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">
+                                                    Custom
                                                 </span>
                                             )}
                                         </div>
+
+                                        <div className="mt-4 flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
+                                            {isEnterprise ? (
+                                                <span className="text-[1.75rem] leading-none font-extrabold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+                                                    Hubungi Kami
+                                                </span>
+                                            ) : (
+                                                <>
+                                                    <span
+                                                        className={`text-[1.75rem] leading-none font-extrabold tracking-tight sm:text-3xl lg:text-4xl ${isPopular ? 'text-white' : 'text-foreground'}`}
+                                                    >
+                                                        {formatPrice(
+                                                            plan.price,
+                                                            t,
+                                                        )}
+                                                    </span>
+                                                    {plan.price > 0 && (
+                                                        <span
+                                                            className={`text-sm font-medium ${isPopular ? 'text-white/60' : 'text-muted-foreground'}`}
+                                                        >
+                                                            /{' '}
+                                                            {formatDuration(
+                                                                plan.duration_days,
+                                                                t,
+                                                            )}
+                                                        </span>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+
                                         <p
-                                            className={`mt-1 text-xs ${isPopular ? 'text-white/60' : 'text-muted-foreground'}`}
+                                            className={`mt-2 text-xs ${isPopular ? 'text-white/60' : 'text-muted-foreground'}`}
                                         >
-                                            {t('front.pricing.duration_active', {
-                                                duration: formatDuration(plan.duration_days, t),
-                                            })}
+                                            {isEnterprise
+                                                ? 'Harga sesuai kebutuhan tim Anda'
+                                                : t(
+                                                      'front.pricing.duration_active',
+                                                      {
+                                                          duration:
+                                                              formatDuration(
+                                                                  plan.duration_days,
+                                                                  t,
+                                                              ),
+                                                      },
+                                                  )}
                                         </p>
                                     </div>
 
-                                    <ul className="mb-6 flex flex-1 flex-col gap-3">
-                                        {plan.features.map((f) => (
-                                            <li
-                                                key={f.label}
-                                                className="flex items-start gap-2.5 text-sm"
-                                            >
-                                                {f.included ? (
-                                                    <>
-                                                        <span
-                                                            className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${isPopular ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'}`}
-                                                        >
-                                                            <CheckIcon
-                                                                className="size-2.5"
-                                                                strokeWidth={3}
-                                                            />
-                                                        </span>
-                                                        <span
-                                                            className={
-                                                                isPopular
-                                                                    ? 'text-white/90'
-                                                                    : 'text-foreground'
-                                                            }
-                                                        >
-                                                            {f.label}
-                                                        </span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <span
-                                                            className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${isPopular ? 'bg-white/10 text-white/60' : 'bg-gray-100 text-gray-400'}`}
-                                                        >
-                                                            <XIcon
-                                                                className="size-2.5"
-                                                                strokeWidth={3}
-                                                            />
-                                                        </span>
-                                                        <span
-                                                            className={`line-through ${isPopular ? 'text-white/50' : 'text-muted-foreground/60'}`}
-                                                        >
-                                                            {f.label}
-                                                        </span>
-                                                    </>
-                                                )}
-                                            </li>
-                                        ))}
-                                    </ul>
+                                    <div
+                                        className={`relative mb-6 border-t pt-5 ${isPopular ? 'border-white/15' : 'border-slate-100'}`}
+                                    >
+                                        <ul className="flex flex-1 flex-col gap-3.5">
+                                            {plan.features.map((f) => {
+                                                const Icon = getFeatureIcon(
+                                                    f.label,
+                                                );
+
+                                                return (
+                                                    <li
+                                                        key={f.label}
+                                                        className="flex items-start gap-3 text-sm"
+                                                    >
+                                                        {f.included ? (
+                                                            <>
+                                                                <span
+                                                                    className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md ${isPopular ? 'bg-white/15 text-white' : 'bg-primary/10 text-primary'}`}
+                                                                >
+                                                                    <Icon
+                                                                        className="size-3"
+                                                                        strokeWidth={
+                                                                            2.5
+                                                                        }
+                                                                    />
+                                                                </span>
+                                                                <span
+                                                                    className={`leading-snug ${isPopular ? 'text-white/95' : 'text-slate-700'}`}
+                                                                >
+                                                                    {f.label}
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <span
+                                                                    className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md ${isPopular ? 'bg-white/10 text-white/40' : 'bg-slate-100 text-slate-400'}`}
+                                                                >
+                                                                    <XIcon
+                                                                        className="size-3"
+                                                                        strokeWidth={
+                                                                            3
+                                                                        }
+                                                                    />
+                                                                </span>
+                                                                <span
+                                                                    className={`leading-snug line-through ${isPopular ? 'text-white/50' : 'text-muted-foreground/70'}`}
+                                                                >
+                                                                    {f.label}
+                                                                </span>
+                                                            </>
+                                                        )}
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    </div>
 
                                     <Link
-                                        href={register({
-                                            query: { type: 'employer' },
-                                        })}
-                                        className={`block w-full rounded-xl py-3 text-center text-sm font-bold transition-all active:scale-[0.98] ${
+                                        href={
+                                            isEnterprise
+                                                ? '/contact'
+                                                : register({
+                                                      query: {
+                                                          type: 'employer',
+                                                      },
+                                                  })
+                                        }
+                                        className={`group/btn relative mt-auto flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-[0.98] ${
                                             isPopular
-                                                ? 'bg-white text-primary hover:bg-white/90'
-                                                : 'bg-primary text-white hover:bg-primary/90'
+                                                ? 'bg-white text-primary shadow-md hover:bg-white/95 hover:shadow-lg'
+                                                : isEnterprise
+                                                  ? 'border border-primary/30 bg-white text-primary hover:border-primary hover:bg-primary hover:text-white'
+                                                  : 'bg-primary text-white hover:bg-[#01296A] hover:shadow-md'
                                         }`}
                                     >
-                                        {t('front.pricing.choose_plan')}
+                                        {isEnterprise
+                                            ? 'Hubungi Tim Sales'
+                                            : t('front.pricing.choose_plan')}
+                                        <ArrowRightIcon className="size-3.5 transition-transform group-hover/btn:translate-x-0.5" />
                                     </Link>
                                 </div>
                             );
@@ -333,53 +467,38 @@ export default function Pricing({ plans, candidateMenus }: Props) {
 
                     {/* Free plan strip */}
                     {freePlan && (
-                        <div className="mt-6 flex flex-col items-center justify-between gap-4 rounded-2xl border border-dashed border-border bg-gray-50 px-8 py-5 sm:flex-row">
-                            <div>
-                                <p className="font-semibold text-foreground">
-                                    {freePlan.name}
-                                    <span className="ml-2 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">
-                                        {t('front.pricing.free')}
-                                    </span>
-                                </p>
-                                <p className="mt-0.5 text-sm text-muted-foreground">
-                                    {freePlan.features
-                                        .filter((f) => f.included)
-                                        .map((f) => f.label)
-                                        .join(' · ')}
-                                </p>
+                        <div className="group relative mt-8 overflow-hidden rounded-2xl border border-dashed border-emerald-300 bg-gradient-to-br from-emerald-50/80 to-white p-6 transition-all hover:border-emerald-400 hover:shadow-md">
+                            <div className="pointer-events-none absolute -top-8 -right-8 size-32 rounded-full bg-emerald-200/30 blur-3xl" />
+                            <div className="relative flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                                <div className="flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                                            <SparklesIcon className="size-4" />
+                                        </span>
+                                        <p className="text-base font-bold text-foreground">
+                                            {freePlan.name}
+                                        </p>
+                                        <span className="rounded-full bg-emerald-600 px-2.5 py-0.5 text-[10px] font-bold text-white">
+                                            {t('front.pricing.free')}
+                                        </span>
+                                    </div>
+                                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                                        {freePlan.features
+                                            .filter((f) => f.included)
+                                            .map((f) => f.label)
+                                            .join(' · ')}
+                                    </p>
+                                </div>
+                                <Link
+                                    href={register({
+                                        query: { type: 'employer' },
+                                    })}
+                                    className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-5 py-2.5 text-sm font-bold text-emerald-700 shadow-sm transition-all hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-md"
+                                >
+                                    {t('front.pricing.start_free')}
+                                    <ArrowRightIcon className="size-3.5" />
+                                </Link>
                             </div>
-                            <Link
-                                href={register({ query: { type: 'employer' } })}
-                                className="shrink-0 rounded-xl border border-border bg-white px-6 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-gray-100"
-                            >
-                                {t('front.pricing.start_free')}
-                            </Link>
-                        </div>
-                    )}
-
-                    {/* Enterprise plan strip */}
-                    {enterprisePlan && (
-                        <div className="mt-4 flex flex-col items-center justify-between gap-4 rounded-2xl border border-primary/30 bg-primary/5 px-8 py-5 sm:flex-row">
-                            <div>
-                                <p className="font-semibold text-foreground">
-                                    {enterprisePlan.name}
-                                    <span className="ml-2 rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-white">
-                                        Costume Plan
-                                    </span>
-                                </p>
-                                <p className="mt-0.5 text-sm text-muted-foreground">
-                                    {enterprisePlan.features
-                                        .filter((f) => f.included)
-                                        .map((f) => f.label)
-                                        .join(' · ')}
-                                </p>
-                            </div>
-                            <Link
-                                href="/contact"
-                                className="shrink-0 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
-                            >
-                                Hubungi Tim Sales
-                            </Link>
                         </div>
                     )}
                 </div>
