@@ -338,27 +338,14 @@ export default function Pricing({ plans, candidateMenus }: Props) {
                                                     Hubungi Kami
                                                 </span>
                                             ) : (
-                                                <>
-                                                    <span
-                                                        className={`text-[1.75rem] leading-none font-extrabold tracking-tight sm:text-3xl lg:text-4xl ${isPopular ? 'text-white' : 'text-foreground'}`}
-                                                    >
-                                                        {formatPrice(
-                                                            plan.price,
-                                                            t,
-                                                        )}
-                                                    </span>
-                                                    {plan.price > 0 && (
-                                                        <span
-                                                            className={`text-sm font-medium ${isPopular ? 'text-white/60' : 'text-muted-foreground'}`}
-                                                        >
-                                                            /{' '}
-                                                            {formatDuration(
-                                                                plan.duration_days,
-                                                                t,
-                                                            )}
-                                                        </span>
+                                                <span
+                                                    className={`text-[1.75rem] leading-none font-extrabold tracking-tight sm:text-3xl lg:text-4xl ${isPopular ? 'text-white' : 'text-foreground'}`}
+                                                >
+                                                    {formatPrice(
+                                                        plan.price,
+                                                        t,
                                                     )}
-                                                </>
+                                                </span>
                                             )}
                                         </div>
 
