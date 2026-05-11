@@ -1315,6 +1315,8 @@
     "employer.team.joined": "Joined",
     "employer.team.role_guide": "Role guide",
     "employer.team.role_guide_description": "New accounts will be linked to this company right away. Share login credentials with newly added team members.",
+    "employer.team.access_info_title": "All members share the same access",
+    "employer.team.access_info_description": "Each added member gets full access to the employer panel, except for team management which is reserved for the Owner. Share login credentials securely.",
     "employer.team.role_desc_admin_hr": "Full access: jobs, candidates, team, billing",
     "employer.team.role_desc_recruiter": "Post jobs and manage candidate recruitment",
     "employer.team.role_desc_viewer": "Can only view data without making changes",

@@ -4,7 +4,6 @@ namespace App\Http\Requests\Employer;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class SaveTeamMemberRequest extends FormRequest
@@ -23,7 +22,6 @@ class SaveTeamMemberRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', Password::min(8)],
-            'role' => ['required', Rule::in(['admin_hr', 'recruiter', 'viewer'])],
         ];
     }
 

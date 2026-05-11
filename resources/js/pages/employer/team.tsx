@@ -1,8 +1,9 @@
 import { Head, useForm } from '@inertiajs/react';
 import {
     Crown,
+    Mail,
+    MoreVertical,
     Plus,
-    ShieldCheck,
     UserCheck,
     UserMinus,
     Users,
@@ -37,13 +38,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import {
     Table,
     TableBody,
     TableCell,
@@ -52,8 +46,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useTranslate } from '@/hooks/use-translate';
-import { destroy, store, toggle, update } from '@/routes/employer/team';
-import { index } from '@/routes/employer/team';
+import { destroy, index, store, toggle } from '@/routes/employer/team';
 
 type Member = {
     id: number;
@@ -77,53 +70,19 @@ type TeamProps = {
     isOwner: boolean;
 };
 
-const ROLE_STYLES: Record<string, string> = {
-    owner: 'bg-secondary-50 text-secondary-700 border-secondary-200',
-    admin_hr: 'bg-violet-50 text-violet-700 border-violet-200',
-    recruiter: 'bg-blue-50 text-blue-700 border-blue-200',
-    viewer: 'bg-slate-50 text-slate-600 border-slate-200',
-};
-
-const ROLE_DESCRIPTIONS: Record<string, string> = {
-    admin_hr: 'employer.team.role_desc_admin_hr',
-    recruiter: 'employer.team.role_desc_recruiter',
-    viewer: 'employer.team.role_desc_viewer',
-};
-
-function RoleBadge({ role }: { role: string }) {
-    const { t } = useTranslate();
-
-    const roleLabels: Record<string, string> = {
-        owner: t('employer.team.role_owner'),
-        admin_hr: t('employer.team.role_admin_hr'),
-        recruiter: t('employer.team.role_recruiter'),
-        viewer: t('employer.team.role_viewer'),
-    };
-
-    return (
-        <span
-            className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium ${ROLE_STYLES[role] ?? 'border-slate-200 bg-slate-50 text-slate-600'}`}
-        >
-            {role === 'owner' && <Crown className="size-3" />}
-            {role === 'admin_hr' && <ShieldCheck className="size-3" />}
-            {roleLabels[role] ?? role}
-        </span>
-    );
-}
-
 function MemberAvatar({ name, url }: { name: string; url: string | null }) {
     if (url) {
         return (
             <img
                 src={url}
                 alt={name}
-                className="size-9 rounded-full object-cover ring-1 ring-border"
+                className="size-10 rounded-full object-cover ring-2 ring-white shadow-sm"
             />
         );
     }
 
     return (
-        <div className="flex size-9 items-center justify-center rounded-full bg-[#111827] text-sm font-semibold text-white uppercase">
+        <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-[#01296A] text-sm font-bold text-white uppercase shadow-sm ring-2 ring-white">
             {name.charAt(0)}
         </div>
     );
@@ -136,7 +95,6 @@ export default function EmployerTeam({ company, members, isOwner }: TeamProps) {
         name: '',
         email: '',
         password: '',
-        role: 'recruiter',
     });
 
     const activeCount = members.filter((m) => m.is_active).length;
@@ -253,41 +211,6 @@ export default function EmployerTeam({ company, members, isOwner }: TeamProps) {
                                             message={addForm.errors.password}
                                         />
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="add-role">
-                                            {t('employer.team.role')}
-                                        </Label>
-                                        <Select
-                                            value={addForm.data.role}
-                                            onValueChange={(v) =>
-                                                addForm.setData('role', v)
-                                            }
-                                        >
-                                            <SelectTrigger id="add-role">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="admin_hr">
-                                                    {t(
-                                                        'employer.team.role_admin_hr_option',
-                                                    )}
-                                                </SelectItem>
-                                                <SelectItem value="recruiter">
-                                                    {t(
-                                                        'employer.team.role_recruiter_option',
-                                                    )}
-                                                </SelectItem>
-                                                <SelectItem value="viewer">
-                                                    {t(
-                                                        'employer.team.role_viewer_option',
-                                                    )}
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <InputError
-                                            message={addForm.errors.role}
-                                        />
-                                    </div>
                                     <DialogFooter>
                                         <Button
                                             type="submit"
@@ -355,11 +278,8 @@ export default function EmployerTeam({ company, members, isOwner }: TeamProps) {
                                 <Table className="min-w-160">
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="w-70">
-                                                {t('employer.team.member')}
-                                            </TableHead>
                                             <TableHead>
-                                                {t('employer.team.role')}
+                                                {t('employer.team.member')}
                                             </TableHead>
                                             <TableHead>
                                                 {t('employer.team.status')}
@@ -390,31 +310,19 @@ export default function EmployerTeam({ company, members, isOwner }: TeamProps) {
                     </CardContent>
                 </Card>
 
-                {/* Role guide */}
-                <Card className="border-dashed bg-muted/30">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-semibold">
-                            {t('employer.team.role_guide')}
-                        </CardTitle>
-                        <CardDescription className="text-xs">
-                            {t('employer.team.role_guide_description')}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid gap-3 sm:grid-cols-3">
-                            {(['admin_hr', 'recruiter', 'viewer'] as const).map(
-                                (role) => (
-                                    <div
-                                        key={role}
-                                        className="flex flex-col gap-2 rounded-lg border bg-white p-3"
-                                    >
-                                        <RoleBadge role={role} />
-                                        <p className="text-xs text-muted-foreground">
-                                            {t(ROLE_DESCRIPTIONS[role])}
-                                        </p>
-                                    </div>
-                                ),
-                            )}
+                {/* Info banner */}
+                <Card className="border-dashed bg-gradient-to-br from-primary/5 to-transparent">
+                    <CardContent className="flex items-start gap-3 py-4">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                            <Users className="size-4" />
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-sm font-semibold">
+                                {t('employer.team.access_info_title')}
+                            </p>
+                            <p className="text-xs leading-relaxed text-muted-foreground">
+                                {t('employer.team.access_info_description')}
+                            </p>
                         </div>
                     </CardContent>
                 </Card>
@@ -433,20 +341,12 @@ function MemberRow({
     currentOwnerId: number;
 }) {
     const { t } = useTranslate();
-    const [roleOpen, setRoleOpen] = useState(false);
-    const roleForm = useForm({ role: member.role });
+    const form = useForm({});
 
     const isThisOwner = member.user_id === currentOwnerId;
 
-    function submitRole(e: React.FormEvent) {
-        e.preventDefault();
-        roleForm.patch(update({ teamMember: member.id }).url, {
-            onSuccess: () => setRoleOpen(false),
-        });
-    }
-
     function handleToggle() {
-        roleForm.patch(toggle({ teamMember: member.id }).url);
+        form.patch(toggle({ teamMember: member.id }).url);
     }
 
     function handleDelete() {
@@ -456,7 +356,7 @@ function MemberRow({
             return;
         }
 
-        roleForm.delete(destroy({ teamMember: member.id }).url);
+        form.delete(destroy({ teamMember: member.id }).url);
     }
 
     return (
@@ -465,20 +365,24 @@ function MemberRow({
             <TableCell>
                 <div className="flex items-center gap-3">
                     <MemberAvatar name={member.name} url={member.avatar_url} />
-                    <div className="min-w-0">
-                        <p className="truncate text-sm leading-tight font-medium">
-                            {member.name}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
+                    <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <p className="truncate text-sm leading-tight font-semibold">
+                                {member.name}
+                            </p>
+                            {isThisOwner && (
+                                <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                                    <Crown className="size-3" />
+                                    {t('employer.team.role_owner')}
+                                </span>
+                            )}
+                        </div>
+                        <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
+                            <Mail className="size-3 shrink-0" />
                             {member.email}
                         </p>
                     </div>
                 </div>
-            </TableCell>
-
-            {/* Role */}
-            <TableCell>
-                <RoleBadge role={isThisOwner ? 'owner' : member.role} />
             </TableCell>
 
             {/* Status */}
@@ -505,7 +409,7 @@ function MemberRow({
 
             {/* Actions */}
             {isOwner && (
-                <TableCell>
+                <TableCell className="text-right">
                     {!isThisOwner && (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -517,85 +421,10 @@ function MemberRow({
                                     <span className="sr-only">
                                         {t('employer.team.actions')}
                                     </span>
-                                    <svg
-                                        className="size-4"
-                                        fill="currentColor"
-                                        viewBox="0 0 16 16"
-                                    >
-                                        <circle cx="8" cy="3" r="1.5" />
-                                        <circle cx="8" cy="8" r="1.5" />
-                                        <circle cx="8" cy="13" r="1.5" />
-                                    </svg>
+                                    <MoreVertical className="size-4" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <Dialog
-                                    open={roleOpen}
-                                    onOpenChange={setRoleOpen}
-                                >
-                                    <DialogTrigger asChild>
-                                        <DropdownMenuItem
-                                            onSelect={(e) => e.preventDefault()}
-                                        >
-                                            {t('employer.team.change_role')}
-                                        </DropdownMenuItem>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>
-                                                {t(
-                                                    'employer.team.change_role_title',
-                                                )}{' '}
-                                                <span className="font-semibold">
-                                                    {member.name}
-                                                </span>
-                                            </DialogTitle>
-                                        </DialogHeader>
-                                        <form
-                                            onSubmit={submitRole}
-                                            className="space-y-4"
-                                        >
-                                            <Select
-                                                value={roleForm.data.role}
-                                                onValueChange={(v) =>
-                                                    roleForm.setData('role', v)
-                                                }
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="admin_hr">
-                                                        {t(
-                                                            'employer.team.role_admin_hr_option',
-                                                        )}
-                                                    </SelectItem>
-                                                    <SelectItem value="recruiter">
-                                                        {t(
-                                                            'employer.team.role_recruiter_option',
-                                                        )}
-                                                    </SelectItem>
-                                                    <SelectItem value="viewer">
-                                                        {t(
-                                                            'employer.team.role_viewer_option',
-                                                        )}
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <DialogFooter>
-                                                <Button
-                                                    type="submit"
-                                                    disabled={
-                                                        roleForm.processing
-                                                    }
-                                                >
-                                                    {t('employer.team.save')}
-                                                </Button>
-                                            </DialogFooter>
-                                        </form>
-                                    </DialogContent>
-                                </Dialog>
-
                                 <DropdownMenuItem onSelect={handleToggle}>
                                     {member.is_active
                                         ? t('employer.team.deactivate_access')

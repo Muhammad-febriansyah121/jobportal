@@ -90,7 +90,7 @@ Route::prefix('employer')
 
         Route::resource('team', EmployerTeamController::class)
             ->parameters(['team' => 'teamMember'])
-            ->only(['index', 'store', 'update', 'destroy']);
+            ->only(['index', 'store', 'destroy']);
         Route::patch('team/{teamMember}/toggle', [EmployerTeamController::class, 'toggle'])->name('team.toggle');
 
         Route::resource('jobs', EmployerJobListingController::class)

@@ -68,31 +68,13 @@ class EmployerTeamController extends Controller
         CompanyMember::create([
             'company_id' => $company->id,
             'user_id' => $user->id,
-            'role' => $request->validated('role'),
+            'role' => 'recruiter',
             'is_active' => true,
             'invited_at' => now(),
             'joined_at' => now(),
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$user->name} berhasil ditambahkan ke tim."]);
-
-        return back();
-    }
-
-    public function update(Request $request, CompanyMember $teamMember, ResolveEmployerCompany $resolveEmployerCompany): RedirectResponse
-    {
-        $company = $resolveEmployerCompany->handle($request->user());
-
-        abort_if($company === null || $teamMember->company_id !== $company->id, 403);
-        abort_unless($company->owner_id === $request->user()->id, 403);
-
-        $request->validate([
-            'role' => ['required', 'in:admin_hr,recruiter,viewer'],
-        ]);
-
-        $teamMember->update(['role' => $request->input('role')]);
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Role anggota berhasil diperbarui.']);
 
         return back();
     }

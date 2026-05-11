@@ -1315,6 +1315,8 @@
     "employer.team.joined": "Bergabung",
     "employer.team.role_guide": "Panduan role",
     "employer.team.role_guide_description": "Akun baru akan langsung terhubung ke perusahaan ini. Bagikan kredensial login kepada anggota tim yang baru ditambahkan.",
+    "employer.team.access_info_title": "Akses tim sama untuk semua anggota",
+    "employer.team.access_info_description": "Setiap anggota yang ditambahkan akan memiliki akses penuh ke panel employer, kecuali pengelolaan anggota tim yang hanya bisa dilakukan oleh Owner. Bagikan kredensial login dengan aman.",
     "employer.team.role_desc_admin_hr": "Akses penuh: lowongan, kandidat, tim, billing",
     "employer.team.role_desc_recruiter": "Posting lowongan dan kelola rekrutmen kandidat",
     "employer.team.role_desc_viewer": "Hanya melihat data tanpa bisa mengubah",
