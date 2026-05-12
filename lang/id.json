@@ -2023,6 +2023,7 @@
     "front.pricing.duration_6_months": "6 Bulan",
     "front.pricing.duration_1_year": "1 Tahun",
     "front.pricing.duration_n_days": ":days Hari",
+    "front.pricing.duration_n_months": ":months Bulan",
     "front.pricing.compare_title": "Perbandingan Fitur",
     "front.pricing.compare_subtitle": "Bandingkan semua fitur antar paket",
     "front.pricing.feature_col": "Fitur",

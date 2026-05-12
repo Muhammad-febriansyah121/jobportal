@@ -75,20 +75,26 @@ function formatDuration(days: number, t: TranslateFn): string {
         return t('front.pricing.duration_14_days');
     }
 
-    if (days === 30) {
-        return t('front.pricing.duration_1_month');
-    }
-
-    if (days === 90) {
-        return t('front.pricing.duration_3_months');
-    }
-
-    if (days === 180) {
-        return t('front.pricing.duration_6_months');
-    }
-
     if (days === 365) {
         return t('front.pricing.duration_1_year');
+    }
+
+    if (days > 0 && days % 30 === 0) {
+        const months = days / 30;
+
+        if (months === 1) {
+            return t('front.pricing.duration_1_month');
+        }
+
+        if (months === 3) {
+            return t('front.pricing.duration_3_months');
+        }
+
+        if (months === 6) {
+            return t('front.pricing.duration_6_months');
+        }
+
+        return t('front.pricing.duration_n_months', { months });
     }
 
     return t('front.pricing.duration_n_days', { days });

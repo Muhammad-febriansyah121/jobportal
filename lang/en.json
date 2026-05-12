@@ -2023,6 +2023,7 @@
     "front.pricing.duration_6_months": "6 Months",
     "front.pricing.duration_1_year": "1 Year",
     "front.pricing.duration_n_days": ":days Days",
+    "front.pricing.duration_n_months": ":months Months",
     "front.pricing.compare_title": "Feature Comparison",
     "front.pricing.compare_subtitle": "Compare all features across plans",
     "front.pricing.feature_col": "Feature",
