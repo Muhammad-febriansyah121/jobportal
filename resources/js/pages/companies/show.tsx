@@ -21,7 +21,10 @@ import HomeLayout from '@/layouts/front/home-layout';
 import { cn } from '@/lib/utils';
 import { login } from '@/routes';
 import { store as storeCandidateCompanyReview } from '@/routes/candidate/companies/reviews';
-import { index as companiesIndex, show as companyShow } from '@/routes/companies';
+import {
+    index as companiesIndex,
+    show as companyShow,
+} from '@/routes/companies';
 import { index as jobsIndex } from '@/routes/jobs';
 
 type CompanyShowProps = {
@@ -95,10 +98,45 @@ function splitListText(value?: string | null): string[] {
         return [];
     }
 
-    return value
+    const trimmed = value.trim();
+
+    if (/<li[\s>]/i.test(trimmed)) {
+        const items: string[] = [];
+        const regex = /<li[^>]*>([\s\S]*?)<\/li>/gi;
+        let match: RegExpExecArray | null;
+
+        while ((match = regex.exec(trimmed)) !== null) {
+            const cleaned = stripHtmlTags(match[1] ?? '').trim();
+            if (cleaned !== '') {
+                items.push(cleaned);
+            }
+        }
+
+        if (items.length > 0) {
+            return items;
+        }
+    }
+
+    return trimmed
         .split('\n')
-        .map((item) => item.trim().replace(/^[-•*]\s*/, ''))
+        .map((line) =>
+            stripHtmlTags(line)
+                .trim()
+                .replace(/^[-•*]\s*/, ''),
+        )
         .filter(Boolean);
+}
+
+function stripHtmlTags(value: string): string {
+    return value
+        .replace(/<\/?[a-zA-Z][^<>]*>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 
 export default function CompanyShow({ company, jobs }: CompanyShowProps) {
@@ -143,7 +181,9 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
             label: t('companies.show.metric_avg_response'),
             value:
                 company.median_response_hours != null
-                    ? t('companies.show.metric_hours', { hours: company.median_response_hours })
+                    ? t('companies.show.metric_hours', {
+                          hours: company.median_response_hours,
+                      })
                     : t('companies.show.metric_no_data'),
             helper: t('companies.show.metric_avg_response_helper'),
             icon: Clock3,
@@ -168,7 +208,9 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
 
     return (
         <HomeLayout>
-            <Head title={t('companies.show.page_title', { name: company.name })} />
+            <Head
+                title={t('companies.show.page_title', { name: company.name })}
+            />
 
             <section className="bg-slate-100/80 px-4 py-8 md:py-10">
                 <div className="mx-auto max-w-6xl space-y-5">
@@ -212,7 +254,9 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                 <div className="flex items-center justify-between">
                                     <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-bold tracking-wider text-white/90 uppercase backdrop-blur-md">
                                         <Flame className="size-3" />
-                                        {t('companies.show.hero_company_profile')}
+                                        {t(
+                                            'companies.show.hero_company_profile',
+                                        )}
                                     </span>
 
                                     {company.is_verified ? (
@@ -229,17 +273,22 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                             {company.name}
                                         </h1>
                                         <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/80 md:text-[15px]">
-                                            {company.description?.slice(
-                                                0,
-                                                130,
-                                            ) ??
-                                                t('companies.show.description_fallback', { company: company.name })}
+                                            {company.description
+                                                ? stripHtmlTags(
+                                                      company.description,
+                                                  ).slice(0, 130)
+                                                : t(
+                                                      'companies.show.description_fallback',
+                                                      { company: company.name },
+                                                  )}
                                         </p>
                                     </div>
 
                                     <div className="flex shrink-0 gap-2">
                                         <GlassInfo
-                                            label={t('companies.show.hero_open_jobs')}
+                                            label={t(
+                                                'companies.show.hero_open_jobs',
+                                            )}
                                             value={`${company.open_jobs_count}`}
                                         />
                                     </div>
@@ -275,7 +324,9 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                                 icon={Building2}
                                                 text={
                                                     company.industry ??
-                                                    t('companies.show.industry_unknown')
+                                                    t(
+                                                        'companies.show.industry_unknown',
+                                                    )
                                                 }
                                             />
                                             <span className="text-slate-300">
@@ -292,8 +343,15 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                                 icon={Users2}
                                                 text={
                                                     company.company_size
-                                                        ? t('companies.show.employees', { size: company.company_size })
-                                                        : t('companies.show.size_unknown')
+                                                        ? t(
+                                                              'companies.show.employees',
+                                                              {
+                                                                  size: company.company_size,
+                                                              },
+                                                          )
+                                                        : t(
+                                                              'companies.show.size_unknown',
+                                                          )
                                                 }
                                             />
                                         </div>
@@ -334,13 +392,17 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                         ) : null}
                         <BadgeChip
                             icon={<BriefcaseBusiness className="size-3.5" />}
-                            label={t('companies.show.open_jobs_label', { count: company.open_jobs_count })}
+                            label={t('companies.show.open_jobs_label', {
+                                count: company.open_jobs_count,
+                            })}
                             variant="orange"
                         />
                         {company.company_size ? (
                             <BadgeChip
                                 icon={<Users2 className="size-3.5" />}
-                                label={t('companies.show.employees_label', { size: company.company_size })}
+                                label={t('companies.show.employees_label', {
+                                    size: company.company_size,
+                                })}
                             />
                         ) : null}
                     </div>
@@ -368,15 +430,11 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                 </div>
                             ))}
                         </div>
-
                     </div>
 
                     <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
                         <div className="space-y-4">
-                            <Tabs
-                                defaultValue="about"
-                                className="space-y-4"
-                            >
+                            <Tabs defaultValue="about" className="space-y-4">
                                 <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
                                     <TabsList
                                         variant="line"
@@ -398,22 +456,54 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                             className="after:hidden data-[state=active]:rounded-xl data-[state=active]:bg-primary-50 data-[state=active]:text-primary-700"
                                             value="jobs"
                                         >
-                                            {t('companies.show.tab_jobs', { count: company.open_jobs_count })}
+                                            {t('companies.show.tab_jobs', {
+                                                count: company.open_jobs_count,
+                                            })}
                                         </TabsTrigger>
                                     </TabsList>
                                 </div>
 
                                 <TabsContent value="about">
-                                    <SectionCard title={t('companies.show.about_section_title')}>
-                                        <p className="text-sm leading-7 text-slate-600">
-                                            {company.description ||
-                                                t('companies.show.description_fallback', { company: company.name })}
-                                        </p>
+                                    <SectionCard
+                                        title={t(
+                                            'companies.show.about_section_title',
+                                        )}
+                                    >
+                                        {company.description ? (
+                                            /<[a-z][^>]*>/i.test(
+                                                company.description,
+                                            ) ? (
+                                                <div
+                                                    className="prose prose-sm max-w-none text-sm leading-7 text-slate-600 [&_h1]:mt-0 [&_h1]:mb-3 [&_h1]:text-base [&_h1]:font-bold [&_h1]:text-slate-800 [&_h2]:mt-0 [&_h2]:mb-3 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-slate-800 [&_h3]:mt-0 [&_h3]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-slate-800 [&_li]:my-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_strong]:font-semibold [&_strong]:text-slate-800 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5"
+                                                    dangerouslySetInnerHTML={{
+                                                        __html: company.description,
+                                                    }}
+                                                />
+                                            ) : (
+                                                <p className="text-sm leading-7 whitespace-pre-line text-slate-600">
+                                                    {company.description}
+                                                </p>
+                                            )
+                                        ) : (
+                                            <p className="text-sm leading-7 text-slate-600">
+                                                {t(
+                                                    'companies.show.description_fallback',
+                                                    { company: company.name },
+                                                )}
+                                            </p>
+                                        )}
                                     </SectionCard>
                                 </TabsContent>
 
-                                <TabsContent value="culture" className="space-y-4">
-                                    <SectionCard title={t('companies.show.culture_section_title')}>
+                                <TabsContent
+                                    value="culture"
+                                    className="space-y-4"
+                                >
+                                    <SectionCard
+                                        title={t(
+                                            'companies.show.culture_section_title',
+                                        )}
+                                    >
                                         {cultureItems.length > 0 ? (
                                             <ul className="space-y-2">
                                                 {cultureItems.map((item) => (
@@ -428,12 +518,18 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                             </ul>
                                         ) : (
                                             <p className="text-sm leading-7 text-slate-500">
-                                                {t('companies.show.culture_empty')}
+                                                {t(
+                                                    'companies.show.culture_empty',
+                                                )}
                                             </p>
                                         )}
                                     </SectionCard>
 
-                                    <SectionCard title={t('companies.show.benefits_section_title')}>
+                                    <SectionCard
+                                        title={t(
+                                            'companies.show.benefits_section_title',
+                                        )}
+                                    >
                                         {benefitItems.length > 0 ? (
                                             <ul className="space-y-2">
                                                 {benefitItems.map((item) => (
@@ -448,23 +544,34 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                             </ul>
                                         ) : (
                                             <p className="text-sm leading-7 text-slate-500">
-                                                {t('companies.show.benefits_empty')}
+                                                {t(
+                                                    'companies.show.benefits_empty',
+                                                )}
                                             </p>
                                         )}
                                     </SectionCard>
                                 </TabsContent>
 
                                 <TabsContent value="jobs">
-                                    <SectionCard title={t('companies.show.jobs_section_title')}>
+                                    <SectionCard
+                                        title={t(
+                                            'companies.show.jobs_section_title',
+                                        )}
+                                    >
                                         <div className="mb-4 flex items-center justify-between">
                                             <p className="text-sm text-slate-500">
-                                                {t('companies.show.jobs_latest_from', { company: company.name })}
+                                                {t(
+                                                    'companies.show.jobs_latest_from',
+                                                    { company: company.name },
+                                                )}
                                             </p>
                                             <Link
                                                 className="inline-flex items-center text-sm font-semibold text-primary-600 hover:text-primary-700"
                                                 href={`${jobsIndex().url}?search=${encodeURIComponent(company.name)}`}
                                             >
-                                                {t('companies.show.jobs_see_all')}
+                                                {t(
+                                                    'companies.show.jobs_see_all',
+                                                )}
                                                 <ArrowRight className="ml-1 size-4" />
                                             </Link>
                                         </div>
@@ -488,20 +595,38 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                                                 <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                                                                     <span className="inline-flex items-center gap-1">
                                                                         <MapPin className="size-3.5" />
-                                                                        {job.location || 'Indonesia'}
+                                                                        {job.location ||
+                                                                            'Indonesia'}
                                                                     </span>
-                                                                    <JobPill text={job.work_mode_label} />
-                                                                    <JobPill text={job.job_type_label} />
-                                                                    <JobPill text={job.experience_level} />
+                                                                    <JobPill
+                                                                        text={
+                                                                            job.work_mode_label
+                                                                        }
+                                                                    />
+                                                                    <JobPill
+                                                                        text={
+                                                                            job.job_type_label
+                                                                        }
+                                                                    />
+                                                                    <JobPill
+                                                                        text={
+                                                                            job.experience_level
+                                                                        }
+                                                                    />
                                                                 </div>
                                                             </div>
 
                                                             <div className="space-y-1 text-left sm:text-right">
                                                                 <p className="text-sm font-bold text-primary-600">
-                                                                    {job.salary_range}
+                                                                    {
+                                                                        job.salary_range
+                                                                    }
                                                                 </p>
                                                                 <p className="text-xs text-slate-500">
-                                                                    {job.published_at || t('companies.show.job_published_fallback')}
+                                                                    {job.published_at ||
+                                                                        t(
+                                                                            'companies.show.job_published_fallback',
+                                                                        )}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -513,159 +638,302 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                 </TabsContent>
 
                                 {false && (
-                                <TabsContent value="reviews">
-                                    <SectionCard title={t('companies.show.reviews_section_title')}>
-                                        <div className="flex items-start justify-between gap-3">
-                                            <p className="text-xs text-slate-500">
-                                                {t('companies.show.reviews_count', {
-                                                    count: company.review_summary.total_reviews,
-                                                })}
-                                            </p>
-                                            <span className="inline-flex items-center gap-1 text-lg font-black text-primary-600">
-                                                <Star className="size-5 fill-primary-400 text-primary-400" />
-                                                {company.review_summary.average_rating ?? '-'}
-                                            </span>
-                                        </div>
+                                    <TabsContent value="reviews">
+                                        <SectionCard
+                                            title={t(
+                                                'companies.show.reviews_section_title',
+                                            )}
+                                        >
+                                            <div className="flex items-start justify-between gap-3">
+                                                <p className="text-xs text-slate-500">
+                                                    {t(
+                                                        'companies.show.reviews_count',
+                                                        {
+                                                            count: company
+                                                                .review_summary
+                                                                .total_reviews,
+                                                        },
+                                                    )}
+                                                </p>
+                                                <span className="inline-flex items-center gap-1 text-lg font-black text-primary-600">
+                                                    <Star className="size-5 fill-primary-400 text-primary-400" />
+                                                    {company.review_summary
+                                                        .average_rating ?? '-'}
+                                                </span>
+                                            </div>
 
-                                        {company.review_summary.recent_reviews.length > 0 ? (
-                                            <div className="mt-3 space-y-3">
-                                                {company.review_summary.recent_reviews.map((review) => (
-                                                    <div
-                                                        className="rounded-xl border border-slate-200 bg-slate-50 p-3"
-                                                        key={review.id}
-                                                    >
-                                                        <p className="text-sm font-semibold text-slate-900">
-                                                            {review.title || t('companies.show.review_fallback_title')}
-                                                        </p>
-                                                        <p className="mt-1 text-xs leading-6 text-slate-600">
-                                                            {review.review ||
-                                                                t('companies.show.review_fallback_body')}
-                                                        </p>
-                                                        {review.employer_reply ? (
-                                                            <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-2">
-                                                                <p className="text-[10px] font-semibold tracking-wider text-blue-700 uppercase">
-                                                                    {t('companies.show.employer_reply_label', { company: company.name })}
+                                            {company.review_summary
+                                                .recent_reviews.length > 0 ? (
+                                                <div className="mt-3 space-y-3">
+                                                    {company.review_summary.recent_reviews.map(
+                                                        (review) => (
+                                                            <div
+                                                                className="rounded-xl border border-slate-200 bg-slate-50 p-3"
+                                                                key={review.id}
+                                                            >
+                                                                <p className="text-sm font-semibold text-slate-900">
+                                                                    {review.title ||
+                                                                        t(
+                                                                            'companies.show.review_fallback_title',
+                                                                        )}
                                                                 </p>
-                                                                <p className="mt-0.5 text-xs leading-5 whitespace-pre-wrap text-blue-900">
-                                                                    {review.employer_reply}
+                                                                <p className="mt-1 text-xs leading-6 text-slate-600">
+                                                                    {review.review ||
+                                                                        t(
+                                                                            'companies.show.review_fallback_body',
+                                                                        )}
                                                                 </p>
-                                                                {review.employer_replied_at ? (
-                                                                    <p className="mt-0.5 text-[10px] text-blue-700">
-                                                                        {review.employer_replied_at}
-                                                                    </p>
+                                                                {review.employer_reply ? (
+                                                                    <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-2">
+                                                                        <p className="text-[10px] font-semibold tracking-wider text-blue-700 uppercase">
+                                                                            {t(
+                                                                                'companies.show.employer_reply_label',
+                                                                                {
+                                                                                    company:
+                                                                                        company.name,
+                                                                                },
+                                                                            )}
+                                                                        </p>
+                                                                        <p className="mt-0.5 text-xs leading-5 whitespace-pre-wrap text-blue-900">
+                                                                            {
+                                                                                review.employer_reply
+                                                                            }
+                                                                        </p>
+                                                                        {review.employer_replied_at ? (
+                                                                            <p className="mt-0.5 text-[10px] text-blue-700">
+                                                                                {
+                                                                                    review.employer_replied_at
+                                                                                }
+                                                                            </p>
+                                                                        ) : null}
+                                                                    </div>
                                                                 ) : null}
                                                             </div>
-                                                        ) : null}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <p className="mt-3 text-sm text-slate-500">
-                                                {t('companies.show.reviews_empty')}
-                                            </p>
-                                        )}
+                                                        ),
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <p className="mt-3 text-sm text-slate-500">
+                                                    {t(
+                                                        'companies.show.reviews_empty',
+                                                    )}
+                                                </p>
+                                            )}
 
-                                        {isCandidate ? (
-                                            <div className="mt-4 border-t border-slate-200 pt-4">
-                                                {company.review_access.can_submit ? (
-                                                    <form className="space-y-2.5" onSubmit={submitReview}>
-                                                        <p className="text-xs font-semibold text-slate-700">
-                                                            {myReview
-                                                                ? t('companies.show.review_form_title_update')
-                                                                : t('companies.show.review_form_title_new')}
-                                                        </p>
-                                                        <div className="grid grid-cols-2 gap-2">
+                                            {isCandidate ? (
+                                                <div className="mt-4 border-t border-slate-200 pt-4">
+                                                    {company.review_access
+                                                        .can_submit ? (
+                                                        <form
+                                                            className="space-y-2.5"
+                                                            onSubmit={
+                                                                submitReview
+                                                            }
+                                                        >
+                                                            <p className="text-xs font-semibold text-slate-700">
+                                                                {myReview
+                                                                    ? t(
+                                                                          'companies.show.review_form_title_update',
+                                                                      )
+                                                                    : t(
+                                                                          'companies.show.review_form_title_new',
+                                                                      )}
+                                                            </p>
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <label className="space-y-1 text-xs text-slate-600">
+                                                                    <span>
+                                                                        {t(
+                                                                            'companies.show.review_form_rating',
+                                                                        )}
+                                                                    </span>
+                                                                    <select
+                                                                        className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm"
+                                                                        onChange={(
+                                                                            event,
+                                                                        ) =>
+                                                                            reviewForm.setData(
+                                                                                'rating',
+                                                                                Number(
+                                                                                    event
+                                                                                        .target
+                                                                                        .value,
+                                                                                ),
+                                                                            )
+                                                                        }
+                                                                        value={
+                                                                            reviewForm
+                                                                                .data
+                                                                                .rating
+                                                                        }
+                                                                    >
+                                                                        {[
+                                                                            5,
+                                                                            4,
+                                                                            3,
+                                                                            2,
+                                                                            1,
+                                                                        ].map(
+                                                                            (
+                                                                                value,
+                                                                            ) => (
+                                                                                <option
+                                                                                    key={
+                                                                                        value
+                                                                                    }
+                                                                                    value={
+                                                                                        value
+                                                                                    }
+                                                                                >
+                                                                                    {t(
+                                                                                        'companies.show.review_form_stars',
+                                                                                        {
+                                                                                            count: value,
+                                                                                        },
+                                                                                    )}
+                                                                                </option>
+                                                                            ),
+                                                                        )}
+                                                                    </select>
+                                                                    {reviewForm
+                                                                        .errors
+                                                                        .rating ? (
+                                                                        <p className="text-[11px] text-red-600">
+                                                                            {
+                                                                                reviewForm
+                                                                                    .errors
+                                                                                    .rating
+                                                                            }
+                                                                        </p>
+                                                                    ) : null}
+                                                                </label>
+
+                                                                <label className="space-y-1 text-xs text-slate-600">
+                                                                    <span>
+                                                                        {t(
+                                                                            'companies.show.review_form_title_field',
+                                                                        )}
+                                                                    </span>
+                                                                    <input
+                                                                        className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm"
+                                                                        maxLength={
+                                                                            120
+                                                                        }
+                                                                        onChange={(
+                                                                            event,
+                                                                        ) =>
+                                                                            reviewForm.setData(
+                                                                                'title',
+                                                                                event
+                                                                                    .target
+                                                                                    .value,
+                                                                            )
+                                                                        }
+                                                                        placeholder={t(
+                                                                            'companies.show.review_form_title_placeholder',
+                                                                        )}
+                                                                        value={
+                                                                            reviewForm
+                                                                                .data
+                                                                                .title
+                                                                        }
+                                                                    />
+                                                                </label>
+                                                            </div>
+
                                                             <label className="space-y-1 text-xs text-slate-600">
-                                                                <span>{t('companies.show.review_form_rating')}</span>
-                                                                <select
-                                                                    className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm"
-                                                                    onChange={(event) =>
+                                                                <span>
+                                                                    {t(
+                                                                        'companies.show.review_form_review_field',
+                                                                    )}
+                                                                </span>
+                                                                <textarea
+                                                                    className="min-h-24 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm"
+                                                                    maxLength={
+                                                                        2000
+                                                                    }
+                                                                    onChange={(
+                                                                        event,
+                                                                    ) =>
                                                                         reviewForm.setData(
-                                                                            'rating',
-                                                                            Number(event.target.value),
+                                                                            'review',
+                                                                            event
+                                                                                .target
+                                                                                .value,
                                                                         )
                                                                     }
-                                                                    value={reviewForm.data.rating}
-                                                                >
-                                                                    {[5, 4, 3, 2, 1].map((value) => (
-                                                                        <option key={value} value={value}>
-                                                                            {t('companies.show.review_form_stars', { count: value })}
-                                                                        </option>
-                                                                    ))}
-                                                                </select>
-                                                                {reviewForm.errors.rating ? (
+                                                                    placeholder={t(
+                                                                        'companies.show.review_form_review_placeholder',
+                                                                    )}
+                                                                    value={
+                                                                        reviewForm
+                                                                            .data
+                                                                            .review
+                                                                    }
+                                                                />
+                                                                {reviewForm
+                                                                    .errors
+                                                                    .review ? (
                                                                     <p className="text-[11px] text-red-600">
-                                                                        {reviewForm.errors.rating}
+                                                                        {
+                                                                            reviewForm
+                                                                                .errors
+                                                                                .review
+                                                                        }
                                                                     </p>
                                                                 ) : null}
                                                             </label>
 
-                                                            <label className="space-y-1 text-xs text-slate-600">
-                                                                <span>{t('companies.show.review_form_title_field')}</span>
-                                                                <input
-                                                                    className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm"
-                                                                    maxLength={120}
-                                                                    onChange={(event) =>
-                                                                        reviewForm.setData('title', event.target.value)
-                                                                    }
-                                                                    placeholder={t('companies.show.review_form_title_placeholder')}
-                                                                    value={reviewForm.data.title}
-                                                                />
-                                                            </label>
-                                                        </div>
-
-                                                        <label className="space-y-1 text-xs text-slate-600">
-                                                            <span>{t('companies.show.review_form_review_field')}</span>
-                                                            <textarea
-                                                                className="min-h-24 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm"
-                                                                maxLength={2000}
-                                                                onChange={(event) =>
-                                                                    reviewForm.setData('review', event.target.value)
+                                                            <button
+                                                                className="inline-flex h-9 items-center justify-center rounded-lg bg-primary-600 px-3 text-xs font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                                                disabled={
+                                                                    reviewForm.processing
                                                                 }
-                                                                placeholder={t('companies.show.review_form_review_placeholder')}
-                                                                value={reviewForm.data.review}
-                                                            />
-                                                            {reviewForm.errors.review ? (
-                                                                <p className="text-[11px] text-red-600">
-                                                                    {reviewForm.errors.review}
-                                                                </p>
-                                                            ) : null}
-                                                        </label>
-
-                                                        <button
-                                                            className="inline-flex h-9 items-center justify-center rounded-lg bg-primary-600 px-3 text-xs font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
-                                                            disabled={reviewForm.processing}
-                                                            type="submit"
-                                                        >
-                                                            {reviewForm.processing
-                                                                ? t('companies.show.review_form_saving')
-                                                                : myReview
-                                                                  ? t('companies.show.review_form_update')
-                                                                  : t('companies.show.review_form_submit')}
-                                                        </button>
-                                                    </form>
-                                                ) : (
-                                                    <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
-                                                        {t('companies.show.review_locked')}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        ) : isGuest ? (
-                                            <div className="mt-4 border-t border-slate-200 pt-4">
-                                                <Link
-                                                    className="inline-flex h-9 items-center justify-center rounded-lg border border-primary-200 bg-primary-50 px-3 text-xs font-semibold text-primary-700 transition hover:bg-primary-100"
-                                                    href={login({
-                                                        query: {
-                                                            redirect: companyShow(company.slug).url,
-                                                        },
-                                                    }).url}
-                                                >
-                                                    {t('companies.show.login_to_review')}
-                                                </Link>
-                                            </div>
-                                        ) : null}
-                                    </SectionCard>
-                                </TabsContent>
+                                                                type="submit"
+                                                            >
+                                                                {reviewForm.processing
+                                                                    ? t(
+                                                                          'companies.show.review_form_saving',
+                                                                      )
+                                                                    : myReview
+                                                                      ? t(
+                                                                            'companies.show.review_form_update',
+                                                                        )
+                                                                      : t(
+                                                                            'companies.show.review_form_submit',
+                                                                        )}
+                                                            </button>
+                                                        </form>
+                                                    ) : (
+                                                        <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
+                                                            {t(
+                                                                'companies.show.review_locked',
+                                                            )}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            ) : isGuest ? (
+                                                <div className="mt-4 border-t border-slate-200 pt-4">
+                                                    <Link
+                                                        className="inline-flex h-9 items-center justify-center rounded-lg border border-primary-200 bg-primary-50 px-3 text-xs font-semibold text-primary-700 transition hover:bg-primary-100"
+                                                        href={
+                                                            login({
+                                                                query: {
+                                                                    redirect:
+                                                                        companyShow(
+                                                                            company.slug,
+                                                                        ).url,
+                                                                },
+                                                            }).url
+                                                        }
+                                                    >
+                                                        {t(
+                                                            'companies.show.login_to_review',
+                                                        )}
+                                                    </Link>
+                                                </div>
+                                            ) : null}
+                                        </SectionCard>
+                                    </TabsContent>
                                 )}
                             </Tabs>
                         </div>
@@ -677,11 +945,16 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                 </h4>
                                 <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
                                     <p className="font-semibold text-slate-900">
-                                        {hq || t('companies.show.hq_location_unknown')}
+                                        {hq ||
+                                            t(
+                                                'companies.show.hq_location_unknown',
+                                            )}
                                     </p>
                                     <p className="mt-1 text-xs leading-6">
                                         {company.offices[0]?.address ||
-                                            t('companies.show.hq_address_unknown')}
+                                            t(
+                                                'companies.show.hq_address_unknown',
+                                            )}
                                     </p>
                                 </div>
                                 <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
@@ -695,7 +968,9 @@ export default function CompanyShow({ company, jobs }: CompanyShowProps) {
                                     {t('companies.show.cta_title')}
                                 </p>
                                 <p className="mt-2 text-xs leading-6 text-primary-900/80">
-                                    {t('companies.show.cta_subtitle', { company: company.name })}
+                                    {t('companies.show.cta_subtitle', {
+                                        company: company.name,
+                                    })}
                                 </p>
                                 <Link
                                     className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-xl bg-primary-600 px-3 text-sm font-semibold text-white transition hover:bg-primary-700"
@@ -800,4 +1075,3 @@ function JobPill({ text }: { text: string }) {
         </span>
     );
 }
-

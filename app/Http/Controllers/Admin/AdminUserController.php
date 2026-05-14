@@ -237,7 +237,6 @@ class AdminUserController extends Controller
                 : $this->action('Aktifkan', route('admin.users.activate', $user), 'Check', 'patch', 'default'),
             $this->action('Reset Email', route('admin.users.reset-email-verification', $user), 'ShieldCheck', 'patch', 'outline', 'Reset verifikasi email?', 'User perlu melakukan verifikasi email ulang.'),
             $this->action('Deteksi Risiko', route('admin.users.detect-risk', $user), 'ShieldAlert', 'post', 'outline', 'Jalankan deteksi risiko?', 'AI akan menilai pola apply, login gagal, dan aksi destruktif user.'),
-            $this->action('Ringkasan AI', route('admin.users.generate-ai-summary', $user), 'Bot', 'post', 'outline', 'Buat ringkasan AI?', 'AI akan membaca aktivitas user terbaru untuk membuat ringkasan admin.'),
         ];
     }
 

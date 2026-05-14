@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminActivityLogController;
 use App\Http\Controllers\Admin\AdminAiAuditLogController;
+use App\Http\Controllers\Admin\AdminAiHealthController;
 use App\Http\Controllers\Admin\AdminAssessmentQuestionController;
 use App\Http\Controllers\Admin\AdminCandidatePricingMenuController;
 use App\Http\Controllers\Admin\AdminCareerResourceController;
@@ -189,6 +190,9 @@ Route::prefix('admin')
             ->parameters(['ai-audit-logs' => 'aiAuditLog'])
             ->only(['index', 'show']);
         Route::patch('ai-audit-logs/{aiAuditLog}/retry', [AdminAiAuditLogController::class, 'retry'])->name('ai-audit-logs.retry');
+
+        Route::get('ai-health', [AdminAiHealthController::class, 'show'])->name('ai-health.show');
+        Route::post('ai-health/run', [AdminAiHealthController::class, 'run'])->name('ai-health.run');
 
         Route::resource('contact-messages', AdminContactMessageController::class)
             ->parameters(['contact-messages' => 'contactMessage'])

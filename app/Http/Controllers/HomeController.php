@@ -187,7 +187,7 @@ class HomeController extends Controller
                 'created_at',
                 'status',
             ])
-            ->with('company:id,name,is_verified')
+            ->with('company:id,name,slug,logo_url,is_verified')
             ->withCount('applications')
             ->when($request->filled('search'), function ($query) use ($request) {
                 $keyword = $request->string('search')->toString();
@@ -249,6 +249,8 @@ class HomeController extends Controller
                 'is_urgent' => (bool) $job->is_urgent,
                 'is_few_applicants' => $job->is_few_applicants,
                 'company' => $job->is_anonymous ? null : $job->company?->name,
+                'company_slug' => $job->is_anonymous ? null : $job->company?->slug,
+                'company_logo' => $job->is_anonymous ? null : $job->company?->logo_url,
                 'company_verified' => $job->is_anonymous ? false : (bool) $job->company?->is_verified,
                 'location' => collect([$job->location_city, $job->location_province])->filter()->implode(', '),
                 'work_mode' => str($job->work_mode)->headline()->toString(),

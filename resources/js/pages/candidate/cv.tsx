@@ -48,7 +48,6 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -352,7 +351,7 @@ export default function CandidateCv({
                         title={t('candidate.cv_builder.page_title')}
                         description={t('candidate.cv_builder.page_description')}
                     />
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         <Button
                             type="button"
                             onClick={saveBuilder}
@@ -363,6 +362,29 @@ export default function CandidateCv({
                             {form.processing
                                 ? t('candidate.form.saving')
                                 : t('candidate.cv_builder.save')}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAiDraftSheetOpen(true)}
+                        >
+                            <Wand2 className="size-4" />
+                            {t('candidate.cv_builder.ai_draft')}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAiReviewSheetOpen(true)}
+                        >
+                            <FileSearch className="size-4" />
+                            {t('candidate.cv_builder.ai_review')}
+                            {form.data.ai_review ? (
+                                <Badge className="ml-1" variant="secondary">
+                                    {form.data.ai_review.score}%
+                                </Badge>
+                            ) : null}
                         </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -382,33 +404,13 @@ export default function CandidateCv({
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56">
                                 <DropdownMenuLabel>
-                                    {t('candidate.cv_builder.actions_ai_label') !==
-                                    'candidate.cv_builder.actions_ai_label'
-                                        ? t('candidate.cv_builder.actions_ai_label')
-                                        : 'Bantuan AI'}
-                                </DropdownMenuLabel>
-                                <DropdownMenuItem
-                                    onClick={() => setAiDraftSheetOpen(true)}
-                                >
-                                    <Wand2 className="size-4" />
-                                    {t('candidate.cv_builder.ai_draft')}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => setAiReviewSheetOpen(true)}
-                                >
-                                    <FileSearch className="size-4" />
-                                    {t('candidate.cv_builder.ai_review')}
-                                    {form.data.ai_review ? (
-                                        <Badge className="ml-auto" variant="secondary">
-                                            {form.data.ai_review.score}%
-                                        </Badge>
-                                    ) : null}
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuLabel>
-                                    {t('candidate.cv_builder.actions_files_label') !==
+                                    {t(
+                                        'candidate.cv_builder.actions_files_label',
+                                    ) !==
                                     'candidate.cv_builder.actions_files_label'
-                                        ? t('candidate.cv_builder.actions_files_label')
+                                        ? t(
+                                              'candidate.cv_builder.actions_files_label',
+                                          )
                                         : 'Berkas CV'}
                                 </DropdownMenuLabel>
                                 <DropdownMenuItem
@@ -417,7 +419,10 @@ export default function CandidateCv({
                                     <Files className="size-4" />
                                     {t('candidate.cvs.list_title')}
                                     {cvs.length ? (
-                                        <Badge className="ml-auto" variant="secondary">
+                                        <Badge
+                                            className="ml-auto"
+                                            variant="secondary"
+                                        >
                                             {cvs.length}
                                         </Badge>
                                     ) : null}
@@ -438,506 +443,464 @@ export default function CandidateCv({
                 </div>
 
                 {/* AI Draft Sheet — controlled */}
-                <Sheet open={aiDraftSheetOpen} onOpenChange={setAiDraftSheetOpen}>
+                <Sheet
+                    open={aiDraftSheetOpen}
+                    onOpenChange={setAiDraftSheetOpen}
+                >
                     <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
-                                <SheetHeader>
-                                    <SheetTitle className="flex items-center gap-2">
-                                        <Sparkles className="size-5 text-[#01296A]" />
-                                        {t('candidate.cv_builder.ai_cv_draft')}
-                                    </SheetTitle>
-                                    <SheetDescription>
+                        <SheetHeader>
+                            <SheetTitle className="flex items-center gap-2">
+                                <Sparkles className="size-5 text-[#01296A]" />
+                                {t('candidate.cv_builder.ai_cv_draft')}
+                            </SheetTitle>
+                            <SheetDescription>
+                                {t('candidate.cv_builder.ai_draft_description')}
+                            </SheetDescription>
+                        </SheetHeader>
+                        <div className="space-y-4 px-4 pb-6">
+                            <div className="rounded-lg border bg-[#eff4ff] p-3 text-sm">
+                                <p className="font-semibold text-[#01296A]">
+                                    {t('candidate.cv_builder.balance_title')}
+                                </p>
+                                {wallet.has_free_draft_available ? (
+                                    <p className="mt-1 text-emerald-700">
+                                        Kamu masih punya 1x generate
                                         {t(
-                                            'candidate.cv_builder.ai_draft_description',
+                                            'candidate.cv_builder.free_generate_left',
                                         )}
-                                    </SheetDescription>
-                                </SheetHeader>
-                                <div className="space-y-4 px-4 pb-6">
-                                    <div className="rounded-lg border bg-[#eff4ff] p-3 text-sm">
-                                        <p className="font-semibold text-[#01296A]">
-                                            {t(
-                                                'candidate.cv_builder.balance_title',
-                                            )}
-                                        </p>
-                                        {wallet.has_free_draft_available ? (
-                                            <p className="mt-1 text-emerald-700">
-                                                Kamu masih punya 1x generate
-                                                {t(
-                                                    'candidate.cv_builder.free_generate_left',
-                                                )}
-                                            </p>
-                                        ) : null}
-                                        <p className="mt-1 text-muted-foreground">
-                                            {t('candidate.pricing.ai_token')}:{' '}
-                                            <span className="font-semibold text-foreground">
-                                                {wallet.ai_token_balance.toLocaleString(
-                                                    'id-ID',
-                                                )}
-                                            </span>{' '}
-                                            •{' '}
-                                            {t(
-                                                'candidate.pricing.cv_builder_quota',
-                                            )}
-                                            :{' '}
-                                            <span className="font-semibold text-foreground">
-                                                {wallet.cv_builder_quota_balance.toLocaleString(
-                                                    'id-ID',
-                                                )}
-                                            </span>
-                                        </p>
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            {wallet.has_free_draft_available
-                                                ? t(
-                                                      'candidate.cv_builder.first_generate_free',
-                                                  )
-                                                : t(
-                                                      'candidate.cv_builder.generate_cost',
-                                                      {
-                                                          token: wallet.draft_token_cost.toLocaleString(
-                                                              'id-ID',
-                                                          ),
-                                                          quota: wallet.draft_quota_cost,
-                                                      },
-                                                  )}
-                                        </p>
-                                        {!canGenerateDraft ? (
-                                            <Link
-                                                href={wallet.pricing_href}
-                                                className="mt-2 inline-flex text-xs font-semibold text-[#01296A] hover:underline"
-                                            >
-                                                {t(
-                                                    'candidate.pricing.topup_now',
-                                                )}
-                                            </Link>
-                                        ) : null}
-                                    </div>
+                                    </p>
+                                ) : null}
+                                <p className="mt-1 text-muted-foreground">
+                                    {t('candidate.pricing.ai_token')}:{' '}
+                                    <span className="font-semibold text-foreground">
+                                        {wallet.ai_token_balance.toLocaleString(
+                                            'id-ID',
+                                        )}
+                                    </span>{' '}
+                                    • {t('candidate.pricing.cv_builder_quota')}:{' '}
+                                    <span className="font-semibold text-foreground">
+                                        {wallet.cv_builder_quota_balance.toLocaleString(
+                                            'id-ID',
+                                        )}
+                                    </span>
+                                </p>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    {wallet.has_free_draft_available
+                                        ? t(
+                                              'candidate.cv_builder.first_generate_free',
+                                          )
+                                        : t(
+                                              'candidate.cv_builder.generate_cost',
+                                              {
+                                                  token: wallet.draft_token_cost.toLocaleString(
+                                                      'id-ID',
+                                                  ),
+                                                  quota: wallet.draft_quota_cost,
+                                              },
+                                          )}
+                                </p>
+                                {!canGenerateDraft ? (
+                                    <Link
+                                        href={wallet.pricing_href}
+                                        className="mt-2 inline-flex text-xs font-semibold text-[#01296A] hover:underline"
+                                    >
+                                        {t('candidate.pricing.topup_now')}
+                                    </Link>
+                                ) : null}
+                            </div>
 
-                                    <Field
-                                        label={t(
-                                            'candidate.cv_builder.target_role',
-                                        )}
-                                        name="target_role"
-                                        error={draftForm.errors.target_role}
-                                    >
-                                        <Input
-                                            value={draftForm.data.target_role}
-                                            onChange={(event) =>
-                                                draftForm.setData(
-                                                    'target_role',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            placeholder={t(
-                                                'candidate.cv_builder.target_role_placeholder',
-                                            )}
-                                        />
-                                    </Field>
-                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                        <Field
-                                            label={t(
-                                                'candidate.cv_builder.years_experience',
-                                            )}
-                                            name="years_experience"
-                                            error={
-                                                draftForm.errors
-                                                    .years_experience
-                                                    ? String(
-                                                          draftForm.errors
-                                                              .years_experience,
-                                                      )
-                                                    : undefined
-                                            }
-                                        >
-                                            <Input
-                                                type="number"
-                                                value={
-                                                    draftForm.data
-                                                        .years_experience
-                                                }
-                                                onChange={(event) =>
-                                                    draftForm.setData(
-                                                        'years_experience',
-                                                        event.target.value ===
-                                                            ''
-                                                            ? ''
-                                                            : Number(
-                                                                  event.target
-                                                                      .value,
-                                                              ),
-                                                    )
-                                                }
-                                            />
-                                        </Field>
-                                        <Field
-                                            label={t(
-                                                'candidate.cv_builder.language',
-                                            )}
-                                            name="language"
-                                        >
-                                            <select
-                                                className="h-10 rounded-md border border-input px-3 text-sm"
-                                                value={draftForm.data.language}
-                                                onChange={(event) =>
-                                                    draftForm.setData(
-                                                        'language',
-                                                        event.target.value as
-                                                            | 'id'
-                                                            | 'en',
-                                                    )
-                                                }
-                                            >
-                                                <option value="id">
-                                                    {t(
-                                                        'candidate.cv_builder.lang_id',
-                                                    )}
-                                                </option>
-                                                <option value="en">
-                                                    {t(
-                                                        'candidate.cv_builder.lang_en',
-                                                    )}
-                                                </option>
-                                            </select>
-                                        </Field>
-                                    </div>
-                                    <Field
-                                        label={t(
-                                            'candidate.cv_builder.focus_skills',
-                                        )}
-                                        name="focus_skills_text"
-                                    >
-                                        <Input
-                                            value={
-                                                draftForm.data.focus_skills_text
-                                            }
-                                            onChange={(event) =>
-                                                draftForm.setData(
-                                                    'focus_skills_text',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            placeholder={t(
-                                                'candidate.cv_builder.focus_skills_placeholder',
-                                            )}
-                                        />
-                                    </Field>
-                                    <Field
-                                        label={t(
-                                            'candidate.cv_builder.main_achievement',
-                                        )}
-                                        name="achievements"
-                                    >
-                                        <textarea
-                                            className="min-h-20 w-full rounded-md border border-input px-3 py-2 text-sm"
-                                            value={draftForm.data.achievements}
-                                            onChange={(event) =>
-                                                draftForm.setData(
-                                                    'achievements',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            placeholder={t(
-                                                'candidate.cv_builder.main_achievement_placeholder',
-                                            )}
-                                        />
-                                    </Field>
-                                    <Button
-                                        type="button"
-                                        className="w-full"
-                                        disabled={
-                                            isDrafting ||
-                                            !aiEnabled ||
-                                            !canGenerateDraft
-                                        }
-                                        onClick={generateDraft}
-                                    >
-                                        <Sparkles className="size-4" />
-                                        {isDrafting
-                                            ? t(
-                                                  'candidate.cv_builder.processing',
+                            <Field
+                                label={t('candidate.cv_builder.target_role')}
+                                name="target_role"
+                                error={draftForm.errors.target_role}
+                            >
+                                <Input
+                                    value={draftForm.data.target_role}
+                                    onChange={(event) =>
+                                        draftForm.setData(
+                                            'target_role',
+                                            event.target.value,
+                                        )
+                                    }
+                                    placeholder={t(
+                                        'candidate.cv_builder.target_role_placeholder',
+                                    )}
+                                />
+                            </Field>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <Field
+                                    label={t(
+                                        'candidate.cv_builder.years_experience',
+                                    )}
+                                    name="years_experience"
+                                    error={
+                                        draftForm.errors.years_experience
+                                            ? String(
+                                                  draftForm.errors
+                                                      .years_experience,
                                               )
-                                            : t(
-                                                  'candidate.cv_builder.generate_ai_draft',
-                                              )}
-                                    </Button>
-                                    {!canGenerateDraft ? (
-                                        <p className="text-xs text-secondary-600">
-                                            {t(
-                                                'candidate.cv_builder.insufficient_balance',
-                                            )}
-                                        </p>
-                                    ) : null}
-                                    {!aiEnabled ? (
-                                        <p className="text-xs text-secondary-600">
-                                            {t(
-                                                'candidate.cv_builder.ai_key_missing',
-                                            )}
-                                        </p>
-                                    ) : null}
-                                </div>
-                            </SheetContent>
-                        </Sheet>
+                                            : undefined
+                                    }
+                                >
+                                    <Input
+                                        type="number"
+                                        value={draftForm.data.years_experience}
+                                        onChange={(event) =>
+                                            draftForm.setData(
+                                                'years_experience',
+                                                event.target.value === ''
+                                                    ? ''
+                                                    : Number(
+                                                          event.target.value,
+                                                      ),
+                                            )
+                                        }
+                                    />
+                                </Field>
+                                <Field
+                                    label={t('candidate.cv_builder.language')}
+                                    name="language"
+                                >
+                                    <select
+                                        className="h-10 rounded-md border border-input px-3 text-sm"
+                                        value={draftForm.data.language}
+                                        onChange={(event) =>
+                                            draftForm.setData(
+                                                'language',
+                                                event.target.value as
+                                                    | 'id'
+                                                    | 'en',
+                                            )
+                                        }
+                                    >
+                                        <option value="id">
+                                            {t('candidate.cv_builder.lang_id')}
+                                        </option>
+                                        <option value="en">
+                                            {t('candidate.cv_builder.lang_en')}
+                                        </option>
+                                    </select>
+                                </Field>
+                            </div>
+                            <Field
+                                label={t('candidate.cv_builder.focus_skills')}
+                                name="focus_skills_text"
+                            >
+                                <Input
+                                    value={draftForm.data.focus_skills_text}
+                                    onChange={(event) =>
+                                        draftForm.setData(
+                                            'focus_skills_text',
+                                            event.target.value,
+                                        )
+                                    }
+                                    placeholder={t(
+                                        'candidate.cv_builder.focus_skills_placeholder',
+                                    )}
+                                />
+                            </Field>
+                            <Field
+                                label={t(
+                                    'candidate.cv_builder.main_achievement',
+                                )}
+                                name="achievements"
+                            >
+                                <textarea
+                                    className="min-h-20 w-full rounded-md border border-input px-3 py-2 text-sm"
+                                    value={draftForm.data.achievements}
+                                    onChange={(event) =>
+                                        draftForm.setData(
+                                            'achievements',
+                                            event.target.value,
+                                        )
+                                    }
+                                    placeholder={t(
+                                        'candidate.cv_builder.main_achievement_placeholder',
+                                    )}
+                                />
+                            </Field>
+                            <Button
+                                type="button"
+                                className="w-full"
+                                disabled={
+                                    isDrafting ||
+                                    !aiEnabled ||
+                                    !canGenerateDraft
+                                }
+                                onClick={generateDraft}
+                            >
+                                <Sparkles className="size-4" />
+                                {isDrafting
+                                    ? t('candidate.cv_builder.processing')
+                                    : t(
+                                          'candidate.cv_builder.generate_ai_draft',
+                                      )}
+                            </Button>
+                            {!canGenerateDraft ? (
+                                <p className="text-xs text-secondary-600">
+                                    {t(
+                                        'candidate.cv_builder.insufficient_balance',
+                                    )}
+                                </p>
+                            ) : null}
+                            {!aiEnabled ? (
+                                <p className="text-xs text-secondary-600">
+                                    {t('candidate.cv_builder.ai_key_missing')}
+                                </p>
+                            ) : null}
+                        </div>
+                    </SheetContent>
+                </Sheet>
 
                 {/* AI Review Sheet — controlled */}
-                <Sheet open={aiReviewSheetOpen} onOpenChange={setAiReviewSheetOpen}>
-                            <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
-                                <SheetHeader>
-                                    <SheetTitle>
-                                        {t('candidate.cv_builder.ai_reviewer')}
-                                    </SheetTitle>
-                                    <SheetDescription>
-                                        {t(
-                                            'candidate.cv_builder.ai_review_description',
-                                        )}
-                                    </SheetDescription>
-                                </SheetHeader>
-                                <div className="space-y-4 px-4 pb-6">
-                                    <Field
-                                        label={t(
-                                            'candidate.cv_builder.upload_for_review',
-                                        )}
-                                        name="cv_file"
-                                        error={reviewForm.errors.cv_file}
-                                    >
-                                        <Input
-                                            type="file"
-                                            accept=".pdf,.doc,.docx,.txt"
-                                            onChange={(event) =>
-                                                reviewForm.setData(
-                                                    'cv_file',
-                                                    event.target.files?.[0] ??
-                                                        null,
-                                                )
-                                            }
-                                        />
-                                    </Field>
-                                    <Button
-                                        type="button"
-                                        onClick={generateReview}
-                                        disabled={
-                                            !aiEnabled || reviewForm.processing
-                                        }
-                                        className="w-full"
-                                    >
-                                        <FileSearch className="size-4" />
-                                        {reviewForm.processing
-                                            ? t(
-                                                  'candidate.cv_builder.analyzing_cv',
-                                              )
-                                            : t(
-                                                  'candidate.cv_builder.review_with_ai',
-                                              )}
-                                    </Button>
+                <Sheet
+                    open={aiReviewSheetOpen}
+                    onOpenChange={setAiReviewSheetOpen}
+                >
+                    <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
+                        <SheetHeader>
+                            <SheetTitle>
+                                {t('candidate.cv_builder.ai_reviewer')}
+                            </SheetTitle>
+                            <SheetDescription>
+                                {t(
+                                    'candidate.cv_builder.ai_review_description',
+                                )}
+                            </SheetDescription>
+                        </SheetHeader>
+                        <div className="space-y-4 px-4 pb-6">
+                            <Field
+                                label={t(
+                                    'candidate.cv_builder.upload_for_review',
+                                )}
+                                name="cv_file"
+                                error={reviewForm.errors.cv_file}
+                            >
+                                <Input
+                                    type="file"
+                                    accept=".pdf,.doc,.docx,.txt"
+                                    onChange={(event) =>
+                                        reviewForm.setData(
+                                            'cv_file',
+                                            event.target.files?.[0] ?? null,
+                                        )
+                                    }
+                                />
+                            </Field>
+                            <Button
+                                type="button"
+                                onClick={generateReview}
+                                disabled={!aiEnabled || reviewForm.processing}
+                                className="w-full"
+                            >
+                                <FileSearch className="size-4" />
+                                {reviewForm.processing
+                                    ? t('candidate.cv_builder.analyzing_cv')
+                                    : t('candidate.cv_builder.review_with_ai')}
+                            </Button>
 
-                                    {form.data.ai_review ? (
-                                        <AiReviewBreakdown
-                                            review={form.data.ai_review}
-                                            scoreLabel={reviewScoreLabel}
-                                        />
-                                    ) : (
-                                        <EmptyState
-                                            title={t(
-                                                'candidate.cv_builder.no_review',
-                                            )}
-                                            description={t(
-                                                'candidate.cv_builder.no_review_description',
-                                            )}
-                                        />
+                            {form.data.ai_review ? (
+                                <AiReviewBreakdown
+                                    review={form.data.ai_review}
+                                    scoreLabel={reviewScoreLabel}
+                                />
+                            ) : (
+                                <EmptyState
+                                    title={t('candidate.cv_builder.no_review')}
+                                    description={t(
+                                        'candidate.cv_builder.no_review_description',
                                     )}
-                                </div>
-                            </SheetContent>
-                        </Sheet>
+                                />
+                            )}
+                        </div>
+                    </SheetContent>
+                </Sheet>
 
                 {/* Saved CVs Sheet — controlled */}
-                <Sheet open={savedCvsSheetOpen} onOpenChange={setSavedCvsSheetOpen}>
-                            <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
-                                <SheetHeader>
-                                    <SheetTitle>
-                                        {t(
-                                            'candidate.cv_builder.saved_cvs_title',
-                                        )}
-                                    </SheetTitle>
-                                    <SheetDescription>
-                                        {t(
-                                            'candidate.cv_builder.saved_cvs_description',
-                                        )}
-                                    </SheetDescription>
-                                </SheetHeader>
-                                <div className="space-y-3 px-4 pb-6">
-                                    {cvs.length ? (
-                                        cvs.map((cv) => (
-                                            <div
-                                                className="rounded-lg border p-4"
-                                                key={cv.id}
-                                            >
-                                                <div className="flex items-start justify-between gap-3">
-                                                    <div className="space-y-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <FileText className="size-4" />
-                                                            <p className="font-medium">
-                                                                {t(
-                                                                    'candidate.cvs.cv_item',
-                                                                    {
-                                                                        id: cv.id,
-                                                                    },
-                                                                )}
-                                                            </p>
-                                                            {cv.is_primary ? (
-                                                                <Badge>
-                                                                    {t(
-                                                                        'candidate.cvs.primary',
-                                                                    )}
-                                                                </Badge>
-                                                            ) : null}
-                                                        </div>
-                                                        <p className="text-sm text-muted-foreground">
+                <Sheet
+                    open={savedCvsSheetOpen}
+                    onOpenChange={setSavedCvsSheetOpen}
+                >
+                    <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
+                        <SheetHeader>
+                            <SheetTitle>
+                                {t('candidate.cv_builder.saved_cvs_title')}
+                            </SheetTitle>
+                            <SheetDescription>
+                                {t(
+                                    'candidate.cv_builder.saved_cvs_description',
+                                )}
+                            </SheetDescription>
+                        </SheetHeader>
+                        <div className="space-y-3 px-4 pb-6">
+                            {cvs.length ? (
+                                cvs.map((cv) => (
+                                    <div
+                                        className="rounded-lg border p-4"
+                                        key={cv.id}
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <FileText className="size-4" />
+                                                    <p className="font-medium">
+                                                        {t(
+                                                            'candidate.cvs.cv_item',
+                                                            {
+                                                                id: cv.id,
+                                                            },
+                                                        )}
+                                                    </p>
+                                                    {cv.is_primary ? (
+                                                        <Badge>
                                                             {t(
-                                                                'candidate.cvs.uploaded_at',
+                                                                'candidate.cvs.primary',
                                                             )}
-                                                            : {cv.uploaded_at}
-                                                        </p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {cv.is_pdf
-                                                                ? t(
-                                                                      'candidate.cvs.pdf_preview_available',
-                                                                  )
-                                                                : t(
-                                                                      'candidate.cvs.pdf_preview_only',
-                                                                  )}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {cv.is_pdf ? (
+                                                        </Badge>
+                                                    ) : null}
+                                                </div>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {t(
+                                                        'candidate.cvs.uploaded_at',
+                                                    )}
+                                                    : {cv.uploaded_at}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {cv.is_pdf
+                                                        ? t(
+                                                              'candidate.cvs.pdf_preview_available',
+                                                          )
+                                                        : t(
+                                                              'candidate.cvs.pdf_preview_only',
+                                                          )}
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {cv.is_pdf ? (
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() =>
+                                                            setPreviewCvUrl(
+                                                                cv.preview_url,
+                                                            )
+                                                        }
+                                                    >
+                                                        <Eye className="size-4" />
+                                                        {t(
+                                                            'candidate.cvs.preview',
+                                                        )}
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        asChild
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                    >
+                                                        <a
+                                                            href={cv.file_url}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                        >
+                                                            <ExternalLink className="size-4" />
+                                                            {t(
+                                                                'candidate.cvs.open_file',
+                                                            )}
+                                                        </a>
+                                                    </Button>
+                                                )}
+                                                {!cv.is_primary ? (
+                                                    <Form
+                                                        {...primaryCv.form(
+                                                            cv.id,
+                                                        )}
+                                                    >
+                                                        {({ processing }) => (
                                                             <Button
-                                                                type="button"
-                                                                size="sm"
-                                                                variant="outline"
-                                                                onClick={() =>
-                                                                    setPreviewCvUrl(
-                                                                        cv.preview_url,
-                                                                    )
+                                                                disabled={
+                                                                    processing
                                                                 }
-                                                            >
-                                                                <Eye className="size-4" />
-                                                                {t(
-                                                                    'candidate.cvs.preview',
-                                                                )}
-                                                            </Button>
-                                                        ) : (
-                                                            <Button
-                                                                asChild
-                                                                type="button"
                                                                 size="sm"
                                                                 variant="outline"
                                                             >
-                                                                <a
-                                                                    href={
-                                                                        cv.file_url
-                                                                    }
-                                                                    target="_blank"
-                                                                    rel="noreferrer"
-                                                                >
-                                                                    <ExternalLink className="size-4" />
-                                                                    {t(
-                                                                        'candidate.cvs.open_file',
-                                                                    )}
-                                                                </a>
+                                                                <Star className="size-4" />
+                                                                {t(
+                                                                    'candidate.cvs.make_primary_button',
+                                                                )}
                                                             </Button>
                                                         )}
-                                                        {!cv.is_primary ? (
-                                                            <Form
-                                                                {...primaryCv.form(
-                                                                    cv.id,
-                                                                )}
-                                                            >
-                                                                {({
-                                                                    processing,
-                                                                }) => (
-                                                                    <Button
-                                                                        disabled={
-                                                                            processing
-                                                                        }
-                                                                        size="sm"
-                                                                        variant="outline"
-                                                                    >
-                                                                        <Star className="size-4" />
-                                                                        {t(
-                                                                            'candidate.cvs.make_primary_button',
-                                                                        )}
-                                                                    </Button>
-                                                                )}
-                                                            </Form>
-                                                        ) : null}
-                                                        <Button
-                                                            asChild
-                                                            size="sm"
-                                                            variant="destructive"
-                                                        >
-                                                            <Link
-                                                                href={destroyCv(
-                                                                    cv.id,
-                                                                )}
-                                                                method="delete"
-                                                                as="button"
-                                                            >
-                                                                <Trash2 className="size-4" />
-                                                                {t(
-                                                                    'candidate.cvs.delete',
-                                                                )}
-                                                            </Link>
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <EmptyState
-                                            title={t(
-                                                'candidate.cvs.empty_title',
-                                            )}
-                                            description={t(
-                                                'candidate.cvs.empty_description',
-                                            )}
-                                        />
-                                    )}
-
-                                    {previewCvUrl ? (
-                                        <div className="space-y-2 rounded-lg border p-3">
-                                            <div className="flex items-center justify-between gap-2">
-                                                <p className="text-sm font-medium">
-                                                    {t(
-                                                        'candidate.cvs.preview_pdf_title',
-                                                    )}
-                                                </p>
+                                                    </Form>
+                                                ) : null}
                                                 <Button
                                                     asChild
                                                     size="sm"
-                                                    variant="outline"
+                                                    variant="destructive"
                                                 >
-                                                    <a
-                                                        href={previewCvUrl}
-                                                        target="_blank"
-                                                        rel="noreferrer"
+                                                    <Link
+                                                        href={destroyCv(cv.id)}
+                                                        method="delete"
+                                                        as="button"
                                                     >
-                                                        <ExternalLink className="size-4" />
+                                                        <Trash2 className="size-4" />
                                                         {t(
-                                                            'candidate.cvs.open_new_tab',
+                                                            'candidate.cvs.delete',
                                                         )}
-                                                    </a>
+                                                    </Link>
                                                 </Button>
                                             </div>
-                                            <div className="overflow-hidden rounded-md border bg-muted/20">
-                                                <iframe
-                                                    src={previewCvUrl}
-                                                    title={t(
-                                                        'candidate.cvs.preview_iframe_title',
-                                                    )}
-                                                    className="h-[60vh] w-full"
-                                                />
-                                            </div>
                                         </div>
-                                    ) : null}
+                                    </div>
+                                ))
+                            ) : (
+                                <EmptyState
+                                    title={t('candidate.cvs.empty_title')}
+                                    description={t(
+                                        'candidate.cvs.empty_description',
+                                    )}
+                                />
+                            )}
+
+                            {previewCvUrl ? (
+                                <div className="space-y-2 rounded-lg border p-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <p className="text-sm font-medium">
+                                            {t(
+                                                'candidate.cvs.preview_pdf_title',
+                                            )}
+                                        </p>
+                                        <Button
+                                            asChild
+                                            size="sm"
+                                            variant="outline"
+                                        >
+                                            <a
+                                                href={previewCvUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                            >
+                                                <ExternalLink className="size-4" />
+                                                {t(
+                                                    'candidate.cvs.open_new_tab',
+                                                )}
+                                            </a>
+                                        </Button>
+                                    </div>
+                                    <div className="overflow-hidden rounded-md border bg-muted/20">
+                                        <iframe
+                                            src={previewCvUrl}
+                                            title={t(
+                                                'candidate.cvs.preview_iframe_title',
+                                            )}
+                                            className="h-[60vh] w-full"
+                                        />
+                                    </div>
                                 </div>
-                            </SheetContent>
-                        </Sheet>
+                            ) : null}
+                        </div>
+                    </SheetContent>
+                </Sheet>
 
                 <Card>
                     <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -994,7 +957,9 @@ export default function CandidateCv({
                                     {t('candidate.cv_builder.editor_title')}
                                 </CardTitle>
                                 <CardDescription>
-                                    {t('candidate.cv_builder.editor_description')}
+                                    {t(
+                                        'candidate.cv_builder.editor_description',
+                                    )}
                                 </CardDescription>
                             </div>
                             <Button
@@ -1432,7 +1397,9 @@ export default function CandidateCv({
 
                                 <AccordionSection
                                     sectionKey="pengalaman"
-                                    title={t('candidate.cv_builder.tab_experience')}
+                                    title={t(
+                                        'candidate.cv_builder.tab_experience',
+                                    )}
                                     open={openSections.has('pengalaman')}
                                     onToggle={() => toggleSection('pengalaman')}
                                     badge={
@@ -1684,7 +1651,9 @@ export default function CandidateCv({
 
                                 <AccordionSection
                                     sectionKey="pendidikan"
-                                    title={t('candidate.cv_builder.tab_education')}
+                                    title={t(
+                                        'candidate.cv_builder.tab_education',
+                                    )}
                                     open={openSections.has('pendidikan')}
                                     onToggle={() => toggleSection('pendidikan')}
                                     badge={
@@ -1900,7 +1869,9 @@ export default function CandidateCv({
 
                                 <AccordionSection
                                     sectionKey="proyek"
-                                    title={t('candidate.cv_builder.tab_projects')}
+                                    title={t(
+                                        'candidate.cv_builder.tab_projects',
+                                    )}
                                     open={openSections.has('proyek')}
                                     onToggle={() => toggleSection('proyek')}
                                     badge={
@@ -2073,9 +2044,13 @@ export default function CandidateCv({
 
                                 <AccordionSection
                                     sectionKey="sertifikasi"
-                                    title={t('candidate.cv_builder.tab_certifications')}
+                                    title={t(
+                                        'candidate.cv_builder.tab_certifications',
+                                    )}
                                     open={openSections.has('sertifikasi')}
-                                    onToggle={() => toggleSection('sertifikasi')}
+                                    onToggle={() =>
+                                        toggleSection('sertifikasi')
+                                    }
                                     badge={
                                         filledCertifications > 0 ? (
                                             <Badge
@@ -2266,7 +2241,11 @@ export default function CandidateCv({
                                         </CardDescription>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                        <Button asChild size="sm" variant="outline">
+                                        <Button
+                                            asChild
+                                            size="sm"
+                                            variant="outline"
+                                        >
                                             <a
                                                 href={builderPdf().url}
                                                 target="_blank"
@@ -2281,7 +2260,9 @@ export default function CandidateCv({
                                             size="sm"
                                             variant="ghost"
                                             className="hidden xl:inline-flex"
-                                            onClick={() => setPreviewVisible(false)}
+                                            onClick={() =>
+                                                setPreviewVisible(false)
+                                            }
                                             aria-label="Tutup preview"
                                         >
                                             <X className="size-4" />

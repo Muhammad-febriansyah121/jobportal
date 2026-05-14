@@ -82,6 +82,7 @@ import {
 } from '@/routes/admin';
 import { index as adminActivityLogs } from '@/routes/admin/activity-logs';
 import { index as adminAiAuditLogs } from '@/routes/admin/ai-audit-logs';
+import { show as adminAiHealth } from '@/routes/admin/ai-health';
 import { index as adminAssessmentQuestions } from '@/routes/admin/assessment-questions';
 import { index as adminCandidatePricingMenus } from '@/routes/admin/candidate-pricing-menus';
 import { index as adminCareerResources } from '@/routes/admin/career-resources';
@@ -211,68 +212,194 @@ function AdminSidebar() {
             {
                 title: t('nav.section.overview'),
                 items: [
-                    { title: t('common.dashboard'), href: adminDashboard(), icon: Grid2X2 },
-                    { title: t('nav.admin.analytics'), href: adminAnalytics(), icon: BarChart3 },
+                    {
+                        title: t('common.dashboard'),
+                        href: adminDashboard(),
+                        icon: Grid2X2,
+                    },
+                    {
+                        title: t('nav.admin.analytics'),
+                        href: adminAnalytics(),
+                        icon: BarChart3,
+                    },
                 ],
             },
             {
                 title: t('nav.section.operational'),
                 items: [
-                    { title: t('nav.admin.reports'), href: adminLaporan(), icon: FileText },
+                    {
+                        title: t('nav.admin.reports'),
+                        href: adminLaporan(),
+                        icon: FileText,
+                    },
                     {
                         title: t('nav.admin.users'),
                         href: adminUsers(),
                         icon: Users,
                         children: [
-                            { title: t('nav.admin.users.admin'), href: adminUsers({ query: { role: 'admin' } }) },
-                            { title: t('nav.admin.users.employer'), href: adminUsers({ query: { role: 'employer' } }) },
-                            { title: t('nav.admin.users.candidate'), href: adminUsers({ query: { role: 'candidate' } }) },
+                            {
+                                title: t('nav.admin.users.admin'),
+                                href: adminUsers({ query: { role: 'admin' } }),
+                            },
+                            {
+                                title: t('nav.admin.users.employer'),
+                                href: adminUsers({
+                                    query: { role: 'employer' },
+                                }),
+                            },
+                            {
+                                title: t('nav.admin.users.candidate'),
+                                href: adminUsers({
+                                    query: { role: 'candidate' },
+                                }),
+                            },
                         ],
                     },
-                    { title: t('nav.admin.companies'), href: adminCompanies(), icon: Building2 },
-                    { title: t('nav.admin.company_verifications'), href: adminCompanyVerifications(), icon: FileCheck2 },
-                    { title: t('nav.admin.jobs'), href: adminJobs(), icon: BriefcaseBusiness },
+                    {
+                        title: t('nav.admin.companies'),
+                        href: adminCompanies(),
+                        icon: Building2,
+                    },
+                    {
+                        title: t('nav.admin.company_verifications'),
+                        href: adminCompanyVerifications(),
+                        icon: FileCheck2,
+                    },
+                    {
+                        title: t('nav.admin.jobs'),
+                        href: adminJobs(),
+                        icon: BriefcaseBusiness,
+                    },
                 ],
             },
             {
                 title: t('nav.section.content_data'),
                 items: [
-                    { title: t('nav.admin.skills'), href: adminSkills(), icon: Tags },
-                    { title: t('nav.admin.assessment_questions'), href: adminAssessmentQuestions(), icon: ClipboardList },
-                    { title: t('nav.admin.industries'), href: adminIndustries(), icon: Library },
-                    { title: t('nav.admin.sub_industries'), href: adminSubIndustries(), icon: Library },
-                    { title: t('nav.admin.company_sizes'), href: adminCompanySizes(), icon: Building2 },
-                    { title: t('nav.admin.salary_insights'), href: adminSalaryInsights(), icon: BarChart3 },
+                    {
+                        title: t('nav.admin.skills'),
+                        href: adminSkills(),
+                        icon: Tags,
+                    },
+                    {
+                        title: t('nav.admin.assessment_questions'),
+                        href: adminAssessmentQuestions(),
+                        icon: ClipboardList,
+                    },
+                    {
+                        title: t('nav.admin.industries'),
+                        href: adminIndustries(),
+                        icon: Library,
+                    },
+                    {
+                        title: t('nav.admin.sub_industries'),
+                        href: adminSubIndustries(),
+                        icon: Library,
+                    },
+                    {
+                        title: t('nav.admin.company_sizes'),
+                        href: adminCompanySizes(),
+                        icon: Building2,
+                    },
+                    {
+                        title: t('nav.admin.salary_insights'),
+                        href: adminSalaryInsights(),
+                        icon: BarChart3,
+                    },
                 ],
             },
             {
                 title: t('nav.section.billing'),
                 items: [
-                    { title: t('nav.admin.career_resources'), href: adminCareerResources(), icon: GraduationCap },
-                    { title: t('nav.admin.faqs'), href: adminFaqs(), icon: FileText },
-                    { title: t('nav.admin.pricing_plans'), href: adminPricingPlans(), icon: WalletCards },
+                    {
+                        title: t('nav.admin.career_resources'),
+                        href: adminCareerResources(),
+                        icon: GraduationCap,
+                    },
+                    {
+                        title: t('nav.admin.faqs'),
+                        href: adminFaqs(),
+                        icon: FileText,
+                    },
+                    {
+                        title: t('nav.admin.pricing_plans'),
+                        href: adminPricingPlans(),
+                        icon: WalletCards,
+                    },
                 ],
             },
             {
                 title: t('nav.section.monitoring'),
                 items: [
-                    { title: t('nav.admin.candidate_pricing'), href: adminCandidatePricingMenus(), icon: CreditCard },
-                    { title: t('nav.admin.subscriptions'), href: adminSubscriptions(), icon: ClipboardCheck },
-                    { title: t('nav.admin.report_moderation'), href: adminReports(), icon: ShieldAlert },
-                    { title: t('nav.admin.contact_messages'), href: adminContactMessages(), icon: MessageSquare },
+                    {
+                        title: t('nav.admin.candidate_pricing'),
+                        href: adminCandidatePricingMenus(),
+                        icon: CreditCard,
+                    },
+                    {
+                        title: t('nav.admin.subscriptions'),
+                        href: adminSubscriptions(),
+                        icon: ClipboardCheck,
+                    },
+                    {
+                        title: t('nav.admin.report_moderation'),
+                        href: adminReports(),
+                        icon: ShieldAlert,
+                    },
+                    {
+                        title: t('nav.admin.contact_messages'),
+                        href: adminContactMessages(),
+                        icon: MessageSquare,
+                    },
                 ],
             },
             {
                 title: t('nav.section.system'),
                 items: [
-                    { title: t('nav.admin.system_reviews'), href: adminSystemReviews(), icon: Sparkles },
-                    { title: t('nav.admin.company_reviews'), href: adminCompanyReviews(), icon: Star },
-                    { title: t('nav.admin.ai_audit'), href: adminAiAuditLogs(), icon: Bot },
-                    { title: t('nav.admin.activity_log'), href: adminActivityLogs(), icon: Activity },
-                    { title: t('nav.admin.whatsapp'), href: adminWhatsApp(), icon: Smartphone },
-                    { title: t('nav.admin.web_settings'), href: adminSettings(), icon: Settings },
-                    { title: t('nav.admin.legal_terms'), href: adminLegalTerms(), icon: Scale },
-                    { title: t('nav.admin.legal_privacy'), href: adminLegalPrivacy(), icon: ShieldCheck },
+                    {
+                        title: t('nav.admin.system_reviews'),
+                        href: adminSystemReviews(),
+                        icon: Sparkles,
+                    },
+                    {
+                        title: t('nav.admin.company_reviews'),
+                        href: adminCompanyReviews(),
+                        icon: Star,
+                    },
+                    {
+                        title: t('nav.admin.ai_audit'),
+                        href: adminAiAuditLogs(),
+                        icon: Bot,
+                    },
+                    {
+                        title: t('nav.admin.ai_health'),
+                        href: adminAiHealth(),
+                        icon: Activity,
+                    },
+                    {
+                        title: t('nav.admin.activity_log'),
+                        href: adminActivityLogs(),
+                        icon: Activity,
+                    },
+                    {
+                        title: t('nav.admin.whatsapp'),
+                        href: adminWhatsApp(),
+                        icon: Smartphone,
+                    },
+                    {
+                        title: t('nav.admin.web_settings'),
+                        href: adminSettings(),
+                        icon: Settings,
+                    },
+                    {
+                        title: t('nav.admin.legal_terms'),
+                        href: adminLegalTerms(),
+                        icon: Scale,
+                    },
+                    {
+                        title: t('nav.admin.legal_privacy'),
+                        href: adminLegalPrivacy(),
+                        icon: ShieldCheck,
+                    },
                 ],
             },
         ],
@@ -732,7 +859,7 @@ function CandidateSidebar() {
                                     </svg>
                                 </span>
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-[13px] font-bold leading-tight text-[#01296A]">
+                                    <p className="text-[13px] leading-tight font-bold text-[#01296A]">
                                         {t('candidate.footer.contact_title')}
                                     </p>
                                     <p className="mt-0.5 text-[11px] leading-snug text-[#5b6473]">
@@ -770,7 +897,7 @@ function CandidateSidebar() {
                         target="_blank"
                         rel="noopener noreferrer"
                         title={t('candidate.footer.contact_button')}
-                        className="hidden size-9 items-center justify-center self-center rounded-lg bg-emerald-500 text-white shadow-sm transition hover:bg-emerald-600 group-data-[collapsible=icon]:flex"
+                        className="hidden size-9 items-center justify-center self-center rounded-lg bg-emerald-500 text-white shadow-sm transition group-data-[collapsible=icon]:flex hover:bg-emerald-600"
                     >
                         <svg
                             className="size-4"
@@ -806,7 +933,11 @@ function EmployerSidebar() {
     const { auth, name, branding, employer_unread_messages } = usePage<{
         auth: Auth;
         name: string;
-        branding?: { name?: string; logo_url?: string | null };
+        branding?: {
+            name?: string;
+            logo_url?: string | null;
+            whatsapp_number?: string | null;
+        };
         employer_unread_messages?: number;
     }>().props;
     const { isCurrentUrl } = useCurrentUrl();
@@ -815,6 +946,8 @@ function EmployerSidebar() {
     const siteName = branding?.name ?? name ?? 'Karivia';
     const siteLogoUrl = branding?.logo_url ?? null;
     const unreadMessages = Math.max(0, employer_unread_messages ?? 0);
+    const waNumber = branding?.whatsapp_number?.replace(/\D/g, '');
+    const waUrl = waNumber ? `https://wa.me/${waNumber}` : null;
 
     const handleLogout = () => {
         cleanup();
@@ -826,34 +959,87 @@ function EmployerSidebar() {
             {
                 label: t('nav.section.overview'),
                 items: [
-                    { title: t('common.home'), href: employerDashboard(), icon: Grid2X2 },
+                    {
+                        title: t('common.home'),
+                        href: employerDashboard(),
+                        icon: Grid2X2,
+                    },
                 ],
             },
             {
                 label: t('nav.section.recruitment'),
                 items: [
-                    { title: t('nav.employer.jobs'), href: employerJobs(), icon: BriefcaseBusiness },
-                    { title: t('nav.employer.candidates'), href: employerCandidates(), icon: Users },
-                    { title: t('nav.employer.talent_pool'), href: employerTalentPool(), icon: Bookmark },
+                    {
+                        title: t('nav.employer.jobs'),
+                        href: employerJobs(),
+                        icon: BriefcaseBusiness,
+                    },
+                    {
+                        title: t('nav.employer.candidates'),
+                        href: employerCandidates(),
+                        icon: Users,
+                    },
+                    {
+                        title: t('nav.employer.talent_pool'),
+                        href: employerTalentPool(),
+                        icon: Bookmark,
+                    },
                 ],
             },
             {
                 label: t('nav.section.communication'),
                 items: [
-                    { key: 'messages', title: t('nav.employer.messages'), href: employerMessages(), icon: MessageSquareText },
-                    { title: t('nav.employer.whatsapp'), href: employerWhatsApp(), icon: MessageSquare },
-                    { title: t('nav.employer.broadcast'), href: employerWhatsAppBulk(), icon: Send },
-                    { title: t('nav.employer.message_templates'), href: employerMessageTemplates(), icon: FileText },
+                    {
+                        key: 'messages',
+                        title: t('nav.employer.messages'),
+                        href: employerMessages(),
+                        icon: MessageSquareText,
+                    },
+                    {
+                        title: t('nav.employer.whatsapp'),
+                        href: employerWhatsApp(),
+                        icon: MessageSquare,
+                    },
+                    {
+                        title: t('nav.employer.broadcast'),
+                        href: employerWhatsAppBulk(),
+                        icon: Send,
+                    },
+                    {
+                        title: t('nav.employer.message_templates'),
+                        href: employerMessageTemplates(),
+                        icon: FileText,
+                    },
                 ],
             },
             {
                 label: t('nav.section.management'),
                 items: [
-                    { title: t('nav.employer.analytics'), href: employerAnalytics(), icon: BarChart3 },
-                    { title: t('nav.employer.reviews'), href: employerReviews(), icon: Star },
-                    { title: t('nav.employer.team'), href: employerTeam(), icon: Users },
-                    { title: t('nav.employer.billing'), href: employerBilling(), icon: CreditCard },
-                    { title: t('nav.employer.email_settings'), href: employerEmailSettings(), icon: Mail },
+                    {
+                        title: t('nav.employer.analytics'),
+                        href: employerAnalytics(),
+                        icon: BarChart3,
+                    },
+                    {
+                        title: t('nav.employer.reviews'),
+                        href: employerReviews(),
+                        icon: Star,
+                    },
+                    {
+                        title: t('nav.employer.team'),
+                        href: employerTeam(),
+                        icon: Users,
+                    },
+                    {
+                        title: t('nav.employer.billing'),
+                        href: employerBilling(),
+                        icon: CreditCard,
+                    },
+                    {
+                        title: t('nav.employer.email_settings'),
+                        href: employerEmailSettings(),
+                        icon: Mail,
+                    },
                 ],
             },
         ],
@@ -917,9 +1103,9 @@ function EmployerSidebar() {
                                             <SidebarMenuButton
                                                 asChild
                                                 isActive={
-                                                    !toUrl(item.href).startsWith(
-                                                        '#',
-                                                    ) &&
+                                                    !toUrl(
+                                                        item.href,
+                                                    ).startsWith('#') &&
                                                     isCurrentUrl(item.href)
                                                 }
                                                 tooltip={{
@@ -979,6 +1165,70 @@ function EmployerSidebar() {
             </SidebarContent>
 
             <SidebarFooter className="border-t border-[#eef2f6] bg-white p-5 group-data-[collapsible=icon]:p-2">
+                {waUrl && (
+                    <div className="group-data-[collapsible=icon]:hidden">
+                        <div className="relative overflow-hidden rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/40 p-3.5">
+                            <div className="pointer-events-none absolute -top-6 -right-6 size-20 rounded-full bg-emerald-200/40 blur-2xl" />
+                            <div className="relative flex items-start gap-2.5">
+                                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white shadow-sm shadow-emerald-500/30">
+                                    <svg
+                                        className="size-4.5"
+                                        fill="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                                    </svg>
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[13px] leading-tight font-bold text-[#01296A]">
+                                        {t('employer.footer.contact_title')}
+                                    </p>
+                                    <p className="mt-0.5 text-[11px] leading-snug text-[#5b6473]">
+                                        {t('employer.footer.contact_subtitle')}
+                                    </p>
+                                </div>
+                            </div>
+                            <a
+                                href={`${waUrl}?text=${encodeURIComponent(t('employer.footer.contact_prefilled', { name: auth.user?.name ?? '' }))}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="relative mt-3 flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-600 text-[12px] font-bold text-white shadow-sm shadow-emerald-500/20 transition hover:bg-emerald-700"
+                            >
+                                {t('employer.footer.contact_button')}
+                                <svg
+                                    className="size-3.5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M9 5l7 7-7 7"
+                                    />
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                )}
+                {waUrl && (
+                    <a
+                        href={waUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={t('employer.footer.contact_button')}
+                        className="hidden size-9 items-center justify-center self-center rounded-lg bg-emerald-500 text-white shadow-sm transition group-data-[collapsible=icon]:flex hover:bg-emerald-600"
+                    >
+                        <svg
+                            className="size-4"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                        </svg>
+                    </a>
+                )}
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <DropdownMenu>

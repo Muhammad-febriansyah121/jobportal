@@ -28,6 +28,8 @@ type JobItem = {
     is_urgent: boolean;
     is_few_applicants: boolean;
     company: string | null;
+    company_slug: string | null;
+    company_logo: string | null;
     company_verified: boolean;
     location: string;
     work_mode: string;
@@ -57,7 +59,6 @@ type JobsPageProps = {
     };
 };
 
-
 const workModeStyle: Record<string, string> = {
     Remote: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     Hybrid: 'bg-sky-50 text-sky-700 border-sky-200',
@@ -66,8 +67,8 @@ const workModeStyle: Record<string, string> = {
 
 function formatRupiah(value: number): string {
     if (!value) {
-return '';
-}
+        return '';
+    }
 
     return new Intl.NumberFormat('id-ID', {
         currency: 'IDR',
@@ -82,8 +83,8 @@ function onlyDigits(value: string): number {
 
 function companyInitials(name: string | null): string {
     if (!name) {
-return '?';
-}
+        return '?';
+    }
 
     return name
         .split(' ')
@@ -119,10 +120,14 @@ function RupiahFilterInput({ defaultValue }: { defaultValue: number | null }) {
                     Rp
                 </span>
                 <input
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-3 text-sm transition outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-white pr-3 pl-8 text-sm transition outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                     inputMode="numeric"
                     placeholder="10.000.000"
-                    value={amount ? new Intl.NumberFormat('id-ID').format(amount) : ''}
+                    value={
+                        amount
+                            ? new Intl.NumberFormat('id-ID').format(amount)
+                            : ''
+                    }
                     onChange={(e) => setAmount(onlyDigits(e.target.value))}
                 />
             </div>
@@ -150,7 +155,11 @@ export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
 
     const showingLabel =
         jobs.from && jobs.to
-            ? t('front.jobs.showing_range', { from: jobs.from, to: jobs.to, total: jobs.total })
+            ? t('front.jobs.showing_range', {
+                  from: jobs.from,
+                  to: jobs.to,
+                  total: jobs.total,
+              })
             : t('front.jobs.showing_count', { count: jobs.data.length });
 
     const activeFilterCount = [
@@ -163,12 +172,24 @@ export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
     const activeFilterChips = [
         filters.search && { key: 'search', label: `"${filters.search}"` },
         filters.location && { key: 'location', label: filters.location },
-        filters.experience_level && { key: 'experience_level', label: levelOptions.find((o) => o.value === filters.experience_level)?.label ?? filters.experience_level },
-        filters.salary_min && { key: 'salary_min', label: `Min ${formatRupiah(filters.salary_min)}` },
+        filters.experience_level && {
+            key: 'experience_level',
+            label:
+                levelOptions.find((o) => o.value === filters.experience_level)
+                    ?.label ?? filters.experience_level,
+        },
+        filters.salary_min && {
+            key: 'salary_min',
+            label: `Min ${formatRupiah(filters.salary_min)}`,
+        },
     ].filter(Boolean) as { key: string; label: string }[];
 
     const removeFilter = (key: string) => {
-        router.get(jobsIndex().url, { ...filters, [key]: '', sort: filters.sort }, { preserveScroll: true, preserveState: true });
+        router.get(
+            jobsIndex().url,
+            { ...filters, [key]: '', sort: filters.sort },
+            { preserveScroll: true, preserveState: true },
+        );
     };
 
     return (
@@ -181,11 +202,15 @@ export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
                 <div className="relative mx-auto max-w-3xl px-4">
                     <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-4 py-1.5 text-xs font-semibold text-primary-600">
                         <Sparkles className="size-3.5" />
-                        {t('front.jobs.hero_badge', { count: jobs.total.toLocaleString('id-ID') })}
+                        {t('front.jobs.hero_badge', {
+                            count: jobs.total.toLocaleString('id-ID'),
+                        })}
                     </div>
                     <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
                         {t('front.jobs.hero_title')}{' '}
-                        <span className="text-primary-600">{t('front.jobs.hero_title_highlight')}</span>
+                        <span className="text-primary-600">
+                            {t('front.jobs.hero_title_highlight')}
+                        </span>
                     </h1>
                     <p className="mt-4 text-base text-slate-500">
                         {t('front.jobs.hero_subtitle')}
@@ -194,7 +219,11 @@ export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
                         className="mt-8 flex gap-2"
                         onSubmit={(e) => {
                             e.preventDefault();
-                            router.get(jobsIndex().url, { ...filters, search: heroSearch }, { preserveScroll: true, preserveState: true });
+                            router.get(
+                                jobsIndex().url,
+                                { ...filters, search: heroSearch },
+                                { preserveScroll: true, preserveState: true },
+                            );
                         }}
                     >
                         <div className="relative flex-1">
@@ -202,7 +231,9 @@ export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
                             <input
                                 className="h-12 w-full rounded-xl border border-slate-200 bg-white pr-4 pl-10 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-200"
                                 onChange={(e) => setHeroSearch(e.target.value)}
-                                placeholder={t('front.jobs.hero_search_placeholder')}
+                                placeholder={t(
+                                    'front.jobs.hero_search_placeholder',
+                                )}
                                 type="text"
                                 value={heroSearch}
                             />
@@ -220,20 +251,25 @@ export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
             {/* Main content */}
             <section className="bg-[#f5f6f8] px-4 py-8">
                 <div className="mx-auto max-w-7xl space-y-5">
-
                     {/* ── Filter bar (horizontal, on top) ── */}
                     <form
                         className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
                         onSubmit={(event) => {
                             event.preventDefault();
                             const formData = new FormData(event.currentTarget);
-                            router.get(jobsIndex().url, Object.fromEntries(formData.entries()), { preserveScroll: true, preserveState: true });
+                            router.get(
+                                jobsIndex().url,
+                                Object.fromEntries(formData.entries()),
+                                { preserveScroll: true, preserveState: true },
+                            );
                         }}
                     >
                         <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-5 py-3">
                             <div className="flex items-center gap-2">
                                 <SlidersHorizontal className="size-4 text-primary-600" />
-                                <span className="text-sm font-bold text-slate-800">{t('front.jobs.filter_title')}</span>
+                                <span className="text-sm font-bold text-slate-800">
+                                    {t('front.jobs.filter_title')}
+                                </span>
                                 {activeFilterCount > 0 && (
                                     <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary-600 text-[10px] font-bold text-white">
                                         {activeFilterCount}
@@ -257,14 +293,18 @@ export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
                         <div className="grid gap-3 p-4 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
                             {/* Keyword */}
                             <div className="lg:col-span-3">
-                                <p className="mb-1.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase">{t('front.jobs.filter_keyword_label')}</p>
+                                <p className="mb-1.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+                                    {t('front.jobs.filter_keyword_label')}
+                                </p>
                                 <div className="relative">
                                     <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400" />
                                     <input
                                         className="h-10 w-full rounded-lg border border-slate-200 bg-white pr-3 pl-8 text-sm transition outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                                         defaultValue={filters.search}
                                         name="search"
-                                        placeholder={t('front.jobs.filter_keyword_placeholder')}
+                                        placeholder={t(
+                                            'front.jobs.filter_keyword_placeholder',
+                                        )}
                                         type="text"
                                     />
                                 </div>
@@ -272,27 +312,40 @@ export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
 
                             {/* Lokasi */}
                             <div className="lg:col-span-3">
-                                <p className="mb-1.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase">{t('front.jobs.filter_location_label')}</p>
+                                <p className="mb-1.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+                                    {t('front.jobs.filter_location_label')}
+                                </p>
                                 <div className="relative">
                                     <MapPin className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400" />
                                     <input
                                         className="h-10 w-full rounded-lg border border-slate-200 bg-white pr-3 pl-8 text-sm transition outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                                         defaultValue={filters.location}
                                         name="location"
-                                        placeholder={t('front.jobs.filter_location_placeholder')}
+                                        placeholder={t(
+                                            'front.jobs.filter_location_placeholder',
+                                        )}
                                         type="text"
                                     />
                                 </div>
                             </div>
 
                             <div className="lg:col-span-2">
-                                <FilterSelect defaultValue={filters.experience_level} label={t('front.jobs.filter_level_label')} name="experience_level" options={levelOptions} />
+                                <FilterSelect
+                                    defaultValue={filters.experience_level}
+                                    label={t('front.jobs.filter_level_label')}
+                                    name="experience_level"
+                                    options={levelOptions}
+                                />
                             </div>
 
                             {/* Salary */}
                             <div className="lg:col-span-2">
-                                <p className="mb-1.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase">{t('front.jobs.filter_salary_min_label')}</p>
-                                <RupiahFilterInput defaultValue={filters.salary_min} />
+                                <p className="mb-1.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+                                    {t('front.jobs.filter_salary_min_label')}
+                                </p>
+                                <RupiahFilterInput
+                                    defaultValue={filters.salary_min}
+                                />
                             </div>
 
                             {/* Apply button */}
@@ -313,19 +366,39 @@ export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
                         {/* Toolbar */}
                         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                             <p className="text-sm font-medium text-slate-500">
-                                {t('front.jobs.toolbar_showing')} <span className="font-bold text-slate-800">{showingLabel}</span>
+                                {t('front.jobs.toolbar_showing')}{' '}
+                                <span className="font-bold text-slate-800">
+                                    {showingLabel}
+                                </span>
                             </p>
                             <form>
-                                <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-500 cursor-pointer hover:border-primary-300 transition">
+                                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-500 transition hover:border-primary-300">
                                     <ArrowUpDown className="size-3.5 text-slate-400" />
                                     <select
-                                        className="bg-transparent font-semibold text-slate-800 outline-none cursor-pointer"
+                                        className="cursor-pointer bg-transparent font-semibold text-slate-800 outline-none"
                                         defaultValue={filters.sort}
                                         name="sort"
-                                        onChange={(e) => router.get(jobsIndex().url, { ...filters, sort: e.target.value }, { preserveScroll: true, preserveState: true })}
+                                        onChange={(e) =>
+                                            router.get(
+                                                jobsIndex().url,
+                                                {
+                                                    ...filters,
+                                                    sort: e.target.value,
+                                                },
+                                                {
+                                                    preserveScroll: true,
+                                                    preserveState: true,
+                                                },
+                                            )
+                                        }
                                     >
                                         {sortOptions.map((o) => (
-                                            <option key={o.value} value={o.value}>{o.label}</option>
+                                            <option
+                                                key={o.value}
+                                                value={o.value}
+                                            >
+                                                {o.label}
+                                            </option>
                                         ))}
                                     </select>
                                     <ChevronDown className="size-3.5 text-slate-400" />
@@ -354,8 +427,12 @@ export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
                         {jobs.data.length === 0 ? (
                             <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-14 text-center shadow-sm">
                                 <BriefcaseBusiness className="mx-auto size-10 text-slate-300" />
-                                <p className="mt-4 text-base font-semibold text-slate-700">{t('front.jobs.empty_title')}</p>
-                                <p className="mt-1 text-sm text-slate-400">{t('front.jobs.empty_subtitle')}</p>
+                                <p className="mt-4 text-base font-semibold text-slate-700">
+                                    {t('front.jobs.empty_title')}
+                                </p>
+                                <p className="mt-1 text-sm text-slate-400">
+                                    {t('front.jobs.empty_subtitle')}
+                                </p>
                                 <button
                                     onClick={() => router.get(jobsIndex().url)}
                                     className="mt-5 inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-primary-300 hover:text-primary-600"
@@ -366,7 +443,9 @@ export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                {jobs.data.map((job) => <JobCard job={job} key={job.id} />)}
+                                {jobs.data.map((job) => (
+                                    <JobCard job={job} key={job.id} />
+                                ))}
                             </div>
                         )}
 
@@ -381,7 +460,8 @@ export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
                                             link.active
                                                 ? 'border-primary-600 bg-primary-600 text-white shadow-sm'
                                                 : 'border-slate-200 bg-white text-slate-600 hover:border-primary-300 hover:text-primary-600',
-                                            link.url === null && 'pointer-events-none opacity-40',
+                                            link.url === null &&
+                                                'pointer-events-none opacity-40',
                                         )}
                                         href={link.url ?? '#'}
                                         preserveScroll
@@ -403,7 +483,9 @@ function JobCard({ job }: { job: JobItem }) {
     const { t } = useTranslate();
     const initials = companyInitials(job.company);
     const colorClass = avatarColor(job.company);
-    const workModeClass = workModeStyle[job.work_mode] ?? 'bg-slate-100 text-slate-600 border-slate-200';
+    const workModeClass =
+        workModeStyle[job.work_mode] ??
+        'bg-slate-100 text-slate-600 border-slate-200';
     const [shareState, setShareState] = useState<'idle' | 'copied'>('idle');
 
     const handleShare = async (): Promise<void> => {
@@ -411,9 +493,15 @@ function JobCard({ job }: { job: JobItem }) {
             return;
         }
 
-        const shareUrl = new URL(jobShow(job.slug).url, window.location.origin).toString();
+        const shareUrl = new URL(
+            jobShow(job.slug).url,
+            window.location.origin,
+        ).toString();
 
-        if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+        if (
+            typeof navigator !== 'undefined' &&
+            typeof navigator.share === 'function'
+        ) {
             try {
                 await navigator.share({
                     title: `${job.title} - ${job.company ?? 'Karivia'}`,
@@ -423,13 +511,19 @@ function JobCard({ job }: { job: JobItem }) {
 
                 return;
             } catch (error) {
-                if (error instanceof DOMException && error.name === 'AbortError') {
+                if (
+                    error instanceof DOMException &&
+                    error.name === 'AbortError'
+                ) {
                     return;
                 }
             }
         }
 
-        if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        if (
+            typeof navigator !== 'undefined' &&
+            navigator.clipboard?.writeText
+        ) {
             await navigator.clipboard.writeText(shareUrl);
             setShareState('copied');
 
@@ -458,15 +552,34 @@ function JobCard({ job }: { job: JobItem }) {
             <div className="flex flex-1 flex-col gap-4 p-5">
                 {/* Header: avatar + share */}
                 <div className="flex items-start justify-between gap-3">
-                    <div className={cn('flex size-12 shrink-0 items-center justify-center rounded-xl text-sm font-bold', colorClass)}>
-                        {initials}
-                    </div>
+                    {job.company_logo ? (
+                        <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white">
+                            <img
+                                src={job.company_logo}
+                                alt={job.company ?? 'Company logo'}
+                                className="size-full object-contain"
+                            />
+                        </div>
+                    ) : (
+                        <div
+                            className={cn(
+                                'flex size-12 shrink-0 items-center justify-center rounded-xl text-sm font-bold',
+                                colorClass,
+                            )}
+                        >
+                            {initials}
+                        </div>
+                    )}
                     <button
                         type="button"
                         onClick={() => void handleShare()}
                         className="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-primary-300 hover:text-primary-600"
                         aria-label={t('front.jobs.card_share')}
-                        title={shareState === 'copied' ? t('front.jobs.card_share_copied') : t('front.jobs.card_share')}
+                        title={
+                            shareState === 'copied'
+                                ? t('front.jobs.card_share_copied')
+                                : t('front.jobs.card_share')
+                        }
                     >
                         <Link2 className="size-3.5" />
                     </button>
@@ -482,7 +595,7 @@ function JobCard({ job }: { job: JobItem }) {
                             {job.title}
                         </Link>
                         {!job.is_anonymous && job.company_verified && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                                 <BadgeCheck className="size-3" />
                                 {t('front.jobs.card_verified')}
                             </span>
@@ -492,16 +605,28 @@ function JobCard({ job }: { job: JobItem }) {
                         <Building2 className="size-3.5 shrink-0 text-slate-400" />
                         {job.is_anonymous ? (
                             <span className="inline-flex items-center gap-1">
-                                <span className="text-slate-400 italic">{t('front.jobs.card_company_anonymous')}</span>
-                                <span className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">{t('front.jobs.card_anonymous_badge')}</span>
+                                <span className="text-slate-400 italic">
+                                    {t('front.jobs.card_company_anonymous')}
+                                </span>
+                                <span className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                                    {t('front.jobs.card_anonymous_badge')}
+                                </span>
                             </span>
-                        ) : (job.company ?? t('front.jobs.card_company_fallback'))}
+                        ) : (
+                            (job.company ??
+                            t('front.jobs.card_company_fallback'))
+                        )}
                     </p>
                 </div>
 
                 {/* Chips */}
                 <div className="flex flex-wrap gap-1.5">
-                    <span className={cn('inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold', workModeClass)}>
+                    <span
+                        className={cn(
+                            'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold',
+                            workModeClass,
+                        )}
+                    >
                         {job.work_mode}
                     </span>
                     <Chip icon={BriefcaseBusiness}>{job.job_type}</Chip>
@@ -512,7 +637,10 @@ function JobCard({ job }: { job: JobItem }) {
                 <div className="space-y-1.5 border-t border-dashed border-slate-200 pt-3">
                     <p className="flex items-center gap-2 text-xs text-slate-500">
                         <MapPin className="size-3.5 shrink-0 text-slate-400" />
-                        <span className="truncate">{job.location || t('front.jobs.card_location_fallback')}</span>
+                        <span className="truncate">
+                            {job.location ||
+                                t('front.jobs.card_location_fallback')}
+                        </span>
                     </p>
                     <p className="flex items-center gap-2 text-sm font-bold text-primary-600">
                         <Wallet className="size-3.5 shrink-0 text-primary-500" />
@@ -551,21 +679,31 @@ function FilterSelect({
 }) {
     return (
         <label className="grid gap-1.5">
-            <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">{label}</span>
+            <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+                {label}
+            </span>
             <select
                 className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm transition outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                 defaultValue={defaultValue}
                 name={name}
             >
                 {options.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                    <option key={o.value} value={o.value}>
+                        {o.label}
+                    </option>
                 ))}
             </select>
         </label>
     );
 }
 
-function Chip({ children, icon: Icon }: { children: React.ReactNode; icon: React.ComponentType<{ className?: string }> }) {
+function Chip({
+    children,
+    icon: Icon,
+}: {
+    children: React.ReactNode;
+    icon: React.ComponentType<{ className?: string }>;
+}) {
     return (
         <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] text-slate-500">
             <Icon className="size-3 shrink-0" />
