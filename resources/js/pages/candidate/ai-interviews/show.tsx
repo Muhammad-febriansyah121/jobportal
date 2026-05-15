@@ -1,5 +1,6 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
+    AlertTriangle,
     Bot,
     CalendarDays,
     CheckCircle2,
@@ -7,6 +8,7 @@ import {
     ChevronRight,
     Clock3,
     Hand,
+    HelpCircle,
     Info,
     ListChecks,
     Mic,
@@ -35,6 +37,14 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { useTranslate } from '@/hooks/use-translate';
 import { cn } from '@/lib/utils';
 import { feedback, index, show } from '@/routes/candidate/ai-interviews';
@@ -104,7 +114,48 @@ type TranscriptItem = {
 
 type MicPermissionState = 'granted' | 'denied' | 'prompt' | 'unknown';
 type SignalQuality = 'excellent' | 'good' | 'fair' | 'poor' | 'offline';
+type MicErrorKind =
+    | 'not-allowed'
+    | 'system-denied'
+    | 'not-found'
+    | 'security'
+    | 'in-use'
+    | 'unsupported'
+    | 'unknown'
+    | null;
+type BrowserKind = 'brave' | 'chrome' | 'firefox' | 'safari' | 'edge' | 'other';
 const TIMER_EXPIRED_REDIRECT_DELAY_MS = 30_000;
+
+function detectBrowser(): BrowserKind {
+    if (typeof window === 'undefined') {
+        return 'other';
+    }
+
+    const ua = window.navigator.userAgent.toLowerCase();
+    const nav = window.navigator as Navigator & { brave?: { isBrave?: () => Promise<boolean> } };
+
+    if (nav.brave && typeof nav.brave.isBrave === 'function') {
+        return 'brave';
+    }
+
+    if (ua.includes('edg/')) {
+        return 'edge';
+    }
+
+    if (ua.includes('firefox')) {
+        return 'firefox';
+    }
+
+    if (ua.includes('chrome')) {
+        return 'chrome';
+    }
+
+    if (ua.includes('safari')) {
+        return 'safari';
+    }
+
+    return 'other';
+}
 
 function normalizeQuestionText(value: string): string {
     return value
@@ -156,6 +207,10 @@ export default function CandidateAiInterviewShow({
     const [networkOnline, setNetworkOnline] = useState<boolean>(true);
     const [micPermission, setMicPermission] =
         useState<MicPermissionState>('unknown');
+    const [micErrorKind, setMicErrorKind] = useState<MicErrorKind>(null);
+    const [micRequesting, setMicRequesting] = useState(false);
+    const [showMicHelp, setShowMicHelp] = useState(false);
+    const [browser] = useState<BrowserKind>(() => detectBrowser());
     const [micLevel, setMicLevel] = useState(0);
     const [signalQuality, setSignalQuality] = useState<SignalQuality>('good');
     const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
@@ -253,8 +308,12 @@ export default function CandidateAiInterviewShow({
 
     const startMicPreview = useCallback(async () => {
         if (!navigator.mediaDevices?.getUserMedia) {
+            setMicErrorKind('unsupported');
+
             return;
         }
+
+        setMicRequesting(true);
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -267,15 +326,41 @@ export default function CandidateAiInterviewShow({
 
             setMicPermission('granted');
             setMicrophoneDetected(true);
+            setMicErrorKind(null);
 
             stream.getTracks().forEach((track) => track.stop());
         } catch (error) {
-            const name = (error as DOMException)?.name;
-            if (name === 'NotAllowedError' || name === 'SecurityError') {
+            const err = error as DOMException;
+            const name = err?.name ?? '';
+            const message = (err?.message ?? '').toLowerCase();
+
+            if (name === 'NotAllowedError') {
                 setMicPermission('denied');
-            } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+
+                if (
+                    message.includes('system') ||
+                    message.includes('permission denied by system')
+                ) {
+                    setMicErrorKind('system-denied');
+                } else {
+                    setMicErrorKind('not-allowed');
+                }
+            } else if (name === 'SecurityError') {
+                setMicPermission('denied');
+                setMicErrorKind('security');
+            } else if (
+                name === 'NotFoundError' ||
+                name === 'OverconstrainedError'
+            ) {
                 setMicrophoneDetected(false);
+                setMicErrorKind('not-found');
+            } else if (name === 'NotReadableError' || name === 'AbortError') {
+                setMicErrorKind('in-use');
+            } else {
+                setMicErrorKind('unknown');
             }
+        } finally {
+            setMicRequesting(false);
         }
     }, []);
 
@@ -572,9 +657,11 @@ export default function CandidateAiInterviewShow({
         window.addEventListener('offline', handleOnlineState);
 
         void refreshDevices();
+
         if (!isPractice) {
             void startCameraPreview();
         }
+
         void startMicPreview();
 
         let permissionStatus: PermissionStatus | null = null;
@@ -874,6 +961,7 @@ export default function CandidateAiInterviewShow({
         if (!channel || channel.readyState !== 'open') {
             greetingPendingRef.current = true;
             toast.info('Menyiapkan koneksi AI, sapaan akan dimulai...');
+
             return;
         }
 
@@ -1330,6 +1418,73 @@ export default function CandidateAiInterviewShow({
                                             }
                                         />
                                     </div>
+
+                                    {(micPermission === 'denied' ||
+                                        micErrorKind === 'not-found' ||
+                                        micErrorKind === 'in-use' ||
+                                        micErrorKind === 'unsupported' ||
+                                        micErrorKind === 'unknown') && (
+                                        <div className="border-t border-red-100 bg-red-50/60 px-4 py-3">
+                                            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                                                <div className="flex items-start gap-2.5">
+                                                    <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-600" />
+                                                    <div className="text-[13px] leading-relaxed text-red-900">
+                                                        <p className="font-semibold">
+                                                            {micErrorKind === 'not-found'
+                                                                ? 'Mikrofon tidak terdeteksi'
+                                                                : micErrorKind === 'in-use'
+                                                                  ? 'Mikrofon sedang dipakai aplikasi lain'
+                                                                  : micErrorKind === 'unsupported'
+                                                                    ? 'Browser tidak mendukung akses mikrofon'
+                                                                    : micErrorKind === 'system-denied'
+                                                                      ? 'Akses mikrofon diblokir oleh sistem operasi'
+                                                                      : 'Akses mikrofon diblokir'}
+                                                        </p>
+                                                        <p className="text-red-700/90">
+                                                            {micErrorKind === 'not-found'
+                                                                ? 'Pastikan perangkat mikrofon kamu sudah terpasang.'
+                                                                : micErrorKind === 'in-use'
+                                                                  ? 'Tutup aplikasi lain (Zoom, Meet, Discord) yang sedang menggunakan mikrofon.'
+                                                                  : micErrorKind === 'unsupported'
+                                                                    ? 'Coba pakai browser modern seperti Chrome, Firefox, atau Safari versi terbaru.'
+                                                                    : 'Klik tombol di bawah untuk minta izin, atau lihat panduan jika popup tidak muncul.'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            void startMicPreview();
+                                                        }}
+                                                        disabled={
+                                                            micRequesting ||
+                                                            micErrorKind === 'unsupported'
+                                                        }
+                                                        className="h-8 gap-1.5 bg-red-600 text-white hover:bg-red-700"
+                                                    >
+                                                        <Mic className="size-3.5" />
+                                                        {micRequesting
+                                                            ? 'Meminta…'
+                                                            : 'Aktifkan Mikrofon'}
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() =>
+                                                            setShowMicHelp(true)
+                                                        }
+                                                        className="h-8 gap-1.5 border-red-200 bg-white text-red-700 hover:bg-red-50"
+                                                    >
+                                                        <HelpCircle className="size-3.5" />
+                                                        Panduan
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Panduan Wawancara — hanya untuk mode voice */}
@@ -1675,7 +1830,212 @@ export default function CandidateAiInterviewShow({
                     </div>
                 </div>
             </div>
+
+            <MicHelpDialog
+                open={showMicHelp}
+                onOpenChange={setShowMicHelp}
+                browser={browser}
+                errorKind={micErrorKind}
+                onRetry={() => {
+                    setShowMicHelp(false);
+                    void startMicPreview();
+                }}
+            />
         </>
+    );
+}
+
+type MicHelpDialogProps = {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    browser: BrowserKind;
+    errorKind: MicErrorKind;
+    onRetry: () => void;
+};
+
+function MicHelpDialog({
+    open,
+    onOpenChange,
+    browser,
+    errorKind,
+    onRetry,
+}: MicHelpDialogProps) {
+    const browserLabel = {
+        brave: 'Brave',
+        chrome: 'Chrome',
+        firefox: 'Firefox',
+        safari: 'Safari',
+        edge: 'Edge',
+        other: 'browser kamu',
+    }[browser];
+
+    const browserSteps: Record<BrowserKind, string[]> = {
+        brave: [
+            'Klik ikon gembok atau ikon Brave (singa) di sebelah kiri alamat URL.',
+            'Cari menu "Microphone" atau "Site settings".',
+            'Ubah pilihan menjadi "Allow" atau "Ask".',
+            'Refresh halaman ini (Cmd/Ctrl + R), lalu klik "Coba Lagi" di bawah.',
+        ],
+        chrome: [
+            'Klik ikon gembok di sebelah kiri alamat URL.',
+            'Klik "Site settings".',
+            'Pada bagian "Microphone", pilih "Allow".',
+            'Refresh halaman (Cmd/Ctrl + R), lalu klik "Coba Lagi".',
+        ],
+        firefox: [
+            'Klik ikon gembok di kiri alamat URL.',
+            'Klik tanda "x" di sebelah "Blocked Temporarily" atau "Blocked" untuk mikrofon.',
+            'Refresh halaman dan izinkan popup mikrofon saat muncul.',
+        ],
+        safari: [
+            'Buka menu Safari → Settings → tab "Websites".',
+            'Pilih "Microphone" di sidebar kiri.',
+            'Cari karivia.id di list, ubah menjadi "Allow".',
+            'Refresh halaman ini lalu klik "Coba Lagi".',
+        ],
+        edge: [
+            'Klik ikon gembok di sebelah kiri alamat URL.',
+            'Klik "Permissions for this site".',
+            'Pada "Microphone", pilih "Allow".',
+            'Refresh halaman dan klik "Coba Lagi".',
+        ],
+        other: [
+            'Cari ikon gembok atau pengaturan situs di address bar.',
+            'Izinkan akses mikrofon untuk karivia.id.',
+            'Refresh halaman ini lalu klik "Coba Lagi".',
+        ],
+    };
+
+    const macSystemSteps = [
+        'Buka System Settings (Apple menu → System Settings).',
+        'Pilih "Privacy & Security" → "Microphone".',
+        `Pastikan toggle untuk ${browserLabel} dinyalakan (ON).`,
+        `Tutup ${browserLabel} sepenuhnya (Cmd + Q), buka lagi, lalu kembali ke halaman ini.`,
+    ];
+
+    const showSystemSection =
+        errorKind === 'system-denied' ||
+        errorKind === 'not-allowed' ||
+        errorKind === 'security' ||
+        errorKind === 'unknown';
+
+    const showBrowserSection =
+        errorKind === 'not-allowed' ||
+        errorKind === 'security' ||
+        errorKind === 'system-denied' ||
+        errorKind === 'unknown';
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-lg">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Mic className="size-5 text-red-600" />
+                        Cara Mengaktifkan Mikrofon
+                    </DialogTitle>
+                    <DialogDescription>
+                        {errorKind === 'not-found'
+                            ? 'Mikrofon belum terdeteksi. Pastikan headset atau mic kamu sudah terpasang.'
+                            : errorKind === 'in-use'
+                              ? 'Mikrofon sedang dipakai aplikasi lain (Zoom, Meet, Discord, dll). Tutup dulu aplikasi tersebut.'
+                              : errorKind === 'unsupported'
+                                ? `${browserLabel} tidak mendukung akses mikrofon. Pakai browser modern seperti Chrome, Firefox, atau Safari versi terbaru.`
+                                : `Ikuti panduan di bawah untuk mengizinkan akses mikrofon di ${browserLabel}.`}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-5 text-sm">
+                    {showBrowserSection && (
+                        <section className="space-y-2">
+                            <h3 className="flex items-center gap-2 font-semibold text-slate-900">
+                                <span className="flex size-6 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700">
+                                    1
+                                </span>
+                                Izinkan di {browserLabel}
+                            </h3>
+                            <ol className="ml-8 list-decimal space-y-1.5 text-slate-700 marker:text-slate-400">
+                                {browserSteps[browser].map((step, idx) => (
+                                    <li key={idx}>{step}</li>
+                                ))}
+                            </ol>
+                        </section>
+                    )}
+
+                    {showSystemSection && (
+                        <section className="space-y-2">
+                            <h3 className="flex items-center gap-2 font-semibold text-slate-900">
+                                <span className="flex size-6 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700">
+                                    {showBrowserSection ? 2 : 1}
+                                </span>
+                                Cek izin di macOS (jika masih gagal)
+                            </h3>
+                            <p className="ml-8 text-xs text-slate-500">
+                                Khusus pengguna Mac — di Windows/Linux langkah ini bisa dilewati.
+                            </p>
+                            <ol className="ml-8 list-decimal space-y-1.5 text-slate-700 marker:text-slate-400">
+                                {macSystemSteps.map((step, idx) => (
+                                    <li key={idx}>{step}</li>
+                                ))}
+                            </ol>
+                        </section>
+                    )}
+
+                    {errorKind === 'not-found' && (
+                        <section className="space-y-2">
+                            <h3 className="font-semibold text-slate-900">
+                                Tips
+                            </h3>
+                            <ul className="ml-5 list-disc space-y-1 text-slate-700 marker:text-slate-400">
+                                <li>
+                                    Pastikan headset/earphone tertancap penuh ke port audio.
+                                </li>
+                                <li>
+                                    Untuk Bluetooth, pastikan device sudah ter-pair dan tersambung.
+                                </li>
+                                <li>
+                                    Coba cabut-pasang ulang perangkat mic.
+                                </li>
+                            </ul>
+                        </section>
+                    )}
+
+                    {errorKind === 'in-use' && (
+                        <section className="space-y-2">
+                            <h3 className="font-semibold text-slate-900">
+                                Aplikasi yang sering memakai mic:
+                            </h3>
+                            <ul className="ml-5 list-disc space-y-1 text-slate-700 marker:text-slate-400">
+                                <li>Zoom, Google Meet, Microsoft Teams</li>
+                                <li>Discord, Slack huddle</li>
+                                <li>OBS Studio atau aplikasi recording lainnya</li>
+                            </ul>
+                            <p className="text-slate-600">
+                                Tutup aplikasi tersebut, lalu klik "Coba Lagi".
+                            </p>
+                        </section>
+                    )}
+                </div>
+
+                <DialogFooter className="gap-2 sm:gap-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                    >
+                        Tutup
+                    </Button>
+                    <Button
+                        type="button"
+                        onClick={onRetry}
+                        disabled={errorKind === 'unsupported'}
+                        className="gap-1.5"
+                    >
+                        <Mic className="size-4" />
+                        Coba Lagi
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
 
@@ -3112,6 +3472,7 @@ function AnswerForm({
                     {session.questions.map((q, idx) => {
                         const filled = (form.data.answers[q.id] ?? '').trim().length > 0;
                         const isActive = idx === currentIndex;
+
                         return (
                             <button
                                 key={q.id}
