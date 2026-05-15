@@ -36,7 +36,7 @@ class AdminAiHealthController extends Controller
         $reply = $ai->chat([
             ['role' => 'system', 'content' => 'You are a health probe. Reply with the single word OK.'],
             ['role' => 'user', 'content' => 'ping'],
-        ], maxTokens: 20, temperature: 0.0);
+        ], maxTokens: 200, temperature: 0.0);
         $latencyMs = (int) round((microtime(true) - $startedAt) * 1000);
 
         $usage = $ai->tokenUsage();
