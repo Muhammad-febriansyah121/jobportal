@@ -44,7 +44,7 @@ class HomeController extends Controller
                 'created_at',
                 'status',
             ])
-            ->with('company:id,name')
+            ->with('company:id,name,logo_url')
             ->withCount('applications')
             ->where(fn ($query) => $query->whereNull('closes_at')->orWhere('closes_at', '>=', now()))
             ->orderByDesc('is_urgent')
@@ -72,6 +72,7 @@ class HomeController extends Controller
             'is_urgent' => (bool) $job->is_urgent,
             'is_few_applicants' => $job->is_few_applicants,
             'company' => $job->is_anonymous ? null : $job->company?->name,
+            'company_logo' => $job->is_anonymous ? null : $job->company?->logo_url,
             'type' => str($job->job_type)->headline()->toString(),
             'work_mode' => str($job->work_mode)->headline()->toString(),
             'location' => collect([$job->location_city, $job->location_province])->filter()->implode(', '),

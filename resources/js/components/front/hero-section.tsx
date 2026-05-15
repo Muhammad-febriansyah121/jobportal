@@ -17,6 +17,7 @@ type HeroJob = {
     is_urgent?: boolean;
     is_few_applicants?: boolean;
     company?: string | null;
+    company_logo?: string | null;
     type: string;
     work_mode: string;
     location: string;
@@ -1285,8 +1286,24 @@ export default function HeroSection({
 
                                         {/* Header */}
                                         <div className="flex items-start gap-3">
-                                            <div className={`flex size-11 shrink-0 items-center justify-center rounded-xl text-[13px] font-bold shadow-sm ${job.is_anonymous ? 'bg-amber-100 text-amber-600' : 'bg-linear-to-br from-primary to-primary-400 text-white'}`}>
-                                                {initials}
+                                            <div className={`flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl text-[13px] font-bold shadow-sm ${job.is_anonymous ? 'bg-amber-100 text-amber-600' : job.company_logo ? 'bg-white ring-1 ring-gray-200' : 'bg-linear-to-br from-primary to-primary-400 text-white'}`}>
+                                                {!job.is_anonymous && job.company_logo ? (
+                                                    <img
+                                                        src={job.company_logo}
+                                                        alt={job.company ?? ''}
+                                                        className="size-full object-cover"
+                                                        onError={(e) => {
+                                                            e.currentTarget.style.display = 'none';
+                                                            e.currentTarget.parentElement?.classList.remove('bg-white', 'ring-1', 'ring-gray-200');
+                                                            e.currentTarget.parentElement?.classList.add('bg-linear-to-br', 'from-primary', 'to-primary-400', 'text-white');
+                                                            const span = document.createElement('span');
+                                                            span.textContent = initials;
+                                                            e.currentTarget.parentElement?.appendChild(span);
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    initials
+                                                )}
                                             </div>
                                             <div className="min-w-0 flex-1">
                                                 <p className="line-clamp-2 text-sm leading-snug font-semibold text-gray-900 transition-colors group-hover:text-primary">
