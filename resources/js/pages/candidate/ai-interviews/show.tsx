@@ -251,6 +251,34 @@ export default function CandidateAiInterviewShow({
         setCameraStream(null);
     }, []);
 
+    const startMicPreview = useCallback(async () => {
+        if (!navigator.mediaDevices?.getUserMedia) {
+            return;
+        }
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                },
+            });
+
+            setMicPermission('granted');
+            setMicrophoneDetected(true);
+
+            stream.getTracks().forEach((track) => track.stop());
+        } catch (error) {
+            const name = (error as DOMException)?.name;
+            if (name === 'NotAllowedError' || name === 'SecurityError') {
+                setMicPermission('denied');
+            } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+                setMicrophoneDetected(false);
+            }
+        }
+    }, []);
+
     const refreshDevices = useCallback(async () => {
         if (!navigator.mediaDevices?.enumerateDevices) {
             return;
@@ -547,6 +575,7 @@ export default function CandidateAiInterviewShow({
         if (!isPractice) {
             void startCameraPreview();
         }
+        void startMicPreview();
 
         let permissionStatus: PermissionStatus | null = null;
 
@@ -573,7 +602,7 @@ export default function CandidateAiInterviewShow({
                 permissionStatus.onchange = null;
             }
         };
-    }, [refreshDevices, startCameraPreview, isPractice]);
+    }, [refreshDevices, startCameraPreview, startMicPreview, isPractice]);
 
     useEffect(() => {
         if (!connected) {
