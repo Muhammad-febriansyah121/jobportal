@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\SkillQuizGenerator;
 use App\Models\ActivityLog;
 use App\Models\AssessmentQuestion;
 use App\Models\CandidatePricingMenu;
@@ -144,23 +145,25 @@ test('admin can manage assessment question bank and generate ai questions', func
     expect($question->question)->toContain('discriminated union');
 
     $this->mock(AiService::class, function ($mock): void {
-        $mock->shouldReceive('chat')
-            ->once()
-            ->andReturn(json_encode([
-                'questions' => [
-                    [
-                        'question' => 'Apa tujuan generic di TypeScript?',
-                        'options' => ['Reusable type-safe code', 'Mempercepat CSS', 'Menggantikan HTML', 'Menghapus runtime'],
-                        'answer_index' => 0,
-                    ],
-                    [
-                        'question' => 'Kapan union type dipakai?',
-                        'options' => ['Saat nilai bisa beberapa tipe', 'Hanya untuk angka', 'Hanya untuk interface', 'Tidak pernah'],
-                        'answer_index' => 0,
-                    ],
-                ],
-            ]));
+        $mock->shouldReceive('isConfigured')->andReturnTrue();
     });
+
+    SkillQuizGenerator::fake([
+        json_encode([
+            'questions' => [
+                [
+                    'question' => 'Apa tujuan generic di TypeScript?',
+                    'options' => ['Reusable type-safe code', 'Mempercepat CSS', 'Menggantikan HTML', 'Menghapus runtime'],
+                    'answer_index' => 0,
+                ],
+                [
+                    'question' => 'Kapan union type dipakai?',
+                    'options' => ['Saat nilai bisa beberapa tipe', 'Hanya untuk angka', 'Hanya untuk interface', 'Tidak pernah'],
+                    'answer_index' => 0,
+                ],
+            ],
+        ]),
+    ]);
 
     $this->actingAs($admin)
         ->post(route('admin.assessment-questions.store'), [

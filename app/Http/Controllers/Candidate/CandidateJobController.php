@@ -160,7 +160,6 @@ class CandidateJobController extends Controller
                 ->first()
             : null;
 
-        $aiInsight = $candidate ? $generateJobAiInsight->handle($jobListing, $candidate) : null;
         $applicationChance = $candidate ? $predictItJobAcceptance->handle($jobListing, $candidate) : null;
 
         $shouldRenderApplyPage = ! $isPublicRoute
@@ -199,7 +198,17 @@ class CandidateJobController extends Controller
                     'company_median_response_hours' => $jobListing->is_anonymous ? null : $jobListing->company?->median_response_hours,
                     'matched_skills' => $matchScore?->matched_skills ?? [],
                     'missing_skills' => $matchScore?->missing_skills ?? [],
-                    'ai_insight' => $aiInsight,
+                    'ai_insight' => $candidate
+                        ? Inertia::defer(function () use ($generateJobAiInsight, $jobListing, $candidate) {
+                            try {
+                                return $generateJobAiInsight->handle($jobListing, $candidate);
+                            } catch (\Throwable $e) {
+                                report($e);
+
+                                return null;
+                            }
+                        })
+                        : null,
                     'ai_interview_application_id' => $candidateApplication?->id,
                     'screening_questions' => $jobListing->screeningQuestions
                         ->map(fn ($question): array => [

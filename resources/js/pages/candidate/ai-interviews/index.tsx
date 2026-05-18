@@ -867,14 +867,14 @@ function SkillDrillSection({
                                 }
                                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                             >
-                                <option value="text">
-                                    {t(
-                                        'candidate.ai_interviews.mode_text_short',
-                                    )}
-                                </option>
                                 <option value="voice">
                                     {t(
                                         'candidate.ai_interviews.mode_voice_short',
+                                    )}
+                                </option>
+                                <option value="text">
+                                    {t(
+                                        'candidate.ai_interviews.mode_text_short',
                                     )}
                                 </option>
                             </select>

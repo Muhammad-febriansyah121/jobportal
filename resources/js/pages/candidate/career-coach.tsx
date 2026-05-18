@@ -1,4 +1,4 @@
-import { Form, Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     BarChart3,
     BookOpen,
@@ -15,7 +15,7 @@ import {
     TrendingUp,
     Workflow,
 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import CandidateCareerCoachController from '@/actions/App/Http/Controllers/Candidate/CandidateCareerCoachController';
 import { CareerModuleTabs } from '@/components/candidate/career-module-tabs';
 import { CvReviewCard, type CvReview } from '@/components/candidate/cv-review-card';
@@ -154,6 +154,59 @@ function ChatPanel({
     quickPrompts: string[];
 }) {
     const { t } = useTranslate();
+    const [streamingUser, setStreamingUser] = useState<string | null>(null);
+    const [streamingAssistant, setStreamingAssistant] = useState<string | null>(
+        null,
+    );
+    const [isStreaming, setIsStreaming] = useState(false);
+    const prevMessagesLength = useRef(activeSession?.messages.length ?? 0);
+
+    useEffect(() => {
+        const currentLen = activeSession?.messages.length ?? 0;
+        if (currentLen > prevMessagesLength.current) {
+            setStreamingUser(null);
+            setStreamingAssistant(null);
+        }
+        prevMessagesLength.current = currentLen;
+    }, [activeSession?.messages.length]);
+
+    const sendMessage = useCallback(
+        async (content: string) => {
+            const trimmed = content.trim();
+            if (trimmed === '' || isStreaming) {
+                return;
+            }
+
+            setStreamingUser(trimmed);
+            setStreamingAssistant('');
+            setIsStreaming(true);
+
+            try {
+                await streamCoachChat(trimmed, activeSession?.id, (delta) => {
+                    setStreamingAssistant((prev) => (prev ?? '') + delta);
+                });
+                router.reload({
+                    only: [
+                        'activeSession',
+                        'sessions',
+                        'quickPrompts',
+                        'targetRecommendation',
+                        'recommendations',
+                    ],
+                });
+            } catch {
+                setStreamingAssistant(
+                    'Maaf, jaringan ke AI terputus. Coba lagi ya.',
+                );
+            } finally {
+                setIsStreaming(false);
+            }
+        },
+        [activeSession?.id, isStreaming],
+    );
+
+    const hasContent =
+        hasMessages || streamingUser !== null || streamingAssistant !== null;
 
     return (
         <Card
@@ -182,29 +235,53 @@ function ChatPanel({
             </header>
 
             <div className="flex-1 space-y-5 overflow-y-auto bg-[#f7f9fc] px-5 py-5">
-                {hasMessages && activeSession ? (
-                    activeSession.messages.map((message) =>
-                        message.role === 'user' ? (
-                            <UserMessage key={message.id} message={message} />
-                        ) : (
-                            <AssistantMessage key={message.id} message={message} />
-                        ),
-                    )
+                {hasContent ? (
+                    <>
+                        {activeSession?.messages.map((message) =>
+                            message.role === 'user' ? (
+                                <UserMessage key={message.id} message={message} />
+                            ) : (
+                                <AssistantMessage
+                                    key={message.id}
+                                    message={message}
+                                />
+                            ),
+                        )}
+                        {streamingUser !== null ? (
+                            <UserMessage
+                                message={{
+                                    id: -1,
+                                    role: 'user',
+                                    content: streamingUser,
+                                }}
+                            />
+                        ) : null}
+                        {streamingAssistant !== null ? (
+                            <AssistantMessage
+                                message={{
+                                    id: -2,
+                                    role: 'assistant',
+                                    content: streamingAssistant,
+                                }}
+                                streaming={isStreaming}
+                            />
+                        ) : null}
+                    </>
                 ) : (
                     <EmptyConversation />
                 )}
 
-                {hasMessages && quickPrompts.length > 0 ? (
+                {hasMessages && quickPrompts.length > 0 && !isStreaming ? (
                     <QuickPromptStrip
                         prompts={quickPrompts}
-                        sessionId={activeSession?.id}
+                        onSend={sendMessage}
                     />
                 ) : null}
 
                 <div ref={messagesEndRef} />
             </div>
 
-            <ChatComposer activeSession={activeSession} />
+            <ChatComposer onSend={sendMessage} isStreaming={isStreaming} />
 
             {sessions.length > 1 ? (
                 <div className="border-t border-[#eef2f6] bg-white px-5 py-3 text-xs text-muted-foreground">
@@ -215,6 +292,79 @@ function ChatPanel({
             ) : null}
         </Card>
     );
+}
+
+async function streamCoachChat(
+    content: string,
+    sessionId: number | undefined,
+    onDelta: (delta: string) => void,
+): Promise<void> {
+    const csrfToken =
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? '';
+
+    const response = await fetch(
+        CandidateCareerCoachController.stream.url(),
+        {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'text/event-stream',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({
+                session_id: sessionId,
+                content,
+            }),
+        },
+    );
+
+    if (!response.ok || !response.body) {
+        throw new Error(`Stream failed with status ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+            break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+
+        const chunks = buffer.split('\n\n');
+        buffer = chunks.pop() ?? '';
+
+        for (const chunk of chunks) {
+            const dataLine = chunk
+                .split('\n')
+                .find((line) => line.startsWith('data: '));
+            if (!dataLine) {
+                continue;
+            }
+            const payload = dataLine.slice(6).trim();
+            if (payload === '' || payload === '[DONE]') {
+                continue;
+            }
+            try {
+                const event = JSON.parse(payload);
+                if (
+                    event.type === 'text_delta' &&
+                    typeof event.delta === 'string'
+                ) {
+                    onDelta(event.delta);
+                }
+            } catch {
+                // Ignore malformed events.
+            }
+        }
+    }
 }
 
 function EmptyConversation() {
@@ -270,8 +420,15 @@ function UserMessage({ message }: { message: CoachMessage }) {
     );
 }
 
-function AssistantMessage({ message }: { message: CoachMessage }) {
+function AssistantMessage({
+    message,
+    streaming = false,
+}: {
+    message: CoachMessage;
+    streaming?: boolean;
+}) {
     const { t } = useTranslate();
+    const showTyping = streaming && message.content.trim() === '';
 
     return (
         <div className="flex justify-start">
@@ -287,7 +444,23 @@ function AssistantMessage({ message }: { message: CoachMessage }) {
                         {t('candidate.career_coach.assistant_label')}
                     </p>
                     <div className="space-y-2 rounded-2xl rounded-tl-sm border border-[#e6ebf3] bg-white px-4 py-3 text-sm leading-7 text-[#0f172a] shadow-sm">
-                        {renderRichText(message.content)}
+                        {showTyping ? (
+                            <span className="inline-flex items-center gap-1 text-muted-foreground">
+                                <span className="size-1.5 animate-bounce rounded-full bg-[#01296A] [animation-delay:-0.3s]" />
+                                <span className="size-1.5 animate-bounce rounded-full bg-[#01296A] [animation-delay:-0.15s]" />
+                                <span className="size-1.5 animate-bounce rounded-full bg-[#01296A]" />
+                            </span>
+                        ) : (
+                            <>
+                                {renderRichText(message.content)}
+                                {streaming ? (
+                                    <span
+                                        className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-[#01296A] align-middle"
+                                        aria-hidden="true"
+                                    />
+                                ) : null}
+                            </>
+                        )}
                     </div>
                     {message.created_at ? (
                         <p className="pl-1 text-[10px] font-medium tracking-wide text-muted-foreground">
@@ -324,29 +497,18 @@ function renderRichText(content: string) {
 
 function QuickPromptStrip({
     prompts,
-    sessionId,
+    onSend,
 }: {
     prompts: string[];
-    sessionId?: number;
+    onSend: (content: string) => void;
 }) {
-    const sendPrompt = (content: string) => {
-        router.post(
-            CandidateCareerCoachController.message.url(),
-            {
-                session_id: sessionId,
-                content,
-            },
-            { preserveScroll: true },
-        );
-    };
-
     return (
         <div className="flex flex-wrap gap-2 pl-11">
             {prompts.map((label, index) => (
                 <button
                     key={`${label}-${index}`}
                     type="button"
-                    onClick={() => sendPrompt(label)}
+                    onClick={() => onSend(label)}
                     className="inline-flex items-center rounded-full border border-[#dbe4f3] bg-white px-3.5 py-1.5 text-xs font-semibold text-[#01296A] transition hover:border-[#01296A] hover:bg-[#eaf2ff]"
                 >
                     {label}
@@ -356,76 +518,81 @@ function QuickPromptStrip({
     );
 }
 
-function ChatComposer({ activeSession }: { activeSession: ActiveSession | null }) {
+function ChatComposer({
+    onSend,
+    isStreaming,
+}: {
+    onSend: (content: string) => void;
+    isStreaming: boolean;
+}) {
     const { t } = useTranslate();
+    const [content, setContent] = useState('');
+    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+    const submit = () => {
+        const trimmed = content.trim();
+        if (trimmed === '' || isStreaming) {
+            return;
+        }
+        onSend(trimmed);
+        setContent('');
+        textareaRef.current?.focus();
+    };
 
     return (
         <div className="border-t border-[#eef2f6] bg-white px-4 py-4 md:px-5">
-            <Form
-                {...CandidateCareerCoachController.message.form()}
-                resetOnSuccess
+            <form
+                onSubmit={(event) => {
+                    event.preventDefault();
+                    submit();
+                }}
                 className="space-y-2"
             >
-                {({ processing, errors }) => (
-                    <>
-                        {activeSession ? (
-                            <input
-                                type="hidden"
-                                name="session_id"
-                                value={activeSession.id}
-                            />
-                        ) : null}
-                        <div className="flex items-end gap-2 rounded-2xl border border-[#dde6f5] bg-white px-3 py-2 shadow-xs focus-within:border-[#01296A] focus-within:ring-2 focus-within:ring-[#01296A]/20">
-                            <label htmlFor="career-coach-content" className="sr-only">
-                                {t('candidate.career_coach.message_label')}
-                            </label>
-                            <textarea
-                                id="career-coach-content"
-                                name="content"
-                                rows={1}
-                                placeholder={t(
-                                    'candidate.career_coach.composer_placeholder',
-                                )}
-                                className="min-h-9 max-h-32 flex-1 resize-none border-0 bg-transparent text-sm leading-6 text-[#0f172a] outline-none placeholder:text-[#94a3b8] focus:ring-0"
-                                onKeyDown={(event) => {
-                                    if (
-                                        event.key === 'Enter' &&
-                                        !event.shiftKey &&
-                                        !processing
-                                    ) {
-                                        event.preventDefault();
-                                        event.currentTarget.form?.requestSubmit();
-                                    }
-                                }}
-                            />
-                            <Button
-                                type="submit"
-                                size="icon"
-                                disabled={processing}
-                                aria-label={t('candidate.career_coach.send_message')}
-                                className="size-10 shrink-0 rounded-xl bg-[#01296A] text-white hover:bg-[#001D4D] disabled:opacity-60"
-                            >
-                                {processing ? (
-                                    <Loader2 className="size-4 animate-spin" />
-                                ) : (
-                                    <Send className="size-4" />
-                                )}
-                            </Button>
-                        </div>
-                        {errors.content ? (
-                            <p
-                                role="alert"
-                                className="text-xs font-medium text-rose-600"
-                            >
-                                {errors.content}
-                            </p>
-                        ) : null}
-                        <p className="text-[11px] leading-5 text-muted-foreground">
-                            {t('candidate.career_coach.disclaimer')}
-                        </p>
-                    </>
-                )}
-            </Form>
+                <div className="flex items-end gap-2 rounded-2xl border border-[#dde6f5] bg-white px-3 py-2 shadow-xs focus-within:border-[#01296A] focus-within:ring-2 focus-within:ring-[#01296A]/20">
+                    <label htmlFor="career-coach-content" className="sr-only">
+                        {t('candidate.career_coach.message_label')}
+                    </label>
+                    <textarea
+                        ref={textareaRef}
+                        id="career-coach-content"
+                        name="content"
+                        rows={1}
+                        value={content}
+                        onChange={(event) => setContent(event.target.value)}
+                        placeholder={t(
+                            'candidate.career_coach.composer_placeholder',
+                        )}
+                        className="min-h-9 max-h-32 flex-1 resize-none border-0 bg-transparent text-sm leading-6 text-[#0f172a] outline-none placeholder:text-[#94a3b8] focus:ring-0"
+                        disabled={isStreaming}
+                        onKeyDown={(event) => {
+                            if (
+                                event.key === 'Enter' &&
+                                !event.shiftKey &&
+                                !isStreaming
+                            ) {
+                                event.preventDefault();
+                                submit();
+                            }
+                        }}
+                    />
+                    <Button
+                        type="submit"
+                        size="icon"
+                        disabled={isStreaming || content.trim() === ''}
+                        aria-label={t('candidate.career_coach.send_message')}
+                        className="size-10 shrink-0 rounded-xl bg-[#01296A] text-white hover:bg-[#001D4D] disabled:opacity-60"
+                    >
+                        {isStreaming ? (
+                            <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                            <Send className="size-4" />
+                        )}
+                    </Button>
+                </div>
+                <p className="text-[11px] leading-5 text-muted-foreground">
+                    {t('candidate.career_coach.disclaimer')}
+                </p>
+            </form>
         </div>
     );
 }

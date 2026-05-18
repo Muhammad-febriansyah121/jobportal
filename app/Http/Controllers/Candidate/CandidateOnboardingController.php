@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Candidate;
 
 use App\Actions\Candidate\ResolveCandidateProfile;
+use App\Ai\Agents\CvParser;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Candidate\SaveCandidateProfileRequest;
 use App\Models\CandidateProfile;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class CandidateOnboardingController extends Controller
 {
@@ -121,6 +123,8 @@ class CandidateOnboardingController extends Controller
             'cv_file' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
         ]);
 
+        @set_time_limit(0);
+
         $file = $request->file('cv_file');
         $cvText = $extractor->extractFromPath($file->getPathname(), (string) $file->getMimeType());
 
@@ -128,15 +132,17 @@ class CandidateOnboardingController extends Controller
             return response()->json(['error' => 'Teks tidak dapat diekstrak dari file ini. Coba file lain atau isi form manual.'], 422);
         }
 
-        $parsed = $ai->chatJson(
-            [
-                ['role' => 'system', 'content' => 'You are a CV/resume parser. Extract structured information. Return only valid JSON. For dates use YYYY-MM-DD. For years use integers. Do not invent data.'],
-                ['role' => 'user', 'content' => "Parse the following CV text:\n\n---\n{$cvText}\n---"],
-            ],
-            $this->cvParseSchema(),
-            'cv_parse_result',
-            maxTokens: 2000,
-        );
+        if (! $ai->isConfigured()) {
+            return response()->json(['error' => 'AI belum dikonfigurasi. Isi form manual.'], 422);
+        }
+
+        $parsed = null;
+        try {
+            $response = (new CvParser)->prompt("Parse the following CV text:\n\n---\n{$cvText}\n---");
+            $parsed = $response->toArray();
+        } catch (Throwable) {
+            // Fall through to error response.
+        }
 
         if (! is_array($parsed)) {
             return response()->json(['error' => 'AI tidak dapat memproses CV ini. Coba lagi atau isi form manual.'], 422);
@@ -195,60 +201,9 @@ class CandidateOnboardingController extends Controller
 
         try {
             return Carbon::parse($value)->format('Y-m-d');
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return '';
         }
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function cvParseSchema(): array
-    {
-        return [
-            'type' => 'object',
-            'properties' => [
-                'full_name' => ['type' => 'string'],
-                'headline' => ['type' => 'string'],
-                'summary' => ['type' => 'string'],
-                'location_city' => ['type' => 'string'],
-                'location_province' => ['type' => 'string'],
-                'skills' => ['type' => 'array', 'items' => ['type' => 'string']],
-                'experiences' => [
-                    'type' => 'array',
-                    'items' => [
-                        'type' => 'object',
-                        'properties' => [
-                            'company_name' => ['type' => 'string'],
-                            'job_title' => ['type' => 'string'],
-                            'start_date' => ['type' => 'string'],
-                            'end_date' => ['type' => 'string'],
-                            'is_current' => ['type' => 'boolean'],
-                        ],
-                        'required' => ['company_name', 'job_title', 'start_date', 'end_date', 'is_current'],
-                        'additionalProperties' => false,
-                    ],
-                ],
-                'educations' => [
-                    'type' => 'array',
-                    'items' => [
-                        'type' => 'object',
-                        'properties' => [
-                            'institution' => ['type' => 'string'],
-                            'degree' => ['type' => 'string'],
-                            'field_of_study' => ['type' => 'string'],
-                            'start_year' => ['type' => 'string'],
-                            'end_year' => ['type' => 'string'],
-                            'gpa' => ['type' => 'string'],
-                        ],
-                        'required' => ['institution', 'degree', 'field_of_study', 'start_year', 'end_year', 'gpa'],
-                        'additionalProperties' => false,
-                    ],
-                ],
-            ],
-            'required' => ['full_name', 'headline', 'summary', 'location_city', 'location_province', 'skills', 'experiences', 'educations'],
-            'additionalProperties' => false,
-        ];
     }
 
     private function profilePayload(CandidateProfile $candidate): array

@@ -11,8 +11,8 @@ test('home response includes security headers', function () {
     $response->assertHeader('Cross-Origin-Opener-Policy', 'same-origin');
     $response->assertHeader('Cross-Origin-Resource-Policy', 'same-origin');
 
-    expect($response->headers->get('Permissions-Policy'))->toContain('camera=()');
-    expect($response->headers->get('Permissions-Policy'))->toContain('microphone=()');
+    expect($response->headers->get('Permissions-Policy'))->toContain('camera=(self)');
+    expect($response->headers->get('Permissions-Policy'))->toContain('microphone=(self)');
     expect($response->headers->get('Permissions-Policy'))->toContain('geolocation=()');
 });
 

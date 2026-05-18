@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Candidate;
 
 use App\Actions\Candidate\BuildCandidateCvReview;
 use App\Actions\Candidate\ResolveCandidateProfile;
+use App\Ai\Agents\CareerCoach;
+use App\Ai\Agents\CareerCoachReplyGenerator;
 use App\Http\Controllers\Controller;
 use App\Models\AiAuditLog;
 use App\Models\AiCareerCoachingMessage;
@@ -11,12 +13,15 @@ use App\Models\AiCareerCoachingSession;
 use App\Models\AiCareerRecommendation;
 use App\Models\CandidateProfile;
 use App\Services\AiService;
+use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use JsonException;
+use Laravel\Ai\Responses\StreamedAgentResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CandidateCareerCoachController extends Controller
 {
@@ -177,6 +182,102 @@ class CandidateCareerCoachController extends Controller
         return back();
     }
 
+    public function stream(Request $request, ResolveCandidateProfile $resolveCandidateProfile): StreamedResponse|Responsable
+    {
+        $data = $request->validate([
+            'session_id' => ['nullable', 'integer', 'exists:ai_career_coaching_sessions,id'],
+            'content' => ['required', 'string', 'max:5000'],
+        ]);
+
+        @set_time_limit(0);
+
+        $userId = $request->user()->id;
+        $candidate = $resolveCandidateProfile->handle($request->user());
+        $session = filled($data['session_id'] ?? null)
+            ? $candidate->careerCoachingSessions()->whereKey($data['session_id'])->firstOrFail()
+            : $candidate->careerCoachingSessions()->create(['title' => 'Career coaching', 'status' => 'active']);
+
+        $userContent = $data['content'];
+
+        $session->messages()->create([
+            'role' => 'user',
+            'content' => $userContent,
+        ]);
+
+        $defaultPrompts = $this->defaultQuickPrompts();
+        $fallbackReply = 'Saya catat. Lengkapi profil dan target peran agar rekomendasi karier berikutnya makin presisi.';
+
+        if (! $this->ai->isConfigured()) {
+            $session->messages()->create([
+                'role' => 'assistant',
+                'content' => $fallbackReply,
+                'meta_json' => ['quick_prompts' => $defaultPrompts],
+            ]);
+            $session->touch();
+
+            return response()->stream(function () use ($fallbackReply): void {
+                echo 'data: '.json_encode(['type' => 'text_delta', 'delta' => $fallbackReply])."\n\n";
+                echo "data: [DONE]\n\n";
+            }, 200, [
+                'Content-Type' => 'text/event-stream',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'X-Accel-Buffering' => 'no',
+            ]);
+        }
+
+        $activeRecommendation = $this->resolveTargetRecommendation($candidate);
+        $agent = new CareerCoach($candidate, $session, $activeRecommendation);
+        $sessionId = $session->id;
+
+        return $agent
+            ->stream(
+                $userContent,
+                model: (string) config('services.openai.coach_model'),
+                timeout: 120,
+            )
+            ->then(function (StreamedAgentResponse $response) use (
+                $userId,
+                $session,
+                $sessionId,
+                $userContent,
+                $defaultPrompts,
+                $fallbackReply,
+                $candidate,
+            ): void {
+                $reply = trim((string) $response->text);
+
+                $session->messages()->create([
+                    'role' => 'assistant',
+                    'content' => $reply !== '' ? $reply : $fallbackReply,
+                    'meta_json' => ['quick_prompts' => $defaultPrompts],
+                ]);
+                $session->touch();
+
+                try {
+                    $context = $this->buildContext($candidate);
+                    $inputHash = hash('sha256', json_encode([
+                        'session_id' => $sessionId,
+                        'message' => $userContent,
+                    ], JSON_THROW_ON_ERROR));
+
+                    AiAuditLog::create([
+                        'user_id' => $userId,
+                        'feature' => 'candidate_career_coach_chat',
+                        'input_hash' => $inputHash,
+                        'input_json' => ['context' => $context, 'message' => $userContent],
+                        'output_json' => [
+                            'reply' => $reply !== '' ? $reply : $fallbackReply,
+                            'quick_prompts' => $defaultPrompts,
+                        ],
+                        'model_name' => (string) config('services.openai.coach_model'),
+                        'status' => $reply !== '' ? 'success' : 'fallback',
+                    ]);
+                } catch (JsonException) {
+                    // Audit log is best-effort.
+                }
+            });
+    }
+
     public function message(Request $request, ResolveCandidateProfile $resolveCandidateProfile): RedirectResponse
     {
         $data = $request->validate([
@@ -255,24 +356,6 @@ class CandidateCareerCoachController extends Controller
 
         $activeRecommendation = $this->resolveTargetRecommendation($candidate);
 
-        $messages = [
-            ['role' => 'system', 'content' => $this->systemPrompt()],
-            ['role' => 'system', 'content' => 'Profil kandidat: '.json_encode($context, JSON_UNESCAPED_UNICODE)],
-        ];
-
-        if ($activeRecommendation) {
-            $messages[] = [
-                'role' => 'system',
-                'content' => 'Rekomendasi target aktif: '.json_encode([
-                    'target_role' => $activeRecommendation['target_role'],
-                    'match_score' => $activeRecommendation['match_score'],
-                    'key_gap_insight' => $activeRecommendation['key_gap_insight'],
-                ], JSON_UNESCAPED_UNICODE),
-            ];
-        }
-
-        $messages = array_merge($messages, $history);
-
         try {
             $inputHash = hash('sha256', json_encode([
                 'context' => $context,
@@ -308,12 +391,19 @@ class CandidateCareerCoachController extends Controller
             ];
         }
 
-        $output = $this->ai->chatJson(
-            messages: $messages,
-            schema: $this->messageSchema(),
-            schemaName: 'career_coach_message',
-            maxTokens: 1800,
-        );
+        @set_time_limit(0);
+        $output = null;
+
+        try {
+            $contextJson = json_encode($context, JSON_UNESCAPED_UNICODE);
+            $response = (new CareerCoachReplyGenerator($session, $contextJson, $activeRecommendation))
+                ->prompt($userContent);
+            if (isset($response->structured) && is_array($response->structured)) {
+                $output = $response->structured;
+            }
+        } catch (\Throwable) {
+            $output = null;
+        }
 
         if (! is_array($output) || ! isset($output['reply'])) {
             AiAuditLog::create([
@@ -322,9 +412,8 @@ class CandidateCareerCoachController extends Controller
                 'input_hash' => $inputHash,
                 'input_json' => ['context' => $context, 'history' => $history, 'message' => $userContent],
                 'output_json' => ['reply' => $fallbackReply, 'quick_prompts' => $defaultPrompts],
-                'model_name' => $this->ai->modelName(),
+                'model_name' => (string) (config('services.openai.model') ?: 'gpt-5'),
                 'status' => 'fallback',
-                ...$this->ai->tokenUsage(),
             ]);
 
             return [
@@ -369,9 +458,8 @@ class CandidateCareerCoachController extends Controller
                 'quick_prompts' => $quickPrompts,
                 'recommendation_id' => $recommendationId,
             ],
-            'model_name' => $this->ai->modelName(),
+            'model_name' => (string) (config('services.openai.model') ?: 'gpt-5'),
             'status' => $reply !== '' ? 'success' : 'fallback',
-            ...$this->ai->tokenUsage(),
         ]);
 
         return [
@@ -456,90 +544,6 @@ class CandidateCareerCoachController extends Controller
                     ])
                     ->values()
                     ->all(),
-            ],
-        ];
-    }
-
-    private function systemPrompt(): string
-    {
-        return <<<'PROMPT'
-Kamu adalah pelatih karier AI di platform Karivia. Selalu balas dalam Bahasa Indonesia yang ringkas, hangat, dan actionable.
-
-Aturan output JSON yang HARUS kamu patuhi:
-- "reply": balasan singkat 3-6 kalimat. Kamu boleh memakai sintaks markdown ringan (**bold**) untuk menonjolkan nama peran, skill, atau frasa penting. Sebut profil kandidat secara spesifik (mis. peran, skill, industri) bila relevan.
-- "quick_prompts": berikan 2-4 lanjutan pertanyaan/aksi yang relevan dan singkat dalam Bahasa Indonesia (maks 60 karakter per item) — misal "Lihat Wawasan Gaji", "Bandingkan dengan peran PM".
-- "should_generate_path": true HANYA jika user secara eksplisit/menentukan minta peta jalur karier, target peran baru, atau analisis kesenjangan skill terstruktur. Jika user hanya bertanya umum, set false.
-- "recommendation": isi field-nya HANYA jika should_generate_path=true. target_role wajib spesifik (mis. "Product Design Lead (Sistem AI)"). match_score 0-100 berbasis profil. summary 2-3 kalimat menjelaskan rasional. growth_potential ringkas (mis. "+24% YoY"). salary_range realistis dalam IDR atau USD. key_gap_insight sorot 1 kesenjangan paling kritis. skill_breakdown 3-5 skill dengan current_level & required_level (0-100). learning_steps 3 langkah dengan title, description singkat, dan tag pendek (mis. "Direkomendasikan AI", "Strategis", "Dampak Tinggi").
-
-Selalu balas dalam Bahasa Indonesia. Jangan berhalusinasi data nominal/perusahaan; bila tidak yakin, tetap berikan gambaran umum dan sarankan verifikasi.
-PROMPT;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function messageSchema(): array
-    {
-        return [
-            'type' => 'object',
-            'additionalProperties' => false,
-            'required' => ['reply', 'quick_prompts', 'should_generate_path', 'recommendation'],
-            'properties' => [
-                'reply' => ['type' => 'string'],
-                'quick_prompts' => [
-                    'type' => 'array',
-                    'items' => ['type' => 'string'],
-                ],
-                'should_generate_path' => ['type' => 'boolean'],
-                'recommendation' => [
-                    'type' => 'object',
-                    'additionalProperties' => false,
-                    'required' => [
-                        'target_role',
-                        'match_score',
-                        'summary',
-                        'growth_potential',
-                        'salary_range',
-                        'key_gap_insight',
-                        'skill_breakdown',
-                        'learning_steps',
-                    ],
-                    'properties' => [
-                        'target_role' => ['type' => 'string'],
-                        'match_score' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 100],
-                        'summary' => ['type' => 'string'],
-                        'growth_potential' => ['type' => 'string'],
-                        'salary_range' => ['type' => 'string'],
-                        'key_gap_insight' => ['type' => 'string'],
-                        'skill_breakdown' => [
-                            'type' => 'array',
-                            'items' => [
-                                'type' => 'object',
-                                'additionalProperties' => false,
-                                'required' => ['name', 'current_level', 'required_level', 'note'],
-                                'properties' => [
-                                    'name' => ['type' => 'string'],
-                                    'current_level' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 100],
-                                    'required_level' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 100],
-                                    'note' => ['type' => 'string'],
-                                ],
-                            ],
-                        ],
-                        'learning_steps' => [
-                            'type' => 'array',
-                            'items' => [
-                                'type' => 'object',
-                                'additionalProperties' => false,
-                                'required' => ['title', 'description', 'tag'],
-                                'properties' => [
-                                    'title' => ['type' => 'string'],
-                                    'description' => ['type' => 'string'],
-                                    'tag' => ['type' => 'string'],
-                                ],
-                            ],
-                        ],
-                    ],
-                ],
             ],
         ];
     }

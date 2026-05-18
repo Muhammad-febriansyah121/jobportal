@@ -1,8 +1,10 @@
 <?php
 
+use App\Ai\Agents\CareerPathPlanner;
 use App\Models\AiCareerRecommendation;
 use App\Models\CandidateProfile;
 use App\Models\LearningPathStep;
+use App\Models\Setting;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -175,4 +177,48 @@ test('candidate generate falls back when ai is disabled', function () {
     expect($path)->not->toBeNull();
     expect($path->target_role)->toBe('AI Product Lead');
     expect($path->learningPathSteps()->count())->toBeGreaterThan(0);
+});
+
+test('candidate generate uses laravel ai agent when configured', function () {
+    Setting::set('ai_api_key', 'test-ai-key');
+    config()->set('services.openai.api_key', 'test-ai-key');
+
+    CareerPathPlanner::fake([
+        [
+            'target_role' => 'AI Product Lead',
+            'match_score' => 88,
+            'summary' => 'Cocok dengan pengalaman design dan minat AI.',
+            'growth_potential' => '+24% YoY',
+            'salary_range' => 'IDR 30 jt - 50 jt',
+            'key_gap_insight' => 'Pemahaman ML/LLM.',
+            'skill_breakdown' => [
+                ['name' => 'AI Strategy', 'current_level' => 55, 'required_level' => 85, 'note' => 'Asah strategi AI.'],
+            ],
+            'learning_steps' => [
+                ['title' => 'AI for Product Managers', 'description' => 'Kursus dasar AI.', 'tag' => 'Direkomendasikan AI'],
+                ['title' => 'Bangun prototipe', 'description' => 'Buat 1 prototipe produk AI.', 'tag' => 'Strategis'],
+            ],
+            'milestones' => [
+                ['title' => 'Selesaikan kursus AI', 'timeframe' => '0-3 bulan'],
+            ],
+        ],
+    ]);
+
+    $this->actingAs($this->candidate)
+        ->post(route('candidate.career-paths.generate'), [
+            'target_role' => 'AI Product Lead',
+            'focus' => 'AI Systems',
+            'notes' => 'Pindah dari design ke produk AI.',
+        ])
+        ->assertRedirect();
+
+    $path = AiCareerRecommendation::query()
+        ->where('candidate_id', $this->profile->id)
+        ->where('is_primary', true)
+        ->first();
+
+    expect($path)->not->toBeNull();
+    expect($path->target_role)->toBe('AI Product Lead');
+    expect($path->match_score)->toBe(88);
+    expect($path->learningPathSteps()->count())->toBe(2);
 });

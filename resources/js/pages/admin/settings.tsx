@@ -21,7 +21,7 @@ import { toast } from 'sonner';
 import { RichEditor } from '@/components/rich-editor';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTranslate } from '@/hooks/use-translate';
-import { update as settingsUpdate } from '@/routes/admin/settings';
+import { smtpTest as settingsSmtpTest, update as settingsUpdate } from '@/routes/admin/settings';
 
 type Tab = { key: string; label: string; icon: React.ElementType };
 
@@ -312,6 +312,8 @@ export default function AdminSettings({ settings }: SettingsProps) {
     const { t } = useTranslate();
     const get = (key: string) => settings[key] ?? '';
 
+    const smtpTestForm = useForm({ to: '' });
+
     const { data, setData, post, processing, transform } = useForm<
         Record<string, string | File | null | boolean>
     >({
@@ -359,6 +361,15 @@ export default function AdminSettings({ settings }: SettingsProps) {
         whatsapp_gateway_timeout: get('whatsapp_gateway_timeout') || '10',
         pakasir_project: get('pakasir_project'),
         pakasir_api_key: get('pakasir_api_key'),
+        smtp_host: get('smtp_host'),
+        smtp_port: get('smtp_port') || '587',
+        smtp_encryption: get('smtp_encryption') || 'tls',
+        smtp_auth: (get('smtp_auth') || '1') === '1',
+        smtp_username: get('smtp_username'),
+        smtp_password: '',
+        smtp_password_set: get('smtp_password_set') === '1',
+        smtp_from_address: get('smtp_from_address'),
+        smtp_from_name: get('smtp_from_name'),
     });
 
     const [activeTab, setActiveTab] = useState('umum');
@@ -805,6 +816,162 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                         onChange={set('maintenance_message')}
                                         placeholder={t('admin.settings.system.maintenance_message_placeholder')}
                                     />
+                                </Field>
+                            </Section>
+
+                            <Section icon={Mail} title={t('admin.settings.system.smtp_title')}>
+                                <Field label={t('admin.settings.system.smtp_host')}>
+                                    <Input
+                                        value={str('smtp_host')}
+                                        onChange={set('smtp_host')}
+                                        placeholder="mail.karivia.id"
+                                    />
+                                </Field>
+                                <Field label={t('admin.settings.system.smtp_port')}>
+                                    <Input
+                                        type="number"
+                                        value={str('smtp_port')}
+                                        onChange={set('smtp_port')}
+                                        placeholder="587"
+                                    />
+                                </Field>
+                                <Field label={t('admin.settings.system.smtp_encryption')}>
+                                    <select
+                                        value={str('smtp_encryption')}
+                                        onChange={(e) =>
+                                            setData(
+                                                'smtp_encryption' as never,
+                                                e.target.value as never,
+                                            )
+                                        }
+                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                                    >
+                                        <option value="tls">STARTTLS (587)</option>
+                                        <option value="ssl">SSL/TLS (465)</option>
+                                        <option value="none">{t('admin.settings.system.smtp_encryption_none')}</option>
+                                    </select>
+                                </Field>
+                                <Field label={t('admin.settings.system.smtp_auth')}>
+                                    <label className="flex cursor-pointer items-center gap-3">
+                                        <div className="relative shrink-0">
+                                            <input
+                                                type="checkbox"
+                                                className="sr-only"
+                                                checked={Boolean(data['smtp_auth'])}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'smtp_auth' as never,
+                                                        e.target.checked as never,
+                                                    )
+                                                }
+                                            />
+                                            <div
+                                                className={`h-6 w-11 rounded-full transition-colors ${data['smtp_auth'] ? 'bg-[#1E4D96]' : 'bg-muted-foreground/30'}`}
+                                            />
+                                            <div
+                                                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${data['smtp_auth'] ? 'translate-x-5.5' : 'translate-x-0.5'}`}
+                                            />
+                                        </div>
+                                        <span className="text-sm">
+                                            {data['smtp_auth']
+                                                ? t('admin.settings.system.smtp_auth_yes')
+                                                : t('admin.settings.system.smtp_auth_no')}
+                                        </span>
+                                    </label>
+                                </Field>
+                                <Field label={t('admin.settings.system.smtp_email')}>
+                                    <Input
+                                        type="email"
+                                        value={str('smtp_username')}
+                                        onChange={set('smtp_username')}
+                                        placeholder="support@karivia.id"
+                                    />
+                                </Field>
+                                <Field label={t('admin.settings.system.smtp_password')}>
+                                    <Input
+                                        type="password"
+                                        value={str('smtp_password')}
+                                        onChange={set('smtp_password')}
+                                        placeholder={
+                                            data['smtp_password_set']
+                                                ? t('admin.settings.system.smtp_password_filled')
+                                                : t('admin.settings.system.smtp_password_empty')
+                                        }
+                                    />
+                                    <p className="mt-1.5 text-xs text-muted-foreground">
+                                        {t('admin.settings.system.smtp_password_hint')}
+                                    </p>
+                                </Field>
+                                <Field label={t('admin.settings.system.smtp_from_address')}>
+                                    <Input
+                                        type="email"
+                                        value={str('smtp_from_address')}
+                                        onChange={set('smtp_from_address')}
+                                        placeholder="support@karivia.id"
+                                    />
+                                </Field>
+                                <Field label={t('admin.settings.system.smtp_from_name')}>
+                                    <Input
+                                        value={str('smtp_from_name')}
+                                        onChange={set('smtp_from_name')}
+                                        placeholder="Karivia"
+                                    />
+                                </Field>
+                                <Field label={t('admin.settings.system.smtp_test_to')} full>
+                                    <div className="flex flex-col gap-2 sm:flex-row">
+                                        <input
+                                            type="email"
+                                            value={smtpTestForm.data.to}
+                                            onChange={(e) =>
+                                                smtpTestForm.setData(
+                                                    'to',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            placeholder="email-tujuan@domain.com"
+                                            className="w-full rounded-lg border bg-white px-3 py-2 text-sm ring-offset-background transition outline-none focus:border-[#1E4D96] focus:ring-2 focus:ring-[#1E4D96]/50"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                smtpTestForm.post(
+                                                    settingsSmtpTest.url(),
+                                                    {
+                                                        preserveScroll: true,
+                                                        onSuccess: () => {
+                                                            smtpTestForm.reset();
+                                                        },
+                                                        onError: (errors) => {
+                                                            const firstError =
+                                                                Object.values(
+                                                                    errors,
+                                                                )[0];
+                                                            toast.error(
+                                                                typeof firstError ===
+                                                                    'string'
+                                                                    ? firstError
+                                                                    : t(
+                                                                          'admin.settings.system.smtp_test_failed',
+                                                                      ),
+                                                            );
+                                                        },
+                                                    },
+                                                )
+                                            }
+                                            disabled={
+                                                smtpTestForm.processing ||
+                                                smtpTestForm.data.to === ''
+                                            }
+                                            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[#1E4D96] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#1E4D96]/90 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            {smtpTestForm.processing
+                                                ? t('admin.settings.system.smtp_test_sending')
+                                                : t('admin.settings.system.smtp_test_send')}
+                                        </button>
+                                    </div>
+                                    <p className="mt-1.5 text-xs text-muted-foreground">
+                                        {t('admin.settings.system.smtp_test_hint')}
+                                    </p>
                                 </Field>
                             </Section>
 

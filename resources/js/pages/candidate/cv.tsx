@@ -57,6 +57,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslate } from '@/hooks/use-translate';
 import {
     builderDraft,
@@ -184,9 +185,9 @@ export default function CandidateCv({
     const { t } = useTranslate();
     const [isDrafting, setIsDrafting] = useState(false);
     const [aiDraftSheetOpen, setAiDraftSheetOpen] = useState(false);
-    const [aiReviewSheetOpen, setAiReviewSheetOpen] = useState(false);
     const [savedCvsSheetOpen, setSavedCvsSheetOpen] = useState(false);
     const [previewVisible, setPreviewVisible] = useState(true);
+    const [rightPanelView, setRightPanelView] = useState<'preview' | 'review'>('preview');
     const [openSections, setOpenSections] = useState<Set<string>>(
         () => new Set(['data-dasar']),
     );
@@ -376,7 +377,20 @@ export default function CandidateCv({
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => setAiReviewSheetOpen(true)}
+                            onClick={() => {
+                                setPreviewVisible(true);
+                                setRightPanelView('review');
+                                if (typeof document !== 'undefined') {
+                                    requestAnimationFrame(() => {
+                                        document
+                                            .getElementById('cv-right-panel')
+                                            ?.scrollIntoView({
+                                                behavior: 'smooth',
+                                                block: 'start',
+                                            });
+                                    });
+                                }
+                            }}
                         >
                             <FileSearch className="size-4" />
                             {t('candidate.cv_builder.ai_review')}
@@ -648,70 +662,6 @@ export default function CandidateCv({
                                     {t('candidate.cv_builder.ai_key_missing')}
                                 </p>
                             ) : null}
-                        </div>
-                    </SheetContent>
-                </Sheet>
-
-                {/* AI Review Sheet — controlled */}
-                <Sheet
-                    open={aiReviewSheetOpen}
-                    onOpenChange={setAiReviewSheetOpen}
-                >
-                    <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
-                        <SheetHeader>
-                            <SheetTitle>
-                                {t('candidate.cv_builder.ai_reviewer')}
-                            </SheetTitle>
-                            <SheetDescription>
-                                {t(
-                                    'candidate.cv_builder.ai_review_description',
-                                )}
-                            </SheetDescription>
-                        </SheetHeader>
-                        <div className="space-y-4 px-4 pb-6">
-                            <Field
-                                label={t(
-                                    'candidate.cv_builder.upload_for_review',
-                                )}
-                                name="cv_file"
-                                error={reviewForm.errors.cv_file}
-                            >
-                                <Input
-                                    type="file"
-                                    accept=".pdf,.doc,.docx,.txt"
-                                    onChange={(event) =>
-                                        reviewForm.setData(
-                                            'cv_file',
-                                            event.target.files?.[0] ?? null,
-                                        )
-                                    }
-                                />
-                            </Field>
-                            <Button
-                                type="button"
-                                onClick={generateReview}
-                                disabled={!aiEnabled || reviewForm.processing}
-                                className="w-full"
-                            >
-                                <FileSearch className="size-4" />
-                                {reviewForm.processing
-                                    ? t('candidate.cv_builder.analyzing_cv')
-                                    : t('candidate.cv_builder.review_with_ai')}
-                            </Button>
-
-                            {form.data.ai_review ? (
-                                <AiReviewBreakdown
-                                    review={form.data.ai_review}
-                                    scoreLabel={reviewScoreLabel}
-                                />
-                            ) : (
-                                <EmptyState
-                                    title={t('candidate.cv_builder.no_review')}
-                                    description={t(
-                                        'candidate.cv_builder.no_review_description',
-                                    )}
-                                />
-                            )}
                         </div>
                     </SheetContent>
                 </Sheet>
@@ -2225,53 +2175,174 @@ export default function CandidateCv({
                     </Card>
 
                     {previewVisible ? (
-                        <div className="xl:sticky xl:top-4 xl:self-start">
+                        <div
+                            id="cv-right-panel"
+                            className="xl:sticky xl:top-4 xl:self-start"
+                        >
                             <Card>
-                                <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
-                                    <div className="space-y-1">
-                                        <CardTitle>
-                                            {t(
-                                                'candidate.cv_builder.live_preview_title',
-                                            )}
-                                        </CardTitle>
-                                        <CardDescription>
-                                            {t(
-                                                'candidate.cv_builder.live_preview_description',
-                                            )}
-                                        </CardDescription>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <Button
-                                            asChild
-                                            size="sm"
-                                            variant="outline"
-                                        >
-                                            <a
-                                                href={builderPdf().url}
-                                                target="_blank"
-                                                rel="noreferrer"
+                                <Tabs
+                                    value={rightPanelView}
+                                    onValueChange={(value) =>
+                                        setRightPanelView(
+                                            value as 'preview' | 'review',
+                                        )
+                                    }
+                                >
+                                    <CardHeader className="flex flex-col gap-3 space-y-0 sm:flex-row sm:items-start sm:justify-between">
+                                        <div className="space-y-1">
+                                            <CardTitle>
+                                                {rightPanelView === 'review'
+                                                    ? t(
+                                                          'candidate.cv_builder.ai_reviewer',
+                                                      )
+                                                    : t(
+                                                          'candidate.cv_builder.live_preview_title',
+                                                      )}
+                                            </CardTitle>
+                                            <CardDescription>
+                                                {rightPanelView === 'review'
+                                                    ? t(
+                                                          'candidate.cv_builder.ai_review_description',
+                                                      )
+                                                    : t(
+                                                          'candidate.cv_builder.live_preview_description',
+                                                      )}
+                                            </CardDescription>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            {rightPanelView === 'preview' ? (
+                                                <Button
+                                                    asChild
+                                                    size="sm"
+                                                    variant="outline"
+                                                >
+                                                    <a
+                                                        href={builderPdf().url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                    >
+                                                        <Download className="size-4" />
+                                                        PDF
+                                                    </a>
+                                                </Button>
+                                            ) : null}
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="ghost"
+                                                className="hidden xl:inline-flex"
+                                                onClick={() =>
+                                                    setPreviewVisible(false)
+                                                }
+                                                aria-label="Tutup panel"
                                             >
-                                                <Download className="size-4" />
-                                                PDF
-                                            </a>
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="ghost"
-                                            className="hidden xl:inline-flex"
-                                            onClick={() =>
-                                                setPreviewVisible(false)
-                                            }
-                                            aria-label="Tutup preview"
-                                        >
-                                            <X className="size-4" />
-                                        </Button>
+                                                <X className="size-4" />
+                                            </Button>
+                                        </div>
+                                    </CardHeader>
+                                    <div className="px-6">
+                                        <TabsList className="w-full">
+                                            <TabsTrigger
+                                                value="preview"
+                                                className="flex-1 gap-1.5"
+                                            >
+                                                <Eye className="size-3.5" />
+                                                {t(
+                                                    'candidate.cv_builder.live_preview_title',
+                                                )}
+                                            </TabsTrigger>
+                                            <TabsTrigger
+                                                value="review"
+                                                className="flex-1 gap-1.5"
+                                            >
+                                                <FileSearch className="size-3.5" />
+                                                {t(
+                                                    'candidate.cv_builder.ai_review',
+                                                )}
+                                                {form.data.ai_review ? (
+                                                    <Badge
+                                                        className="ml-1"
+                                                        variant="secondary"
+                                                    >
+                                                        {
+                                                            form.data.ai_review
+                                                                .score
+                                                        }
+                                                        %
+                                                    </Badge>
+                                                ) : null}
+                                            </TabsTrigger>
+                                        </TabsList>
                                     </div>
-                                </CardHeader>
-                                <CardContent className="max-h-[82vh] overflow-y-auto p-0">
-                                    <CvLivePreview data={form.data} t={t} />
-                                </CardContent>
+                                    <TabsContent value="preview" className="mt-3">
+                                        <CardContent className="max-h-[82vh] overflow-y-auto p-0">
+                                            <CvLivePreview
+                                                data={form.data}
+                                                t={t}
+                                            />
+                                        </CardContent>
+                                    </TabsContent>
+                                    <TabsContent value="review" className="mt-3">
+                                        <CardContent className="max-h-[82vh] space-y-4 overflow-y-auto">
+                                            <Field
+                                                label={t(
+                                                    'candidate.cv_builder.upload_for_review',
+                                                )}
+                                                name="cv_file"
+                                                error={
+                                                    reviewForm.errors.cv_file
+                                                }
+                                            >
+                                                <Input
+                                                    type="file"
+                                                    accept=".pdf,.doc,.docx,.txt"
+                                                    onChange={(event) =>
+                                                        reviewForm.setData(
+                                                            'cv_file',
+                                                            event.target
+                                                                .files?.[0] ??
+                                                                null,
+                                                        )
+                                                    }
+                                                />
+                                            </Field>
+                                            <Button
+                                                type="button"
+                                                onClick={generateReview}
+                                                disabled={
+                                                    !aiEnabled ||
+                                                    reviewForm.processing
+                                                }
+                                                className="w-full"
+                                            >
+                                                <FileSearch className="size-4" />
+                                                {reviewForm.processing
+                                                    ? t(
+                                                          'candidate.cv_builder.analyzing_cv',
+                                                      )
+                                                    : t(
+                                                          'candidate.cv_builder.review_with_ai',
+                                                      )}
+                                            </Button>
+
+                                            {form.data.ai_review ? (
+                                                <AiReviewBreakdown
+                                                    review={form.data.ai_review}
+                                                    scoreLabel={reviewScoreLabel}
+                                                />
+                                            ) : (
+                                                <EmptyState
+                                                    title={t(
+                                                        'candidate.cv_builder.no_review',
+                                                    )}
+                                                    description={t(
+                                                        'candidate.cv_builder.no_review_description',
+                                                    )}
+                                                />
+                                            )}
+                                        </CardContent>
+                                    </TabsContent>
+                                </Tabs>
                             </Card>
                         </div>
                     ) : null}

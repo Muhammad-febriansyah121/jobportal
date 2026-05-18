@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Candidate;
 use App\Actions\Candidate\CandidateWalletManager;
 use App\Actions\Candidate\GenerateCustomInterviewQuestions;
 use App\Actions\Candidate\ResolveCandidateProfile;
+use App\Ai\Agents\InterviewAnalyzer;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Candidate\RescheduleAiInterviewRequest;
+use App\Jobs\GenerateInterviewQuestionsJob;
 use App\Jobs\RunAiInterviewAnalysisJob;
 use App\Models\AiAuditLog;
 use App\Models\AiInterviewQuestion;
@@ -129,7 +131,7 @@ class CandidateAiInterviewController extends Controller
             'setup' => [
                 'defaults' => [
                     'application_id' => $applicationPrefill,
-                    'interview_mode' => in_array($interviewModePrefill, self::SUPPORTED_INTERVIEW_MODES, true) ? $interviewModePrefill : 'text',
+                    'interview_mode' => in_array($interviewModePrefill, self::SUPPORTED_INTERVIEW_MODES, true) ? $interviewModePrefill : 'voice',
                     'interview_language' => in_array($interviewLanguagePrefill, self::SUPPORTED_INTERVIEW_LANGUAGES, true) ? $interviewLanguagePrefill : 'id',
                     'interview_focus' => in_array($interviewFocusPrefill, self::SUPPORTED_INTERVIEW_FOCUS, true) ? $interviewFocusPrefill : 'mixed',
                     'candidate_level' => in_array($candidateLevelPrefill, self::SUPPORTED_CANDIDATE_LEVELS, true) ? $candidateLevelPrefill : 'junior',
@@ -142,8 +144,8 @@ class CandidateAiInterviewController extends Controller
                 ],
                 'options' => [
                     'interview_modes' => [
-                        ['value' => 'text', 'label' => 'Teks (disarankan)'],
-                        ['value' => 'voice', 'label' => 'Voice AI'],
+                        ['value' => 'voice', 'label' => 'Voice AI (disarankan)'],
+                        ['value' => 'text', 'label' => 'Teks'],
                     ],
                     'interview_languages' => [
                         ['value' => 'id', 'label' => 'Bahasa Indonesia'],
@@ -369,6 +371,7 @@ class CandidateAiInterviewController extends Controller
             'interview_language' => $interviewLanguage,
             'duration_minutes' => $durationMinutes,
             'started_at' => now(),
+            'questions_preparing' => ! $application,
         ]);
         $walletManager->consumeAiInterviewQuota($candidate);
 
@@ -380,7 +383,9 @@ class CandidateAiInterviewController extends Controller
                 'question_count' => $questionCount,
             ]);
         } else {
-            $this->buildGeneralInterviewQuestions($session, $candidate, [
+            // Dispatch AI question generation to queue so the user lands on the
+            // interview screen immediately while the AI works in the background.
+            GenerateInterviewQuestionsJob::dispatch($session->id, [
                 'interview_focus' => $interviewFocus,
                 'candidate_level' => $candidateLevel,
                 'interview_language' => $interviewLanguage,
@@ -450,6 +455,7 @@ class CandidateAiInterviewController extends Controller
                 'declined_at' => $aiInterviewSession->declined_at?->format('d M Y H:i'),
                 'client_secret_url' => route('candidate.ai-interviews.client-secret', $aiInterviewSession),
                 'is_employer_scheduled' => $this->isEmployerScheduled($aiInterviewSession),
+                'questions_preparing' => (bool) $aiInterviewSession->questions_preparing,
                 'questions' => $questions->map(function (AiInterviewQuestion $question) use ($responses, $aiInterviewSession): array {
                     $hideResults = $this->isEmployerScheduled($aiInterviewSession);
 
@@ -1201,6 +1207,16 @@ class CandidateAiInterviewController extends Controller
     /**
      * @param  array{interview_focus: string, candidate_level: string, interview_language: string, question_count: int, target_role: string|null}  $options
      */
+    /**
+     * Public wrapper so GenerateInterviewQuestionsJob can invoke the same flow.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function buildGeneralInterviewQuestionsForJob(AiInterviewSession $session, CandidateProfile $candidate, array $options): void
+    {
+        $this->buildGeneralInterviewQuestions($session, $candidate, $options);
+    }
+
     private function buildGeneralInterviewQuestions(AiInterviewSession $session, CandidateProfile $candidate, array $options): void
     {
         $focus = (string) ($options['interview_focus'] ?? 'mixed');
@@ -1989,17 +2005,23 @@ PROMPT;
      */
     private function aiAnalysis(AiInterviewSession $session, AiService $ai): ?array
     {
+        @set_time_limit(0);
+
         $input = $this->analysisInput($session);
-        $result = $ai->chatJson([
-            [
-                'role' => 'system',
-                'content' => 'Anda adalah analis interview kerja Karivia. Nilai jawaban kandidat secara adil, berbasis bukti, dan kembalikan JSON sesuai schema.',
-            ],
-            [
-                'role' => 'user',
-                'content' => "Analisis interview berikut dan beri skor 0-100.\n\n".json_encode($input, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
-            ],
-        ], $this->analysisSchema(), 'ai_interview_analysis');
+        $result = null;
+
+        if ($ai->isConfigured()) {
+            try {
+                $response = (new InterviewAnalyzer)->prompt(
+                    "Analisis interview berikut dan beri skor 0-100.\n\n".json_encode($input, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
+                );
+                if (isset($response->structured) && is_array($response->structured)) {
+                    $result = $response->structured;
+                }
+            } catch (\Throwable) {
+                $result = null;
+            }
+        }
 
         AiAuditLog::create([
             'user_id' => $session->candidate?->user_id,
@@ -2007,9 +2029,8 @@ PROMPT;
             'input_hash' => hash('sha256', json_encode($input)),
             'input_json' => $input,
             'output_json' => $result,
-            'model_name' => $ai->modelName(),
+            'model_name' => (string) (config('services.openai.model') ?: 'gpt-5'),
             'status' => $result === null ? 'failed' : 'completed',
-            ...$ai->tokenUsage(),
         ]);
 
         return $result;

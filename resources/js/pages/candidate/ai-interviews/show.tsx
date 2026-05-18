@@ -11,6 +11,7 @@ import {
     HelpCircle,
     Info,
     ListChecks,
+    Loader2,
     Mic,
     MicOff,
     PhoneOff,
@@ -88,6 +89,7 @@ type AiInterviewShowProps = {
             created_at?: string | null;
         }>;
         client_secret_url: string;
+        questions_preparing?: boolean;
         questions: Array<{
             id: number;
             question: string;
@@ -182,6 +184,13 @@ export default function CandidateAiInterviewShow({
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const recordingChunksRef = useRef<Blob[]>([]);
     const recordingStreamRef = useRef<MediaStream | null>(null);
+    const prewarmedSecretRef = useRef<{
+        secret: string;
+        model: string;
+        language: 'id' | 'en';
+        expiresAt: number;
+    } | null>(null);
+    const prewarmInFlightRef = useRef<Promise<void> | null>(null);
     const [hasSentGreeting, setHasSentGreeting] = useState(false);
     const greetingPendingRef = useRef<boolean>(false);
     const [consented, setConsented] = useState(false);
@@ -262,6 +271,20 @@ export default function CandidateAiInterviewShow({
         !session.candidate_confirmed_at &&
         !session.started_at &&
         !session.declined_at;
+    const questionsPreparing = Boolean(session.questions_preparing);
+
+    // Poll for AI question generation progress while preparing flag is on.
+    useEffect(() => {
+        if (!questionsPreparing) {
+            return;
+        }
+
+        const interval = window.setInterval(() => {
+            router.reload({ only: ['session'] });
+        }, 2000);
+
+        return () => window.clearInterval(interval);
+    }, [questionsPreparing]);
 
     const startCameraPreview = useCallback(async () => {
         if (cameraStreamRef.current) {
@@ -658,9 +681,7 @@ export default function CandidateAiInterviewShow({
 
         void refreshDevices();
 
-        if (!isPractice) {
-            void startCameraPreview();
-        }
+        void startCameraPreview();
 
         void startMicPreview();
 
@@ -744,17 +765,103 @@ export default function CandidateAiInterviewShow({
         }
     }, [cameraStreamActive]);
 
+    const prewarmClientSecret = useCallback(async () => {
+        if (prewarmInFlightRef.current) {
+            return prewarmInFlightRef.current;
+        }
+
+        const cached = prewarmedSecretRef.current;
+        if (
+            cached &&
+            cached.language === interviewLanguage &&
+            cached.expiresAt > Date.now()
+        ) {
+            return;
+        }
+
+        const promise = (async () => {
+            try {
+                const response = await fetch(
+                    CandidateAiInterviewController.clientSecret.url(session.id),
+                    {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            interview_language: interviewLanguage,
+                        }),
+                        headers: {
+                            Accept: 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-XSRF-TOKEN': csrfToken(),
+                        },
+                        credentials: 'same-origin',
+                    },
+                );
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const payload = await response.json();
+
+                if (
+                    typeof payload?.client_secret === 'string' &&
+                    typeof payload?.model === 'string'
+                ) {
+                    prewarmedSecretRef.current = {
+                        secret: payload.client_secret,
+                        model: payload.model,
+                        language: interviewLanguage,
+                        expiresAt: Date.now() + 40_000,
+                    };
+                }
+            } catch {
+                // Prewarm is best-effort; ignore errors and let the real connect handle them.
+            } finally {
+                prewarmInFlightRef.current = null;
+            }
+        })();
+
+        prewarmInFlightRef.current = promise;
+
+        return promise;
+    }, [interviewLanguage, session.id]);
+
+    useEffect(() => {
+        if (
+            !isVoiceInterview ||
+            micPermission !== 'granted' ||
+            connected ||
+            connecting
+        ) {
+            return;
+        }
+
+        void prewarmClientSecret();
+    }, [
+        isVoiceInterview,
+        micPermission,
+        connected,
+        connecting,
+        prewarmClientSecret,
+    ]);
+
     const attachRemoteAudio = () => {
         if (!remoteAudioRef.current || !remoteStreamRef.current) {
             return;
         }
 
         remoteAudioRef.current.srcObject = remoteStreamRef.current;
+        remoteAudioRef.current.muted = false;
         remoteAudioRef.current.volume = 1;
 
-        void remoteAudioRef.current.play().catch(() => {
-            // Browser may require a subsequent user gesture to start playback.
-        });
+        const playResult = remoteAudioRef.current.play();
+        if (playResult && typeof playResult.then === 'function') {
+            playResult.catch((err) => {
+                // Pre-gesture autoplay attempt; sendGreeting() will re-attempt
+                // in a user gesture context. Only warn — do not surface to user yet.
+                console.warn('Voice AI: pre-gesture audio play blocked', err);
+            });
+        }
     };
 
     const updateAnswer = (questionId: number, value: string) => {
@@ -849,25 +956,71 @@ export default function CandidateAiInterviewShow({
         startBackendSession();
 
         try {
-            const secretResponse = await fetch(
-                CandidateAiInterviewController.clientSecret.url(session.id),
-                {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        interview_language: interviewLanguage,
-                    }),
-                    headers: {
-                        Accept: 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-XSRF-TOKEN': csrfToken(),
-                    },
-                    credentials: 'same-origin',
-                },
-            );
+            const cachedSecret = prewarmedSecretRef.current;
+            const canUseCachedSecret =
+                cachedSecret !== null &&
+                cachedSecret.language === interviewLanguage &&
+                cachedSecret.expiresAt > Date.now();
 
-            const secretPayload = await secretResponse.json();
+            let secretPayload: {
+                client_secret?: string;
+                model?: string;
+                message?: string;
+            };
 
-            if (!secretResponse.ok || !secretPayload.client_secret) {
+            if (canUseCachedSecret) {
+                secretPayload = {
+                    client_secret: cachedSecret!.secret,
+                    model: cachedSecret!.model,
+                };
+                prewarmedSecretRef.current = null;
+            } else {
+                if (prewarmInFlightRef.current) {
+                    await prewarmInFlightRef.current;
+                }
+
+                const freshCached = prewarmedSecretRef.current;
+                if (
+                    freshCached &&
+                    freshCached.language === interviewLanguage &&
+                    freshCached.expiresAt > Date.now()
+                ) {
+                    secretPayload = {
+                        client_secret: freshCached.secret,
+                        model: freshCached.model,
+                    };
+                    prewarmedSecretRef.current = null;
+                } else {
+                    const secretResponse = await fetch(
+                        CandidateAiInterviewController.clientSecret.url(
+                            session.id,
+                        ),
+                        {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                interview_language: interviewLanguage,
+                            }),
+                            headers: {
+                                Accept: 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-XSRF-TOKEN': csrfToken(),
+                            },
+                            credentials: 'same-origin',
+                        },
+                    );
+
+                    secretPayload = await secretResponse.json();
+
+                    if (!secretResponse.ok || !secretPayload.client_secret) {
+                        throw new Error(
+                            secretPayload.message ??
+                                'Token voice AI belum bisa dibuat.',
+                        );
+                    }
+                }
+            }
+
+            if (!secretPayload.client_secret) {
                 throw new Error(
                     secretPayload.message ??
                         'Token voice AI belum bisa dibuat.',
@@ -956,6 +1109,25 @@ export default function CandidateAiInterviewShow({
             return;
         }
 
+        // User-gesture-bound: prime audio playback FIRST to bypass autoplay throttling.
+        // Must happen before any async work to preserve the gesture activation.
+        if (remoteAudioRef.current) {
+            remoteAudioRef.current.muted = false;
+            remoteAudioRef.current.volume = 1;
+            if (remoteStreamRef.current) {
+                remoteAudioRef.current.srcObject = remoteStreamRef.current;
+            }
+            const playResult = remoteAudioRef.current.play();
+            if (playResult && typeof playResult.then === 'function') {
+                playResult.catch((err) => {
+                    console.warn('Voice AI: audio playback blocked', err);
+                    toast.error(
+                        'Suara AI diblokir browser. Klik area mana saja di halaman lalu klik Sapa lagi.',
+                    );
+                });
+            }
+        }
+
         const channel = dataChannelRef.current;
 
         if (!channel || channel.readyState !== 'open') {
@@ -970,22 +1142,30 @@ export default function CandidateAiInterviewShow({
                 ? `The candidate has joined and is ready. Greet them now using exactly: "${session.ai_intro.greeting}" — then immediately ask Q1 prefixed with "Q1:".`
                 : `Kandidat sudah bergabung dan siap memulai. Sapa kandidat sekarang menggunakan tepat kalimat: "${session.ai_intro.greeting}" — lalu langsung tanyakan Q1 yang diawali "Q1:".`;
 
+        // Inject a system-style nudge as a user message in the conversation,
+        // then trigger response generation. This is the canonical gpt-realtime
+        // pattern (replacing the legacy response.create with `instructions` param).
         channel.send(
             JSON.stringify({
-                type: 'response.create',
-                response: {
-                    modalities: ['audio', 'text'],
-                    instructions: kickoffInstruction,
+                type: 'conversation.item.create',
+                item: {
+                    type: 'message',
+                    role: 'user',
+                    content: [
+                        {
+                            type: 'input_text',
+                            text: kickoffInstruction,
+                        },
+                    ],
                 },
             }),
         );
 
-        // User-gesture-bound: ensure audio playback is unblocked even if
-        // the initial autoplay attempt was throttled by the browser.
-        if (remoteAudioRef.current && remoteStreamRef.current) {
-            remoteAudioRef.current.srcObject = remoteStreamRef.current;
-            void remoteAudioRef.current.play().catch(() => {});
-        }
+        channel.send(
+            JSON.stringify({
+                type: 'response.create',
+            }),
+        );
 
         setHasSentGreeting(true);
     };
@@ -1022,7 +1202,6 @@ export default function CandidateAiInterviewShow({
                     channel.send(
                         JSON.stringify({
                             type: 'response.create',
-                            response: { modalities: ['audio', 'text'] },
                         }),
                     );
                 }
@@ -1125,8 +1304,20 @@ export default function CandidateAiInterviewShow({
         try {
             const event = JSON.parse(rawEvent);
 
+            // Debug: log every realtime event so we can diagnose silent AI.
+            console.debug('[Realtime]', event.type, event);
+
+            if (event.type === 'error') {
+                const message = event.error?.message ?? event.message ?? 'Unknown realtime error';
+                console.error('[Realtime] error event', event);
+                toast.error(`AI error: ${message}`);
+                return;
+            }
+
+            // Handle both old and new transcript event names.
             if (
-                event.type === 'response.output_audio_transcript.done' &&
+                (event.type === 'response.output_audio_transcript.done' ||
+                    event.type === 'response.audio_transcript.done') &&
                 event.transcript
             ) {
                 appendTranscript('AI', event.transcript);
@@ -1139,8 +1330,8 @@ export default function CandidateAiInterviewShow({
             ) {
                 appendTranscript('Kandidat', event.transcript);
             }
-        } catch {
-            // Ignore malformed realtime events from browser extensions/proxies.
+        } catch (err) {
+            console.warn('[Realtime] failed to parse event', err, rawEvent);
         }
     };
 
@@ -1258,6 +1449,7 @@ export default function CandidateAiInterviewShow({
     return (
         <>
             <Head title={t('candidate.ai_interview_show.preparation_title')} />
+            {questionsPreparing && <QuestionsPreparingOverlay />}
             <div className="min-h-screen bg-slate-50">
                 {/* Hero header */}
                 <div className="relative overflow-hidden bg-linear-to-br from-[#01296A] via-[#013580] to-[#01296A] px-4 pt-8 pb-8 md:px-8 md:pt-10 md:pb-10 lg:px-12">
@@ -1586,8 +1778,7 @@ export default function CandidateAiInterviewShow({
 
                             {/* Sidebar */}
                             <aside className="order-first space-y-4 lg:order-last">
-                                {/* Camera preview — hidden in simulator/practice mode */}
-                                {!isPractice && (
+                                {/* Camera preview — recording disabled in simulator/practice mode */}
                                 <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                                     <div className="relative aspect-video bg-slate-950">
                                         {cameraStreamActive ? (
@@ -1690,7 +1881,6 @@ export default function CandidateAiInterviewShow({
                                         )}
                                     </div>
                                 </div>
-                                )}
 
                                 {/* Candidate + session info */}
                                 <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -1852,6 +2042,30 @@ type MicHelpDialogProps = {
     errorKind: MicErrorKind;
     onRetry: () => void;
 };
+
+function QuestionsPreparingOverlay() {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-2xl border border-primary-100 bg-white p-7 text-center shadow-2xl">
+                <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-primary-50">
+                    <Loader2 className="size-7 animate-spin text-primary-600" />
+                </div>
+                <h2 className="text-lg font-bold text-slate-900">
+                    Menyiapkan pertanyaan AI…
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                    AI sedang menyusun pertanyaan yang disesuaikan dengan
+                    profilmu. Biasanya butuh 10–30 detik. Halaman akan
+                    otomatis berlanjut saat siap.
+                </p>
+                <div className="mt-4 flex items-center justify-center gap-1.5 text-xs font-semibold text-primary-600">
+                    <Sparkles className="size-3.5" />
+                    Karivia AI Interviewer
+                </div>
+            </div>
+        </div>
+    );
+}
 
 function MicHelpDialog({
     open,
@@ -2868,10 +3082,9 @@ function ActiveVoiceSession({
 
                     {/* Right sidebar — order-1 on mobile so camera is at top */}
                     <aside className="order-1 flex flex-col gap-3 border-b border-primary-100/60 bg-white/50 p-4 backdrop-blur-sm lg:order-2 lg:w-72 lg:border-b-0 lg:border-l xl:w-80">
-                        {/* Camera feed — hidden in simulator/practice mode */}
-                        {!isPractice && (
-                            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-slate-950 shadow-lg shadow-primary-200/40">
-                                <div className="relative aspect-video">
+                        {/* Camera feed — recording disabled in simulator/practice mode */}
+                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-slate-950 shadow-lg shadow-primary-200/40">
+                            <div className="relative aspect-video">
                                     <video
                                         ref={cameraVideoCallbackRef}
                                         autoPlay
@@ -2914,9 +3127,8 @@ function ActiveVoiceSession({
                                             </p>
                                         </div>
                                     )}
-                                </div>
                             </div>
-                        )}
+                        </div>
 
                         {/* Stats row */}
                         <div className="grid grid-cols-3 gap-2">

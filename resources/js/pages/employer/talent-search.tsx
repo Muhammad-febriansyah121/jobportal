@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Deferred, Head, Link, router } from '@inertiajs/react';
 import {
     BadgeCheck,
     Banknote,
@@ -104,6 +104,7 @@ type TalentSearchProps = {
     };
     aiSuggestions: string[];
     recommendationSource: 'ai' | 'computed';
+    aiRerankedCandidates?: TalentCandidate[] | null;
     candidates: {
         data: TalentCandidate[];
         links: Array<{
@@ -158,6 +159,7 @@ export default function EmployerTalentSearch({
     filterOptions,
     aiSuggestions,
     recommendationSource,
+    aiRerankedCandidates,
     candidates,
     totalCandidates,
     savedCandidatesCount,
@@ -169,6 +171,24 @@ export default function EmployerTalentSearch({
     const formRef = useRef<HTMLFormElement>(null);
     const listingRoute =
         viewMode === 'saved' ? talentPoolIndex : talentSearchIndex;
+
+    const hasActiveAiFilter =
+        (filters.q ?? '') !== '' ||
+        (filters.skill_id ?? '') !== '' ||
+        (filters.location ?? '') !== '' ||
+        (filters.salary ?? '') !== '' ||
+        (filters.experience ?? '') !== '' ||
+        (filters.availability ?? '') !== '';
+
+    const displayCandidates =
+        aiRerankedCandidates && aiRerankedCandidates.length > 0
+            ? aiRerankedCandidates
+            : candidates.data;
+
+    const effectiveSource: 'ai' | 'computed' =
+        aiRerankedCandidates && aiRerankedCandidates.length > 0
+            ? 'ai'
+            : recommendationSource;
     const currentQuery = {
         q: filters.q ?? '',
         skill_id: filters.skill_id ?? '',
@@ -440,15 +460,31 @@ export default function EmployerTalentSearch({
                         </button>
                     </div>
 
-                    <div className="rounded-lg border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-semibold text-primary-700">
-                        {recommendationSource === 'ai'
-                            ? 'Rekomendasi diurutkan ulang oleh AI berdasarkan query dan data kandidat.'
-                            : 'AI belum aktif atau gagal merespons, sementara memakai skor computed dari profil dan skill.'}
-                    </div>
+                    <Deferred
+                        data="aiRerankedCandidates"
+                        fallback={
+                            hasActiveAiFilter ? (
+                                <div className="flex items-center gap-2 rounded-lg border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-semibold text-primary-700">
+                                    <Sparkles className="size-4 animate-pulse" />
+                                    AI sedang menyusun ulang kandidat berdasarkan query Anda...
+                                </div>
+                            ) : (
+                                <div className="rounded-lg border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-semibold text-primary-700">
+                                    Menampilkan kandidat dengan skor computed dari profil dan skill.
+                                </div>
+                            )
+                        }
+                    >
+                        <div className="rounded-lg border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-semibold text-primary-700">
+                            {effectiveSource === 'ai'
+                                ? 'Rekomendasi diurutkan ulang oleh AI berdasarkan query dan data kandidat.'
+                                : 'AI belum aktif atau gagal merespons, sementara memakai skor computed dari profil dan skill.'}
+                        </div>
+                    </Deferred>
 
                     <div className="space-y-4">
-                        {candidates.data.length ? (
-                            candidates.data.map((candidate) => (
+                        {displayCandidates.length ? (
+                            displayCandidates.map((candidate) => (
                                 <CandidateCard
                                     candidate={candidate}
                                     key={candidate.id}

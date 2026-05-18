@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Ai\Agents\AiHealthProbe;
 use App\Http\Controllers\Controller;
 use App\Services\AiService;
 use Illuminate\Http\JsonResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class AdminAiHealthController extends Controller
 {
@@ -32,14 +34,29 @@ class AdminAiHealthController extends Controller
             ]);
         }
 
+        @set_time_limit(0);
         $startedAt = microtime(true);
-        $reply = $ai->chat([
-            ['role' => 'system', 'content' => 'You are a health probe. Reply with the single word OK.'],
-            ['role' => 'user', 'content' => 'ping'],
-        ], maxTokens: 200, temperature: 0.0);
-        $latencyMs = (int) round((microtime(true) - $startedAt) * 1000);
+        $reply = null;
+        $usage = ['prompt_tokens' => null, 'completion_tokens' => null, 'reasoning_tokens' => null, 'total_tokens' => null];
 
-        $usage = $ai->tokenUsage();
+        try {
+            $response = (new AiHealthProbe)->prompt('ping');
+            $reply = $response->text;
+
+            $promptTokens = $response->usage?->promptTokens;
+            $completionTokens = $response->usage?->completionTokens;
+            $reasoningTokens = $response->usage?->reasoningTokens;
+            $usage = [
+                'prompt_tokens' => $promptTokens,
+                'completion_tokens' => $completionTokens,
+                'reasoning_tokens' => $reasoningTokens,
+                'total_tokens' => ($promptTokens ?? 0) + ($completionTokens ?? 0) + ($reasoningTokens ?? 0),
+            ];
+        } catch (Throwable) {
+            $reply = null;
+        }
+
+        $latencyMs = (int) round((microtime(true) - $startedAt) * 1000);
         $ok = is_string($reply) && trim($reply) !== '';
 
         return response()->json([

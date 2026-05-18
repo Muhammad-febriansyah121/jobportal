@@ -2,9 +2,11 @@
 
 namespace App\Actions\Candidate;
 
+use App\Ai\Agents\SkillQuizGenerator;
 use App\Models\Skill;
 use App\Services\AiService;
 use JsonException;
+use Throwable;
 
 class GenerateSkillAssessmentQuiz
 {
@@ -20,17 +22,26 @@ class GenerateSkillAssessmentQuiz
         $count = max(1, min(20, $count));
         $difficulty = in_array($difficulty, ['easy', 'medium', 'hard'], true) ? $difficulty : 'medium';
 
-        $payload = $this->ai->chat([
-            ['role' => 'system', 'content' => $this->systemPrompt()],
-            ['role' => 'user', 'content' => json_encode([
+        if (! $this->ai->isConfigured()) {
+            return [];
+        }
+
+        @set_time_limit(0);
+        $payload = null;
+
+        try {
+            $response = (new SkillQuizGenerator)->prompt(json_encode([
                 'skill' => $skill->name,
                 'category' => $skill->category,
                 'difficulty' => $difficulty,
                 'count' => $count,
-            ], JSON_THROW_ON_ERROR)],
-        ], maxTokens: 1800, temperature: 0.4);
+            ], JSON_THROW_ON_ERROR));
+            $payload = $response->text;
+        } catch (Throwable) {
+            return [];
+        }
 
-        if ($payload === null) {
+        if ($payload === null || $payload === '') {
             return [];
         }
 
@@ -62,33 +73,5 @@ class GenerateSkillAssessmentQuiz
             ->take($count)
             ->values()
             ->all();
-    }
-
-    private function systemPrompt(): string
-    {
-        return <<<'PROMPT'
-Kamu adalah AI yang membuat soal pilihan ganda (multiple choice) untuk
-assessment skill profesional dalam Bahasa Indonesia.
-
-WAJIB balas hanya JSON valid tanpa markdown, tanpa code fence, tanpa komentar.
-Skema:
-{
-  "questions": [
-    {
-      "question": "kalimat pertanyaan singkat dan jelas",
-      "options": ["opsi A", "opsi B", "opsi C", "opsi D"],
-      "answer_index": 0
-    }
-  ]
-}
-
-Aturan:
-- WAJIB 4 opsi per pertanyaan, opsi tidak boleh kosong.
-- "answer_index" adalah indeks 0-3 dari opsi yang benar.
-- Pertanyaan harus relevan dengan skill yang diminta dan sesuai level
-  difficulty (easy = pemahaman dasar, medium = penerapan, hard = analisis /
-  trade-off).
-- Jangan menambah field di luar skema.
-PROMPT;
     }
 }

@@ -220,6 +220,7 @@ Route::prefix('admin')
 
         Route::get('settings', [AdminWebSettingController::class, 'edit'])->name('settings.edit');
         Route::post('settings', [AdminWebSettingController::class, 'update'])->name('settings.update');
+        Route::post('settings/smtp-test', [AdminWebSettingController::class, 'sendSmtpTest'])->name('settings.smtp-test');
 
         Route::get('whatsapp', [AdminWhatsAppController::class, 'edit'])->name('whatsapp.edit');
         Route::patch('whatsapp', [AdminWhatsAppController::class, 'update'])->name('whatsapp.update');

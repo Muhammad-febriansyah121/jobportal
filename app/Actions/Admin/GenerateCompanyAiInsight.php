@@ -2,12 +2,14 @@
 
 namespace App\Actions\Admin;
 
+use App\Ai\Agents\AdminCompanyInsightWriter;
 use App\Models\AiAuditLog;
 use App\Models\Application;
 use App\Models\Company;
 use App\Models\JobListing;
 use App\Services\AiService;
 use Illuminate\Support\Carbon;
+use Throwable;
 
 class GenerateCompanyAiInsight
 {
@@ -39,12 +41,6 @@ class GenerateCompanyAiInsight
             'application_stats' => $applicationStats,
         ];
 
-        $systemPrompt = <<<'PROMPT'
-Kamu adalah asisten admin platform job portal bernama Karivia. Tugasmu membuat ringkasan perilaku recruiter/employer berdasarkan data aktivitas perusahaan.
-
-Tulis ringkasan dalam 2-4 kalimat bahasa Indonesia yang informatif dan natural. Fokus pada: seberapa aktif perusahaan mempublikasikan lowongan, seberapa cepat mereka merespons lamaran, dan apakah ada tanda slow response atau kurang aktif. Jangan menambahkan informasi yang tidak ada di data.
-PROMPT;
-
         $userPrompt = <<<PROMPT
 Data perusahaan:
 - Nama: {$companyName}
@@ -69,10 +65,17 @@ Statistik lamaran:
 Buat ringkasan singkat perilaku recruiter perusahaan ini untuk keperluan admin.
 PROMPT;
 
-        $result = $this->ai->chat([
-            ['role' => 'system', 'content' => $systemPrompt],
-            ['role' => 'user', 'content' => $userPrompt],
-        ], maxTokens: 350, temperature: 0.5);
+        @set_time_limit(0);
+        $result = null;
+
+        if ($this->ai->isConfigured()) {
+            try {
+                $response = (new AdminCompanyInsightWriter)->prompt($userPrompt);
+                $result = $response->text;
+            } catch (Throwable) {
+                $result = null;
+            }
+        }
 
         $inputHash = hash('sha256', json_encode($input, JSON_THROW_ON_ERROR));
 
@@ -86,9 +89,8 @@ PROMPT;
                 'generated_at' => now()->toIso8601String(),
                 'company_id' => $company->id,
             ],
-            'model_name' => $this->ai->modelName(),
+            'model_name' => (string) (config('services.openai.model') ?: 'gpt-5'),
             'status' => $result ? 'success' : 'failed',
-            ...$this->ai->tokenUsage(),
         ]);
     }
 

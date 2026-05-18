@@ -2,11 +2,13 @@
 
 namespace App\Actions\Candidate;
 
+use App\Ai\Agents\JobInsightAdvisor;
 use App\Models\AiAuditLog;
 use App\Models\CandidateProfile;
 use App\Models\JobListing;
 use App\Services\AiService;
 use JsonException;
+use Throwable;
 
 class GenerateJobAiInsight
 {
@@ -45,40 +47,51 @@ class GenerateJobAiInsight
         }
 
         $fallback = $this->fallbackInsight($job);
-        $result = $this->ai->chat([
-            ['role' => 'system', 'content' => $this->systemPrompt()],
-            ['role' => 'user', 'content' => json_encode($input, JSON_THROW_ON_ERROR)],
-        ], maxTokens: 300, temperature: 0.4);
+
+        if (! $this->ai->isConfigured()) {
+            return $this->persistAndReturn($candidate, $inputHash, $input, $fallback, 'fallback');
+        }
+
+        @set_time_limit(0);
+        $result = null;
+        try {
+            $response = (new JobInsightAdvisor)->prompt(
+                json_encode($input, JSON_THROW_ON_ERROR),
+            );
+            $result = $response->text;
+        } catch (Throwable) {
+            $result = null;
+        }
 
         $output = $result ? $this->decodeOutput($result, $fallback) : $fallback;
         $status = $result ? 'success' : 'fallback';
 
+        return $this->persistAndReturn($candidate, $inputHash, $input, $output, $status);
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     * @param  array<string, mixed>  $output
+     * @return array{recruitment_stages: array<int, string>, application_tip: string}
+     */
+    private function persistAndReturn(
+        CandidateProfile $candidate,
+        string $inputHash,
+        array $input,
+        array $output,
+        string $status,
+    ): array {
         AiAuditLog::create([
             'user_id' => $candidate->user_id,
             'feature' => 'job_ai_insight',
             'input_hash' => $inputHash,
             'input_json' => $input,
             'output_json' => $output,
-            'model_name' => $this->ai->modelName(),
+            'model_name' => (string) (config('services.openai.model') ?: 'gpt-5'),
             'status' => $status,
-            ...$this->ai->tokenUsage(),
         ]);
 
         return $this->normalizeOutput($output);
-    }
-
-    private function systemPrompt(): string
-    {
-        return <<<'PROMPT'
-Kamu adalah AI career advisor Karivia untuk job portal Indonesia.
-Balas hanya JSON valid tanpa markdown dengan schema:
-{
-  "recruitment_stages": ["Seleksi Berkas", "Technical Test", "Interview HR", "User Interview", "Offering"],
-  "application_tip": "1-2 kalimat tip spesifik untuk kandidat ini berdasarkan skill dan kebutuhan pekerjaan"
-}
-Buat tahapan rekrutmen realistis (3-6 tahap) sesuai jenis dan level pekerjaan.
-Gunakan bahasa Indonesia yang natural.
-PROMPT;
     }
 
     /**

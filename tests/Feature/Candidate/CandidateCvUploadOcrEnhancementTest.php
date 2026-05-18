@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\CvUploadParser;
 use App\Jobs\ParseUploadedCvJob;
 use App\Models\CandidateProfile;
 use App\Models\Setting;
@@ -7,7 +8,6 @@ use App\Models\Skill;
 use App\Models\User;
 use App\Services\CvTextExtractorService;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 function fakeOcrExtractor(string $text = 'cv text'): void
@@ -20,13 +20,8 @@ function fakeOcrExtractor(string $text = 'cv text'): void
 
 function fakeAiResponse(array $parsed): void
 {
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response([
-            'choices' => [
-                ['message' => ['content' => json_encode($parsed)]],
-            ],
-        ], 200),
-    ]);
+    config()->set('services.openai.api_key', 'test-ai-key');
+    CvUploadParser::fake([$parsed]);
 }
 
 test('cv upload populates user phone when blank', function () {

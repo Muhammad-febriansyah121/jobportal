@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\TalentReranker;
 use App\Models\AiAuditLog;
 use App\Models\AiInterviewQuestion;
 use App\Models\AiInterviewRescheduleHistory;
@@ -1369,26 +1370,21 @@ test('employer can search talent from candidate profiles', function () {
         'computed_at' => now(),
     ]);
 
-    $this->mock(AiService::class, function ($mock) use ($candidate): void {
-        $mock->shouldReceive('chat')
-            ->once()
-            ->andReturn(json_encode([
-                'rankings' => [
-                    [
-                        'candidate_id' => $candidate->id,
-                        'score' => 97,
-                        'reason' => 'Java, pengalaman, dan lokasi kandidat paling cocok dengan kebutuhan pencarian.',
-                    ],
-                ],
-            ]));
-        $mock->shouldReceive('modelName')->andReturn('test-ai');
-        $mock->shouldReceive('tokenUsage')->andReturn([
-            'prompt_tokens' => 380,
-            'completion_tokens' => 120,
-            'reasoning_tokens' => null,
-            'total_tokens' => 500,
-        ]);
+    $this->mock(AiService::class, function ($mock): void {
+        $mock->shouldReceive('isConfigured')->andReturn(true);
     });
+
+    TalentReranker::fake([
+        json_encode([
+            'rankings' => [
+                [
+                    'candidate_id' => $candidate->id,
+                    'score' => 97,
+                    'reason' => 'Java, pengalaman, dan lokasi kandidat paling cocok dengan kebutuhan pencarian.',
+                ],
+            ],
+        ]),
+    ]);
 
     actingAs($employer)
         ->get(route('employer.talent-search.index', ['q' => 'Java', 'skill_id' => $skill->id]))
@@ -1454,14 +1450,7 @@ test('employer can save and shortlist candidate from talent search', function ()
     expect($record->shortlisted_at)->not->toBeNull();
 
     $this->mock(AiService::class, function ($mock): void {
-        $mock->shouldReceive('chat')->andReturn(null);
-        $mock->shouldReceive('modelName')->andReturn('test-ai');
-        $mock->shouldReceive('tokenUsage')->andReturn([
-            'prompt_tokens' => null,
-            'completion_tokens' => null,
-            'reasoning_tokens' => null,
-            'total_tokens' => null,
-        ]);
+        $mock->shouldReceive('isConfigured')->andReturn(false);
     });
 
     actingAs($employer)
@@ -1529,14 +1518,7 @@ test('employer can view dedicated talent pool page with saved candidates only', 
     ]);
 
     $this->mock(AiService::class, function ($mock): void {
-        $mock->shouldReceive('chat')->andReturn(null);
-        $mock->shouldReceive('modelName')->andReturn('test-ai');
-        $mock->shouldReceive('tokenUsage')->andReturn([
-            'prompt_tokens' => null,
-            'completion_tokens' => null,
-            'reasoning_tokens' => null,
-            'total_tokens' => null,
-        ]);
+        $mock->shouldReceive('isConfigured')->andReturn(false);
     });
 
     actingAs($employer)

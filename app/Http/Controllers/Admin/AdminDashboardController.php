@@ -16,7 +16,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,7 +23,7 @@ class AdminDashboardController extends Controller
 {
     public function __invoke(Request $request): Response
     {
-        $metrics = Cache::remember('admin.dashboard.metrics', now()->addSeconds(60), fn (): array => [
+        $metrics = [
             'total_users' => User::count(),
             'total_candidates' => User::where('role', 'candidate')->count(),
             'total_companies' => Company::count(),
@@ -72,7 +71,7 @@ class AdminDashboardController extends Controller
                 'failed' => AiAuditLog::where('status', 'failed')->count(),
                 'success' => AiAuditLog::where('status', 'success')->count(),
             ],
-        ]);
+        ];
 
         return Inertia::render('admin/dashboard', [
             'metrics' => $metrics,

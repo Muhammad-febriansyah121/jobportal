@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\InterviewAnalyzer;
 use App\Models\AiAuditLog;
 use App\Models\AiInterviewQuestion;
 use App\Models\AiInterviewRescheduleHistory;
@@ -513,40 +514,35 @@ test('candidate voice transcript is stored and analyzed with ai structured outpu
         'order_number' => 2,
     ]);
 
-    $this->mock(AiService::class, function ($mock) use ($firstQuestion, $secondQuestion): void {
-        $mock->shouldReceive('chatJson')
-            ->once()
-            ->andReturn([
-                'fit_score' => 91,
-                'recommendation' => 'Lanjutkan ke interview user',
-                'summary' => 'Kandidat memberi contoh backend dan komunikasi yang kuat.',
-                'strengths' => ['Contoh teknis konkret', 'Komunikasi terstruktur'],
-                'weaknesses' => ['Perlu validasi sistem skala besar'],
-                'technical_scorecard' => [
-                    ['label' => 'technical_skills', 'score' => 92],
-                    ['label' => 'communication', 'score' => 88],
-                ],
-                'response_scores' => [
-                    [
-                        'question_id' => $firstQuestion->id,
-                        'score' => 92,
-                        'analysis' => 'Jawaban teknis kuat dan relevan.',
-                    ],
-                    [
-                        'question_id' => $secondQuestion->id,
-                        'score' => 88,
-                        'analysis' => 'Jawaban komunikasi cukup terstruktur.',
-                    ],
-                ],
-            ]);
-        $mock->shouldReceive('modelName')->andReturn('gpt-5');
-        $mock->shouldReceive('tokenUsage')->andReturn([
-            'prompt_tokens' => 540,
-            'completion_tokens' => 320,
-            'reasoning_tokens' => 50,
-            'total_tokens' => 910,
-        ]);
+    $this->mock(AiService::class, function ($mock): void {
+        $mock->shouldReceive('isConfigured')->andReturn(true);
     });
+
+    InterviewAnalyzer::fake([
+        [
+            'fit_score' => 91,
+            'recommendation' => 'Lanjutkan ke interview user',
+            'summary' => 'Kandidat memberi contoh backend dan komunikasi yang kuat.',
+            'strengths' => ['Contoh teknis konkret', 'Komunikasi terstruktur'],
+            'weaknesses' => ['Perlu validasi sistem skala besar'],
+            'technical_scorecard' => [
+                ['label' => 'technical_skills', 'score' => 92],
+                ['label' => 'communication', 'score' => 88],
+            ],
+            'response_scores' => [
+                [
+                    'question_id' => $firstQuestion->id,
+                    'score' => 92,
+                    'analysis' => 'Jawaban teknis kuat dan relevan.',
+                ],
+                [
+                    'question_id' => $secondQuestion->id,
+                    'score' => 88,
+                    'analysis' => 'Jawaban komunikasi cukup terstruktur.',
+                ],
+            ],
+        ],
+    ]);
 
     $this->actingAs($candidateUser)
         ->patch(route('candidate.ai-interviews.answer', $session), [
@@ -638,16 +634,7 @@ test('fallback fit score penalizes unanswered questions when ai analysis is unav
     ]);
 
     $this->mock(AiService::class, function ($mock): void {
-        $mock->shouldReceive('chatJson')
-            ->once()
-            ->andReturn(null);
-        $mock->shouldReceive('modelName')->once()->andReturn('gpt-5');
-        $mock->shouldReceive('tokenUsage')->andReturn([
-            'prompt_tokens' => null,
-            'completion_tokens' => null,
-            'reasoning_tokens' => null,
-            'total_tokens' => null,
-        ]);
+        $mock->shouldReceive('isConfigured')->andReturn(false);
     });
 
     $this->actingAs($candidateUser)
@@ -1170,34 +1157,29 @@ test('candidate feedback page retries ai analysis when placeholder analysis stil
         'technical_scorecard' => ['technical' => 62],
     ]);
 
-    $this->mock(AiService::class, function ($mock) use ($question): void {
-        $mock->shouldReceive('chatJson')
-            ->once()
-            ->andReturn([
-                'fit_score' => 88,
-                'recommendation' => 'Lanjutkan ke interview user',
-                'summary' => 'Analisis AI berhasil diproses ulang.',
-                'strengths' => ['Contoh teknis konkret'],
-                'weaknesses' => ['Perlu detail skala lebih besar'],
-                'technical_scorecard' => [
-                    ['label' => 'technical', 'score' => 88],
-                ],
-                'response_scores' => [
-                    [
-                        'question_id' => $question->id,
-                        'score' => 88,
-                        'analysis' => 'Jawaban teknis jelas dengan dampak terukur.',
-                    ],
-                ],
-            ]);
-        $mock->shouldReceive('modelName')->andReturn('gpt-5');
-        $mock->shouldReceive('tokenUsage')->andReturn([
-            'prompt_tokens' => 410,
-            'completion_tokens' => 220,
-            'reasoning_tokens' => 30,
-            'total_tokens' => 660,
-        ]);
+    $this->mock(AiService::class, function ($mock): void {
+        $mock->shouldReceive('isConfigured')->andReturn(true);
     });
+
+    InterviewAnalyzer::fake([
+        [
+            'fit_score' => 88,
+            'recommendation' => 'Lanjutkan ke interview user',
+            'summary' => 'Analisis AI berhasil diproses ulang.',
+            'strengths' => ['Contoh teknis konkret'],
+            'weaknesses' => ['Perlu detail skala lebih besar'],
+            'technical_scorecard' => [
+                ['label' => 'technical', 'score' => 88],
+            ],
+            'response_scores' => [
+                [
+                    'question_id' => $question->id,
+                    'score' => 88,
+                    'analysis' => 'Jawaban teknis jelas dengan dampak terukur.',
+                ],
+            ],
+        ],
+    ]);
 
     $this->actingAs($candidateUser)
         ->get(route('candidate.ai-interviews.feedback', $session))

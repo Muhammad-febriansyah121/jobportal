@@ -2,11 +2,13 @@
 
 namespace App\Actions\Employer;
 
+use App\Ai\Agents\TalentReranker;
 use App\Models\AiAuditLog;
 use App\Models\User;
 use App\Services\AiService;
 use Illuminate\Support\Collection;
 use JsonException;
+use Throwable;
 
 class GenerateTalentSearchRecommendations
 {
@@ -70,10 +72,19 @@ class GenerateTalentSearchRecommendations
                 ->values();
         }
 
-        $result = $this->ai->chat([
-            ['role' => 'system', 'content' => $this->systemPrompt()],
-            ['role' => 'user', 'content' => json_encode($input, JSON_THROW_ON_ERROR)],
-        ], maxTokens: 700, temperature: 0.2);
+        @set_time_limit(0);
+        $result = null;
+
+        if ($this->ai->isConfigured()) {
+            try {
+                $response = (new TalentReranker)->prompt(
+                    json_encode($input, JSON_THROW_ON_ERROR),
+                );
+                $result = $response->text;
+            } catch (Throwable) {
+                $result = null;
+            }
+        }
 
         if (! $result) {
             $this->audit($user, $inputHash, $input, [
@@ -94,21 +105,6 @@ class GenerateTalentSearchRecommendations
         $this->audit($user, $inputHash, $input, $output, $output['rankings'] === [] ? 'failed' : 'success');
 
         return $this->applyRankings($candidates, $output, $output['rankings'] === [] ? 'computed' : 'ai');
-    }
-
-    private function systemPrompt(): string
-    {
-        return <<<'PROMPT'
-Kamu adalah AI talent search Karivia untuk recruiter.
-Tugasmu memberi ranking kandidat berdasarkan filter pencarian, skill, lokasi, pengalaman, availability, salary range, dan base_score.
-Balas hanya JSON valid tanpa markdown dengan schema:
-{
-  "rankings": [
-    {"candidate_id": 1, "score": 95, "reason": "Alasan ringkas berbasis data"}
-  ]
-}
-Score 0-100. Jangan menambahkan kandidat di luar data. Gunakan bahasa Indonesia natural untuk reason.
-PROMPT;
     }
 
     /**
@@ -181,9 +177,8 @@ PROMPT;
             'input_hash' => $inputHash,
             'input_json' => $input,
             'output_json' => $output,
-            'model_name' => $this->ai->modelName(),
+            'model_name' => (string) (config('services.openai.model') ?: 'gpt-5'),
             'status' => $status,
-            ...$this->ai->tokenUsage(),
         ]);
     }
 }

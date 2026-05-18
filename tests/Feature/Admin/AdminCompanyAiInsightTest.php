@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\AdminCompanyInsightWriter;
 use App\Models\AiAuditLog;
 use App\Models\Company;
 use App\Models\User;
@@ -67,15 +68,10 @@ test('admin can generate ai insight for a company', function () {
     ]);
 
     $mock = Mockery::mock(AiService::class);
-    $mock->shouldReceive('chat')->once()->andReturn('Perusahaan aktif mempublikasikan lowongan.');
-    $mock->shouldReceive('modelName')->once()->andReturn('gpt-4o-mini');
-    $mock->shouldReceive('tokenUsage')->andReturn([
-        'prompt_tokens' => 120,
-        'completion_tokens' => 80,
-        'reasoning_tokens' => null,
-        'total_tokens' => 200,
-    ]);
+    $mock->shouldReceive('isConfigured')->andReturnTrue();
     app()->instance(AiService::class, $mock);
+
+    AdminCompanyInsightWriter::fake(['Perusahaan aktif mempublikasikan lowongan.']);
 
     $this->actingAs($admin)
         ->post(route('admin.companies.generate-ai-insight', $company))
@@ -101,14 +97,7 @@ test('generate ai insight handles api failure gracefully', function () {
     ]);
 
     $mock = Mockery::mock(AiService::class);
-    $mock->shouldReceive('chat')->once()->andReturn(null);
-    $mock->shouldReceive('modelName')->once()->andReturn('gpt-4o-mini');
-    $mock->shouldReceive('tokenUsage')->andReturn([
-        'prompt_tokens' => null,
-        'completion_tokens' => null,
-        'reasoning_tokens' => null,
-        'total_tokens' => null,
-    ]);
+    $mock->shouldReceive('isConfigured')->andReturnFalse();
     app()->instance(AiService::class, $mock);
 
     $this->actingAs($admin)

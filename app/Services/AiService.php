@@ -64,7 +64,7 @@ class AiService
         return $this->lastUsage;
     }
 
-    public function chat(array $messages, int $maxTokens = 1000, float $temperature = 0.7): ?string
+    public function chat(array $messages, int $maxTokens = 1000, float $temperature = 0.7, ?string $reasoningEffort = null): ?string
     {
         $this->resetUsage();
 
@@ -86,10 +86,14 @@ class AiService
             $payload['temperature'] = $temperature;
         }
 
+        if ($reasoningEffort !== null && $this->supportsReasoningEffort()) {
+            $payload['reasoning_effort'] = $reasoningEffort;
+        }
+
         try {
             $response = Http::withToken($apiKey)
                 ->connectTimeout(5)
-                ->timeout(25)
+                ->timeout(60)
                 ->post($this->endpointUrl(), $payload);
         } catch (ConnectionException $exception) {
             Log::warning('AiService: connection/timeout failure', ['message' => $exception->getMessage()]);
@@ -120,7 +124,7 @@ class AiService
      * @param  array<string, mixed>  $schema
      * @return array<string, mixed>|null
      */
-    public function chatJson(array $messages, array $schema, string $schemaName, int $maxTokens = 1600): ?array
+    public function chatJson(array $messages, array $schema, string $schemaName, int $maxTokens = 1600, ?string $reasoningEffort = null): ?array
     {
         $this->resetUsage();
 
@@ -150,10 +154,14 @@ class AiService
             $payload['temperature'] = 0.2;
         }
 
+        if ($reasoningEffort !== null && $this->supportsReasoningEffort()) {
+            $payload['reasoning_effort'] = $reasoningEffort;
+        }
+
         try {
             $response = Http::withToken($apiKey)
                 ->connectTimeout(5)
-                ->timeout(25)
+                ->timeout(60)
                 ->post($this->endpointUrl(), $payload);
         } catch (ConnectionException $exception) {
             Log::warning('AiService: structured connection/timeout failure', ['message' => $exception->getMessage()]);
@@ -233,6 +241,13 @@ class AiService
         }
 
         return true;
+    }
+
+    private function supportsReasoningEffort(): bool
+    {
+        $model = strtolower($this->modelName());
+
+        return str_starts_with($model, 'gpt-5') || str_starts_with($model, 'o1') || str_starts_with($model, 'o3') || str_starts_with($model, 'o4');
     }
 
     private function endpointUrl(): string

@@ -3,13 +3,17 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\AdminSmtpTestMail;
 use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class AdminWebSettingController extends Controller
 {
@@ -24,6 +28,10 @@ class AdminWebSettingController extends Controller
     public function edit(): Response
     {
         $settings = Setting::all()->pluck('value', 'key');
+
+        $smtpPassword = (string) ($settings['smtp_password'] ?? '');
+        $settings['smtp_password'] = '';
+        $settings['smtp_password_set'] = $smtpPassword !== '' ? '1' : '';
 
         return Inertia::render('admin/settings', [
             'settings' => $settings,
@@ -76,9 +84,17 @@ class AdminWebSettingController extends Controller
             'whatsapp_gateway_timeout' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:120'],
             'pakasir_project' => ['sometimes', 'nullable', 'string', 'max:255'],
             'pakasir_api_key' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'smtp_host' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'smtp_port' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:65535'],
+            'smtp_encryption' => ['sometimes', 'nullable', 'string', 'in:tls,ssl,none'],
+            'smtp_auth' => ['sometimes', 'boolean'],
+            'smtp_username' => ['sometimes', 'nullable', 'email', 'max:255'],
+            'smtp_password' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'smtp_from_address' => ['sometimes', 'nullable', 'email', 'max:255'],
+            'smtp_from_name' => ['sometimes', 'nullable', 'string', 'max:255'],
         ]);
 
-        foreach ($request->except('_token', '_method') as $key => $value) {
+        foreach ($request->except('_token', '_method', 'smtp_password_set') as $key => $value) {
             if (in_array($key, self::IMAGE_KEYS, true) && $request->hasFile($key)) {
                 $existing = Setting::where('key', $key)->first();
 
@@ -93,14 +109,69 @@ class AdminWebSettingController extends Controller
                 continue;
             }
 
-            if (! in_array($key, self::IMAGE_KEYS, true)) {
-                Setting::updateOrCreate(['key' => $key], ['value' => $value]);
+            if (in_array($key, self::IMAGE_KEYS, true)) {
+                continue;
             }
+
+            if ($key === 'smtp_password') {
+                $password = (string) ($value ?? '');
+
+                if ($password === '') {
+                    continue;
+                }
+
+                Setting::updateOrCreate(['key' => $key], ['value' => Crypt::encryptString($password)]);
+
+                continue;
+            }
+
+            Setting::updateOrCreate(['key' => $key], ['value' => $value]);
         }
 
         Cache::forget('site_settings_head');
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Pengaturan berhasil disimpan.']);
+
+        return back();
+    }
+
+    public function sendSmtpTest(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'to' => ['required', 'email', 'max:255'],
+        ]);
+
+        $host = trim((string) Setting::get('smtp_host', ''));
+        $encryptedPassword = (string) Setting::get('smtp_password', '');
+
+        if ($host === '' || $encryptedPassword === '') {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => 'Konfigurasi SMTP belum lengkap. Pastikan host dan password sudah diisi.',
+            ]);
+
+            return back();
+        }
+
+        $brandName = trim((string) Setting::get('site_name', '')) ?: (string) config('app.name', 'Karivia');
+
+        try {
+            Mail::to($data['to'])->send(new AdminSmtpTestMail($brandName));
+        } catch (Throwable $exception) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => 'Gagal kirim email tes: '.$exception->getMessage(),
+            ]);
+
+            return back();
+        }
+
+        Setting::updateOrCreate(['key' => 'smtp_last_tested_at'], ['value' => now()->toDateTimeString()]);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Email tes berhasil dikirim ke '.$data['to'].'.',
+        ]);
 
         return back();
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Candidate;
 
 use App\Actions\Candidate\BuildCandidateCvReview;
 use App\Actions\Candidate\ResolveCandidateProfile;
+use App\Ai\Agents\CareerPathPlanner;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Candidate\GenerateCandidateCareerPathRequest;
 use App\Models\AiAuditLog;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use JsonException;
+use Throwable;
 
 class CandidateCareerPathController extends Controller
 {
@@ -67,6 +69,8 @@ class CandidateCareerPathController extends Controller
         ResolveCandidateProfile $resolveCandidateProfile,
         BuildCandidateCvReview $buildCandidateCvReview,
     ): RedirectResponse {
+        @set_time_limit(0);
+
         $candidate = $resolveCandidateProfile->handle($request->user());
         $candidate->loadMissing(['skills', 'experiences', 'educations', 'preferredIndustry']);
 
@@ -236,15 +240,32 @@ class CandidateCareerPathController extends Controller
             return $cached->output_json;
         }
 
-        $output = $this->ai->chatJson(
-            messages: [
-                ['role' => 'system', 'content' => $this->systemPrompt()],
-                ['role' => 'user', 'content' => json_encode($promptPayload, JSON_THROW_ON_ERROR)],
-            ],
-            schema: $this->responseSchema(),
-            schemaName: 'career_path_recommendation',
-            maxTokens: 1800,
-        );
+        $modelName = (string) (config('services.openai.model') ?: 'gpt-5');
+        $output = null;
+        $usage = ['prompt_tokens' => null, 'completion_tokens' => null, 'reasoning_tokens' => null, 'total_tokens' => null];
+
+        try {
+            $response = (new CareerPathPlanner)->prompt(
+                json_encode($promptPayload, JSON_THROW_ON_ERROR),
+            );
+
+            $structured = $response->toArray();
+            if (is_array($structured)) {
+                $output = $structured;
+            }
+
+            $promptTokens = $response->usage?->promptTokens;
+            $completionTokens = $response->usage?->completionTokens;
+            $reasoningTokens = $response->usage?->reasoningTokens;
+            $usage = [
+                'prompt_tokens' => $promptTokens,
+                'completion_tokens' => $completionTokens,
+                'reasoning_tokens' => $reasoningTokens,
+                'total_tokens' => ($promptTokens ?? 0) + ($completionTokens ?? 0) + ($reasoningTokens ?? 0),
+            ];
+        } catch (Throwable) {
+            // AI call failed; fall back to local recommendation downstream.
+        }
 
         AiAuditLog::create([
             'user_id' => $userId,
@@ -252,104 +273,12 @@ class CandidateCareerPathController extends Controller
             'input_hash' => $inputHash,
             'input_json' => $promptPayload,
             'output_json' => $output,
-            'model_name' => $this->ai->modelName(),
+            'model_name' => $modelName,
             'status' => is_array($output) ? 'success' : 'fallback',
-            ...$this->ai->tokenUsage(),
+            ...$usage,
         ]);
 
         return is_array($output) ? $output : null;
-    }
-
-    private function systemPrompt(): string
-    {
-        return <<<'PROMPT'
-Kamu adalah pelatih karier AI untuk platform Karivia. Kamu menghasilkan satu jalur karier yang realistis untuk seorang kandidat berdasarkan profil mereka dan target peran yang diinginkan.
-
-Input akan menyertakan field `cv_review` (ringkasan kesiapan CV: ats_score, strengths, gaps, top_skills, stats). Gunakan informasi ini untuk:
-- Menyesuaikan match_score (semakin rendah ATS score atau makin banyak gap, semakin rendah match_score awal).
-- Menonjolkan strengths sebagai modal di summary dan skill_breakdown.
-- Mengubah gaps utama menjadi target di learning_steps & key_gap_insight.
-
-Selalu balas dalam Bahasa Indonesia. Output harus mengikuti JSON schema ketat. Pastikan:
-- target_role mengacu pada target yang dapat diukur dan spesifik.
-- match_score adalah angka 0-100 yang merefleksikan kecocokan antara skill saat ini dengan target peran.
-- summary maksimal 3 kalimat menjelaskan rasional jalur karier ini, mengaitkan strengths/gaps dari cv_review.
-- growth_potential berisi gambaran pertumbuhan industri (mis. "+24% YoY").
-- salary_range memberi estimasi gaji dalam IDR atau USD relevan dengan target.
-- key_gap_insight menyoroti satu kesenjangan paling kritikal yang harus diisi (prioritaskan dari cv_review.gaps).
-- skill_breakdown berisi 4-6 skill dengan progress 0-100 (current_level dan required_level).
-- learning_steps berisi 3-6 langkah praktis yang berurutan untuk menutup kesenjangan; setiap langkah punya title, description, dan tag (mis. "Direkomendasikan AI", "Strategis", "Dampak Tinggi").
-- milestones berisi 3-5 milestone karier dalam 6-18 bulan.
-PROMPT;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function responseSchema(): array
-    {
-        return [
-            'type' => 'object',
-            'additionalProperties' => false,
-            'required' => [
-                'target_role',
-                'match_score',
-                'summary',
-                'growth_potential',
-                'salary_range',
-                'key_gap_insight',
-                'skill_breakdown',
-                'learning_steps',
-                'milestones',
-            ],
-            'properties' => [
-                'target_role' => ['type' => 'string'],
-                'match_score' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 100],
-                'summary' => ['type' => 'string'],
-                'growth_potential' => ['type' => 'string'],
-                'salary_range' => ['type' => 'string'],
-                'key_gap_insight' => ['type' => 'string'],
-                'skill_breakdown' => [
-                    'type' => 'array',
-                    'items' => [
-                        'type' => 'object',
-                        'additionalProperties' => false,
-                        'required' => ['name', 'current_level', 'required_level', 'note'],
-                        'properties' => [
-                            'name' => ['type' => 'string'],
-                            'current_level' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 100],
-                            'required_level' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 100],
-                            'note' => ['type' => 'string'],
-                        ],
-                    ],
-                ],
-                'learning_steps' => [
-                    'type' => 'array',
-                    'items' => [
-                        'type' => 'object',
-                        'additionalProperties' => false,
-                        'required' => ['title', 'description', 'tag'],
-                        'properties' => [
-                            'title' => ['type' => 'string'],
-                            'description' => ['type' => 'string'],
-                            'tag' => ['type' => 'string'],
-                        ],
-                    ],
-                ],
-                'milestones' => [
-                    'type' => 'array',
-                    'items' => [
-                        'type' => 'object',
-                        'additionalProperties' => false,
-                        'required' => ['title', 'timeframe'],
-                        'properties' => [
-                            'title' => ['type' => 'string'],
-                            'timeframe' => ['type' => 'string'],
-                        ],
-                    ],
-                ],
-            ],
-        ];
     }
 
     /**

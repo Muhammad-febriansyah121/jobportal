@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\AiHealthProbe;
 use App\Models\User;
 use App\Services\AiService;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -34,15 +35,10 @@ test('ai health run returns ok when ai responds', function () {
 
     $mock = Mockery::mock(AiService::class);
     $mock->shouldReceive('isConfigured')->once()->andReturnTrue();
-    $mock->shouldReceive('chat')->once()->andReturn('OK');
     $mock->shouldReceive('modelName')->andReturn('gpt-5');
-    $mock->shouldReceive('tokenUsage')->andReturn([
-        'prompt_tokens' => 10,
-        'completion_tokens' => 1,
-        'reasoning_tokens' => null,
-        'total_tokens' => 11,
-    ]);
     app()->instance(AiService::class, $mock);
+
+    AiHealthProbe::fake(['OK']);
 
     $this->actingAs($admin)
         ->postJson(route('admin.ai-health.run'))
@@ -52,12 +48,6 @@ test('ai health run returns ok when ai responds', function () {
             'configured' => true,
             'model' => 'gpt-5',
             'reply_preview' => 'OK',
-            'token_usage' => [
-                'prompt_tokens' => 10,
-                'completion_tokens' => 1,
-                'reasoning_tokens' => null,
-                'total_tokens' => 11,
-            ],
         ])
         ->assertJsonPath('latency_ms', fn ($value) => is_int($value) && $value >= 0);
 });
@@ -83,20 +73,15 @@ test('ai health run reports unconfigured when no api key', function () {
         ->assertJsonPath('message', fn ($value) => str_contains((string) $value, 'OPENAI_API_KEY'));
 });
 
-test('ai health run reports failure when ai returns null', function () {
+test('ai health run reports failure when ai returns empty', function () {
     $admin = User::factory()->admin()->create();
 
     $mock = Mockery::mock(AiService::class);
     $mock->shouldReceive('isConfigured')->once()->andReturnTrue();
-    $mock->shouldReceive('chat')->once()->andReturnNull();
     $mock->shouldReceive('modelName')->andReturn('gpt-5');
-    $mock->shouldReceive('tokenUsage')->andReturn([
-        'prompt_tokens' => null,
-        'completion_tokens' => null,
-        'reasoning_tokens' => null,
-        'total_tokens' => null,
-    ]);
     app()->instance(AiService::class, $mock);
+
+    AiHealthProbe::fake(['']);
 
     $this->actingAs($admin)
         ->postJson(route('admin.ai-health.run'))

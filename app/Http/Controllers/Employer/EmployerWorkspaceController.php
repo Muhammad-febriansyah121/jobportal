@@ -669,21 +669,36 @@ class EmployerWorkspaceController extends Controller
             || $experience !== ''
             || $availability !== '';
 
-        $rankedCandidates = $hasActiveFilter
-            ? $generateTalentSearchRecommendations->handle(
-                $request->user(),
-                $filters,
-                $candidateRows
-            )
-            : $candidateRows
-                ->map(fn (array $row): array => $row + [
-                    'match_source' => $row['match_source'] ?? 'computed',
-                    'match_reason' => $row['match_reason'] ?? null,
-                ])
-                ->sortByDesc('match_score')
-                ->values();
+        $computedRanked = $candidateRows
+            ->map(fn (array $row): array => $row + [
+                'match_source' => $row['match_source'] ?? 'computed',
+                'match_reason' => $row['match_reason'] ?? null,
+            ])
+            ->sortByDesc('match_score')
+            ->values();
 
-        $candidates->setCollection($rankedCandidates);
+        $candidates->setCollection($computedRanked);
+
+        $deferredRerank = null;
+
+        if ($hasActiveFilter) {
+            $rerankUser = $request->user();
+            $rerankFilters = $filters;
+            $rerankInputRows = $candidateRows;
+
+            $deferredRerank = Inertia::defer(function () use ($generateTalentSearchRecommendations, $rerankUser, $rerankFilters, $rerankInputRows) {
+                try {
+                    return $generateTalentSearchRecommendations
+                        ->handle($rerankUser, $rerankFilters, $rerankInputRows)
+                        ->values()
+                        ->all();
+                } catch (\Throwable $e) {
+                    report($e);
+
+                    return null;
+                }
+            });
+        }
 
         $savedCandidatesCount = 0;
         $shortlistedCount = 0;
@@ -731,7 +746,8 @@ class EmployerWorkspaceController extends Controller
                     ]),
             ],
             'aiSuggestions' => $this->talentSearchSuggestions($search, $skillId, $location),
-            'recommendationSource' => $rankedCandidates->contains(fn (array $candidate): bool => ($candidate['match_source'] ?? null) === 'ai') ? 'ai' : 'computed',
+            'recommendationSource' => 'computed',
+            'aiRerankedCandidates' => $deferredRerank,
             'candidates' => $candidates,
             'totalCandidates' => CandidateProfile::count(),
             'savedCandidatesCount' => $savedCandidatesCount,

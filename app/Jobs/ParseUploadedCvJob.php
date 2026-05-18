@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Ai\Agents\CvUploadParser;
 use App\Models\AiAuditLog;
 use App\Models\CandidateCv;
 use App\Models\CandidateProfile;
@@ -14,6 +15,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Throwable;
 
 class ParseUploadedCvJob implements ShouldQueue
 {
@@ -49,18 +51,21 @@ class ParseUploadedCvJob implements ShouldQueue
             return;
         }
 
-        $schema = $this->buildSchema();
-        $prompt = $this->buildPrompt($cvText);
+        if (! $ai->isConfigured()) {
+            return;
+        }
 
-        $parsed = $ai->chatJson(
-            [
-                ['role' => 'system', 'content' => $this->systemPrompt()],
-                ['role' => 'user', 'content' => $prompt],
-            ],
-            $schema,
-            'cv_parse_result',
-            maxTokens: 2000,
-        );
+        $prompt = $this->buildPrompt($cvText);
+        $parsed = null;
+
+        try {
+            $response = (new CvUploadParser)->prompt($prompt);
+            if (isset($response->structured) && is_array($response->structured)) {
+                $parsed = $response->structured;
+            }
+        } catch (Throwable) {
+            return;
+        }
 
         if (! is_array($parsed)) {
             return;
@@ -79,9 +84,8 @@ class ParseUploadedCvJob implements ShouldQueue
             'input_hash' => hash('sha256', $cvText),
             'input_json' => ['cv_text_preview' => mb_substr($cvText, 0, 200)],
             'output_json' => $parsed,
-            'model_name' => $ai->modelName(),
+            'model_name' => (string) (config('services.openai.model') ?: 'gpt-5'),
             'status' => 'success',
-            ...$ai->tokenUsage(),
         ]);
     }
 
@@ -303,7 +307,7 @@ class ParseUploadedCvJob implements ShouldQueue
 
         try {
             return Carbon::parse($value)->format('Y-m-d');
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return null;
         }
     }
@@ -331,78 +335,8 @@ class ParseUploadedCvJob implements ShouldQueue
         return Str::of($target)->after('/storage/')->toString();
     }
 
-    private function systemPrompt(): string
-    {
-        return <<<'PROMPT'
-You are a CV/resume parser. Extract structured information from the given CV text.
-Return only valid JSON matching the schema. If a field is not found, use empty string or empty array.
-For dates use YYYY-MM-DD format. For years use integer (e.g. 2020).
-Extract only real information — do not invent or hallucinate data.
-PROMPT;
-    }
-
     private function buildPrompt(string $cvText): string
     {
         return "Parse the following CV text and extract structured data:\n\n---\n{$cvText}\n---";
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function buildSchema(): array
-    {
-        return [
-            'type' => 'object',
-            'properties' => [
-                'full_name' => ['type' => 'string'],
-                'headline' => ['type' => 'string'],
-                'summary' => ['type' => 'string'],
-                'phone' => ['type' => 'string'],
-                'location_city' => ['type' => 'string'],
-                'location_province' => ['type' => 'string'],
-                'linkedin_url' => ['type' => 'string'],
-                'github_url' => ['type' => 'string'],
-                'portfolio_url' => ['type' => 'string'],
-                'skills' => [
-                    'type' => 'array',
-                    'items' => ['type' => 'string'],
-                ],
-                'experiences' => [
-                    'type' => 'array',
-                    'items' => [
-                        'type' => 'object',
-                        'properties' => [
-                            'company_name' => ['type' => 'string'],
-                            'job_title' => ['type' => 'string'],
-                            'start_date' => ['type' => 'string'],
-                            'end_date' => ['type' => 'string'],
-                            'is_current' => ['type' => 'boolean'],
-                            'location' => ['type' => 'string'],
-                            'description' => ['type' => 'string'],
-                        ],
-                        'required' => ['company_name', 'job_title', 'start_date', 'end_date', 'is_current', 'location', 'description'],
-                        'additionalProperties' => false,
-                    ],
-                ],
-                'educations' => [
-                    'type' => 'array',
-                    'items' => [
-                        'type' => 'object',
-                        'properties' => [
-                            'institution' => ['type' => 'string'],
-                            'degree' => ['type' => 'string'],
-                            'field_of_study' => ['type' => 'string'],
-                            'start_year' => ['type' => 'string'],
-                            'end_year' => ['type' => 'string'],
-                            'gpa' => ['type' => 'string'],
-                        ],
-                        'required' => ['institution', 'degree', 'field_of_study', 'start_year', 'end_year', 'gpa'],
-                        'additionalProperties' => false,
-                    ],
-                ],
-            ],
-            'required' => ['full_name', 'headline', 'summary', 'phone', 'location_city', 'location_province', 'linkedin_url', 'github_url', 'portfolio_url', 'skills', 'experiences', 'educations'],
-            'additionalProperties' => false,
-        ];
     }
 }

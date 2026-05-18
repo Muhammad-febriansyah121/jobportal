@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\CareerCoachReplyGenerator;
 use App\Models\AiAuditLog;
 use App\Models\AiCareerCoachingMessage;
 use App\Models\AiCareerCoachingSession;
@@ -7,7 +8,6 @@ use App\Models\AiCareerRecommendation;
 use App\Models\CandidateProfile;
 use App\Models\Setting;
 use App\Models\User;
-use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
     $this->candidate = User::factory()->candidate()->create([
@@ -25,13 +25,8 @@ beforeEach(function () {
 
 function fakeChatJsonResponse(array $payload): void
 {
-    Http::fake([
-        'https://api.openai.com/v1/chat/completions' => Http::response([
-            'choices' => [
-                ['message' => ['content' => json_encode($payload)]],
-            ],
-        ], 200),
-    ]);
+    config()->set('services.openai.api_key', 'test-ai-key');
+    CareerCoachReplyGenerator::fake([$payload]);
 }
 
 test('career coach chat uses AI when api key configured', function () {
@@ -155,6 +150,60 @@ test('career coach chat falls back when AI key missing', function () {
 
     expect($assistantReply)->not->toBeNull();
     expect($assistantReply->content)->toContain('Lengkapi profil');
+});
+
+test('career coach stream returns SSE fallback when AI key missing', function () {
+    Setting::set('ai_api_key', '');
+    config()->set('services.openai.api_key', null);
+
+    $session = AiCareerCoachingSession::create([
+        'candidate_id' => $this->profile->id,
+        'title' => 'Coaching',
+        'status' => 'active',
+    ]);
+
+    $response = $this->actingAs($this->candidate)
+        ->post(route('candidate.career-coach.stream'), [
+            'session_id' => $session->id,
+            'content' => 'Halo coach',
+        ]);
+
+    $response->assertOk();
+    expect($response->headers->get('Content-Type'))->toContain('text/event-stream');
+
+    $body = $response->streamedContent();
+    expect($body)->toContain('text_delta');
+    expect($body)->toContain('[DONE]');
+
+    $userMessage = AiCareerCoachingMessage::query()
+        ->where('session_id', $session->id)
+        ->where('role', 'user')
+        ->first();
+    expect($userMessage)->not->toBeNull();
+    expect($userMessage->content)->toBe('Halo coach');
+
+    $assistantReply = AiCareerCoachingMessage::query()
+        ->where('session_id', $session->id)
+        ->where('role', 'assistant')
+        ->first();
+    expect($assistantReply)->not->toBeNull();
+    expect($assistantReply->content)->toContain('Lengkapi profil');
+    expect($assistantReply->meta_json['quick_prompts'])->toBeArray()->not->toBeEmpty();
+});
+
+test('career coach stream validates content', function () {
+    $session = AiCareerCoachingSession::create([
+        'candidate_id' => $this->profile->id,
+        'title' => 'Coaching',
+        'status' => 'active',
+    ]);
+
+    $this->actingAs($this->candidate)
+        ->post(route('candidate.career-coach.stream'), [
+            'session_id' => $session->id,
+            'content' => '',
+        ])
+        ->assertSessionHasErrors('content');
 });
 
 test('career coach chat exposes quick prompts in inertia props', function () {

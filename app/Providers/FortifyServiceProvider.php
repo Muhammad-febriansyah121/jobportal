@@ -9,9 +9,14 @@ use App\Http\Responses\LoginResponse;
 use App\Http\Responses\RegisterResponse;
 use App\Models\Setting;
 use App\Models\Skill;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -42,6 +47,51 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureActions();
         $this->configureViews();
         $this->configureRateLimiting();
+        $this->configureMail();
+    }
+
+    /**
+     * Customize Fortify-related notification emails (reset password, verify email).
+     */
+    private function configureMail(): void
+    {
+        ResetPassword::toMailUsing(function (object $notifiable, string $token): MailMessage {
+            $brand = trim((string) Setting::get('site_name', '')) ?: (string) config('app.name', 'Karivia');
+            $url = url(route('password.reset', [
+                'token' => $token,
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ], false));
+            $expireMinutes = (int) config('auth.passwords.users.expire', 60);
+
+            return (new MailMessage)
+                ->subject('Permintaan Reset Password — '.$brand)
+                ->greeting('Halo,')
+                ->line('Kami menerima permintaan untuk mereset password akun '.$brand.' Anda. Tekan tombol di bawah ini untuk membuat password baru.')
+                ->action('Reset Password', $url)
+                ->line('Tautan ini akan kedaluwarsa dalam '.$expireMinutes.' menit. Jika Anda tidak meminta reset password, abaikan email ini dan password Anda akan tetap sama.')
+                ->line('Demi keamanan, jangan pernah membagikan tautan ini kepada siapa pun.')
+                ->salutation('Hormat kami, Tim '.$brand);
+        });
+
+        VerifyEmail::toMailUsing(function (object $notifiable): MailMessage {
+            $brand = trim((string) Setting::get('site_name', '')) ?: (string) config('app.name', 'Karivia');
+            $url = URL::temporarySignedRoute(
+                'verification.verify',
+                Carbon::now()->addMinutes((int) config('auth.verification.expire', 60)),
+                [
+                    'id' => $notifiable->getKey(),
+                    'hash' => sha1($notifiable->getEmailForVerification()),
+                ]
+            );
+
+            return (new MailMessage)
+                ->subject('Verifikasi Alamat Email Anda — '.$brand)
+                ->greeting('Selamat datang di '.$brand.',')
+                ->line('Terima kasih telah mendaftar. Untuk mengaktifkan akun dan mulai menggunakan layanan, mohon konfirmasi alamat email Anda dengan menekan tombol di bawah.')
+                ->action('Verifikasi Email', $url)
+                ->line('Apabila Anda tidak merasa membuat akun di '.$brand.', abaikan saja email ini. Akun tidak akan diaktifkan tanpa verifikasi.')
+                ->salutation('Hormat kami, Tim '.$brand);
+        });
     }
 
     /**

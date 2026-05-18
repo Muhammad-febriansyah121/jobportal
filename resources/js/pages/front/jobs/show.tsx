@@ -1,4 +1,4 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Deferred, Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     BadgeCheck,
@@ -590,10 +590,35 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                 </div>
                             </div>
 
-                            {/* Recruitment stages */}
-                            {job.ai_insight?.recruitment_stages &&
-                                job.ai_insight.recruitment_stages.length >
-                                    0 && (
+                            {/* Recruitment stages (deferred — AI-generated) */}
+                            <Deferred
+                                data="job.ai_insight"
+                                fallback={
+                                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                                        <div className="mb-4 flex items-center gap-2">
+                                            <Milestone className="size-4 text-primary-600" />
+                                            <h3 className="text-sm font-bold text-slate-800">
+                                                {t(
+                                                    'front.jobs.show.recruitment_stages_title',
+                                                )}
+                                            </h3>
+                                        </div>
+                                        <div className="flex items-start gap-3 overflow-x-auto">
+                                            {[0, 1, 2, 3, 4].map((i) => (
+                                                <div
+                                                    key={i}
+                                                    className="flex min-w-0 flex-1 flex-col items-center gap-1.5"
+                                                >
+                                                    <div className="size-8 shrink-0 animate-pulse rounded-full bg-slate-200" />
+                                                    <div className="h-2 w-12 animate-pulse rounded bg-slate-200" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                }
+                            >
+                                {job.ai_insight?.recruitment_stages &&
+                                job.ai_insight.recruitment_stages.length > 0 ? (
                                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                                         <div className="mb-4 flex items-center gap-2">
                                             <Milestone className="size-4 text-primary-600" />
@@ -644,7 +669,8 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
                                             )}
                                         </div>
                                     </div>
-                                )}
+                                ) : null}
+                            </Deferred>
 
                             {/* Bottom CTA */}
                             <div className="rounded-2xl border border-primary-200 bg-primary-50 p-6 text-center">

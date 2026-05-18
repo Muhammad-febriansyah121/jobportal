@@ -146,7 +146,7 @@ class ActivityRiskDetector
                 'role' => 'user',
                 'content' => json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
             ],
-        ], 700, 0.2);
+        ], 700, 0.2, reasoningEffort: 'low');
 
         if ($content === null) {
             return null;

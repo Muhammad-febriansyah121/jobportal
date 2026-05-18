@@ -2,10 +2,12 @@
 
 namespace App\Actions\Admin;
 
+use App\Ai\Agents\AdminUserSummarizer;
 use App\Models\ActivityLog;
 use App\Models\AiAuditLog;
 use App\Models\User;
 use App\Services\AiService;
+use Throwable;
 
 class GenerateUserAiSummary
 {
@@ -51,12 +53,6 @@ class GenerateUserAiSummary
             $activityLines = 'Belum ada aktivitas tercatat.';
         }
 
-        $systemPrompt = <<<'PROMPT'
-Kamu adalah asisten admin platform job portal bernama Karivia. Tugasmu membuat ringkasan singkat perilaku dan aktivitas seorang pengguna berdasarkan data yang diberikan.
-
-Tulis ringkasan dalam 2-3 kalimat bahasa Indonesia yang informatif dan natural. Fokus pada pola perilaku, aktivitas yang sering dilakukan, dan hal-hal yang perlu diperhatikan admin. Jangan menambahkan informasi yang tidak ada di data.
-PROMPT;
-
         $userPrompt = <<<PROMPT
 Data pengguna:
 - Nama: {$profile['name']}
@@ -71,10 +67,17 @@ Riwayat aktivitas terbaru (maks 50 terakhir):
 Buat ringkasan singkat perilaku pengguna ini untuk keperluan admin.
 PROMPT;
 
-        $result = $this->ai->chat([
-            ['role' => 'system', 'content' => $systemPrompt],
-            ['role' => 'user', 'content' => $userPrompt],
-        ], maxTokens: 300, temperature: 0.5);
+        @set_time_limit(0);
+        $result = null;
+
+        if ($this->ai->isConfigured()) {
+            try {
+                $response = (new AdminUserSummarizer)->prompt($userPrompt);
+                $result = $response->text;
+            } catch (Throwable) {
+                $result = null;
+            }
+        }
 
         return AiAuditLog::create([
             'user_id' => $user->id,
@@ -85,9 +88,8 @@ PROMPT;
                 'summary' => $result,
                 'generated_at' => now()->toIso8601String(),
             ],
-            'model_name' => $this->ai->modelName(),
+            'model_name' => (string) (config('services.openai.model') ?: 'gpt-5'),
             'status' => $result ? 'success' : 'failed',
-            ...$this->ai->tokenUsage(),
         ]);
     }
 }

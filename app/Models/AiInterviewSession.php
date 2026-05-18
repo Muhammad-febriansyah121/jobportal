@@ -34,6 +34,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'reschedule_rejected_reason',
     'recording_url',
     'live_transcript',
+    'questions_preparing',
 ])]
 class AiInterviewSession extends Model
 {
@@ -83,6 +84,7 @@ class AiInterviewSession extends Model
             'reschedule_requested_at' => 'datetime',
             'reschedule_proposed_at' => 'datetime',
             'reschedule_reviewed_at' => 'datetime',
+            'questions_preparing' => 'boolean',
         ];
     }
 }

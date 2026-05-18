@@ -2,6 +2,7 @@
 
 namespace App\Actions\Candidate;
 
+use App\Ai\Agents\InterviewQuestionGenerator;
 use App\Models\AiAuditLog;
 use App\Models\CandidateProfile;
 use App\Services\AiService;
@@ -100,18 +101,21 @@ class GenerateCustomInterviewQuestions
             return null;
         }
 
-        try {
-            $output = $this->ai->chatJson(
-                messages: [
-                    ['role' => 'system', 'content' => $this->systemPrompt($language)],
-                    ['role' => 'user', 'content' => json_encode($context, JSON_THROW_ON_ERROR)],
-                ],
-                schema: $this->responseSchema(),
-                schemaName: 'custom_interview_questions',
-                maxTokens: 1200,
-            );
-        } catch (\Throwable) {
-            $output = null;
+        @set_time_limit(0);
+        $output = null;
+
+        if ($this->ai->isConfigured()) {
+            try {
+                $response = (new InterviewQuestionGenerator($language))->prompt(
+                    json_encode($context, JSON_THROW_ON_ERROR),
+                );
+                $structured = $response->toArray();
+                if (is_array($structured)) {
+                    $output = $structured;
+                }
+            } catch (\Throwable) {
+                $output = null;
+            }
         }
 
         $status = is_array($output) && isset($output['questions']) && count((array) $output['questions']) >= $count
@@ -124,9 +128,8 @@ class GenerateCustomInterviewQuestions
             'input_hash' => $inputHash,
             'input_json' => $context,
             'output_json' => $output,
-            'model_name' => $this->ai->modelName(),
+            'model_name' => (string) (config('services.openai.model') ?: 'gpt-5'),
             'status' => $status,
-            ...$this->ai->tokenUsage(),
         ]);
 
         if ($status === 'fallback') {
@@ -168,79 +171,5 @@ class GenerateCustomInterviewQuestions
         $decoded = html_entity_decode($stripped, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         return trim((string) preg_replace('/\s+/', ' ', $decoded));
-    }
-
-    private function systemPrompt(string $language): string
-    {
-        if ($language === 'en') {
-            return <<<'PROMPT'
-You are an expert interview question generator for Karivia (Indonesian job portal).
-Your job: produce a structured, personalized list of mock-interview questions tailored to the candidate's profile (skills, recent experiences, education) and target role.
-
-Strict rules:
-- Output JSON ONLY, matching the schema exactly. No prose.
-- Each question MUST reference at least one concrete signal from the candidate's profile (specific skill, company, project, or experience). Avoid generic "tell me about yourself" questions unless explicitly probing motivation.
-- Prefer behavioral STAR-style questions for experiences ("Tell me about a time you..."), technical questions for listed skills, and case-study/scenario questions for the target role.
-- Each question must be 1-2 sentences, concrete, answerable in 2-5 minutes.
-- Distribute categories per the requested focus: behavioral, technical, problem_solving, communication, case_study, motivation.
-- The "rubric" must briefly describe what a strong answer covers (1 sentence).
-- Match the seniority level: easier for fresh_graduate/junior, deeper for mid/senior.
-- Respond entirely in English.
-PROMPT;
-        }
-
-        return <<<'PROMPT'
-Kamu adalah AI generator pertanyaan wawancara untuk Karivia (job portal Indonesia).
-Tugasmu: hasilkan daftar pertanyaan latihan wawancara yang terstruktur dan personal — disesuaikan dengan profil kandidat (skills, pengalaman terakhir, pendidikan) dan target peran.
-
-Aturan ketat:
-- Output JSON saja, sesuai schema. Tidak ada teks lain.
-- Setiap pertanyaan WAJIB merujuk minimal satu sinyal konkret dari profil kandidat (skill spesifik, nama perusahaan, project, atau pengalaman). Hindari pertanyaan generic "ceritakan tentang diri kamu" kecuali memang menggali motivasi.
-- Gunakan format STAR untuk pertanyaan behavioral pengalaman ("Ceritakan saat kamu..."), pertanyaan teknis untuk skill yang tercantum, dan case-study/skenario untuk target peran.
-- Setiap pertanyaan 1-2 kalimat, spesifik, bisa dijawab dalam 2-5 menit.
-- Distribusi kategori sesuai fokus yang diminta: behavioral, technical, problem_solving, communication, case_study, motivation.
-- "rubric" harus jelaskan singkat (1 kalimat) apa yang dinilai dari jawaban yang baik.
-- Sesuaikan kedalaman dengan level: lebih mudah untuk fresh_graduate/junior, lebih dalam untuk mid/senior.
-- Gunakan Bahasa Indonesia natural untuk semua field.
-PROMPT;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function responseSchema(): array
-    {
-        return [
-            'type' => 'object',
-            'additionalProperties' => false,
-            'required' => ['questions'],
-            'properties' => [
-                'questions' => [
-                    'type' => 'array',
-                    'minItems' => 3,
-                    'maxItems' => 12,
-                    'items' => [
-                        'type' => 'object',
-                        'additionalProperties' => false,
-                        'required' => ['question', 'category', 'rubric'],
-                        'properties' => [
-                            'question' => ['type' => 'string', 'minLength' => 20, 'maxLength' => 400],
-                            'category' => [
-                                'type' => 'string',
-                                'enum' => [
-                                    'behavioral',
-                                    'technical',
-                                    'problem_solving',
-                                    'communication',
-                                    'case_study',
-                                    'motivation',
-                                ],
-                            ],
-                            'rubric' => ['type' => 'string', 'minLength' => 10, 'maxLength' => 200],
-                        ],
-                    ],
-                ],
-            ],
-        ];
     }
 }

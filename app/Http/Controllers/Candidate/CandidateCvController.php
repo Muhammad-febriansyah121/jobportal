@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Candidate;
 
 use App\Actions\Candidate\CandidateWalletManager;
 use App\Actions\Candidate\ResolveCandidateProfile;
+use App\Ai\Agents\CvDrafter;
+use App\Ai\Agents\CvReviewer;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Candidate\GenerateCandidateCvDraftRequest;
 use App\Http\Requests\Candidate\ReviewCandidateCvRequest;
@@ -210,13 +212,19 @@ class CandidateCvController extends Controller
         if (is_array($cached?->output_json)) {
             $output = $cached->output_json;
         } else {
-            $aiResponse = $this->ai->chat([
-                ['role' => 'system', 'content' => $this->draftSystemPrompt()],
-                ['role' => 'user', 'content' => json_encode($promptPayload, JSON_THROW_ON_ERROR)],
-            ], maxTokens: 1200, temperature: 0.35);
+            @set_time_limit(0);
 
-            if ($aiResponse !== null) {
-                $output = $this->decodeJsonObject($aiResponse);
+            try {
+                $response = (new CvDrafter)->prompt(
+                    json_encode($promptPayload, JSON_THROW_ON_ERROR),
+                );
+                $aiResponse = $response->text;
+
+                if ($aiResponse !== null && $aiResponse !== '') {
+                    $output = $this->decodeJsonObject($aiResponse);
+                }
+            } catch (Throwable) {
+                $output = null;
             }
         }
 
@@ -236,9 +244,8 @@ class CandidateCvController extends Controller
             'input_hash' => $inputHash,
             'input_json' => $promptPayload,
             'output_json' => $builderData,
-            'model_name' => $this->ai->modelName(),
+            'model_name' => (string) (config('services.openai.model') ?: 'gpt-5'),
             'status' => is_array($output) ? 'success' : 'fallback',
-            ...$this->ai->tokenUsage(),
         ]);
 
         Inertia::flash('toast', [
@@ -262,22 +269,30 @@ class CandidateCvController extends Controller
             'builder' => $builderData,
         ];
         $fallback = $this->fallbackReview($builderData, $payload['target_job']);
-        $aiResult = $this->ai->chat([
-            ['role' => 'system', 'content' => $this->reviewSystemPrompt()],
-            ['role' => 'user', 'content' => json_encode($payload, JSON_THROW_ON_ERROR)],
-        ], maxTokens: 2400, temperature: 0.3);
-
         $reviewData = $fallback;
-        if ($aiResult !== null) {
-            $decoded = $this->decodeJsonObject($aiResult);
+        $aiSucceeded = false;
 
-            if (is_array($decoded)) {
-                $merged = $this->normalizeReviewData($decoded);
+        @set_time_limit(0);
+        try {
+            $response = (new CvReviewer)->prompt(
+                json_encode($payload, JSON_THROW_ON_ERROR),
+            );
+            $aiResult = $response->text;
 
-                if ($merged !== null) {
-                    $reviewData = $merged;
+            if ($aiResult !== null && $aiResult !== '') {
+                $decoded = $this->decodeJsonObject($aiResult);
+
+                if (is_array($decoded)) {
+                    $merged = $this->normalizeReviewData($decoded);
+
+                    if ($merged !== null) {
+                        $reviewData = $merged;
+                        $aiSucceeded = true;
+                    }
                 }
             }
+        } catch (Throwable) {
+            // Keep fallback review.
         }
 
         $builderData['ai_review'] = $reviewData;
@@ -291,7 +306,7 @@ class CandidateCvController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => $aiResult !== null
+            'message' => $aiSucceeded
                 ? 'Review CV dari AI berhasil diperbarui.'
                 : 'Review CV memakai analisis fallback karena AI belum merespons.',
         ]);
@@ -576,117 +591,6 @@ class CandidateCvController extends Controller
         }
 
         return $start.' - '.$end;
-    }
-
-    private function draftSystemPrompt(): string
-    {
-        return <<<'PROMPT'
-Kamu adalah AI CV Writer untuk kandidat job portal Indonesia.
-Balas hanya JSON valid tanpa markdown dengan schema berikut:
-{
-  "template": "ats",
-  "title": "string",
-  "summary": "ringkasan profesional maksimal 3 kalimat",
-  "personal": {
-    "full_name": "string",
-    "headline": "string",
-    "email": "string",
-    "phone": "string",
-    "city": "string",
-    "linkedin": "string",
-    "github": "string",
-    "portfolio": "string"
-  },
-  "skills": ["string"],
-  "experiences": [
-    {
-      "job_title": "string",
-      "company_name": "string",
-      "location": "string",
-      "start_date": "MMM YYYY",
-      "end_date": "MMM YYYY atau Sekarang",
-      "is_current": false,
-      "description": "bullet-style impact statement"
-    }
-  ],
-  "educations": [
-    {
-      "school_name": "string",
-      "degree": "string",
-      "field_of_study": "string",
-      "start_year": "YYYY",
-      "end_year": "YYYY",
-      "description": "string"
-    }
-  ],
-  "projects": [
-    {
-      "name": "string",
-      "role": "string",
-      "link": "string",
-      "description": "string"
-    }
-  ],
-  "certifications": [
-    {
-      "name": "string",
-      "issuer": "string",
-      "year": "YYYY"
-    }
-  ]
-}
-Gunakan format ATS (1 kolom, minim dekorasi, fokus kata kunci role), bahasa Indonesia profesional, realistis, dan jangan mengarang data sensitif.
-PROMPT;
-    }
-
-    private function reviewSystemPrompt(): string
-    {
-        return <<<'PROMPT'
-Kamu adalah AI CV Reviewer profesional khusus pasar kerja Indonesia.
-Tugasmu mengevaluasi CV kandidat secara menyeluruh dan memberikan feedback yang
-terstruktur, spesifik, dan actionable. Gunakan bahasa Indonesia yang mudah
-dipahami, ramah, dan tidak menggurui.
-
-WAJIB BALAS HANYA JSON valid tanpa markdown, tanpa code fence, tanpa komentar.
-Skema persis:
-{
-  "score": 0-100,
-  "label": "Sudah kuat" | "Cukup baik" | "Perlu ditingkatkan",
-  "summary": "kesan umum 2-3 kalimat",
-  "improved_summary": "contoh ringkasan profil baru yang lebih kuat, 2-3 kalimat",
-  "sections": [
-    {
-      "id": "contact_information" | "professional_summary" | "work_experience" | "achievement" | "education_certification" | "skills" | "projects_portfolio" | "writing_quality" | "ats_keywords" | "career_recommendation",
-      "title": "judul section dalam Bahasa Indonesia",
-      "score": 0-100,
-      "status": "good" | "warning" | "missing",
-      "analysis": "kondisi saat ini 1-2 kalimat",
-      "why_important": "kenapa section ini penting buat ATS/HR 1 kalimat",
-      "action_points": ["3-5 saran spesifik dan actionable"],
-      "examples": [
-        { "before": "kalimat asli dari CV (atau contoh umum)", "after": "versi perbaikan yang lebih kuat" }
-      ]
-    }
-  ],
-  "keyword_match": {
-    "score": 0-100,
-    "matched": ["kata kunci yang sudah ada di CV (max 12)"],
-    "missing": ["kata kunci penting yang belum ada (max 12)"]
-  },
-  "suggestions": ["maksimal 6 prioritas top yang paling impactful, ringkas dan actionable"]
-}
-
-Aturan:
-- WAJIB sertakan 10 section di array "sections" dengan id sesuai daftar di atas.
-- Skor section 0-30 = missing, 31-70 = warning, 71-100 = good. Set field "status" sesuai range.
-- Score keseluruhan = rata-rata weighted dari section.
-- "examples" boleh kosong [] kalau tidak relevan, tapi WAJIB ada untuk
-  professional_summary, work_experience, dan achievement.
-- "matched"/"missing" diambil dari skill, tools, soft skill yang umum untuk
-  target_job. Kalau target_job kosong, infer dari headline/role di CV.
-- Hindari saran umum seperti "perbaiki CV". Selalu berikan saran spesifik.
-- Jangan menambah field di luar skema.
-PROMPT;
     }
 
     /**
