@@ -24,7 +24,7 @@ test('new users can register', function () {
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('candidate.dashboard', absolute: false));
+    $response->assertRedirect(route('verification.notice', absolute: false));
 
     expect(ActivityLog::where('action', 'register_user')->whereHas('actor', fn ($query) => $query->where('email', 'test@example.com'))->exists())->toBeTrue();
 });

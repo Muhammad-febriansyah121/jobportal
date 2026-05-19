@@ -2,6 +2,7 @@
 
 namespace App\Http\Responses;
 
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -30,7 +31,13 @@ class RegisterResponse implements RegisterResponseContract
 
     private function redirectPath($request): string
     {
-        return match ($request->user()?->role) {
+        $user = $request->user();
+
+        if ($user instanceof MustVerifyEmail && ! $user->hasVerifiedEmail()) {
+            return route('verification.notice');
+        }
+
+        return match ($user?->role) {
             'candidate' => route('candidate.dashboard'),
             'employer' => route('employer.dashboard'),
             'admin' => route('admin.dashboard'),
