@@ -12,12 +12,13 @@
     }
 @endphp
 <tr>
-<td class="header" style="padding: 32px 0; text-align: center; background-color: #1E4D96;">
+<td class="header" style="padding: 36px 0 28px; text-align: center; background-color: #f3f4f6;">
 <a href="{{ $url }}" style="display: inline-block; text-decoration: none;">
 @if ($logoUrl)
-<img src="{{ $logoUrl }}" alt="{{ $brandName }}" style="height: 44px; width: auto; display: block; margin: 0 auto;">
+<img src="{{ $logoUrl }}" alt="{{ $brandName }}" style="height: 80px; width: auto; display: block; margin: 0 auto 10px;">
+<div style="color: #1E4D96; font-size: 20px; font-weight: 700; letter-spacing: 0.3px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">{{ $brandName }}</div>
 @else
-<span style="color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: 0.5px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">{{ $brandName }}</span>
+<span style="color: #1E4D96; font-size: 24px; font-weight: 700; letter-spacing: 0.5px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">{{ $brandName }}</span>
 @endif
 </a>
 </td>
