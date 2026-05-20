@@ -8,6 +8,7 @@ import {
     ChevronRight,
     Clock3,
     Hand,
+    Headphones,
     HelpCircle,
     Info,
     ListChecks,
@@ -194,6 +195,7 @@ export default function CandidateAiInterviewShow({
     } | null>(null);
     const prewarmInFlightRef = useRef<Promise<void> | null>(null);
     const [hasSentGreeting, setHasSentGreeting] = useState(false);
+    const hasSentGreetingRef = useRef(false);
     const greetingPendingRef = useRef<boolean>(false);
     const [consented, setConsented] = useState(false);
     const [cameraStreamActive, setCameraStreamActive] = useState(false);
@@ -237,6 +239,7 @@ export default function CandidateAiInterviewShow({
     const [autoAdvanceRemaining, setAutoAdvanceRemaining] = useState<
         number | null
     >(null);
+    const userMutedRef = useRef(false);
     const silenceTimerRef = useRef<number | null>(null);
     const countdownIntervalRef = useRef<number | null>(null);
     const SILENCE_BEFORE_COUNTDOWN_MS = 5_000;
@@ -1063,6 +1066,13 @@ export default function CandidateAiInterviewShow({
                 peerConnection.addTrack(track, stream);
             });
 
+            // Mulai dengan mic disable — AI bicara greeting+Q1 dulu, baru
+            // dibuka saat response.done.
+            const audioTrack = stream.getAudioTracks()[0];
+            if (audioTrack) {
+                audioTrack.enabled = false;
+            }
+
             const dataChannel =
                 peerConnection.createDataChannel('karivia-events');
             dataChannelRef.current = dataChannel;
@@ -1117,9 +1127,10 @@ export default function CandidateAiInterviewShow({
     };
 
     const sendGreeting = () => {
-        if (hasSentGreeting) {
+        if (hasSentGreetingRef.current) {
             return;
         }
+        hasSentGreetingRef.current = true;
 
         // User-gesture-bound: prime audio playback FIRST to bypass autoplay throttling.
         // Must happen before any async work to preserve the gesture activation.
@@ -1143,6 +1154,8 @@ export default function CandidateAiInterviewShow({
         const channel = dataChannelRef.current;
 
         if (!channel || channel.readyState !== 'open') {
+            // Reset guard supaya saat onopen fire nanti, sendGreeting bisa run.
+            hasSentGreetingRef.current = false;
             greetingPendingRef.current = true;
             toast.info('Menyiapkan koneksi AI, sapaan akan dimulai...');
 
@@ -1180,9 +1193,17 @@ export default function CandidateAiInterviewShow({
         );
 
         setHasSentGreeting(true);
+        setTurnState('ai-thinking');
+        applyMicGate(true);
     };
 
     const advanceToNextQuestion = () => {
+        // Defensive: jangan trigger response.create kalau AI lagi bicara/memproses.
+        const currentTurn = turnStateRef.current;
+        if (currentTurn === 'ai-talking' || currentTurn === 'ai-thinking') {
+            return;
+        }
+
         setCurrentQuestion((current) => {
             const next = Math.min(current + 1, session.questions.length - 1);
 
@@ -1218,6 +1239,7 @@ export default function CandidateAiInterviewShow({
                         }),
                     );
                     setTurnState('ai-thinking');
+                    applyMicGate(true);
                 }
             }
 
@@ -1242,9 +1264,11 @@ export default function CandidateAiInterviewShow({
         remoteStreamRef.current = null;
         setConnected(false);
         setHasSentGreeting(false);
+        hasSentGreetingRef.current = false;
         greetingPendingRef.current = false;
         setSignalQuality(networkOnline ? 'good' : 'offline');
         setMuted(false);
+        userMutedRef.current = false;
         setHasQuestionStarted(false);
         setActiveAiQuestionText(null);
         clearAutoAdvanceTimers();
@@ -1258,8 +1282,14 @@ export default function CandidateAiInterviewShow({
             return;
         }
 
-        audioTrack.enabled = !audioTrack.enabled;
-        setMuted(!audioTrack.enabled);
+        const nextMuted = !userMutedRef.current;
+        userMutedRef.current = nextMuted;
+        setMuted(nextMuted);
+
+        const aiSpeaking =
+            turnStateRef.current === 'ai-talking' ||
+            turnStateRef.current === 'ai-thinking';
+        audioTrack.enabled = !nextMuted && !aiSpeaking;
     };
 
     const submitInterview = async () => {
@@ -1330,6 +1360,20 @@ export default function CandidateAiInterviewShow({
         setAutoAdvanceRemaining(null);
     };
 
+    const turnStateRef = useRef(turnState);
+    turnStateRef.current = turnState;
+
+    // Kontrol mic langsung di sisi WebRTC track. Saat AI bicara, mic kandidat
+    // di-disable supaya audio AI tidak balik ke OpenAI lewat echo (penyebab
+    // utama AI ke-cancel & restart Q1 sendiri).
+    const applyMicGate = (aiSpeaking: boolean) => {
+        const audioTrack = localStreamRef.current?.getAudioTracks()[0];
+        if (!audioTrack) {
+            return;
+        }
+        audioTrack.enabled = !userMutedRef.current && !aiSpeaking;
+    };
+
     const requestAiResponse = () => {
         const channel = dataChannelRef.current;
 
@@ -1337,9 +1381,16 @@ export default function CandidateAiInterviewShow({
             return;
         }
 
+        // Defensive: jangan kirim response.create saat AI lagi bicara/memproses.
+        const current = turnStateRef.current;
+        if (current === 'ai-talking' || current === 'ai-thinking') {
+            return;
+        }
+
         channel.send(JSON.stringify({ type: 'response.create' }));
         clearAutoAdvanceTimers();
         setTurnState('ai-thinking');
+        applyMicGate(true);
     };
 
     const startAutoAdvanceTimers = () => {
@@ -1347,11 +1398,29 @@ export default function CandidateAiInterviewShow({
 
         silenceTimerRef.current = window.setTimeout(() => {
             silenceTimerRef.current = null;
+
+            // State berubah saat kita menunggu? Batal.
+            const current = turnStateRef.current;
+            if (current !== 'user-paused' && current !== 'user-answering') {
+                return;
+            }
+
             setAutoAdvanceRemaining(AUTO_ADVANCE_COUNTDOWN_S);
 
             let remaining = AUTO_ADVANCE_COUNTDOWN_S;
             countdownIntervalRef.current = window.setInterval(() => {
                 remaining -= 1;
+
+                const stillIdle = turnStateRef.current === 'user-paused';
+
+                if (!stillIdle) {
+                    if (countdownIntervalRef.current !== null) {
+                        window.clearInterval(countdownIntervalRef.current);
+                        countdownIntervalRef.current = null;
+                    }
+                    setAutoAdvanceRemaining(null);
+                    return;
+                }
 
                 if (remaining <= 0) {
                     if (countdownIntervalRef.current !== null) {
@@ -1405,25 +1474,41 @@ export default function CandidateAiInterviewShow({
             if (event.type === 'response.created') {
                 clearAutoAdvanceTimers();
                 setTurnState('ai-talking');
+                applyMicGate(true);
             }
 
             if (
                 event.type === 'response.done' ||
-                event.type === 'response.completed'
+                event.type === 'response.completed' ||
+                event.type === 'response.cancelled' ||
+                event.type === 'response.failed'
             ) {
                 setTurnState('user-turn');
+                // Beri jeda sebentar sebelum buka mic — biar tail audio AI di
+                // speaker tidak terlanjur masuk mic.
+                window.setTimeout(() => applyMicGate(false), 600);
             }
 
+            // VAD events HANYA diproses kalau giliran user. AI yang lagi bicara
+            // sering bocor ke mic (echo) dan memicu VAD palsu — abaikan.
             if (event.type === 'input_audio_buffer.speech_started') {
-                clearAutoAdvanceTimers();
-                setTurnState('user-answering');
+                setTurnState((current) => {
+                    if (current === 'ai-talking' || current === 'ai-thinking') {
+                        return current;
+                    }
+                    clearAutoAdvanceTimers();
+                    return 'user-answering';
+                });
             }
 
             if (event.type === 'input_audio_buffer.speech_stopped') {
-                setTurnState((current) =>
-                    current === 'user-answering' ? 'user-paused' : current,
-                );
-                startAutoAdvanceTimers();
+                setTurnState((current) => {
+                    if (current !== 'user-answering') {
+                        return current;
+                    }
+                    startAutoAdvanceTimers();
+                    return 'user-paused';
+                });
             }
 
             // Handle both old and new transcript event names.
@@ -2065,6 +2150,30 @@ export default function CandidateAiInterviewShow({
                                 </div>
 
                                 {/* Language picker hidden — auto-detected from user locale (navbar flag). */}
+
+                                {/* Headphones tip — penting biar mic tidak nangkep suara AI sendiri */}
+                                {isVoiceInterview && (
+                                    <div className="overflow-hidden rounded-2xl border-2 border-amber-200 bg-linear-to-br from-amber-50 to-yellow-50 shadow-sm">
+                                        <div className="flex gap-3 p-4">
+                                            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-200 text-amber-900">
+                                                <Headphones className="size-5" />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <p className="text-sm font-bold text-amber-900">
+                                                    Wajib pakai headphone / earphone
+                                                </p>
+                                                <p className="text-xs leading-5 text-amber-800">
+                                                    Tanpa headphone, mikrofon kamu akan menangkap suara AI dari speaker dan AI bisa salah anggap kamu sedang menjawab — pertanyaan bisa terpotong atau diulang.
+                                                </p>
+                                                <ul className="ml-4 list-disc space-y-0.5 text-[11px] text-amber-700 marker:text-amber-500">
+                                                    <li>Earphone kabel paling stabil</li>
+                                                    <li>AirPods/headphone Bluetooth juga OK, pastikan udah ter-pair</li>
+                                                    <li>Hindari pakai speaker laptop atau speaker eksternal</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Consent + Start */}
                                 {isVoiceInterview && (
@@ -3331,7 +3440,9 @@ function ActiveVoiceSession({
                                 className="w-full border-primary-200 bg-white/70 text-slate-700 hover:border-primary-300 hover:bg-white hover:text-slate-900"
                                 disabled={
                                     currentQuestion ===
-                                    session.questions.length - 1
+                                        session.questions.length - 1 ||
+                                    turnState === 'ai-talking' ||
+                                    turnState === 'ai-thinking'
                                 }
                                 onClick={onNext}
                             >
