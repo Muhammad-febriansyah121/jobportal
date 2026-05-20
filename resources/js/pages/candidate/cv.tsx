@@ -28,7 +28,8 @@ import {
     Wand2,
     X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Field } from '@/components/candidate/candidate-form';
 import { EmptyState, ProgressBar } from '@/components/candidate/candidate-ui';
 import Heading from '@/components/heading';
@@ -63,6 +64,7 @@ import {
     builderDraft,
     builderPdf,
     builderReview,
+    builderReviewStream,
     builderSave,
     destroy as destroyCv,
     index,
@@ -225,6 +227,9 @@ export default function CandidateCv({
     const reviewForm = useForm<{ cv_file: File | null }>({
         cv_file: null,
     });
+    const [reviewStreaming, setReviewStreaming] = useState(false);
+    const [reviewStreamChars, setReviewStreamChars] = useState(0);
+    const reviewAbortRef = useRef<AbortController | null>(null);
     const canGenerateDraft =
         wallet.has_free_draft_available ||
         (wallet.ai_token_balance >= wallet.draft_token_cost &&
@@ -299,16 +304,166 @@ export default function CandidateCv({
         );
     };
 
-    const generateReview = () => {
-        reviewForm.transform((data) => ({
-            ...form.data,
-            cv_file: data.cv_file,
-            target_job: form.data.personal.headline || '',
-        }));
-        reviewForm.post(builderReview().url, {
-            preserveScroll: true,
-            forceFormData: true,
-        });
+    const generateReview = async () => {
+        const cvFile = reviewForm.data.cv_file;
+
+        if (!cvFile) {
+            toast.error('Upload file CV dulu untuk direview.');
+
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('cv_file', cvFile);
+        formData.append('target_job', form.data.personal.headline || '');
+
+        const builderJson = { ...form.data, cv_file: undefined };
+        const flatten = (obj: Record<string, unknown>, prefix = '') => {
+            for (const [key, value] of Object.entries(obj)) {
+                const path = prefix ? `${prefix}[${key}]` : key;
+
+                if (value === null || value === undefined) {
+                    continue;
+                }
+
+                if (Array.isArray(value)) {
+                    value.forEach((item, idx) => {
+                        const arrPath = `${path}[${idx}]`;
+                        if (item && typeof item === 'object') {
+                            flatten(
+                                item as Record<string, unknown>,
+                                arrPath,
+                            );
+                        } else if (item !== null && item !== undefined) {
+                            formData.append(arrPath, String(item));
+                        }
+                    });
+                } else if (typeof value === 'object') {
+                    flatten(value as Record<string, unknown>, path);
+                } else {
+                    formData.append(path, String(value));
+                }
+            }
+        };
+        flatten(builderJson as Record<string, unknown>);
+
+        const xsrf = decodeURIComponent(
+            document.cookie
+                .split('; ')
+                .find((r) => r.startsWith('XSRF-TOKEN='))
+                ?.split('=')[1] ?? '',
+        );
+
+        reviewAbortRef.current?.abort();
+        const controller = new AbortController();
+        reviewAbortRef.current = controller;
+
+        setReviewStreaming(true);
+        setReviewStreamChars(0);
+
+        try {
+            const response = await fetch(builderReviewStream().url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'text/event-stream',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-XSRF-TOKEN': xsrf,
+                },
+                body: formData,
+                signal: controller.signal,
+            });
+
+            if (!response.ok || !response.body) {
+                throw new Error(
+                    response.status === 502
+                        ? 'AI tidak dapat memulai review. Coba lagi.'
+                        : `HTTP ${response.status}`,
+                );
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let fullText = '';
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) {
+                    break;
+                }
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() ?? '';
+
+                for (const line of lines) {
+                    if (!line.startsWith('data: ')) {
+                        continue;
+                    }
+
+                    const payload = line.slice(6).trim();
+
+                    if (payload === '[DONE]' || payload === '') {
+                        continue;
+                    }
+
+                    try {
+                        const event = JSON.parse(payload);
+                        if (event.type === 'text_delta' && event.delta) {
+                            fullText += event.delta;
+                            setReviewStreamChars(fullText.length);
+                        }
+                    } catch {
+                        // Ignore non-JSON SSE lines.
+                    }
+                }
+            }
+
+            const jsonStart = fullText.indexOf('{');
+            const jsonEnd = fullText.lastIndexOf('}');
+            if (jsonStart === -1 || jsonEnd === -1) {
+                throw new Error('AI tidak mengembalikan JSON valid.');
+            }
+
+            const parsed = JSON.parse(
+                fullText.slice(jsonStart, jsonEnd + 1),
+            );
+
+            router.reload({
+                only: ['builderData', 'builderUpdatedAt'],
+                onSuccess: () => {
+                    toast.success('Review CV dari AI berhasil diperbarui.');
+                },
+            });
+
+            // Update lokal langsung biar gak nunggu reload server.
+            form.setData(
+                'ai_review',
+                parsed as typeof form.data.ai_review,
+            );
+        } catch (error) {
+            if ((error as Error).name === 'AbortError') {
+                return;
+            }
+
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Gagal melakukan review.',
+            );
+        } finally {
+            setReviewStreaming(false);
+            setReviewStreamChars(0);
+            reviewAbortRef.current = null;
+        }
+    };
+
+    const cancelReview = () => {
+        reviewAbortRef.current?.abort();
+        reviewAbortRef.current = null;
+        setReviewStreaming(false);
+        setReviewStreamChars(0);
     };
 
     const reviewScoreLabel = (score: number): string => {
@@ -2311,12 +2466,12 @@ export default function CandidateCv({
                                                 onClick={generateReview}
                                                 disabled={
                                                     !aiEnabled ||
-                                                    reviewForm.processing
+                                                    reviewStreaming
                                                 }
                                                 className="w-full"
                                             >
                                                 <FileSearch className="size-4" />
-                                                {reviewForm.processing
+                                                {reviewStreaming
                                                     ? t(
                                                           'candidate.cv_builder.analyzing_cv',
                                                       )
@@ -2324,6 +2479,35 @@ export default function CandidateCv({
                                                           'candidate.cv_builder.review_with_ai',
                                                       )}
                                             </Button>
+
+                                            {reviewStreaming && (
+                                                <div className="space-y-2 rounded-xl border border-primary-200 bg-primary-50 p-3">
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <div className="flex items-center gap-2 font-bold text-primary-800">
+                                                            <span className="inline-block size-1.5 animate-pulse rounded-full bg-primary-500" />
+                                                            AI sedang menulis review...
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={cancelReview}
+                                                            className="text-primary-700 underline-offset-2 hover:underline"
+                                                        >
+                                                            Batalkan
+                                                        </button>
+                                                    </div>
+                                                    <p className="font-mono text-[11px] text-primary-700 tabular-nums">
+                                                        {reviewStreamChars.toLocaleString('id-ID')} karakter diterima
+                                                    </p>
+                                                    <div className="h-1.5 overflow-hidden rounded-full bg-primary-100">
+                                                        <div
+                                                            className="h-full rounded-full bg-primary-500 transition-all duration-300"
+                                                            style={{
+                                                                width: `${Math.min(100, Math.round((reviewStreamChars / 11000) * 100))}%`,
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
 
                                             {form.data.ai_review ? (
                                                 <AiReviewBreakdown

@@ -26,6 +26,8 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use JsonException;
+use Laravel\Ai\Responses\StreamedAgentResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Throwable;
 
 class CandidateCvController extends Controller
@@ -257,6 +259,77 @@ class CandidateCvController extends Controller
         ]);
 
         return back();
+    }
+
+    public function reviewBuilderStream(
+        ReviewCandidateCvRequest $request,
+        ResolveCandidateProfile $resolveCandidateProfile,
+    ): SymfonyResponse {
+        $candidate = $resolveCandidateProfile->handle($request->user());
+        $builderData = $this->mergeWithBuilderDefaults($request->validated(), $candidate);
+        $targetJob = $request->string('target_job')->toString();
+        $payload = [
+            'target_job' => $targetJob,
+            'builder' => $builderData,
+        ];
+
+        @set_time_limit(120);
+
+        try {
+            $stream = (new CvReviewer)->stream(
+                json_encode($payload, JSON_THROW_ON_ERROR),
+            );
+        } catch (Throwable $exception) {
+            Log::warning('CvReviewer stream failed to start', [
+                'user_id' => $request->user()?->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'AI tidak dapat memulai review. Coba lagi sebentar.',
+            ], 502);
+        }
+
+        $stream->then(function (StreamedAgentResponse $response) use ($candidate, $builderData): void {
+            $aiText = $response->text;
+
+            if (! is_string($aiText) || trim($aiText) === '') {
+                return;
+            }
+
+            $decoded = $this->decodeJsonObject($aiText);
+
+            if (! is_array($decoded)) {
+                Log::warning('CvReviewer stream produced invalid JSON', [
+                    'user_id' => $candidate->user_id,
+                    'preview' => mb_substr($aiText, 0, 200),
+                ]);
+
+                return;
+            }
+
+            $merged = $this->normalizeReviewData($decoded);
+
+            if ($merged === null) {
+                return;
+            }
+
+            $builderData['ai_review'] = $merged;
+            $builderData = $this->mergeWithBuilderDefaults($builderData, $candidate);
+
+            $candidate->forceFill([
+                'cv_builder_json' => $builderData,
+                'cv_builder_updated_at' => now(),
+                'ai_cv_summary' => $merged['improved_summary'] ?: $merged['summary'],
+            ])->save();
+        });
+
+        $response = $stream->toResponse($request);
+        $response->headers->set('X-Accel-Buffering', 'no');
+        $response->headers->set('Cache-Control', 'no-cache, no-transform');
+        $response->headers->set('Connection', 'keep-alive');
+
+        return $response;
     }
 
     public function reviewBuilder(

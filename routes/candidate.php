@@ -54,6 +54,7 @@ Route::prefix('candidate')
             Route::post('cvs/builder/save', [CandidateCvController::class, 'saveBuilder'])->name('cvs.builder-save');
             Route::post('cvs/builder/ai-draft', [CandidateCvController::class, 'generateAiDraft'])->name('cvs.builder-draft');
             Route::post('cvs/builder/ai-review', [CandidateCvController::class, 'reviewBuilder'])->name('cvs.builder-review');
+            Route::post('cvs/builder/ai-review-stream', [CandidateCvController::class, 'reviewBuilderStream'])->name('cvs.builder-review-stream');
             Route::get('cvs/builder/pdf', [CandidateCvController::class, 'downloadBuilderPdf'])->name('cvs.builder-pdf');
 
             Route::resource('certifications', CandidateCertificationController::class)->parameters(['certifications' => 'candidateCertification'])->only(['index', 'store', 'update', 'destroy']);
