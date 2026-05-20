@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Throwable;
 
 class CandidateOnboardingController extends Controller
@@ -116,6 +117,45 @@ class CandidateOnboardingController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Onboarding kandidat berhasil disimpan.']);
 
         return to_route('candidate.dashboard');
+    }
+
+    public function parseCvStream(Request $request, CvTextExtractorService $extractor, AiService $ai): SymfonyResponse
+    {
+        $request->validate([
+            'cv_file' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
+        ]);
+
+        @set_time_limit(120);
+
+        $file = $request->file('cv_file');
+        $cvText = $extractor->extractFromPath($file->getPathname(), (string) $file->getMimeType());
+
+        if (trim($cvText) === '') {
+            return response()->json(['error' => 'Teks tidak dapat diekstrak dari file ini. Coba file lain atau isi form manual.'], 422);
+        }
+
+        if (! $ai->isConfigured()) {
+            return response()->json(['error' => 'AI belum dikonfigurasi. Isi form manual.'], 422);
+        }
+
+        try {
+            $stream = (new CvParser)->stream("Parse the following CV text:\n\n---\n{$cvText}\n---");
+        } catch (Throwable $exception) {
+            Log::warning('CvParser stream failed to start', [
+                'user_id' => $request->user()?->id,
+                'file_name' => $file->getClientOriginalName(),
+                'message' => $exception->getMessage(),
+            ]);
+
+            return response()->json(['error' => 'AI tidak dapat memulai parsing. Coba lagi atau isi form manual.'], 502);
+        }
+
+        $response = $stream->toResponse($request);
+        $response->headers->set('X-Accel-Buffering', 'no');
+        $response->headers->set('Cache-Control', 'no-cache, no-transform');
+        $response->headers->set('Connection', 'keep-alive');
+
+        return $response;
     }
 
     public function parseCv(Request $request, CvTextExtractorService $extractor, AiService $ai): JsonResponse

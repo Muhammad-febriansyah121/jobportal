@@ -33,6 +33,7 @@ Route::prefix('candidate')
         Route::get('onboarding', [CandidateOnboardingController::class, 'edit'])->name('onboarding.edit');
         Route::post('onboarding', [CandidateOnboardingController::class, 'store'])->name('onboarding.store');
         Route::post('onboarding/parse-cv', [CandidateOnboardingController::class, 'parseCv'])->name('onboarding.parse-cv');
+        Route::post('onboarding/parse-cv-stream', [CandidateOnboardingController::class, 'parseCvStream'])->name('onboarding.parse-cv-stream');
 
         Route::get('profile', [CandidateProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('profile', [CandidateProfileController::class, 'update'])->name('profile.update');

@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 import { store as storeCv } from '@/routes/candidate/cvs';
 import {
     edit,
-    parseCv,
+    parseCvStream,
     store as storeOnboarding,
 } from '@/routes/candidate/onboarding';
 
@@ -108,6 +108,7 @@ export default function CandidateOnboarding({
                         <CvUploadCard
                             onParsed={handleCvParsed}
                             onSkipToManual={handleManual}
+                            skills={skills}
                             t={t}
                         />
                         <ManualCard onClick={handleManual} t={t} />
@@ -132,21 +133,106 @@ export default function CandidateOnboarding({
 function CvUploadCard({
     onParsed,
     onSkipToManual,
+    skills,
     t,
 }: {
     onParsed: (data: CvPrefill) => void;
     onSkipToManual: () => void;
+    skills: Option[];
     t: (key: string) => string;
 }) {
     const fileRef = useRef<HTMLInputElement>(null);
     const [state, setState] = useState<'idle' | 'loading' | 'error'>('idle');
     const [errorMsg, setErrorMsg] = useState('');
     const [fileName, setFileName] = useState('');
+    const [streamChars, setStreamChars] = useState(0);
+    const abortRef = useRef<AbortController | null>(null);
+
+    const matchSkillIds = (raw: unknown): number[] => {
+        if (!Array.isArray(raw)) {
+            return [];
+        }
+
+        const lookup = new Map<string, number>();
+        skills.forEach((s) => {
+            const id = Number.parseInt(s.value, 10);
+            if (Number.isFinite(id)) {
+                lookup.set(s.label.toLowerCase().trim(), id);
+            }
+        });
+
+        const matched: number[] = [];
+        for (const item of raw) {
+            if (typeof item !== 'string') {
+                continue;
+            }
+            const id = lookup.get(item.toLowerCase().trim());
+            if (id !== undefined && !matched.includes(id)) {
+                matched.push(id);
+            }
+            if (matched.length >= 15) {
+                break;
+            }
+        }
+        return matched;
+    };
+
+    const normalizeDate = (value: unknown): string => {
+        if (typeof value !== 'string' || value.trim() === '') {
+            return '';
+        }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return '';
+        }
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    };
+
+    const normalize = (raw: Record<string, unknown>): CvPrefill => {
+        const firstExp = Array.isArray(raw.experiences) && raw.experiences[0]
+            ? (raw.experiences[0] as Record<string, unknown>)
+            : null;
+        const firstEdu = Array.isArray(raw.educations) && raw.educations[0]
+            ? (raw.educations[0] as Record<string, unknown>)
+            : null;
+
+        return {
+            full_name: String(raw.full_name ?? '').trim(),
+            headline: String(raw.headline ?? '').trim(),
+            bio: String(raw.summary ?? '').trim(),
+            location_city: String(raw.location_city ?? '').trim(),
+            location_province: String(raw.location_province ?? '').trim(),
+            matched_skill_ids: matchSkillIds(raw.skills),
+            first_experience: firstExp
+                ? {
+                      company_name: String(firstExp.company_name ?? '').trim(),
+                      job_title: String(firstExp.job_title ?? '').trim(),
+                      start_date: normalizeDate(firstExp.start_date),
+                      end_date: normalizeDate(firstExp.end_date),
+                      is_current: Boolean(firstExp.is_current),
+                  }
+                : null,
+            first_education: firstEdu
+                ? {
+                      institution: String(firstEdu.institution ?? '').trim(),
+                      degree: String(firstEdu.degree ?? '').trim(),
+                      field_of_study: String(firstEdu.field_of_study ?? '').trim(),
+                      start_year: String(firstEdu.start_year ?? ''),
+                      end_year: String(firstEdu.end_year ?? ''),
+                      gpa: String(firstEdu.gpa ?? ''),
+                  }
+                : null,
+        };
+    };
 
     const handleFile = async (file: File) => {
         setFileName(file.name);
         setState('loading');
         setErrorMsg('');
+        setStreamChars(0);
 
         const formData = new FormData();
         formData.append('cv_file', file);
@@ -158,46 +244,97 @@ function CvUploadCard({
                 ?.split('=')[1] ?? '',
         );
 
+        abortRef.current?.abort();
         const controller = new AbortController();
+        abortRef.current = controller;
         const timeoutId = window.setTimeout(() => controller.abort(), 110_000);
 
         try {
-            const res = await fetch(parseCv().url, {
+            const res = await fetch(parseCvStream().url, {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: {
                     'X-XSRF-TOKEN': xsrf,
                     'X-Requested-With': 'XMLHttpRequest',
-                    Accept: 'application/json',
+                    Accept: 'text/event-stream',
                 },
                 body: formData,
                 signal: controller.signal,
             });
 
-            const rawText = await res.text();
-            let json: { error?: string } & Partial<CvPrefill> = {};
-
-            try {
-                json = rawText ? JSON.parse(rawText) : {};
-            } catch {
-                json = {};
-            }
-
             if (!res.ok) {
+                let errorJson: { error?: string } = {};
+                try {
+                    errorJson = await res.json();
+                } catch {
+                    // ignore
+                }
                 setState('error');
                 setErrorMsg(
-                    json.error ?? t('candidate.onboarding.upload_error'),
+                    errorJson.error ?? t('candidate.onboarding.upload_error'),
                 );
 
                 return;
             }
 
-            onParsed(json as CvPrefill);
-        } catch {
+            if (!res.body) {
+                throw new Error('no-stream-body');
+            }
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let fullText = '';
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) {
+                    break;
+                }
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() ?? '';
+
+                for (const line of lines) {
+                    if (!line.startsWith('data: ')) {
+                        continue;
+                    }
+                    const payload = line.slice(6).trim();
+                    if (payload === '[DONE]' || payload === '') {
+                        continue;
+                    }
+                    try {
+                        const event = JSON.parse(payload);
+                        if (event.type === 'text_delta' && event.delta) {
+                            fullText += event.delta;
+                            setStreamChars(fullText.length);
+                        }
+                    } catch {
+                        // ignore
+                    }
+                }
+            }
+
+            const jsonStart = fullText.indexOf('{');
+            const jsonEnd = fullText.lastIndexOf('}');
+            if (jsonStart === -1 || jsonEnd === -1) {
+                throw new Error('no-json');
+            }
+
+            const parsed = JSON.parse(
+                fullText.slice(jsonStart, jsonEnd + 1),
+            );
+
+            onParsed(normalize(parsed));
+        } catch (error) {
+            if ((error as Error).name === 'AbortError') {
+                return;
+            }
             setState('error');
             setErrorMsg(t('candidate.onboarding.server_error'));
         } finally {
             window.clearTimeout(timeoutId);
+            abortRef.current = null;
         }
     };
 
@@ -253,13 +390,31 @@ function CvUploadCard({
                 {state === 'loading' ? (
                     <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-primary/30 bg-primary/5 py-8">
                         <Loader2 className="size-8 animate-spin text-primary" />
-                        <div className="text-center">
+                        <div className="w-full px-6 text-center">
                             <p className="text-sm font-medium text-foreground">
-                                {t('candidate.onboarding.analyzing_cv')}
+                                {streamChars > 0
+                                    ? 'AI sedang membaca CV...'
+                                    : t('candidate.onboarding.analyzing_cv')}
                             </p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="truncate text-xs text-muted-foreground">
                                 {fileName}
                             </p>
+                            {streamChars > 0 && (
+                                <>
+                                    <p className="mt-2 font-mono text-[11px] text-primary/70 tabular-nums">
+                                        {streamChars.toLocaleString('id-ID')}{' '}
+                                        karakter diterima
+                                    </p>
+                                    <div className="mt-2 h-1 overflow-hidden rounded-full bg-primary/10">
+                                        <div
+                                            className="h-full rounded-full bg-primary transition-all duration-300"
+                                            style={{
+                                                width: `${Math.min(100, Math.round((streamChars / 1500) * 100))}%`,
+                                            }}
+                                        />
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 ) : state === 'error' ? (
