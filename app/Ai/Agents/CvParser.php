@@ -4,19 +4,29 @@ namespace App\Ai\Agents;
 
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Attributes\MaxTokens;
+use Laravel\Ai\Attributes\Model;
 use Laravel\Ai\Attributes\Provider;
 use Laravel\Ai\Attributes\Timeout;
 use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Contracts\HasProviderOptions;
 use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Enums\Lab;
 use Laravel\Ai\Promptable;
 
 #[Provider(Lab::OpenAI)]
-#[Timeout(120)]
+#[Model('gpt-5')]
+#[Timeout(75)]
 #[MaxTokens(2000)]
-class CvParser implements Agent, HasStructuredOutput
+class CvParser implements Agent, HasProviderOptions, HasStructuredOutput
 {
     use Promptable;
+
+    public function providerOptions(Lab|string $provider): array
+    {
+        return $provider === Lab::OpenAI
+            ? ['reasoning' => ['effort' => 'minimal']]
+            : [];
+    }
 
     public function instructions(): string
     {

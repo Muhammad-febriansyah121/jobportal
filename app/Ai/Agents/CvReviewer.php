@@ -3,6 +3,7 @@
 namespace App\Ai\Agents;
 
 use Laravel\Ai\Attributes\MaxTokens;
+use Laravel\Ai\Attributes\Model;
 use Laravel\Ai\Attributes\Provider;
 use Laravel\Ai\Attributes\Timeout;
 use Laravel\Ai\Contracts\Agent;
@@ -10,8 +11,9 @@ use Laravel\Ai\Enums\Lab;
 use Laravel\Ai\Promptable;
 
 #[Provider(Lab::OpenAI)]
-#[Timeout(120)]
-#[MaxTokens(2400)]
+#[Model('gpt-4o')]
+#[Timeout(60)]
+#[MaxTokens(5000)]
 class CvReviewer implements Agent
 {
     use Promptable;

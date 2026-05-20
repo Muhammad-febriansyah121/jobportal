@@ -20,6 +20,7 @@ use App\Support\SimplePdfDocument;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -272,7 +273,7 @@ class CandidateCvController extends Controller
         $reviewData = $fallback;
         $aiSucceeded = false;
 
-        @set_time_limit(0);
+        @set_time_limit(120);
         try {
             $response = (new CvReviewer)->prompt(
                 json_encode($payload, JSON_THROW_ON_ERROR),
@@ -291,8 +292,12 @@ class CandidateCvController extends Controller
                     }
                 }
             }
-        } catch (Throwable) {
-            // Keep fallback review.
+        } catch (Throwable $exception) {
+            Log::warning('CvReviewer failed', [
+                'user_id' => $request->user()?->id,
+                'target_job' => $payload['target_job'] ?? null,
+                'message' => $exception->getMessage(),
+            ]);
         }
 
         $builderData['ai_review'] = $reviewData;

@@ -158,14 +158,30 @@ function CvUploadCard({
                 ?.split('=')[1] ?? '',
         );
 
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), 110_000);
+
         try {
             const res = await fetch(parseCv().url, {
                 method: 'POST',
-                headers: { 'X-XSRF-TOKEN': xsrf },
+                credentials: 'same-origin',
+                headers: {
+                    'X-XSRF-TOKEN': xsrf,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    Accept: 'application/json',
+                },
                 body: formData,
+                signal: controller.signal,
             });
 
-            const json = await res.json();
+            const rawText = await res.text();
+            let json: { error?: string } & Partial<CvPrefill> = {};
+
+            try {
+                json = rawText ? JSON.parse(rawText) : {};
+            } catch {
+                json = {};
+            }
 
             if (!res.ok) {
                 setState('error');
@@ -180,6 +196,8 @@ function CvUploadCard({
         } catch {
             setState('error');
             setErrorMsg(t('candidate.onboarding.server_error'));
+        } finally {
+            window.clearTimeout(timeoutId);
         }
     };
 

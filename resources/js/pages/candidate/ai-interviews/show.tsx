@@ -14,9 +14,11 @@ import {
     Loader2,
     Mic,
     MicOff,
+    Pause,
     PhoneOff,
     Radio,
     RotateCcw,
+    Send,
     ShieldCheck,
     Signal,
     SkipForward,
@@ -229,6 +231,16 @@ export default function CandidateAiInterviewShow({
     >(null);
     const [timerExpiryNoticeVisible, setTimerExpiryNoticeVisible] =
         useState(false);
+    const [turnState, setTurnState] = useState<
+        'ai-talking' | 'user-turn' | 'user-answering' | 'user-paused' | 'ai-thinking'
+    >('ai-talking');
+    const [autoAdvanceRemaining, setAutoAdvanceRemaining] = useState<
+        number | null
+    >(null);
+    const silenceTimerRef = useRef<number | null>(null);
+    const countdownIntervalRef = useRef<number | null>(null);
+    const SILENCE_BEFORE_COUNTDOWN_MS = 5_000;
+    const AUTO_ADVANCE_COUNTDOWN_S = 5;
     const form = useForm({
         answers: Object.fromEntries(
             session.questions.map((question) => [
@@ -1199,11 +1211,13 @@ export default function CandidateAiInterviewShow({
                             },
                         }),
                     );
+                    clearAutoAdvanceTimers();
                     channel.send(
                         JSON.stringify({
                             type: 'response.create',
                         }),
                     );
+                    setTurnState('ai-thinking');
                 }
             }
 
@@ -1233,6 +1247,8 @@ export default function CandidateAiInterviewShow({
         setMuted(false);
         setHasQuestionStarted(false);
         setActiveAiQuestionText(null);
+        clearAutoAdvanceTimers();
+        setTurnState('ai-talking');
     };
 
     const toggleMute = () => {
@@ -1300,6 +1316,78 @@ export default function CandidateAiInterviewShow({
         void submitInterview();
     };
 
+    const clearAutoAdvanceTimers = () => {
+        if (silenceTimerRef.current !== null) {
+            window.clearTimeout(silenceTimerRef.current);
+            silenceTimerRef.current = null;
+        }
+
+        if (countdownIntervalRef.current !== null) {
+            window.clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+        }
+
+        setAutoAdvanceRemaining(null);
+    };
+
+    const requestAiResponse = () => {
+        const channel = dataChannelRef.current;
+
+        if (!channel || channel.readyState !== 'open') {
+            return;
+        }
+
+        channel.send(JSON.stringify({ type: 'response.create' }));
+        clearAutoAdvanceTimers();
+        setTurnState('ai-thinking');
+    };
+
+    const startAutoAdvanceTimers = () => {
+        clearAutoAdvanceTimers();
+
+        silenceTimerRef.current = window.setTimeout(() => {
+            silenceTimerRef.current = null;
+            setAutoAdvanceRemaining(AUTO_ADVANCE_COUNTDOWN_S);
+
+            let remaining = AUTO_ADVANCE_COUNTDOWN_S;
+            countdownIntervalRef.current = window.setInterval(() => {
+                remaining -= 1;
+
+                if (remaining <= 0) {
+                    if (countdownIntervalRef.current !== null) {
+                        window.clearInterval(countdownIntervalRef.current);
+                        countdownIntervalRef.current = null;
+                    }
+                    setAutoAdvanceRemaining(null);
+                    requestAiResponse();
+                } else {
+                    setAutoAdvanceRemaining(remaining);
+                }
+            }, 1_000);
+        }, SILENCE_BEFORE_COUNTDOWN_MS);
+    };
+
+    const handleUserDone = () => {
+        const channel = dataChannelRef.current;
+
+        if (!channel || channel.readyState !== 'open') {
+            toast.warning('Koneksi AI belum siap. Tunggu sebentar...');
+
+            return;
+        }
+
+        if (turnState === 'ai-talking' || turnState === 'ai-thinking') {
+            return;
+        }
+
+        requestAiResponse();
+    };
+
+    const handleKeepTalking = () => {
+        clearAutoAdvanceTimers();
+        setTurnState('user-turn');
+    };
+
     const handleRealtimeEvent = (rawEvent: string) => {
         try {
             const event = JSON.parse(rawEvent);
@@ -1312,6 +1400,30 @@ export default function CandidateAiInterviewShow({
                 console.error('[Realtime] error event', event);
                 toast.error(`AI error: ${message}`);
                 return;
+            }
+
+            if (event.type === 'response.created') {
+                clearAutoAdvanceTimers();
+                setTurnState('ai-talking');
+            }
+
+            if (
+                event.type === 'response.done' ||
+                event.type === 'response.completed'
+            ) {
+                setTurnState('user-turn');
+            }
+
+            if (event.type === 'input_audio_buffer.speech_started') {
+                clearAutoAdvanceTimers();
+                setTurnState('user-answering');
+            }
+
+            if (event.type === 'input_audio_buffer.speech_stopped') {
+                setTurnState((current) =>
+                    current === 'user-answering' ? 'user-paused' : current,
+                );
+                startAutoAdvanceTimers();
             }
 
             // Handle both old and new transcript event names.
@@ -1438,6 +1550,10 @@ export default function CandidateAiInterviewShow({
                 onStop={stopRealtime}
                 onGreet={sendGreeting}
                 onSubmit={submitInterview}
+                onUserDone={handleUserDone}
+                onKeepTalking={handleKeepTalking}
+                turnState={turnState}
+                autoAdvanceRemaining={autoAdvanceRemaining}
                 remoteAudioRef={remoteAudioRef}
                 signalQuality={signalQuality}
                 cameraStream={cameraStream}
@@ -2905,6 +3021,10 @@ function ActiveVoiceSession({
     onStop,
     onGreet,
     onSubmit,
+    onUserDone,
+    onKeepTalking,
+    turnState,
+    autoAdvanceRemaining,
     remoteAudioRef,
     signalQuality,
     cameraStream,
@@ -2927,6 +3047,15 @@ function ActiveVoiceSession({
     onStop: () => void;
     onGreet: () => void;
     onSubmit: () => void;
+    onUserDone: () => void;
+    onKeepTalking: () => void;
+    turnState:
+        | 'ai-talking'
+        | 'user-turn'
+        | 'user-answering'
+        | 'user-paused'
+        | 'ai-thinking';
+    autoAdvanceRemaining: number | null;
     remoteAudioRef: React.RefObject<HTMLAudioElement | null>;
     signalQuality: SignalQuality;
     cameraStream: MediaStream | null;
@@ -3167,7 +3296,34 @@ function ActiveVoiceSession({
                             </div>
                         </div>
 
-                        {/* Controls */}
+                        {/* Turn state indicator */}
+                        <TurnStateIndicator
+                            turnState={turnState}
+                            autoAdvanceRemaining={autoAdvanceRemaining}
+                            onKeepTalking={onKeepTalking}
+                        />
+
+                        {/* Primary action: Selesai Menjawab */}
+                        <Button
+                            size="lg"
+                            className={cn(
+                                'w-full font-bold shadow-md',
+                                turnState === 'ai-talking' ||
+                                    turnState === 'ai-thinking'
+                                    ? 'cursor-not-allowed bg-slate-200 text-slate-400 shadow-none'
+                                    : 'bg-linear-to-br from-emerald-500 to-emerald-600 text-white shadow-emerald-200 hover:from-emerald-400 hover:to-emerald-500',
+                            )}
+                            disabled={
+                                turnState === 'ai-talking' ||
+                                turnState === 'ai-thinking'
+                            }
+                            onClick={onUserDone}
+                        >
+                            <Send className="size-4" />
+                            Saya Selesai Menjawab
+                        </Button>
+
+                        {/* Secondary controls */}
                         <div className="grid grid-cols-2 gap-2">
                             <Button
                                 size="lg"
@@ -3478,6 +3634,107 @@ function DeviceStatusPill({
             <Icon className="size-3 opacity-70" />
             {label}: {value}
         </span>
+    );
+}
+
+function TurnStateIndicator({
+    turnState,
+    autoAdvanceRemaining,
+    onKeepTalking,
+}: {
+    turnState:
+        | 'ai-talking'
+        | 'user-turn'
+        | 'user-answering'
+        | 'user-paused'
+        | 'ai-thinking';
+    autoAdvanceRemaining: number | null;
+    onKeepTalking: () => void;
+}) {
+    if (autoAdvanceRemaining !== null) {
+        return (
+            <div className="rounded-xl border-2 border-amber-300 bg-amber-50 p-3 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                        <div className="flex size-9 items-center justify-center rounded-full bg-amber-200 font-mono text-base font-black text-amber-800 tabular-nums">
+                            {autoAdvanceRemaining}
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-amber-900">
+                                AI lanjut otomatis
+                            </p>
+                            <p className="text-[11px] text-amber-700">
+                                Jeda terdeteksi
+                            </p>
+                        </div>
+                    </div>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-amber-400 bg-white text-amber-900 hover:bg-amber-100"
+                        onClick={onKeepTalking}
+                    >
+                        <Pause className="size-3.5" />
+                        Tunggu
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    const stateMap: Record<
+        typeof turnState,
+        { label: string; sub: string; color: string; icon: typeof Bot }
+    > = {
+        'ai-talking': {
+            label: 'AI sedang bertanya',
+            sub: 'Dengarkan pertanyaannya',
+            color: 'border-primary-200 bg-primary-50 text-primary-900',
+            icon: Bot,
+        },
+        'ai-thinking': {
+            label: 'AI sedang merespons',
+            sub: 'Mohon tunggu...',
+            color: 'border-primary-200 bg-primary-50 text-primary-900',
+            icon: Loader2,
+        },
+        'user-turn': {
+            label: 'Giliranmu menjawab',
+            sub: 'Mulai bicara saat siap',
+            color: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+            icon: Mic,
+        },
+        'user-answering': {
+            label: 'Sedang merekam jawaban',
+            sub: 'Lanjutkan, AI mendengarkan',
+            color: 'border-emerald-300 bg-emerald-50 text-emerald-900',
+            icon: Radio,
+        },
+        'user-paused': {
+            label: 'Jeda terdeteksi',
+            sub: 'Lanjutkan atau klik Selesai',
+            color: 'border-amber-200 bg-amber-50 text-amber-900',
+            icon: Pause,
+        },
+    };
+
+    const cfg = stateMap[turnState];
+    const Icon = cfg.icon;
+
+    return (
+        <div className={cn('flex items-center gap-2.5 rounded-xl border p-3', cfg.color)}>
+            <Icon
+                className={cn(
+                    'size-4 shrink-0',
+                    turnState === 'ai-thinking' && 'animate-spin',
+                    turnState === 'user-answering' && 'animate-pulse',
+                )}
+            />
+            <div className="min-w-0">
+                <p className="truncate text-xs font-bold">{cfg.label}</p>
+                <p className="truncate text-[11px] opacity-80">{cfg.sub}</p>
+            </div>
+        </div>
     );
 }
 

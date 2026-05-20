@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -123,7 +124,7 @@ class CandidateOnboardingController extends Controller
             'cv_file' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
         ]);
 
-        @set_time_limit(0);
+        @set_time_limit(120);
 
         $file = $request->file('cv_file');
         $cvText = $extractor->extractFromPath($file->getPathname(), (string) $file->getMimeType());
@@ -140,8 +141,13 @@ class CandidateOnboardingController extends Controller
         try {
             $response = (new CvParser)->prompt("Parse the following CV text:\n\n---\n{$cvText}\n---");
             $parsed = $response->toArray();
-        } catch (Throwable) {
-            // Fall through to error response.
+        } catch (Throwable $exception) {
+            Log::warning('CvParser failed', [
+                'user_id' => $request->user()?->id,
+                'file_name' => $file->getClientOriginalName(),
+                'cv_text_length' => mb_strlen($cvText),
+                'message' => $exception->getMessage(),
+            ]);
         }
 
         if (! is_array($parsed)) {

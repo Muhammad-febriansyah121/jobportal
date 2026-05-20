@@ -6,6 +6,7 @@ use App\Ai\Agents\AiHealthProbe;
 use App\Http\Controllers\Controller;
 use App\Services\AiService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -34,13 +35,17 @@ class AdminAiHealthController extends Controller
             ]);
         }
 
-        @set_time_limit(0);
+        @set_time_limit(60);
         $startedAt = microtime(true);
         $reply = null;
+        $errorMessage = null;
         $usage = ['prompt_tokens' => null, 'completion_tokens' => null, 'reasoning_tokens' => null, 'total_tokens' => null];
 
         try {
-            $response = (new AiHealthProbe)->prompt('ping');
+            $response = (new AiHealthProbe)->prompt(
+                'ping',
+                model: $ai->modelName(),
+            );
             $reply = $response->text;
 
             $promptTokens = $response->usage?->promptTokens;
@@ -52,8 +57,14 @@ class AdminAiHealthController extends Controller
                 'reasoning_tokens' => $reasoningTokens,
                 'total_tokens' => ($promptTokens ?? 0) + ($completionTokens ?? 0) + ($reasoningTokens ?? 0),
             ];
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
             $reply = null;
+            $errorMessage = $exception->getMessage();
+            Log::warning('AiHealthProbe failed', [
+                'model' => $ai->modelName(),
+                'exception' => $exception::class,
+                'message' => $errorMessage,
+            ]);
         }
 
         $latencyMs = (int) round((microtime(true) - $startedAt) * 1000);
@@ -68,7 +79,9 @@ class AdminAiHealthController extends Controller
             'token_usage' => $usage,
             'message' => $ok
                 ? 'AI provider sehat. Key valid, model menjawab, latency tercatat.'
-                : 'AI provider tidak menjawab. Cek tail log (storage/logs/laravel.log) untuk error API atau timeout terbaru.',
+                : ($errorMessage !== null
+                    ? 'AI provider gagal menjawab: '.mb_substr($errorMessage, 0, 240)
+                    : 'AI provider tidak menjawab. Cek tail log (storage/logs/laravel.log) untuk error API atau timeout terbaru.'),
         ]);
     }
 }
