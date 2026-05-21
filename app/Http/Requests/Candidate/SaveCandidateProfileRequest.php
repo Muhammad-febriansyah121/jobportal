@@ -52,6 +52,8 @@ class SaveCandidateProfileRequest extends FormRequest
             'first_education_start_year' => ['nullable', 'integer', 'min:1950', 'max:'.now()->addYears(10)->year],
             'first_education_end_year' => ['nullable', 'integer', 'min:1950', 'max:'.now()->addYears(10)->year, 'gte:first_education_start_year'],
             'first_education_gpa' => ['nullable', 'numeric', 'min:0', 'max:4'],
+            'additional_experiences' => ['nullable', 'string', 'max:50000'],
+            'additional_educations' => ['nullable', 'string', 'max:50000'],
         ];
     }
 }

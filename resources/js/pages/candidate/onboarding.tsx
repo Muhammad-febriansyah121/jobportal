@@ -49,6 +49,23 @@ type OnboardingProps = {
     skills: Option[];
 };
 
+type CvExperience = {
+    company_name: string;
+    job_title: string;
+    start_date: string;
+    end_date: string;
+    is_current: boolean;
+};
+
+type CvEducation = {
+    institution: string;
+    degree: string;
+    field_of_study: string;
+    start_year: string;
+    end_year: string;
+    gpa: string;
+};
+
 type CvPrefill = {
     full_name: string;
     headline: string;
@@ -56,21 +73,8 @@ type CvPrefill = {
     location_city: string;
     location_province: string;
     matched_skill_ids: number[];
-    first_experience: {
-        company_name: string;
-        job_title: string;
-        start_date: string;
-        end_date: string;
-        is_current: boolean;
-    } | null;
-    first_education: {
-        institution: string;
-        degree: string;
-        field_of_study: string;
-        start_year: string;
-        end_year: string;
-        gpa: string;
-    } | null;
+    experiences: CvExperience[];
+    educations: CvEducation[];
 };
 
 type Step = 'choice' | 'form';
@@ -192,12 +196,36 @@ function CvUploadCard({
     };
 
     const normalize = (raw: Record<string, unknown>): CvPrefill => {
-        const firstExp = Array.isArray(raw.experiences) && raw.experiences[0]
-            ? (raw.experiences[0] as Record<string, unknown>)
-            : null;
-        const firstEdu = Array.isArray(raw.educations) && raw.educations[0]
-            ? (raw.educations[0] as Record<string, unknown>)
-            : null;
+        const experiences: CvExperience[] = Array.isArray(raw.experiences)
+            ? raw.experiences
+                  .filter((item): item is Record<string, unknown> =>
+                      typeof item === 'object' && item !== null,
+                  )
+                  .map((exp) => ({
+                      company_name: String(exp.company_name ?? '').trim(),
+                      job_title: String(exp.job_title ?? '').trim(),
+                      start_date: normalizeDate(exp.start_date),
+                      end_date: normalizeDate(exp.end_date),
+                      is_current: Boolean(exp.is_current),
+                  }))
+                  .filter((exp) => exp.company_name !== '')
+            : [];
+
+        const educations: CvEducation[] = Array.isArray(raw.educations)
+            ? raw.educations
+                  .filter((item): item is Record<string, unknown> =>
+                      typeof item === 'object' && item !== null,
+                  )
+                  .map((edu) => ({
+                      institution: String(edu.institution ?? '').trim(),
+                      degree: String(edu.degree ?? '').trim(),
+                      field_of_study: String(edu.field_of_study ?? '').trim(),
+                      start_year: String(edu.start_year ?? ''),
+                      end_year: String(edu.end_year ?? ''),
+                      gpa: String(edu.gpa ?? ''),
+                  }))
+                  .filter((edu) => edu.institution !== '')
+            : [];
 
         return {
             full_name: String(raw.full_name ?? '').trim(),
@@ -206,25 +234,8 @@ function CvUploadCard({
             location_city: String(raw.location_city ?? '').trim(),
             location_province: String(raw.location_province ?? '').trim(),
             matched_skill_ids: matchSkillIds(raw.skills),
-            first_experience: firstExp
-                ? {
-                      company_name: String(firstExp.company_name ?? '').trim(),
-                      job_title: String(firstExp.job_title ?? '').trim(),
-                      start_date: normalizeDate(firstExp.start_date),
-                      end_date: normalizeDate(firstExp.end_date),
-                      is_current: Boolean(firstExp.is_current),
-                  }
-                : null,
-            first_education: firstEdu
-                ? {
-                      institution: String(firstEdu.institution ?? '').trim(),
-                      degree: String(firstEdu.degree ?? '').trim(),
-                      field_of_study: String(firstEdu.field_of_study ?? '').trim(),
-                      start_year: String(firstEdu.start_year ?? ''),
-                      end_year: String(firstEdu.end_year ?? ''),
-                      gpa: String(firstEdu.gpa ?? ''),
-                  }
-                : null,
+            experiences,
+            educations,
         };
     };
 
@@ -542,8 +553,10 @@ function OnboardingForm({
         primary_cv: profile.primary_cv,
     };
 
-    const firstExp = cvPrefill?.first_experience ?? null;
-    const firstEdu = cvPrefill?.first_education ?? null;
+    const firstExp = cvPrefill?.experiences[0] ?? null;
+    const firstEdu = cvPrefill?.educations[0] ?? null;
+    const additionalExperiences = (cvPrefill?.experiences ?? []).slice(1);
+    const additionalEducations = (cvPrefill?.educations ?? []).slice(1);
 
     const skillLabels = skills.slice(0, 12).map((s) => s.label);
     const interestChecklist =
@@ -1315,6 +1328,45 @@ function OnboardingForm({
                                                 </Field>
                                             </div>
                                         </section>
+
+                                        {additionalExperiences.length > 0 && (
+                                            <input
+                                                type="hidden"
+                                                name="additional_experiences"
+                                                value={JSON.stringify(
+                                                    additionalExperiences,
+                                                )}
+                                            />
+                                        )}
+                                        {additionalEducations.length > 0 && (
+                                            <input
+                                                type="hidden"
+                                                name="additional_educations"
+                                                value={JSON.stringify(
+                                                    additionalEducations,
+                                                )}
+                                            />
+                                        )}
+                                        {(additionalExperiences.length > 0 ||
+                                            additionalEducations.length > 0) && (
+                                            <p className="rounded-lg border border-primary/15 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+                                                {t(
+                                                    'candidate.onboarding.additional_records_hint',
+                                                )
+                                                    .replace(
+                                                        ':exp',
+                                                        String(
+                                                            additionalExperiences.length,
+                                                        ),
+                                                    )
+                                                    .replace(
+                                                        ':edu',
+                                                        String(
+                                                            additionalEducations.length,
+                                                        ),
+                                                    )}
+                                            </p>
+                                        )}
 
                                         <Button disabled={processing}>
                                             {processing

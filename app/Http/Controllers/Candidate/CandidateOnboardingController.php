@@ -60,6 +60,8 @@ class CandidateOnboardingController extends Controller
             'end_year' => $data['first_education_end_year'] ?? null,
             'gpa' => $data['first_education_gpa'] ?? null,
         ];
+        $additionalExperiences = $this->decodeAdditionalRecords($data['additional_experiences'] ?? null);
+        $additionalEducations = $this->decodeAdditionalRecords($data['additional_educations'] ?? null);
         unset($data['skill_ids']);
         unset(
             $data['first_experience_company_name'],
@@ -75,6 +77,8 @@ class CandidateOnboardingController extends Controller
             $data['first_education_start_year'],
             $data['first_education_end_year'],
             $data['first_education_gpa'],
+            $data['additional_experiences'],
+            $data['additional_educations'],
         );
 
         $candidate->update($data);
@@ -100,6 +104,28 @@ class CandidateOnboardingController extends Controller
                 'location' => $firstExperience['location'],
                 'description' => $firstExperience['description'],
             ]);
+
+            foreach ($additionalExperiences as $exp) {
+                $companyName = trim((string) ($exp['company_name'] ?? ''));
+
+                if ($companyName === '') {
+                    continue;
+                }
+
+                $isCurrent = (bool) ($exp['is_current'] ?? false);
+                $startDate = $this->parseDate((string) ($exp['start_date'] ?? ''));
+                $endDate = $isCurrent ? null : ($this->parseDate((string) ($exp['end_date'] ?? '')) ?: null);
+
+                $candidate->experiences()->create([
+                    'company_name' => Str::limit($companyName, 255, ''),
+                    'job_title' => Str::limit(trim((string) ($exp['job_title'] ?? '')) ?: 'Tidak diketahui', 255, ''),
+                    'start_date' => $startDate !== '' ? $startDate : now()->toDateString(),
+                    'end_date' => $endDate,
+                    'is_current' => $isCurrent,
+                    'location' => null,
+                    'description' => null,
+                ]);
+            }
         }
 
         if ($candidate->educations()->doesntExist() && filled($firstEducation['institution'])) {
@@ -111,6 +137,23 @@ class CandidateOnboardingController extends Controller
                 'end_year' => $firstEducation['end_year'],
                 'gpa' => $firstEducation['gpa'],
             ]);
+
+            foreach ($additionalEducations as $edu) {
+                $institution = trim((string) ($edu['institution'] ?? ''));
+
+                if ($institution === '') {
+                    continue;
+                }
+
+                $candidate->educations()->create([
+                    'institution' => Str::limit($institution, 255, ''),
+                    'degree' => Str::limit(trim((string) ($edu['degree'] ?? '')), 255, ''),
+                    'field_of_study' => Str::limit(trim((string) ($edu['field_of_study'] ?? '')), 255, ''),
+                    'start_year' => $this->normalizeYear($edu['start_year'] ?? null),
+                    'end_year' => $this->normalizeYear($edu['end_year'] ?? null),
+                    'gpa' => $this->normalizeGpa($edu['gpa'] ?? null),
+                ]);
+            }
         }
 
         $resolveCandidateProfile->refreshCompletion($candidate);
@@ -238,6 +281,66 @@ class CandidateOnboardingController extends Controller
                 'gpa' => (string) ($firstEdu['gpa'] ?? ''),
             ] : null,
         ]);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function decodeAdditionalRecords(?string $json): array
+    {
+        if ($json === null || trim($json) === '') {
+            return [];
+        }
+
+        $decoded = json_decode($json, true);
+
+        if (! is_array($decoded)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $decoded,
+            fn ($item): bool => is_array($item),
+        ));
+    }
+
+    private function normalizeYear(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        $year = (int) $value;
+        $maxYear = now()->addYears(10)->year;
+
+        if ($year < 1950 || $year > $maxYear) {
+            return null;
+        }
+
+        return $year;
+    }
+
+    private function normalizeGpa(mixed $value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        $gpa = (float) $value;
+
+        if ($gpa < 0 || $gpa > 4) {
+            return null;
+        }
+
+        return $gpa;
     }
 
     private function parseDate(string $value): string

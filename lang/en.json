@@ -1060,6 +1060,7 @@
     "candidate.onboarding.search_skill_placeholder": "Search skill...",
     "candidate.onboarding.skill_selected": "selected",
     "candidate.onboarding.skill_not_found": "Skill not found.",
+    "candidate.onboarding.additional_records_hint": "AI will also save :exp additional work experiences and :edu additional educations from your CV.",
     "candidate.onboarding.first_work_experience": "First work experience",
     "candidate.onboarding.first_work_experience_description": "Optional, but recommended to add at least one so your profile progress increases quickly.",
     "candidate.onboarding.currently_working_here": "Currently working here",

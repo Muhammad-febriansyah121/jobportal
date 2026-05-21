@@ -65,6 +65,80 @@ test('candidate can complete onboarding and attach primary skills', function () 
     expect($candidate->refresh()->onboarding_completed_at)->toBeNull();
 });
 
+test('candidate onboarding saves additional experiences and educations from CV', function () {
+    $candidate = User::factory()->candidate()->create();
+
+    $additionalExperiences = json_encode([
+        [
+            'company_name' => 'PT Mitra Tech',
+            'job_title' => 'Junior Developer',
+            'start_date' => '2021-06-01',
+            'end_date' => '2022-12-31',
+            'is_current' => false,
+        ],
+        [
+            'company_name' => 'CV Lainnya',
+            'job_title' => 'Intern',
+            'start_date' => '2020-07-01',
+            'end_date' => '2021-05-31',
+            'is_current' => false,
+        ],
+    ]);
+
+    $additionalEducations = json_encode([
+        [
+            'institution' => 'SMA Negeri 1',
+            'degree' => 'SMA',
+            'field_of_study' => 'IPA',
+            'start_year' => '2016',
+            'end_year' => '2019',
+            'gpa' => '',
+        ],
+    ]);
+
+    $this->actingAs($candidate)
+        ->post(route('candidate.onboarding.store'), [
+            'full_name' => 'Budi',
+            'work_mode_pref' => 'any',
+            'first_experience_company_name' => 'PT Karivia',
+            'first_experience_job_title' => 'Senior Developer',
+            'first_experience_start_date' => '2023-01-01',
+            'first_experience_is_current' => '1',
+            'first_education_institution' => 'Universitas Indonesia',
+            'first_education_degree' => 'S1',
+            'first_education_field_of_study' => 'Informatika',
+            'first_education_start_year' => 2019,
+            'first_education_end_year' => 2023,
+            'additional_experiences' => $additionalExperiences,
+            'additional_educations' => $additionalEducations,
+        ])
+        ->assertRedirect(route('candidate.dashboard'));
+
+    $candidateProfile = $candidate->refresh()->candidateProfile()->firstOrFail();
+
+    expect($candidateProfile->experiences()->count())->toBe(3);
+    expect($candidateProfile->educations()->count())->toBe(2);
+
+    $this->assertDatabaseHas('candidate_experiences', [
+        'candidate_id' => $candidateProfile->id,
+        'company_name' => 'PT Karivia',
+    ]);
+    $this->assertDatabaseHas('candidate_experiences', [
+        'candidate_id' => $candidateProfile->id,
+        'company_name' => 'PT Mitra Tech',
+        'is_current' => false,
+    ]);
+    $this->assertDatabaseHas('candidate_experiences', [
+        'candidate_id' => $candidateProfile->id,
+        'company_name' => 'CV Lainnya',
+    ]);
+    $this->assertDatabaseHas('candidate_educations', [
+        'candidate_id' => $candidateProfile->id,
+        'institution' => 'SMA Negeri 1',
+        'degree' => 'SMA',
+    ]);
+});
+
 test('candidate can update profile preferences', function () {
     $candidate = User::factory()->candidate()->create();
 
