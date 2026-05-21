@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Candidate;
 
 use App\Actions\Candidate\ResolveCandidateProfile;
 use App\Ai\Agents\CvParser;
+use App\Ai\Agents\CvParserStream;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Candidate\SaveCandidateProfileRequest;
 use App\Models\CandidateProfile;
@@ -139,9 +140,9 @@ class CandidateOnboardingController extends Controller
         }
 
         try {
-            $stream = (new CvParser)->stream("Parse the following CV text:\n\n---\n{$cvText}\n---");
+            $stream = (new CvParserStream)->stream("Parse the following CV text:\n\n---\n{$cvText}\n---");
         } catch (Throwable $exception) {
-            Log::warning('CvParser stream failed to start', [
+            Log::warning('CvParserStream failed to start', [
                 'user_id' => $request->user()?->id,
                 'file_name' => $file->getClientOriginalName(),
                 'message' => $exception->getMessage(),
