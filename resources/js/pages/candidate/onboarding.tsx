@@ -567,6 +567,25 @@ function OnboardingForm({
         merged.preferred_industry_id?.toString() ?? '',
     );
     const [preferredRole, setPreferredRole] = useState(merged.preferred_role);
+    const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>(
+        merged.skill_ids.map(String),
+    );
+    const [skillSearch, setSkillSearch] = useState('');
+
+    const normalizedSkillSearch = skillSearch.trim().toLowerCase();
+    const filteredSkills = normalizedSkillSearch === ''
+        ? skills
+        : skills.filter((skill) =>
+              skill.label.toLowerCase().includes(normalizedSkillSearch),
+          );
+
+    const toggleSkill = (skillId: string): void => {
+        setSelectedSkillIds((previous) =>
+            previous.includes(skillId)
+                ? previous.filter((id) => id !== skillId)
+                : [...previous, skillId],
+        );
+    };
 
     const toggleInterest = (interest: string): void => {
         setSelectedInterests((previous) => {
@@ -948,23 +967,97 @@ function OnboardingForm({
                                             name="skill_ids"
                                             error={errors.skill_ids}
                                         >
-                                            <Select
-                                                name="skill_ids[]"
-                                                multiple
-                                                defaultValue={merged.skill_ids.map(
-                                                    String,
-                                                )}
-                                                className="h-40 py-2"
-                                            >
-                                                {skills.map((skill) => (
-                                                    <option
-                                                        key={skill.value}
-                                                        value={skill.value}
-                                                    >
-                                                        {skill.label}
-                                                    </option>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <Input
+                                                        type="search"
+                                                        value={skillSearch}
+                                                        onChange={(e) =>
+                                                            setSkillSearch(
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder={t(
+                                                            'candidate.onboarding.search_skill_placeholder',
+                                                        )}
+                                                        className="flex-1"
+                                                    />
+                                                    <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                                                        {selectedSkillIds.length}{' '}
+                                                        {t(
+                                                            'candidate.onboarding.skill_selected',
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                <div className="max-h-64 overflow-y-auto rounded-lg border border-primary/15 bg-primary/5 p-3">
+                                                    {filteredSkills.length ===
+                                                    0 ? (
+                                                        <p className="py-6 text-center text-xs text-muted-foreground">
+                                                            {t(
+                                                                'candidate.onboarding.skill_not_found',
+                                                            )}
+                                                        </p>
+                                                    ) : (
+                                                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
+                                                            {filteredSkills.map(
+                                                                (skill) => {
+                                                                    const isSelected =
+                                                                        selectedSkillIds.includes(
+                                                                            skill.value,
+                                                                        );
+                                                                    const inputId = `skill-${skill.value}`;
+
+                                                                    return (
+                                                                        <label
+                                                                            key={
+                                                                                skill.value
+                                                                            }
+                                                                            htmlFor={
+                                                                                inputId
+                                                                            }
+                                                                            className={cn(
+                                                                                'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition',
+                                                                                isSelected
+                                                                                    ? 'border-primary/40 bg-primary/15 text-foreground'
+                                                                                    : 'border-primary/15 bg-background text-foreground hover:bg-primary/10',
+                                                                            )}
+                                                                        >
+                                                                            <input
+                                                                                id={
+                                                                                    inputId
+                                                                                }
+                                                                                type="checkbox"
+                                                                                checked={
+                                                                                    isSelected
+                                                                                }
+                                                                                onChange={() =>
+                                                                                    toggleSkill(
+                                                                                        skill.value,
+                                                                                    )
+                                                                                }
+                                                                                className="size-4 rounded border-primary/30 text-primary focus:ring-primary/30"
+                                                                            />
+                                                                            <span className="truncate">
+                                                                                {
+                                                                                    skill.label
+                                                                                }
+                                                                            </span>
+                                                                        </label>
+                                                                    );
+                                                                },
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {selectedSkillIds.map((id) => (
+                                                    <input
+                                                        key={id}
+                                                        type="hidden"
+                                                        name="skill_ids[]"
+                                                        value={id}
+                                                    />
                                                 ))}
-                                            </Select>
+                                            </div>
                                         </Field>
 
                                         <section className="space-y-4 rounded-xl border border-primary/10 bg-primary/5 p-4">
