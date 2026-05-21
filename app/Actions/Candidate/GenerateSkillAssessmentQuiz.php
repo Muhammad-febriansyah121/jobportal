@@ -3,8 +3,10 @@
 namespace App\Actions\Candidate;
 
 use App\Ai\Agents\SkillQuizGenerator;
+use App\Models\AiAuditLog;
 use App\Models\Skill;
 use App\Services\AiService;
+use Illuminate\Support\Facades\Auth;
 use JsonException;
 use Throwable;
 
@@ -28,18 +30,46 @@ class GenerateSkillAssessmentQuiz
 
         @set_time_limit(0);
         $payload = null;
+        $usage = null;
+        $promptInput = [
+            'skill' => $skill->name,
+            'category' => $skill->category,
+            'difficulty' => $difficulty,
+            'count' => $count,
+        ];
+        $inputHash = hash('sha256', json_encode($promptInput));
 
         try {
-            $response = (new SkillQuizGenerator)->prompt(json_encode([
-                'skill' => $skill->name,
-                'category' => $skill->category,
-                'difficulty' => $difficulty,
-                'count' => $count,
-            ], JSON_THROW_ON_ERROR));
+            $response = (new SkillQuizGenerator)->prompt(json_encode($promptInput, JSON_THROW_ON_ERROR));
             $payload = $response->text;
-        } catch (Throwable) {
+            $usage = property_exists($response, 'usage') ? $response->usage : null;
+        } catch (Throwable $exception) {
+            AiAuditLog::create([
+                'user_id' => Auth::id(),
+                'feature' => 'admin.skill_quiz_generator',
+                'input_hash' => $inputHash,
+                'input_json' => $promptInput,
+                'output_json' => ['error' => $exception->getMessage()],
+                'model_name' => 'gpt-5',
+                'status' => 'failed',
+            ]);
+
             return [];
         }
+
+        AiAuditLog::create([
+            'user_id' => Auth::id(),
+            'feature' => 'admin.skill_quiz_generator',
+            'input_hash' => $inputHash,
+            'input_json' => $promptInput,
+            'output_json' => ['text_length' => mb_strlen((string) $payload), 'preview' => mb_substr((string) $payload, 0, 500)],
+            'model_name' => 'gpt-5',
+            'prompt_tokens' => (int) ($usage?->inputTokens ?? 0),
+            'completion_tokens' => (int) ($usage?->outputTokens ?? 0),
+            'reasoning_tokens' => (int) ($usage?->reasoningTokens ?? 0),
+            'total_tokens' => (int) (($usage?->inputTokens ?? 0) + ($usage?->outputTokens ?? 0)),
+            'status' => $payload !== null && $payload !== '' ? 'success' : 'failed',
+        ]);
 
         if ($payload === null || $payload === '') {
             return [];

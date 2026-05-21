@@ -7,6 +7,7 @@ use App\Ai\Agents\CvParser;
 use App\Ai\Agents\CvParserStream;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Candidate\SaveCandidateProfileRequest;
+use App\Models\AiAuditLog;
 use App\Models\CandidateProfile;
 use App\Models\Industry;
 use App\Models\Skill;
@@ -124,17 +125,51 @@ class CandidateOnboardingController extends Controller
             return response()->json(['error' => 'AI belum dikonfigurasi. Isi form manual.'], 422);
         }
 
+        $prompt = "Parse the following CV text:\n\n---\n{$cvText}\n---";
+        $userId = $request->user()?->id;
+        $inputJson = ['cv_text_length' => mb_strlen($cvText), 'file_name' => $file->getClientOriginalName()];
+        $inputHash = hash('sha256', $prompt);
+
         try {
-            $stream = (new CvParserStream)->stream("Parse the following CV text:\n\n---\n{$cvText}\n---");
+            $stream = (new CvParserStream)->stream($prompt);
         } catch (Throwable $exception) {
             Log::warning('CvParserStream failed to start', [
-                'user_id' => $request->user()?->id,
+                'user_id' => $userId,
                 'file_name' => $file->getClientOriginalName(),
                 'message' => $exception->getMessage(),
             ]);
 
+            AiAuditLog::create([
+                'user_id' => $userId,
+                'feature' => 'candidate.onboarding.cv_parser_stream',
+                'input_hash' => $inputHash,
+                'input_json' => $inputJson,
+                'output_json' => ['error' => $exception->getMessage()],
+                'model_name' => 'gpt-5',
+                'status' => 'failed',
+            ]);
+
             return response()->json(['error' => 'AI tidak dapat memulai parsing. Coba lagi atau isi form manual.'], 502);
         }
+
+        $stream->then(function ($response) use ($userId, $inputJson, $inputHash): void {
+            $aiText = is_object($response) && property_exists($response, 'text') ? (string) $response->text : '';
+            $usage = is_object($response) && property_exists($response, 'usage') ? $response->usage : null;
+
+            AiAuditLog::create([
+                'user_id' => $userId,
+                'feature' => 'candidate.onboarding.cv_parser_stream',
+                'input_hash' => $inputHash,
+                'input_json' => $inputJson,
+                'output_json' => ['text_length' => mb_strlen($aiText), 'preview' => mb_substr($aiText, 0, 500)],
+                'model_name' => 'gpt-5',
+                'prompt_tokens' => (int) ($usage?->inputTokens ?? 0),
+                'completion_tokens' => (int) ($usage?->outputTokens ?? 0),
+                'reasoning_tokens' => (int) ($usage?->reasoningTokens ?? 0),
+                'total_tokens' => (int) (($usage?->inputTokens ?? 0) + ($usage?->outputTokens ?? 0)),
+                'status' => $aiText !== '' ? 'success' : 'failed',
+            ]);
+        });
 
         $response = $stream->toResponse($request);
         $response->headers->set('X-Accel-Buffering', 'no');
@@ -163,18 +198,39 @@ class CandidateOnboardingController extends Controller
             return response()->json(['error' => 'AI belum dikonfigurasi. Isi form manual.'], 422);
         }
 
+        $prompt = "Parse the following CV text:\n\n---\n{$cvText}\n---";
+        $userId = $request->user()?->id;
+        $inputJson = ['cv_text_length' => mb_strlen($cvText), 'file_name' => $file->getClientOriginalName()];
+        $inputHash = hash('sha256', $prompt);
         $parsed = null;
+        $usage = null;
+
         try {
-            $response = (new CvParser)->prompt("Parse the following CV text:\n\n---\n{$cvText}\n---");
+            $response = (new CvParser)->prompt($prompt);
             $parsed = $response->toArray();
+            $usage = property_exists($response, 'usage') ? $response->usage : null;
         } catch (Throwable $exception) {
             Log::warning('CvParser failed', [
-                'user_id' => $request->user()?->id,
+                'user_id' => $userId,
                 'file_name' => $file->getClientOriginalName(),
                 'cv_text_length' => mb_strlen($cvText),
                 'message' => $exception->getMessage(),
             ]);
         }
+
+        AiAuditLog::create([
+            'user_id' => $userId,
+            'feature' => 'candidate.onboarding.cv_parser',
+            'input_hash' => $inputHash,
+            'input_json' => $inputJson,
+            'output_json' => is_array($parsed) ? $parsed : ['error' => 'failed'],
+            'model_name' => 'gpt-5',
+            'prompt_tokens' => (int) ($usage?->inputTokens ?? 0),
+            'completion_tokens' => (int) ($usage?->outputTokens ?? 0),
+            'reasoning_tokens' => (int) ($usage?->reasoningTokens ?? 0),
+            'total_tokens' => (int) (($usage?->inputTokens ?? 0) + ($usage?->outputTokens ?? 0)),
+            'status' => is_array($parsed) ? 'success' : 'failed',
+        ]);
 
         if (! is_array($parsed)) {
             return response()->json(['error' => 'AI tidak dapat memproses CV ini. Coba lagi atau isi form manual.'], 422);

@@ -275,14 +275,28 @@ class CandidateCvController extends Controller
 
         @set_time_limit(120);
 
+        $userId = $request->user()?->id;
+        $inputHash = hash('sha256', json_encode($payload));
+        $inputJson = ['target_job' => $targetJob, 'builder_keys' => array_keys($builderData)];
+
         try {
             $stream = (new CvReviewer)->stream(
                 json_encode($payload, JSON_THROW_ON_ERROR),
             );
         } catch (Throwable $exception) {
             Log::warning('CvReviewer stream failed to start', [
-                'user_id' => $request->user()?->id,
+                'user_id' => $userId,
                 'message' => $exception->getMessage(),
+            ]);
+
+            AiAuditLog::create([
+                'user_id' => $userId,
+                'feature' => 'candidate.cv.reviewer_stream',
+                'input_hash' => $inputHash,
+                'input_json' => $inputJson,
+                'output_json' => ['error' => $exception->getMessage()],
+                'model_name' => 'gpt-5',
+                'status' => 'failed',
             ]);
 
             return response()->json([
@@ -290,7 +304,7 @@ class CandidateCvController extends Controller
             ], 502);
         }
 
-        $stream->then(function (StreamedAgentResponse $response) use ($candidate, $builderData): void {
+        $stream->then(function (StreamedAgentResponse $response) use ($candidate, $builderData, $userId, $inputHash, $inputJson): void {
             $aiText = $response->text;
 
             if (! is_string($aiText) || trim($aiText) === '') {
@@ -322,6 +336,21 @@ class CandidateCvController extends Controller
                 'cv_builder_updated_at' => now(),
                 'ai_cv_summary' => $merged['improved_summary'] ?: $merged['summary'],
             ])->save();
+
+            $usage = property_exists($response, 'usage') ? $response->usage : null;
+            AiAuditLog::create([
+                'user_id' => $userId,
+                'feature' => 'candidate.cv.reviewer_stream',
+                'input_hash' => $inputHash,
+                'input_json' => $inputJson,
+                'output_json' => $merged,
+                'model_name' => 'gpt-5',
+                'prompt_tokens' => (int) ($usage?->inputTokens ?? 0),
+                'completion_tokens' => (int) ($usage?->outputTokens ?? 0),
+                'reasoning_tokens' => (int) ($usage?->reasoningTokens ?? 0),
+                'total_tokens' => (int) (($usage?->inputTokens ?? 0) + ($usage?->outputTokens ?? 0)),
+                'status' => 'success',
+            ]);
         });
 
         $response = $stream->toResponse($request);
@@ -345,6 +374,10 @@ class CandidateCvController extends Controller
         $fallback = $this->fallbackReview($builderData, $payload['target_job']);
         $reviewData = $fallback;
         $aiSucceeded = false;
+        $userId = $request->user()?->id;
+        $inputHash = hash('sha256', json_encode($payload));
+        $inputJson = ['target_job' => $payload['target_job'], 'builder_keys' => array_keys($builderData)];
+        $usage = null;
 
         @set_time_limit(120);
         try {
@@ -352,6 +385,7 @@ class CandidateCvController extends Controller
                 json_encode($payload, JSON_THROW_ON_ERROR),
             );
             $aiResult = $response->text;
+            $usage = property_exists($response, 'usage') ? $response->usage : null;
 
             if ($aiResult !== null && $aiResult !== '') {
                 $decoded = $this->decodeJsonObject($aiResult);
@@ -367,11 +401,25 @@ class CandidateCvController extends Controller
             }
         } catch (Throwable $exception) {
             Log::warning('CvReviewer failed', [
-                'user_id' => $request->user()?->id,
+                'user_id' => $userId,
                 'target_job' => $payload['target_job'] ?? null,
                 'message' => $exception->getMessage(),
             ]);
         }
+
+        AiAuditLog::create([
+            'user_id' => $userId,
+            'feature' => 'candidate.cv.reviewer',
+            'input_hash' => $inputHash,
+            'input_json' => $inputJson,
+            'output_json' => $reviewData,
+            'model_name' => 'gpt-5',
+            'prompt_tokens' => (int) ($usage?->inputTokens ?? 0),
+            'completion_tokens' => (int) ($usage?->outputTokens ?? 0),
+            'reasoning_tokens' => (int) ($usage?->reasoningTokens ?? 0),
+            'total_tokens' => (int) (($usage?->inputTokens ?? 0) + ($usage?->outputTokens ?? 0)),
+            'status' => $aiSucceeded ? 'success' : 'fallback',
+        ]);
 
         $builderData['ai_review'] = $reviewData;
         $builderData = $this->mergeWithBuilderDefaults($builderData, $candidate);
