@@ -66,6 +66,14 @@ class AdminDashboardController extends Controller
             'new_subscriptions_month' => Subscription::query()
                 ->where('created_at', '>=', now()->startOfMonth())
                 ->count(),
+            'pending_payments_count' => Payment::query()
+                ->where('status', 'pending')
+                ->whereNotNull('subscription_id')
+                ->count(),
+            'pending_payments_total' => Payment::query()
+                ->where('status', 'pending')
+                ->whereNotNull('subscription_id')
+                ->sum('amount'),
             'ai_usage' => [
                 'total' => AiAuditLog::count(),
                 'failed' => AiAuditLog::where('status', 'failed')->count(),
@@ -155,6 +163,23 @@ class AdminDashboardController extends Controller
                     'email' => $user->email,
                     'role' => $user->role,
                     'created_at' => $user->created_at?->diffForHumans(),
+                ])
+                ->values()
+                ->all(),
+            'recentPayments' => Payment::query()
+                ->with(['company:id,name', 'subscription.plan:id,name'])
+                ->latest()
+                ->limit(10)
+                ->get(['id', 'company_id', 'subscription_id', 'amount', 'status', 'provider_reference', 'paid_at', 'created_at'])
+                ->map(fn (Payment $payment): array => [
+                    'id' => $payment->id,
+                    'company_name' => $payment->company?->name ?? '—',
+                    'plan_name' => $payment->subscription?->plan?->name ?? '—',
+                    'amount' => (int) $payment->amount,
+                    'status' => $payment->status,
+                    'provider_reference' => $payment->provider_reference,
+                    'paid_at' => $payment->paid_at?->diffForHumans(),
+                    'created_at' => $payment->created_at?->diffForHumans(),
                 ])
                 ->values()
                 ->all(),

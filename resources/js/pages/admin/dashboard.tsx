@@ -52,6 +52,8 @@ type Metrics = {
     subscription_revenue_month: number;
     subscription_revenue_prev_month: number;
     new_subscriptions_month: number;
+    pending_payments_count: number;
+    pending_payments_total: number;
     ai_usage: { total: number; failed: number; success: number };
 };
 
@@ -93,6 +95,16 @@ type DashboardProps = {
         email: string;
         role: string;
         created_at: string;
+    }>;
+    recentPayments: Array<{
+        id: number;
+        company_name: string;
+        plan_name: string;
+        amount: number;
+        status: string;
+        provider_reference: string | null;
+        paid_at: string | null;
+        created_at: string | null;
     }>;
 };
 
@@ -143,6 +155,7 @@ export default function AdminDashboard({
     topJobs,
     topCompanies,
     recentRegistrations,
+    recentPayments,
 }: DashboardProps) {
     const { t } = useTranslate();
     const aiSuccessRate =
@@ -711,6 +724,99 @@ export default function AdminDashboard({
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* ─── Recent Payments ─── */}
+                <Card>
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between gap-2">
+                            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                                <WalletCards className="size-4 text-[#01296a]" />
+                                {t('admin.dashboard.recent_payments.title')}
+                            </CardTitle>
+                            {metrics.pending_payments_count > 0 && (
+                                <Badge
+                                    variant="outline"
+                                    className="border-amber-200 bg-amber-50 text-amber-700"
+                                >
+                                    {metrics.pending_payments_count}{' '}
+                                    {t('admin.dashboard.recent_payments.pending')}{' '}
+                                    · {fmtIDR(metrics.pending_payments_total)}
+                                </Badge>
+                            )}
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                        {recentPayments.length === 0 ? (
+                            <p className="py-4 text-center text-sm text-muted-foreground">
+                                {t('admin.dashboard.recent_payments.no_data')}
+                            </p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b text-left text-xs text-muted-foreground">
+                                            <th className="py-2 pr-3 font-medium">
+                                                {t('admin.dashboard.recent_payments.company')}
+                                            </th>
+                                            <th className="py-2 pr-3 font-medium">
+                                                {t('admin.dashboard.recent_payments.plan')}
+                                            </th>
+                                            <th className="py-2 pr-3 text-right font-medium">
+                                                {t('admin.dashboard.recent_payments.amount')}
+                                            </th>
+                                            <th className="py-2 pr-3 font-medium">
+                                                {t('admin.dashboard.recent_payments.status')}
+                                            </th>
+                                            <th className="py-2 font-medium">
+                                                {t('admin.dashboard.recent_payments.when')}
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y">
+                                        {recentPayments.map((p) => (
+                                            <tr key={p.id}>
+                                                <td className="py-2.5 pr-3">
+                                                    <p className="truncate font-medium">
+                                                        {p.company_name}
+                                                    </p>
+                                                    {p.provider_reference && (
+                                                        <p className="truncate font-mono text-[10px] text-muted-foreground">
+                                                            {p.provider_reference}
+                                                        </p>
+                                                    )}
+                                                </td>
+                                                <td className="py-2.5 pr-3 text-muted-foreground">
+                                                    {p.plan_name}
+                                                </td>
+                                                <td className="py-2.5 pr-3 text-right font-mono tabular-nums">
+                                                    {fmtIDR(p.amount)}
+                                                </td>
+                                                <td className="py-2.5 pr-3">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={cn(
+                                                            'text-[10px] capitalize',
+                                                            p.status === 'paid'
+                                                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                                                : p.status === 'pending'
+                                                                  ? 'border-amber-200 bg-amber-50 text-amber-700'
+                                                                  : 'border-rose-200 bg-rose-50 text-rose-700',
+                                                        )}
+                                                    >
+                                                        {p.status}
+                                                    </Badge>
+                                                </td>
+                                                <td className="py-2.5 text-xs text-muted-foreground">
+                                                    {p.paid_at ?? p.created_at}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </>
     );

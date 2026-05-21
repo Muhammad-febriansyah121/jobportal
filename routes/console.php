@@ -8,6 +8,11 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+Schedule::command('pakasir:reconcile --minutes=5')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();
+
 if (config('salary_insights.auto_import.enabled')) {
     Schedule::command('salary-insights:import', [
         'file' => (string) config('salary_insights.auto_import.file'),
