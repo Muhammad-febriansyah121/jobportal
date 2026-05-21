@@ -16,10 +16,20 @@ class PakasirWebhookController extends Controller
 {
     public function handle(Request $request): Response
     {
+        Log::info('Pakasir webhook received', [
+            'payload' => $request->all(),
+            'headers' => $request->headers->all(),
+        ]);
+
         $orderId = $request->string('order_id')->toString();
         $status = $request->string('status')->toString();
 
         if (! $orderId || ! $status) {
+            Log::warning('Pakasir webhook: missing order_id or status', [
+                'order_id' => $orderId,
+                'status' => $status,
+            ]);
+
             return response()->noContent(422);
         }
 
@@ -49,9 +59,20 @@ class PakasirWebhookController extends Controller
         return response()->noContent(404);
     }
 
+    private function isCompletedStatus(string $status): bool
+    {
+        return in_array(strtolower(trim($status)), ['completed', 'paid', 'success'], true);
+    }
+
     private function handleEmployerPayment(Payment $payment, string $status, string $completedAt): void
     {
-        if ($status !== 'completed' || $payment->status === 'paid') {
+        if (! $this->isCompletedStatus($status) || $payment->status === 'paid') {
+            Log::info('Pakasir webhook: employer payment skipped', [
+                'payment_id' => $payment->id,
+                'incoming_status' => $status,
+                'current_status' => $payment->status,
+            ]);
+
             return;
         }
 
@@ -87,7 +108,7 @@ class PakasirWebhookController extends Controller
         string $status,
         string $completedAt
     ): void {
-        if ($status === 'completed' && $transaction->status !== 'paid') {
+        if ($this->isCompletedStatus($status) && $transaction->status !== 'paid') {
             DB::transaction(function () use ($transaction, $completedAt): void {
                 $freshTransaction = CandidateWalletTransaction::query()
                     ->whereKey($transaction->id)
