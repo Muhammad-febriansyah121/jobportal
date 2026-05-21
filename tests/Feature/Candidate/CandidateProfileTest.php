@@ -25,16 +25,24 @@ test('candidate can complete onboarding and attach primary skills', function () 
             'preferred_industry_id' => $industry->id,
             'preferred_role' => 'Frontend Engineer',
             'skill_ids' => [$skill->id],
-            'first_experience_company_name' => 'PT Karivia Indonesia',
-            'first_experience_job_title' => 'Frontend Engineer',
-            'first_experience_start_date' => '2023-01-01',
-            'first_experience_end_date' => '2024-01-01',
-            'first_education_institution' => 'Universitas Indonesia',
-            'first_education_degree' => 'S1',
-            'first_education_field_of_study' => 'Informatika',
-            'first_education_start_year' => 2019,
-            'first_education_end_year' => 2023,
-            'first_education_gpa' => 3.75,
+            'experiences' => [
+                [
+                    'company_name' => 'PT Karivia Indonesia',
+                    'job_title' => 'Frontend Engineer',
+                    'start_date' => '2023-01-01',
+                    'end_date' => '2024-01-01',
+                ],
+            ],
+            'educations' => [
+                [
+                    'institution' => 'Universitas Indonesia',
+                    'degree' => 'S1',
+                    'field_of_study' => 'Informatika',
+                    'start_year' => 2019,
+                    'end_year' => 2023,
+                    'gpa' => 3.75,
+                ],
+            ],
         ])
         ->assertRedirect(route('candidate.dashboard'));
 
@@ -65,52 +73,49 @@ test('candidate can complete onboarding and attach primary skills', function () 
     expect($candidate->refresh()->onboarding_completed_at)->toBeNull();
 });
 
-test('candidate onboarding saves additional experiences and educations from CV', function () {
+test('candidate onboarding saves multiple experiences and educations', function () {
     $candidate = User::factory()->candidate()->create();
-
-    $additionalExperiences = json_encode([
-        [
-            'company_name' => 'PT Mitra Tech',
-            'job_title' => 'Junior Developer',
-            'start_date' => '2021-06-01',
-            'end_date' => '2022-12-31',
-            'is_current' => false,
-        ],
-        [
-            'company_name' => 'CV Lainnya',
-            'job_title' => 'Intern',
-            'start_date' => '2020-07-01',
-            'end_date' => '2021-05-31',
-            'is_current' => false,
-        ],
-    ]);
-
-    $additionalEducations = json_encode([
-        [
-            'institution' => 'SMA Negeri 1',
-            'degree' => 'SMA',
-            'field_of_study' => 'IPA',
-            'start_year' => '2016',
-            'end_year' => '2019',
-            'gpa' => '',
-        ],
-    ]);
 
     $this->actingAs($candidate)
         ->post(route('candidate.onboarding.store'), [
             'full_name' => 'Budi',
             'work_mode_pref' => 'any',
-            'first_experience_company_name' => 'PT Karivia',
-            'first_experience_job_title' => 'Senior Developer',
-            'first_experience_start_date' => '2023-01-01',
-            'first_experience_is_current' => '1',
-            'first_education_institution' => 'Universitas Indonesia',
-            'first_education_degree' => 'S1',
-            'first_education_field_of_study' => 'Informatika',
-            'first_education_start_year' => 2019,
-            'first_education_end_year' => 2023,
-            'additional_experiences' => $additionalExperiences,
-            'additional_educations' => $additionalEducations,
+            'experiences' => [
+                [
+                    'company_name' => 'PT Karivia',
+                    'job_title' => 'Senior Developer',
+                    'start_date' => '2023-01-01',
+                    'is_current' => '1',
+                ],
+                [
+                    'company_name' => 'PT Mitra Tech',
+                    'job_title' => 'Junior Developer',
+                    'start_date' => '2021-06-01',
+                    'end_date' => '2022-12-31',
+                ],
+                [
+                    'company_name' => 'CV Lainnya',
+                    'job_title' => 'Intern',
+                    'start_date' => '2020-07-01',
+                    'end_date' => '2021-05-31',
+                ],
+            ],
+            'educations' => [
+                [
+                    'institution' => 'Universitas Indonesia',
+                    'degree' => 'S1',
+                    'field_of_study' => 'Informatika',
+                    'start_year' => 2019,
+                    'end_year' => 2023,
+                ],
+                [
+                    'institution' => 'SMA Negeri 1',
+                    'degree' => 'SMA',
+                    'field_of_study' => 'IPA',
+                    'start_year' => 2016,
+                    'end_year' => 2019,
+                ],
+            ],
         ])
         ->assertRedirect(route('candidate.dashboard'));
 

@@ -43,43 +43,9 @@ class CandidateOnboardingController extends Controller
         $candidate = $resolveCandidateProfile->handle($request->user());
         $data = $request->validated();
         $skillIds = $data['skill_ids'] ?? [];
-        $firstExperience = [
-            'company_name' => $data['first_experience_company_name'] ?? null,
-            'job_title' => $data['first_experience_job_title'] ?? null,
-            'start_date' => $data['first_experience_start_date'] ?? null,
-            'end_date' => $data['first_experience_end_date'] ?? null,
-            'is_current' => (bool) ($data['first_experience_is_current'] ?? false),
-            'location' => $data['first_experience_location'] ?? null,
-            'description' => $data['first_experience_description'] ?? null,
-        ];
-        $firstEducation = [
-            'institution' => $data['first_education_institution'] ?? null,
-            'degree' => $data['first_education_degree'] ?? null,
-            'field_of_study' => $data['first_education_field_of_study'] ?? null,
-            'start_year' => $data['first_education_start_year'] ?? null,
-            'end_year' => $data['first_education_end_year'] ?? null,
-            'gpa' => $data['first_education_gpa'] ?? null,
-        ];
-        $additionalExperiences = $this->decodeAdditionalRecords($data['additional_experiences'] ?? null);
-        $additionalEducations = $this->decodeAdditionalRecords($data['additional_educations'] ?? null);
-        unset($data['skill_ids']);
-        unset(
-            $data['first_experience_company_name'],
-            $data['first_experience_job_title'],
-            $data['first_experience_start_date'],
-            $data['first_experience_end_date'],
-            $data['first_experience_is_current'],
-            $data['first_experience_location'],
-            $data['first_experience_description'],
-            $data['first_education_institution'],
-            $data['first_education_degree'],
-            $data['first_education_field_of_study'],
-            $data['first_education_start_year'],
-            $data['first_education_end_year'],
-            $data['first_education_gpa'],
-            $data['additional_experiences'],
-            $data['additional_educations'],
-        );
+        $experiences = $data['experiences'] ?? [];
+        $educations = $data['educations'] ?? [];
+        unset($data['skill_ids'], $data['experiences'], $data['educations']);
 
         $candidate->update($data);
 
@@ -90,22 +56,9 @@ class CandidateOnboardingController extends Controller
                 ])->all()
             );
         }
-        if ($candidate->experiences()->doesntExist() && filled($firstExperience['company_name'])) {
-            if ($firstExperience['is_current']) {
-                $firstExperience['end_date'] = null;
-            }
 
-            $candidate->experiences()->create([
-                'company_name' => $firstExperience['company_name'],
-                'job_title' => $firstExperience['job_title'] ?? 'Tidak diketahui',
-                'start_date' => $firstExperience['start_date'] ?? now()->toDateString(),
-                'end_date' => $firstExperience['end_date'],
-                'is_current' => $firstExperience['is_current'],
-                'location' => $firstExperience['location'],
-                'description' => $firstExperience['description'],
-            ]);
-
-            foreach ($additionalExperiences as $exp) {
+        if ($candidate->experiences()->doesntExist()) {
+            foreach ($experiences as $exp) {
                 $companyName = trim((string) ($exp['company_name'] ?? ''));
 
                 if ($companyName === '') {
@@ -113,32 +66,21 @@ class CandidateOnboardingController extends Controller
                 }
 
                 $isCurrent = (bool) ($exp['is_current'] ?? false);
-                $startDate = $this->parseDate((string) ($exp['start_date'] ?? ''));
-                $endDate = $isCurrent ? null : ($this->parseDate((string) ($exp['end_date'] ?? '')) ?: null);
 
                 $candidate->experiences()->create([
-                    'company_name' => Str::limit($companyName, 255, ''),
-                    'job_title' => Str::limit(trim((string) ($exp['job_title'] ?? '')) ?: 'Tidak diketahui', 255, ''),
-                    'start_date' => $startDate !== '' ? $startDate : now()->toDateString(),
-                    'end_date' => $endDate,
+                    'company_name' => $companyName,
+                    'job_title' => trim((string) ($exp['job_title'] ?? '')) ?: 'Tidak diketahui',
+                    'start_date' => filled($exp['start_date'] ?? null) ? $exp['start_date'] : now()->toDateString(),
+                    'end_date' => $isCurrent ? null : ($exp['end_date'] ?? null),
                     'is_current' => $isCurrent,
-                    'location' => null,
-                    'description' => null,
+                    'location' => $exp['location'] ?? null,
+                    'description' => $exp['description'] ?? null,
                 ]);
             }
         }
 
-        if ($candidate->educations()->doesntExist() && filled($firstEducation['institution'])) {
-            $candidate->educations()->create([
-                'institution' => $firstEducation['institution'],
-                'degree' => $firstEducation['degree'],
-                'field_of_study' => $firstEducation['field_of_study'],
-                'start_year' => $firstEducation['start_year'],
-                'end_year' => $firstEducation['end_year'],
-                'gpa' => $firstEducation['gpa'],
-            ]);
-
-            foreach ($additionalEducations as $edu) {
+        if ($candidate->educations()->doesntExist()) {
+            foreach ($educations as $edu) {
                 $institution = trim((string) ($edu['institution'] ?? ''));
 
                 if ($institution === '') {
@@ -146,12 +88,12 @@ class CandidateOnboardingController extends Controller
                 }
 
                 $candidate->educations()->create([
-                    'institution' => Str::limit($institution, 255, ''),
-                    'degree' => Str::limit(trim((string) ($edu['degree'] ?? '')), 255, ''),
-                    'field_of_study' => Str::limit(trim((string) ($edu['field_of_study'] ?? '')), 255, ''),
-                    'start_year' => $this->normalizeYear($edu['start_year'] ?? null),
-                    'end_year' => $this->normalizeYear($edu['end_year'] ?? null),
-                    'gpa' => $this->normalizeGpa($edu['gpa'] ?? null),
+                    'institution' => $institution,
+                    'degree' => trim((string) ($edu['degree'] ?? '')) ?: null,
+                    'field_of_study' => trim((string) ($edu['field_of_study'] ?? '')) ?: null,
+                    'start_year' => $edu['start_year'] ?? null,
+                    'end_year' => $edu['end_year'] ?? null,
+                    'gpa' => $edu['gpa'] ?? null,
                 ]);
             }
         }
@@ -281,66 +223,6 @@ class CandidateOnboardingController extends Controller
                 'gpa' => (string) ($firstEdu['gpa'] ?? ''),
             ] : null,
         ]);
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function decodeAdditionalRecords(?string $json): array
-    {
-        if ($json === null || trim($json) === '') {
-            return [];
-        }
-
-        $decoded = json_decode($json, true);
-
-        if (! is_array($decoded)) {
-            return [];
-        }
-
-        return array_values(array_filter(
-            $decoded,
-            fn ($item): bool => is_array($item),
-        ));
-    }
-
-    private function normalizeYear(mixed $value): ?int
-    {
-        if ($value === null || $value === '') {
-            return null;
-        }
-
-        if (! is_numeric($value)) {
-            return null;
-        }
-
-        $year = (int) $value;
-        $maxYear = now()->addYears(10)->year;
-
-        if ($year < 1950 || $year > $maxYear) {
-            return null;
-        }
-
-        return $year;
-    }
-
-    private function normalizeGpa(mixed $value): ?float
-    {
-        if ($value === null || $value === '') {
-            return null;
-        }
-
-        if (! is_numeric($value)) {
-            return null;
-        }
-
-        $gpa = (float) $value;
-
-        if ($gpa < 0 || $gpa > 4) {
-            return null;
-        }
-
-        return $gpa;
     }
 
     private function parseDate(string $value): string

@@ -553,10 +553,74 @@ function OnboardingForm({
         primary_cv: profile.primary_cv,
     };
 
-    const firstExp = cvPrefill?.experiences[0] ?? null;
-    const firstEdu = cvPrefill?.educations[0] ?? null;
-    const additionalExperiences = (cvPrefill?.experiences ?? []).slice(1);
-    const additionalEducations = (cvPrefill?.educations ?? []).slice(1);
+    const emptyExperience = (): CvExperience => ({
+        company_name: '',
+        job_title: '',
+        start_date: '',
+        end_date: '',
+        is_current: false,
+    });
+    const emptyEducation = (): CvEducation => ({
+        institution: '',
+        degree: '',
+        field_of_study: '',
+        start_year: '',
+        end_year: '',
+        gpa: '',
+    });
+
+    const initialExperiences =
+        cvPrefill && cvPrefill.experiences.length > 0
+            ? cvPrefill.experiences
+            : [emptyExperience()];
+    const initialEducations =
+        cvPrefill && cvPrefill.educations.length > 0
+            ? cvPrefill.educations
+            : [emptyEducation()];
+
+    const [experiences, setExperiences] =
+        useState<CvExperience[]>(initialExperiences);
+    const [educations, setEducations] =
+        useState<CvEducation[]>(initialEducations);
+
+    const updateExperience = <K extends keyof CvExperience>(
+        index: number,
+        field: K,
+        value: CvExperience[K],
+    ): void => {
+        setExperiences((prev) =>
+            prev.map((item, i) =>
+                i === index ? { ...item, [field]: value } : item,
+            ),
+        );
+    };
+    const updateEducation = <K extends keyof CvEducation>(
+        index: number,
+        field: K,
+        value: CvEducation[K],
+    ): void => {
+        setEducations((prev) =>
+            prev.map((item, i) =>
+                i === index ? { ...item, [field]: value } : item,
+            ),
+        );
+    };
+    const addExperience = (): void =>
+        setExperiences((prev) => [...prev, emptyExperience()]);
+    const removeExperience = (index: number): void =>
+        setExperiences((prev) =>
+            prev.length <= 1
+                ? [emptyExperience()]
+                : prev.filter((_, i) => i !== index),
+        );
+    const addEducation = (): void =>
+        setEducations((prev) => [...prev, emptyEducation()]);
+    const removeEducation = (index: number): void =>
+        setEducations((prev) =>
+            prev.length <= 1
+                ? [emptyEducation()]
+                : prev.filter((_, i) => i !== index),
+        );
 
     const skillLabels = skills.slice(0, 12).map((s) => s.label);
     const interestChecklist =
@@ -1073,300 +1137,267 @@ function OnboardingForm({
                                             </div>
                                         </Field>
 
-                                        <section className="space-y-4 rounded-xl border border-primary/10 bg-primary/5 p-4">
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-foreground">
-                                                    {t(
-                                                        'candidate.onboarding.first_work_experience',
-                                                    )}
-                                                </h3>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {t(
-                                                        'candidate.onboarding.first_work_experience_description',
-                                                    )}
-                                                </p>
-                                            </div>
-                                            <div className="grid gap-4 md:grid-cols-2">
-                                                <Field
-                                                    label={t(
-                                                        'candidate.onboarding.company_name',
-                                                    )}
-                                                    name="first_experience_company_name"
-                                                    error={
-                                                        errors.first_experience_company_name
-                                                    }
-                                                >
-                                                    <Input
-                                                        name="first_experience_company_name"
-                                                        defaultValue={
-                                                            firstExp?.company_name ??
-                                                            ''
-                                                        }
-                                                        placeholder={t(
-                                                            'candidate.onboarding.company_name_placeholder',
+                                        <section className="space-y-4">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <h3 className="text-sm font-semibold text-foreground">
+                                                        {t(
+                                                            'candidate.onboarding.work_experience',
                                                         )}
-                                                    />
-                                                </Field>
-                                                <Field
-                                                    label={t(
-                                                        'candidate.onboarding.job_title',
-                                                    )}
-                                                    name="first_experience_job_title"
-                                                    error={
-                                                        errors.first_experience_job_title
-                                                    }
-                                                >
-                                                    <Input
-                                                        name="first_experience_job_title"
-                                                        defaultValue={
-                                                            firstExp?.job_title ??
-                                                            ''
-                                                        }
-                                                        placeholder={t(
-                                                            'candidate.onboarding.job_title_placeholder',
+                                                    </h3>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {t(
+                                                            'candidate.onboarding.work_experience_description',
                                                         )}
-                                                    />
-                                                </Field>
-                                            </div>
-                                            <div className="grid gap-4 md:grid-cols-2">
-                                                <Field
-                                                    label={t(
-                                                        'candidate.onboarding.start',
-                                                    )}
-                                                    name="first_experience_start_date"
-                                                    error={
-                                                        errors.first_experience_start_date
-                                                    }
+                                                    </p>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={addExperience}
                                                 >
-                                                    <Input
-                                                        type="date"
-                                                        name="first_experience_start_date"
-                                                        defaultValue={
-                                                            firstExp?.start_date ??
-                                                            ''
-                                                        }
-                                                    />
-                                                </Field>
-                                                <Field
-                                                    label={t(
-                                                        'candidate.onboarding.end',
-                                                    )}
-                                                    name="first_experience_end_date"
-                                                    error={
-                                                        errors.first_experience_end_date
-                                                    }
-                                                >
-                                                    <Input
-                                                        type="date"
-                                                        name="first_experience_end_date"
-                                                        defaultValue={
-                                                            firstExp?.is_current
-                                                                ? ''
-                                                                : (firstExp?.end_date ??
-                                                                  '')
-                                                        }
-                                                    />
-                                                </Field>
+                                                    + {t('candidate.onboarding.add_experience')}
+                                                </Button>
                                             </div>
-                                            <label className="flex items-center gap-2 text-xs font-medium text-foreground">
-                                                <input
-                                                    type="checkbox"
-                                                    name="first_experience_is_current"
-                                                    value="1"
-                                                    defaultChecked={
-                                                        firstExp?.is_current ??
-                                                        false
-                                                    }
-                                                    className="size-4 rounded border-primary/30 text-primary focus:ring-primary/30"
-                                                />
-                                                {t(
-                                                    'candidate.onboarding.currently_working_here',
-                                                )}
-                                            </label>
+                                            {experiences.map((exp, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="relative space-y-4 rounded-xl border border-primary/10 bg-primary/5 p-4"
+                                                >
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-xs font-medium text-muted-foreground">
+                                                            #{idx + 1}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                removeExperience(idx)
+                                                            }
+                                                            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-destructive transition hover:bg-destructive/10"
+                                                        >
+                                                            <X className="size-3.5" />
+                                                            {t('candidate.onboarding.remove')}
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid gap-4 md:grid-cols-2">
+                                                        <Field
+                                                            label={t('candidate.onboarding.company_name')}
+                                                            name={`experiences.${idx}.company_name`}
+                                                            error={(errors as Record<string, string>)[`experiences.${idx}.company_name`]}
+                                                        >
+                                                            <Input
+                                                                name={`experiences[${idx}][company_name]`}
+                                                                value={exp.company_name}
+                                                                onChange={(e) =>
+                                                                    updateExperience(idx, 'company_name', e.target.value)
+                                                                }
+                                                                placeholder={t('candidate.onboarding.company_name_placeholder')}
+                                                            />
+                                                        </Field>
+                                                        <Field
+                                                            label={t('candidate.onboarding.job_title')}
+                                                            name={`experiences.${idx}.job_title`}
+                                                            error={(errors as Record<string, string>)[`experiences.${idx}.job_title`]}
+                                                        >
+                                                            <Input
+                                                                name={`experiences[${idx}][job_title]`}
+                                                                value={exp.job_title}
+                                                                onChange={(e) =>
+                                                                    updateExperience(idx, 'job_title', e.target.value)
+                                                                }
+                                                                placeholder={t('candidate.onboarding.job_title_placeholder')}
+                                                            />
+                                                        </Field>
+                                                    </div>
+                                                    <div className="grid gap-4 md:grid-cols-2">
+                                                        <Field
+                                                            label={t('candidate.onboarding.start')}
+                                                            name={`experiences.${idx}.start_date`}
+                                                            error={(errors as Record<string, string>)[`experiences.${idx}.start_date`]}
+                                                        >
+                                                            <Input
+                                                                type="date"
+                                                                name={`experiences[${idx}][start_date]`}
+                                                                value={exp.start_date}
+                                                                onChange={(e) =>
+                                                                    updateExperience(idx, 'start_date', e.target.value)
+                                                                }
+                                                            />
+                                                        </Field>
+                                                        <Field
+                                                            label={t('candidate.onboarding.end')}
+                                                            name={`experiences.${idx}.end_date`}
+                                                            error={(errors as Record<string, string>)[`experiences.${idx}.end_date`]}
+                                                        >
+                                                            <Input
+                                                                type="date"
+                                                                name={`experiences[${idx}][end_date]`}
+                                                                value={exp.is_current ? '' : exp.end_date}
+                                                                disabled={exp.is_current}
+                                                                onChange={(e) =>
+                                                                    updateExperience(idx, 'end_date', e.target.value)
+                                                                }
+                                                            />
+                                                        </Field>
+                                                    </div>
+                                                    <label className="flex items-center gap-2 text-xs font-medium text-foreground">
+                                                        <input
+                                                            type="checkbox"
+                                                            name={`experiences[${idx}][is_current]`}
+                                                            value="1"
+                                                            checked={exp.is_current}
+                                                            onChange={(e) =>
+                                                                updateExperience(idx, 'is_current', e.target.checked)
+                                                            }
+                                                            className="size-4 rounded border-primary/30 text-primary focus:ring-primary/30"
+                                                        />
+                                                        {t('candidate.onboarding.currently_working_here')}
+                                                    </label>
+                                                </div>
+                                            ))}
                                         </section>
 
-                                        <section className="space-y-4 rounded-xl border border-primary/10 bg-primary/5 p-4">
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-foreground">
-                                                    {t(
-                                                        'candidate.onboarding.first_education',
-                                                    )}
-                                                </h3>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {t(
-                                                        'candidate.onboarding.first_education_description',
-                                                    )}
-                                                </p>
+                                        <section className="space-y-4">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <h3 className="text-sm font-semibold text-foreground">
+                                                        {t(
+                                                            'candidate.onboarding.education',
+                                                        )}
+                                                    </h3>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {t(
+                                                            'candidate.onboarding.education_description',
+                                                        )}
+                                                    </p>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={addEducation}
+                                                >
+                                                    + {t('candidate.onboarding.add_education')}
+                                                </Button>
                                             </div>
-                                            <div className="grid gap-4 md:grid-cols-2">
-                                                <Field
-                                                    label={t(
-                                                        'candidate.onboarding.institution',
-                                                    )}
-                                                    name="first_education_institution"
-                                                    error={
-                                                        errors.first_education_institution
-                                                    }
+                                            {educations.map((edu, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="relative space-y-4 rounded-xl border border-primary/10 bg-primary/5 p-4"
                                                 >
-                                                    <Input
-                                                        name="first_education_institution"
-                                                        defaultValue={
-                                                            firstEdu?.institution ??
-                                                            ''
-                                                        }
-                                                        placeholder={t(
-                                                            'candidate.onboarding.institution_placeholder',
-                                                        )}
-                                                    />
-                                                </Field>
-                                                <Field
-                                                    label={t(
-                                                        'candidate.onboarding.degree',
-                                                    )}
-                                                    name="first_education_degree"
-                                                    error={
-                                                        errors.first_education_degree
-                                                    }
-                                                >
-                                                    <Input
-                                                        name="first_education_degree"
-                                                        defaultValue={
-                                                            firstEdu?.degree ??
-                                                            ''
-                                                        }
-                                                        placeholder={t(
-                                                            'candidate.onboarding.degree_placeholder',
-                                                        )}
-                                                    />
-                                                </Field>
-                                            </div>
-                                            <div className="grid gap-4 md:grid-cols-2">
-                                                <Field
-                                                    label={t(
-                                                        'candidate.onboarding.field_of_study',
-                                                    )}
-                                                    name="first_education_field_of_study"
-                                                    error={
-                                                        errors.first_education_field_of_study
-                                                    }
-                                                >
-                                                    <Input
-                                                        name="first_education_field_of_study"
-                                                        defaultValue={
-                                                            firstEdu?.field_of_study ??
-                                                            ''
-                                                        }
-                                                        placeholder={t(
-                                                            'candidate.onboarding.field_of_study_placeholder',
-                                                        )}
-                                                    />
-                                                </Field>
-                                                <Field
-                                                    label={t(
-                                                        'candidate.onboarding.gpa',
-                                                    )}
-                                                    name="first_education_gpa"
-                                                    error={
-                                                        errors.first_education_gpa
-                                                    }
-                                                >
-                                                    <Input
-                                                        type="number"
-                                                        step="0.01"
-                                                        name="first_education_gpa"
-                                                        defaultValue={
-                                                            firstEdu?.gpa ?? ''
-                                                        }
-                                                        placeholder={t(
-                                                            'candidate.onboarding.gpa_placeholder',
-                                                        )}
-                                                    />
-                                                </Field>
-                                            </div>
-                                            <div className="grid gap-4 md:grid-cols-2">
-                                                <Field
-                                                    label={t(
-                                                        'candidate.onboarding.start_year',
-                                                    )}
-                                                    name="first_education_start_year"
-                                                    error={
-                                                        errors.first_education_start_year
-                                                    }
-                                                >
-                                                    <Input
-                                                        type="number"
-                                                        name="first_education_start_year"
-                                                        defaultValue={
-                                                            firstEdu?.start_year ??
-                                                            ''
-                                                        }
-                                                        placeholder={t(
-                                                            'candidate.onboarding.start_year_placeholder',
-                                                        )}
-                                                    />
-                                                </Field>
-                                                <Field
-                                                    label={t(
-                                                        'candidate.onboarding.end_year',
-                                                    )}
-                                                    name="first_education_end_year"
-                                                    error={
-                                                        errors.first_education_end_year
-                                                    }
-                                                >
-                                                    <Input
-                                                        type="number"
-                                                        name="first_education_end_year"
-                                                        defaultValue={
-                                                            firstEdu?.end_year ??
-                                                            ''
-                                                        }
-                                                        placeholder={t(
-                                                            'candidate.onboarding.end_year_placeholder',
-                                                        )}
-                                                    />
-                                                </Field>
-                                            </div>
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-xs font-medium text-muted-foreground">
+                                                            #{idx + 1}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                removeEducation(idx)
+                                                            }
+                                                            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-destructive transition hover:bg-destructive/10"
+                                                        >
+                                                            <X className="size-3.5" />
+                                                            {t('candidate.onboarding.remove')}
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid gap-4 md:grid-cols-2">
+                                                        <Field
+                                                            label={t('candidate.onboarding.institution')}
+                                                            name={`educations.${idx}.institution`}
+                                                            error={(errors as Record<string, string>)[`educations.${idx}.institution`]}
+                                                        >
+                                                            <Input
+                                                                name={`educations[${idx}][institution]`}
+                                                                value={edu.institution}
+                                                                onChange={(e) =>
+                                                                    updateEducation(idx, 'institution', e.target.value)
+                                                                }
+                                                                placeholder={t('candidate.onboarding.institution_placeholder')}
+                                                            />
+                                                        </Field>
+                                                        <Field
+                                                            label={t('candidate.onboarding.degree')}
+                                                            name={`educations.${idx}.degree`}
+                                                            error={(errors as Record<string, string>)[`educations.${idx}.degree`]}
+                                                        >
+                                                            <Input
+                                                                name={`educations[${idx}][degree]`}
+                                                                value={edu.degree}
+                                                                onChange={(e) =>
+                                                                    updateEducation(idx, 'degree', e.target.value)
+                                                                }
+                                                                placeholder={t('candidate.onboarding.degree_placeholder')}
+                                                            />
+                                                        </Field>
+                                                    </div>
+                                                    <div className="grid gap-4 md:grid-cols-2">
+                                                        <Field
+                                                            label={t('candidate.onboarding.field_of_study')}
+                                                            name={`educations.${idx}.field_of_study`}
+                                                            error={(errors as Record<string, string>)[`educations.${idx}.field_of_study`]}
+                                                        >
+                                                            <Input
+                                                                name={`educations[${idx}][field_of_study]`}
+                                                                value={edu.field_of_study}
+                                                                onChange={(e) =>
+                                                                    updateEducation(idx, 'field_of_study', e.target.value)
+                                                                }
+                                                                placeholder={t('candidate.onboarding.field_of_study_placeholder')}
+                                                            />
+                                                        </Field>
+                                                        <Field
+                                                            label={t('candidate.onboarding.gpa')}
+                                                            name={`educations.${idx}.gpa`}
+                                                            error={(errors as Record<string, string>)[`educations.${idx}.gpa`]}
+                                                        >
+                                                            <Input
+                                                                type="number"
+                                                                step="0.01"
+                                                                name={`educations[${idx}][gpa]`}
+                                                                value={edu.gpa}
+                                                                onChange={(e) =>
+                                                                    updateEducation(idx, 'gpa', e.target.value)
+                                                                }
+                                                                placeholder={t('candidate.onboarding.gpa_placeholder')}
+                                                            />
+                                                        </Field>
+                                                    </div>
+                                                    <div className="grid gap-4 md:grid-cols-2">
+                                                        <Field
+                                                            label={t('candidate.onboarding.start_year')}
+                                                            name={`educations.${idx}.start_year`}
+                                                            error={(errors as Record<string, string>)[`educations.${idx}.start_year`]}
+                                                        >
+                                                            <Input
+                                                                type="number"
+                                                                name={`educations[${idx}][start_year]`}
+                                                                value={edu.start_year}
+                                                                onChange={(e) =>
+                                                                    updateEducation(idx, 'start_year', e.target.value)
+                                                                }
+                                                                placeholder={t('candidate.onboarding.start_year_placeholder')}
+                                                            />
+                                                        </Field>
+                                                        <Field
+                                                            label={t('candidate.onboarding.end_year')}
+                                                            name={`educations.${idx}.end_year`}
+                                                            error={(errors as Record<string, string>)[`educations.${idx}.end_year`]}
+                                                        >
+                                                            <Input
+                                                                type="number"
+                                                                name={`educations[${idx}][end_year]`}
+                                                                value={edu.end_year}
+                                                                onChange={(e) =>
+                                                                    updateEducation(idx, 'end_year', e.target.value)
+                                                                }
+                                                                placeholder={t('candidate.onboarding.end_year_placeholder')}
+                                                            />
+                                                        </Field>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </section>
-
-                                        {additionalExperiences.length > 0 && (
-                                            <input
-                                                type="hidden"
-                                                name="additional_experiences"
-                                                value={JSON.stringify(
-                                                    additionalExperiences,
-                                                )}
-                                            />
-                                        )}
-                                        {additionalEducations.length > 0 && (
-                                            <input
-                                                type="hidden"
-                                                name="additional_educations"
-                                                value={JSON.stringify(
-                                                    additionalEducations,
-                                                )}
-                                            />
-                                        )}
-                                        {(additionalExperiences.length > 0 ||
-                                            additionalEducations.length > 0) && (
-                                            <p className="rounded-lg border border-primary/15 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
-                                                {t(
-                                                    'candidate.onboarding.additional_records_hint',
-                                                )
-                                                    .replace(
-                                                        ':exp',
-                                                        String(
-                                                            additionalExperiences.length,
-                                                        ),
-                                                    )
-                                                    .replace(
-                                                        ':edu',
-                                                        String(
-                                                            additionalEducations.length,
-                                                        ),
-                                                    )}
-                                            </p>
-                                        )}
 
                                         <Button disabled={processing}>
                                             {processing
