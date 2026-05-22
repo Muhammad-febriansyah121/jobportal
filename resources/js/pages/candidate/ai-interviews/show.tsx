@@ -137,7 +137,9 @@ function detectBrowser(): BrowserKind {
     }
 
     const ua = window.navigator.userAgent.toLowerCase();
-    const nav = window.navigator as Navigator & { brave?: { isBrave?: () => Promise<boolean> } };
+    const nav = window.navigator as Navigator & {
+        brave?: { isBrave?: () => Promise<boolean> };
+    };
 
     if (nav.brave && typeof nav.brave.isBrave === 'function') {
         return 'brave';
@@ -170,6 +172,96 @@ function normalizeQuestionText(value: string): string {
         .trim();
 }
 
+const SIGNAL_RANK: Record<SignalQuality, number> = {
+    offline: 0,
+    poor: 1,
+    fair: 2,
+    good: 3,
+    excellent: 4,
+};
+
+function worstSignal(
+    ...candidates: Array<SignalQuality | null>
+): SignalQuality {
+    const filtered = candidates.filter((c): c is SignalQuality => c !== null);
+
+    if (filtered.length === 0) {
+        return 'good';
+    }
+
+    return filtered.reduce((worst, current) =>
+        SIGNAL_RANK[current] < SIGNAL_RANK[worst] ? current : worst,
+    );
+}
+
+function scoreFromRtt(rttMs: number | null): SignalQuality | null {
+    if (rttMs === null) {
+        return null;
+    }
+
+    if (rttMs < 140) {
+        return 'excellent';
+    }
+
+    if (rttMs < 260) {
+        return 'good';
+    }
+
+    if (rttMs < 500) {
+        return 'fair';
+    }
+
+    return 'poor';
+}
+
+function scoreFromPacketLoss(lossPct: number | null): SignalQuality | null {
+    if (lossPct === null) {
+        return null;
+    }
+
+    // Audio glitches mulai terasa di ~2% packet loss; >5% sudah unusable.
+    if (lossPct < 1) {
+        return 'excellent';
+    }
+
+    if (lossPct < 2) {
+        return 'good';
+    }
+
+    if (lossPct < 5) {
+        return 'fair';
+    }
+
+    return 'poor';
+}
+
+function scoreFromJitter(jitterMs: number | null): SignalQuality | null {
+    if (jitterMs === null) {
+        return null;
+    }
+
+    // Jitter buffer di browser biasanya nyaman <30ms; >60ms artinya audio choppy.
+    if (jitterMs < 15) {
+        return 'excellent';
+    }
+
+    if (jitterMs < 30) {
+        return 'good';
+    }
+
+    if (jitterMs < 60) {
+        return 'fair';
+    }
+
+    return 'poor';
+}
+
+const ICE_SERVERS: RTCIceServer[] = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun.cloudflare.com:3478' },
+];
+
 export default function CandidateAiInterviewShow({
     session,
 }: AiInterviewShowProps) {
@@ -183,6 +275,17 @@ export default function CandidateAiInterviewShow({
     const audioContextRef = useRef<AudioContext | null>(null);
     const micLevelFrameRef = useRef<number | null>(null);
     const statsIntervalRef = useRef<number | null>(null);
+    const lastInboundAudioStatsRef = useRef<{
+        packetsLost: number;
+        packetsReceived: number;
+        bytesReceived: number;
+        timestamp: number;
+    } | null>(null);
+    // Timestamp saat AI selesai bicara. VAD speech_started dalam window pendek
+    // setelah ini hampir pasti echo dari speaker laptop, BUKAN suara kandidat.
+    // Tanpa filter ini, echo bisa men-trigger auto-advance lalu OpenAI generate
+    // response baru → terasa seperti "AI mengulang Q1 sendiri".
+    const lastResponseDoneAtRef = useRef<number>(0);
     const dataChannelRef = useRef<RTCDataChannel | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const recordingChunksRef = useRef<Blob[]>([]);
@@ -201,13 +304,18 @@ export default function CandidateAiInterviewShow({
     const [cameraStreamActive, setCameraStreamActive] = useState(false);
     const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
     const [cameraError, setCameraError] = useState<string | null>(null);
-    const [interviewLanguage, setInterviewLanguage] = useState<'id' | 'en'>(() => {
-        if (session.interview_language === 'en' || session.interview_language === 'id') {
-            return session.interview_language;
-        }
+    const [interviewLanguage, setInterviewLanguage] = useState<'id' | 'en'>(
+        () => {
+            if (
+                session.interview_language === 'en' ||
+                session.interview_language === 'id'
+            ) {
+                return session.interview_language;
+            }
 
-        return locale === 'en' ? 'en' : 'id';
-    });
+            return locale === 'en' ? 'en' : 'id';
+        },
+    );
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [connecting, setConnecting] = useState(false);
     const [connected, setConnected] = useState(false);
@@ -234,7 +342,11 @@ export default function CandidateAiInterviewShow({
     const [timerExpiryNoticeVisible, setTimerExpiryNoticeVisible] =
         useState(false);
     const [turnState, setTurnState] = useState<
-        'ai-talking' | 'user-turn' | 'user-answering' | 'user-paused' | 'ai-thinking'
+        | 'ai-talking'
+        | 'user-turn'
+        | 'user-answering'
+        | 'user-paused'
+        | 'ai-thinking'
     >('ai-talking');
     const [autoAdvanceRemaining, setAutoAdvanceRemaining] = useState<
         number | null
@@ -627,8 +739,25 @@ export default function CandidateAiInterviewShow({
             return;
         }
 
+        const iceState = connection.iceConnectionState;
+
+        if (iceState === 'failed' || iceState === 'closed') {
+            setSignalQuality('offline');
+
+            return;
+        }
+
+        if (iceState === 'disconnected') {
+            setSignalQuality('fair');
+
+            return;
+        }
+
         const stats = await connection.getStats();
         let roundTripTimeMs: number | null = null;
+        let jitterMs: number | null = null;
+        let packetLossPct: number | null = null;
+        let bytesReceivedStalled = false;
 
         stats.forEach((report) => {
             if (
@@ -643,33 +772,63 @@ export default function CandidateAiInterviewShow({
                     roundTripTimeMs = currentRoundTripTime * 1000;
                 }
             }
+
+            if (
+                report.type === 'inbound-rtp' &&
+                (report as RTCInboundRtpStreamStats).kind === 'audio'
+            ) {
+                const inbound = report as RTCInboundRtpStreamStats & {
+                    bytesReceived?: number;
+                };
+                const packetsLost = inbound.packetsLost ?? 0;
+                const packetsReceived = inbound.packetsReceived ?? 0;
+                const bytesReceived = inbound.bytesReceived ?? 0;
+                const now = Date.now();
+
+                if (typeof inbound.jitter === 'number') {
+                    jitterMs = inbound.jitter * 1000;
+                }
+
+                const previous = lastInboundAudioStatsRef.current;
+
+                if (previous) {
+                    const deltaLost = packetsLost - previous.packetsLost;
+                    const deltaReceived =
+                        packetsReceived - previous.packetsReceived;
+                    const totalPackets = deltaLost + deltaReceived;
+
+                    if (totalPackets > 0) {
+                        packetLossPct = (deltaLost / totalPackets) * 100;
+                    }
+
+                    if (
+                        bytesReceived === previous.bytesReceived &&
+                        now - previous.timestamp > 1500
+                    ) {
+                        bytesReceivedStalled = true;
+                    }
+                }
+
+                lastInboundAudioStatsRef.current = {
+                    packetsLost,
+                    packetsReceived,
+                    bytesReceived,
+                    timestamp: now,
+                };
+            }
         });
 
-        if (roundTripTimeMs === null) {
-            setSignalQuality('good');
+        if (bytesReceivedStalled) {
+            setSignalQuality('poor');
 
             return;
         }
 
-        if (roundTripTimeMs < 140) {
-            setSignalQuality('excellent');
+        const rttScore = scoreFromRtt(roundTripTimeMs);
+        const lossScore = scoreFromPacketLoss(packetLossPct);
+        const jitterScore = scoreFromJitter(jitterMs);
 
-            return;
-        }
-
-        if (roundTripTimeMs < 260) {
-            setSignalQuality('good');
-
-            return;
-        }
-
-        if (roundTripTimeMs < 500) {
-            setSignalQuality('fair');
-
-            return;
-        }
-
-        setSignalQuality('poor');
+        setSignalQuality(worstSignal(rttScore, lossScore, jitterScore));
     };
 
     const startConnectionMonitor = () => {
@@ -786,6 +945,7 @@ export default function CandidateAiInterviewShow({
         }
 
         const cached = prewarmedSecretRef.current;
+
         if (
             cached &&
             cached.language === interviewLanguage &&
@@ -870,6 +1030,7 @@ export default function CandidateAiInterviewShow({
         remoteAudioRef.current.volume = 1;
 
         const playResult = remoteAudioRef.current.play();
+
         if (playResult && typeof playResult.then === 'function') {
             playResult.catch((err) => {
                 // Pre-gesture autoplay attempt; sendGreeting() will re-attempt
@@ -995,6 +1156,7 @@ export default function CandidateAiInterviewShow({
                 }
 
                 const freshCached = prewarmedSecretRef.current;
+
                 if (
                     freshCached &&
                     freshCached.language === interviewLanguage &&
@@ -1054,12 +1216,63 @@ export default function CandidateAiInterviewShow({
             setMicrophoneDetected(true);
             startMicLevelMonitor(stream);
 
-            const peerConnection = new RTCPeerConnection();
+            const peerConnection = new RTCPeerConnection({
+                iceServers: ICE_SERVERS,
+                bundlePolicy: 'max-bundle',
+            });
             peerConnectionRef.current = peerConnection;
+            lastInboundAudioStatsRef.current = null;
 
             peerConnection.ontrack = (event) => {
                 remoteStreamRef.current = event.streams[0] ?? null;
                 attachRemoteAudio();
+            };
+
+            // Auto recovery: network blip (WiFi handoff, 4G fluctuation) bikin ICE
+            // sebentar disconnected. Browser akan reconnect sendiri kalau punya
+            // STUN/host candidates valid. Kalau gagal pulih dalam 8 detik, kita
+            // surface warning + coba restartIce sebagai best-effort.
+            let iceRecoveryTimer: number | null = null;
+            peerConnection.oniceconnectionstatechange = () => {
+                const state = peerConnection.iceConnectionState;
+
+                if (state === 'disconnected') {
+                    if (iceRecoveryTimer === null) {
+                        iceRecoveryTimer = window.setTimeout(() => {
+                            iceRecoveryTimer = null;
+
+                            if (
+                                peerConnectionRef.current === peerConnection &&
+                                (peerConnection.iceConnectionState ===
+                                    'disconnected' ||
+                                    peerConnection.iceConnectionState ===
+                                        'failed')
+                            ) {
+                                try {
+                                    peerConnection.restartIce();
+                                } catch (error) {
+                                    console.warn(
+                                        'Voice AI: restartIce failed',
+                                        error,
+                                    );
+                                }
+                            }
+                        }, 8000);
+                    }
+
+                    return;
+                }
+
+                if (iceRecoveryTimer !== null) {
+                    window.clearTimeout(iceRecoveryTimer);
+                    iceRecoveryTimer = null;
+                }
+
+                if (state === 'failed') {
+                    toast.error(
+                        'Koneksi voice AI terputus. Coba pindah ke jaringan yang lebih stabil lalu mulai ulang.',
+                    );
+                }
             };
 
             stream.getTracks().forEach((track) => {
@@ -1069,6 +1282,7 @@ export default function CandidateAiInterviewShow({
             // Mulai dengan mic disable — AI bicara greeting+Q1 dulu, baru
             // dibuka saat response.done.
             const audioTrack = stream.getAudioTracks()[0];
+
             if (audioTrack) {
                 audioTrack.enabled = false;
             }
@@ -1130,6 +1344,7 @@ export default function CandidateAiInterviewShow({
         if (hasSentGreetingRef.current) {
             return;
         }
+
         hasSentGreetingRef.current = true;
 
         // User-gesture-bound: prime audio playback FIRST to bypass autoplay throttling.
@@ -1137,10 +1352,13 @@ export default function CandidateAiInterviewShow({
         if (remoteAudioRef.current) {
             remoteAudioRef.current.muted = false;
             remoteAudioRef.current.volume = 1;
+
             if (remoteStreamRef.current) {
                 remoteAudioRef.current.srcObject = remoteStreamRef.current;
             }
+
             const playResult = remoteAudioRef.current.play();
+
             if (playResult && typeof playResult.then === 'function') {
                 playResult.catch((err) => {
                     console.warn('Voice AI: audio playback blocked', err);
@@ -1200,6 +1418,7 @@ export default function CandidateAiInterviewShow({
     const advanceToNextQuestion = () => {
         // Defensive: jangan trigger response.create kalau AI lagi bicara/memproses.
         const currentTurn = turnStateRef.current;
+
         if (currentTurn === 'ai-talking' || currentTurn === 'ai-thinking') {
             return;
         }
@@ -1253,6 +1472,8 @@ export default function CandidateAiInterviewShow({
         peerConnectionRef.current?.close();
         peerConnectionRef.current = null;
         dataChannelRef.current = null;
+        lastInboundAudioStatsRef.current = null;
+        lastResponseDoneAtRef.current = 0;
         localStreamRef.current?.getTracks().forEach((track) => track.stop());
         localStreamRef.current = null;
         remoteAudioRef.current?.pause();
@@ -1368,9 +1589,11 @@ export default function CandidateAiInterviewShow({
     // utama AI ke-cancel & restart Q1 sendiri).
     const applyMicGate = (aiSpeaking: boolean) => {
         const audioTrack = localStreamRef.current?.getAudioTracks()[0];
+
         if (!audioTrack) {
             return;
         }
+
         audioTrack.enabled = !userMutedRef.current && !aiSpeaking;
     };
 
@@ -1383,6 +1606,7 @@ export default function CandidateAiInterviewShow({
 
         // Defensive: jangan kirim response.create saat AI lagi bicara/memproses.
         const current = turnStateRef.current;
+
         if (current === 'ai-talking' || current === 'ai-thinking') {
             return;
         }
@@ -1401,6 +1625,7 @@ export default function CandidateAiInterviewShow({
 
             // State berubah saat kita menunggu? Batal.
             const current = turnStateRef.current;
+
             if (current !== 'user-paused' && current !== 'user-answering') {
                 return;
             }
@@ -1418,7 +1643,9 @@ export default function CandidateAiInterviewShow({
                         window.clearInterval(countdownIntervalRef.current);
                         countdownIntervalRef.current = null;
                     }
+
                     setAutoAdvanceRemaining(null);
+
                     return;
                 }
 
@@ -1427,6 +1654,7 @@ export default function CandidateAiInterviewShow({
                         window.clearInterval(countdownIntervalRef.current);
                         countdownIntervalRef.current = null;
                     }
+
                     setAutoAdvanceRemaining(null);
                     requestAiResponse();
                 } else {
@@ -1465,9 +1693,13 @@ export default function CandidateAiInterviewShow({
             console.debug('[Realtime]', event.type, event);
 
             if (event.type === 'error') {
-                const message = event.error?.message ?? event.message ?? 'Unknown realtime error';
+                const message =
+                    event.error?.message ??
+                    event.message ??
+                    'Unknown realtime error';
                 console.error('[Realtime] error event', event);
                 toast.error(`AI error: ${message}`);
+
                 return;
             }
 
@@ -1484,29 +1716,51 @@ export default function CandidateAiInterviewShow({
                 event.type === 'response.failed'
             ) {
                 setTurnState('user-turn');
-                // Beri jeda sebentar sebelum buka mic — biar tail audio AI di
-                // speaker tidak terlanjur masuk mic.
-                window.setTimeout(() => applyMicGate(false), 600);
+                lastResponseDoneAtRef.current = Date.now();
+                // Beri jeda lebih lama sebelum buka mic — tail audio AI di
+                // speaker bisa berlangsung 1-1.5 detik (terutama Bluetooth /
+                // speaker eksternal). Membuka mic terlalu cepat bikin echo
+                // bocor & VAD mendeteksinya sebagai user-answering palsu.
+                window.setTimeout(() => applyMicGate(false), 1200);
             }
 
             // VAD events HANYA diproses kalau giliran user. AI yang lagi bicara
             // sering bocor ke mic (echo) dan memicu VAD palsu — abaikan.
+            // Plus filter window 1500ms setelah AI done: VAD trigger dalam window
+            // tsb hampir pasti echo speaker, bukan kandidat (kandidat tidak akan
+            // ngomong barengan saat AI baru selesai).
+            const ECHO_SUPPRESSION_MS = 1500;
+            const sinceAiDone = Date.now() - lastResponseDoneAtRef.current;
+            const inEchoWindow =
+                lastResponseDoneAtRef.current > 0 &&
+                sinceAiDone < ECHO_SUPPRESSION_MS;
+
             if (event.type === 'input_audio_buffer.speech_started') {
+                if (inEchoWindow) {
+                    return;
+                }
                 setTurnState((current) => {
                     if (current === 'ai-talking' || current === 'ai-thinking') {
                         return current;
                     }
+
                     clearAutoAdvanceTimers();
+
                     return 'user-answering';
                 });
             }
 
             if (event.type === 'input_audio_buffer.speech_stopped') {
+                if (inEchoWindow) {
+                    return;
+                }
                 setTurnState((current) => {
                     if (current !== 'user-answering') {
                         return current;
                     }
+
                     startAutoAdvanceTimers();
+
                     return 'user-paused';
                 });
             }
@@ -1823,22 +2077,29 @@ export default function CandidateAiInterviewShow({
                                                     <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-600" />
                                                     <div className="text-[13px] leading-relaxed text-red-900">
                                                         <p className="font-semibold">
-                                                            {micErrorKind === 'not-found'
+                                                            {micErrorKind ===
+                                                            'not-found'
                                                                 ? 'Mikrofon tidak terdeteksi'
-                                                                : micErrorKind === 'in-use'
+                                                                : micErrorKind ===
+                                                                    'in-use'
                                                                   ? 'Mikrofon sedang dipakai aplikasi lain'
-                                                                  : micErrorKind === 'unsupported'
+                                                                  : micErrorKind ===
+                                                                      'unsupported'
                                                                     ? 'Browser tidak mendukung akses mikrofon'
-                                                                    : micErrorKind === 'system-denied'
+                                                                    : micErrorKind ===
+                                                                        'system-denied'
                                                                       ? 'Akses mikrofon diblokir oleh sistem operasi'
                                                                       : 'Akses mikrofon diblokir'}
                                                         </p>
                                                         <p className="text-red-700/90">
-                                                            {micErrorKind === 'not-found'
+                                                            {micErrorKind ===
+                                                            'not-found'
                                                                 ? 'Pastikan perangkat mikrofon kamu sudah terpasang.'
-                                                                : micErrorKind === 'in-use'
+                                                                : micErrorKind ===
+                                                                    'in-use'
                                                                   ? 'Tutup aplikasi lain (Zoom, Meet, Discord) yang sedang menggunakan mikrofon.'
-                                                                  : micErrorKind === 'unsupported'
+                                                                  : micErrorKind ===
+                                                                      'unsupported'
                                                                     ? 'Coba pakai browser modern seperti Chrome, Firefox, atau Safari versi terbaru.'
                                                                     : 'Klik tombol di bawah untuk minta izin, atau lihat panduan jika popup tidak muncul.'}
                                                         </p>
@@ -1853,7 +2114,8 @@ export default function CandidateAiInterviewShow({
                                                         }}
                                                         disabled={
                                                             micRequesting ||
-                                                            micErrorKind === 'unsupported'
+                                                            micErrorKind ===
+                                                                'unsupported'
                                                         }
                                                         className="h-8 gap-1.5 bg-red-600 text-white hover:bg-red-700"
                                                     >
@@ -1882,88 +2144,88 @@ export default function CandidateAiInterviewShow({
 
                                 {/* Panduan Wawancara — hanya untuk mode voice */}
                                 {isVoiceInterview && (
-                                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                                    <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
-                                        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-primary-600 to-primary-800 shadow-sm">
-                                            <ShieldCheck className="size-4 text-white" />
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-slate-900">
-                                                {t(
-                                                    'candidate.ai_interview_show.interview_guide',
-                                                )}
-                                            </p>
-                                            <p className="text-[11px] text-slate-400">
-                                                {t(
-                                                    'candidate.ai_interview_show.read_before_start',
-                                                )}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-4 p-5">
-                                        {/* AI Greeting */}
-                                        <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-primary-50 to-secondary-50/60 p-4 ring-1 ring-primary-200/60">
-                                            <div className="absolute top-3 right-3 opacity-10">
-                                                <Sparkles className="size-12 text-primary-500" />
+                                    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                                        <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
+                                            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-primary-600 to-primary-800 shadow-sm">
+                                                <ShieldCheck className="size-4 text-white" />
                                             </div>
-                                            <div className="mb-2 flex items-center gap-2">
-                                                <div className="flex size-6 items-center justify-center rounded-full bg-primary-100">
-                                                    <Bot className="size-3.5 text-primary-600" />
-                                                </div>
-                                                <span className="text-[11px] font-bold tracking-wider text-primary-600 uppercase">
+                                            <div>
+                                                <p className="font-bold text-slate-900">
                                                     {t(
-                                                        'candidate.ai_interview_show.ai_opening',
+                                                        'candidate.ai_interview_show.interview_guide',
                                                     )}
-                                                </span>
+                                                </p>
+                                                <p className="text-[11px] text-slate-400">
+                                                    {t(
+                                                        'candidate.ai_interview_show.read_before_start',
+                                                    )}
+                                                </p>
                                             </div>
-                                            <p className="text-sm font-semibold text-slate-900">
-                                                {
-                                                    session.ai_intro
-                                                        .assistant_name
-                                                }
-                                            </p>
-                                            <p className="mt-1.5 text-sm leading-6 text-slate-600">
-                                                {session.ai_intro.greeting}
-                                            </p>
                                         </div>
+                                        <div className="space-y-4 p-5">
+                                            {/* AI Greeting */}
+                                            <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-primary-50 to-secondary-50/60 p-4 ring-1 ring-primary-200/60">
+                                                <div className="absolute top-3 right-3 opacity-10">
+                                                    <Sparkles className="size-12 text-primary-500" />
+                                                </div>
+                                                <div className="mb-2 flex items-center gap-2">
+                                                    <div className="flex size-6 items-center justify-center rounded-full bg-primary-100">
+                                                        <Bot className="size-3.5 text-primary-600" />
+                                                    </div>
+                                                    <span className="text-[11px] font-bold tracking-wider text-primary-600 uppercase">
+                                                        {t(
+                                                            'candidate.ai_interview_show.ai_opening',
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm font-semibold text-slate-900">
+                                                    {
+                                                        session.ai_intro
+                                                            .assistant_name
+                                                    }
+                                                </p>
+                                                <p className="mt-1.5 text-sm leading-6 text-slate-600">
+                                                    {session.ai_intro.greeting}
+                                                </p>
+                                            </div>
 
-                                        {/* Instructions */}
-                                        <div className="divide-y divide-gray-100">
-                                            <InstructionRow
-                                                icon={Mic}
-                                                title={t(
-                                                    'candidate.ai_interview_show.speak_clearly',
-                                                )}
-                                                description={t(
-                                                    'candidate.ai_interview_show.speak_clearly_desc',
-                                                )}
-                                            />
-                                            <InstructionRow
-                                                icon={Clock3}
-                                                title={`Durasi ${session.duration_minutes ?? 30} menit`}
-                                                description={t(
-                                                    'candidate.ai_interview_show.duration_desc',
-                                                )}
-                                            />
-                                            <InstructionRow
-                                                icon={Bot}
-                                                title={t(
-                                                    'candidate.ai_interview_show.ai_will_guide',
-                                                )}
-                                                description={t(
-                                                    'candidate.ai_interview_show.ai_will_guide_desc',
-                                                )}
-                                            />
-                                            <InstructionRow
-                                                icon={Info}
-                                                title={`${session.questions.length} pertanyaan tersedia`}
-                                                description={t(
-                                                    'candidate.ai_interview_show.answers_recorded_desc',
-                                                )}
-                                            />
+                                            {/* Instructions */}
+                                            <div className="divide-y divide-gray-100">
+                                                <InstructionRow
+                                                    icon={Mic}
+                                                    title={t(
+                                                        'candidate.ai_interview_show.speak_clearly',
+                                                    )}
+                                                    description={t(
+                                                        'candidate.ai_interview_show.speak_clearly_desc',
+                                                    )}
+                                                />
+                                                <InstructionRow
+                                                    icon={Clock3}
+                                                    title={`Durasi ${session.duration_minutes ?? 30} menit`}
+                                                    description={t(
+                                                        'candidate.ai_interview_show.duration_desc',
+                                                    )}
+                                                />
+                                                <InstructionRow
+                                                    icon={Bot}
+                                                    title={t(
+                                                        'candidate.ai_interview_show.ai_will_guide',
+                                                    )}
+                                                    description={t(
+                                                        'candidate.ai_interview_show.ai_will_guide_desc',
+                                                    )}
+                                                />
+                                                <InstructionRow
+                                                    icon={Info}
+                                                    title={`${session.questions.length} pertanyaan tersedia`}
+                                                    description={t(
+                                                        'candidate.ai_interview_show.answers_recorded_desc',
+                                                    )}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
                                 )}
 
                                 {!isVoiceInterview && (
@@ -2160,15 +2422,32 @@ export default function CandidateAiInterviewShow({
                                             </div>
                                             <div className="space-y-1.5">
                                                 <p className="text-sm font-bold text-amber-900">
-                                                    Wajib pakai headphone / earphone
+                                                    Wajib pakai headphone /
+                                                    earphone
                                                 </p>
                                                 <p className="text-xs leading-5 text-amber-800">
-                                                    Tanpa headphone, mikrofon kamu akan menangkap suara AI dari speaker dan AI bisa salah anggap kamu sedang menjawab — pertanyaan bisa terpotong atau diulang.
+                                                    Tanpa headphone, mikrofon
+                                                    kamu akan menangkap suara AI
+                                                    dari speaker dan AI bisa
+                                                    salah anggap kamu sedang
+                                                    menjawab — pertanyaan bisa
+                                                    terpotong atau diulang.
                                                 </p>
                                                 <ul className="ml-4 list-disc space-y-0.5 text-[11px] text-amber-700 marker:text-amber-500">
-                                                    <li>Earphone kabel paling stabil</li>
-                                                    <li>AirPods/headphone Bluetooth juga OK, pastikan udah ter-pair</li>
-                                                    <li>Hindari pakai speaker laptop atau speaker eksternal</li>
+                                                    <li>
+                                                        Earphone kabel paling
+                                                        stabil
+                                                    </li>
+                                                    <li>
+                                                        AirPods/headphone
+                                                        Bluetooth juga OK,
+                                                        pastikan udah ter-pair
+                                                    </li>
+                                                    <li>
+                                                        Hindari pakai speaker
+                                                        laptop atau speaker
+                                                        eksternal
+                                                    </li>
                                                 </ul>
                                             </div>
                                         </div>
@@ -2203,7 +2482,8 @@ export default function CandidateAiInterviewShow({
                                                 className={cn(
                                                     'w-full gap-2 text-base font-bold shadow-sm',
                                                     consented &&
-                                                        (isPractice || cameraStreamActive) &&
+                                                        (isPractice ||
+                                                            cameraStreamActive) &&
                                                         !connecting
                                                         ? 'bg-linear-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800'
                                                         : 'bg-primary-600 hover:bg-primary-700',
@@ -2211,7 +2491,8 @@ export default function CandidateAiInterviewShow({
                                                 size="lg"
                                                 disabled={
                                                     !consented ||
-                                                    (!isPractice && !cameraStreamActive) ||
+                                                    (!isPractice &&
+                                                        !cameraStreamActive) ||
                                                     connecting
                                                 }
                                                 onClick={connectRealtime}
@@ -2229,10 +2510,12 @@ export default function CandidateAiInterviewShow({
                                                 )}
                                             </Button>
                                             {(!consented ||
-                                                (!isPractice && !cameraStreamActive)) &&
+                                                (!isPractice &&
+                                                    !cameraStreamActive)) &&
                                                 !connecting && (
                                                     <p className="mt-2 text-center text-xs text-slate-400">
-                                                        {!isPractice && !cameraStreamActive
+                                                        {!isPractice &&
+                                                        !cameraStreamActive
                                                             ? 'Aktifkan kamera untuk melanjutkan'
                                                             : 'Centang persetujuan untuk melanjutkan'}
                                                     </p>
@@ -2280,8 +2563,8 @@ function QuestionsPreparingOverlay() {
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                     AI sedang menyusun pertanyaan yang disesuaikan dengan
-                    profilmu. Biasanya butuh 10–30 detik. Halaman akan
-                    otomatis berlanjut saat siap.
+                    profilmu. Biasanya butuh 10–30 detik. Halaman akan otomatis
+                    berlanjut saat siap.
                 </p>
                 <div className="mt-4 flex items-center justify-center gap-1.5 text-xs font-semibold text-primary-600">
                     <Sparkles className="size-3.5" />
@@ -2409,7 +2692,8 @@ function MicHelpDialog({
                                 Cek izin di macOS (jika masih gagal)
                             </h3>
                             <p className="ml-8 text-xs text-slate-500">
-                                Khusus pengguna Mac — di Windows/Linux langkah ini bisa dilewati.
+                                Khusus pengguna Mac — di Windows/Linux langkah
+                                ini bisa dilewati.
                             </p>
                             <ol className="ml-8 list-decimal space-y-1.5 text-slate-700 marker:text-slate-400">
                                 {macSystemSteps.map((step, idx) => (
@@ -2426,14 +2710,14 @@ function MicHelpDialog({
                             </h3>
                             <ul className="ml-5 list-disc space-y-1 text-slate-700 marker:text-slate-400">
                                 <li>
-                                    Pastikan headset/earphone tertancap penuh ke port audio.
+                                    Pastikan headset/earphone tertancap penuh ke
+                                    port audio.
                                 </li>
                                 <li>
-                                    Untuk Bluetooth, pastikan device sudah ter-pair dan tersambung.
+                                    Untuk Bluetooth, pastikan device sudah
+                                    ter-pair dan tersambung.
                                 </li>
-                                <li>
-                                    Coba cabut-pasang ulang perangkat mic.
-                                </li>
+                                <li>Coba cabut-pasang ulang perangkat mic.</li>
                             </ul>
                         </section>
                     )}
@@ -2446,7 +2730,9 @@ function MicHelpDialog({
                             <ul className="ml-5 list-disc space-y-1 text-slate-700 marker:text-slate-400">
                                 <li>Zoom, Google Meet, Microsoft Teams</li>
                                 <li>Discord, Slack huddle</li>
-                                <li>OBS Studio atau aplikasi recording lainnya</li>
+                                <li>
+                                    OBS Studio atau aplikasi recording lainnya
+                                </li>
                             </ul>
                             <p className="text-slate-600">
                                 Tutup aplikasi tersebut, lalu klik "Coba Lagi".
@@ -3323,48 +3609,48 @@ function ActiveVoiceSession({
                         {/* Camera feed — recording disabled in simulator/practice mode */}
                         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-slate-950 shadow-lg shadow-primary-200/40">
                             <div className="relative aspect-video">
-                                    <video
-                                        ref={cameraVideoCallbackRef}
-                                        autoPlay
-                                        playsInline
-                                        muted
-                                        className={cn(
-                                            'h-full w-full object-cover',
-                                            !cameraStream && 'hidden',
-                                        )}
-                                        style={{ transform: 'scaleX(-1)' }}
-                                    />
-                                    {!cameraStream && (
-                                        <div className="flex h-full flex-col items-center justify-center gap-2.5">
-                                            <div className="flex size-12 items-center justify-center rounded-full bg-slate-800 ring-1 ring-white/10">
-                                                <VideoOff className="size-5 text-slate-400" />
-                                            </div>
-                                            <p className="text-[11px] text-slate-400">
-                                                Kamera tidak aktif
-                                            </p>
-                                        </div>
+                                <video
+                                    ref={cameraVideoCallbackRef}
+                                    autoPlay
+                                    playsInline
+                                    muted
+                                    className={cn(
+                                        'h-full w-full object-cover',
+                                        !cameraStream && 'hidden',
                                     )}
-                                    {/* Live badge */}
-                                    <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-black/70 px-2.5 py-1 backdrop-blur-sm">
-                                        <span className="size-1.5 animate-pulse rounded-full bg-red-500" />
-                                        <span className="text-[10px] font-bold tracking-wider text-white uppercase">
-                                            Live
-                                        </span>
+                                    style={{ transform: 'scaleX(-1)' }}
+                                />
+                                {!cameraStream && (
+                                    <div className="flex h-full flex-col items-center justify-center gap-2.5">
+                                        <div className="flex size-12 items-center justify-center rounded-full bg-slate-800 ring-1 ring-white/10">
+                                            <VideoOff className="size-5 text-slate-400" />
+                                        </div>
+                                        <p className="text-[11px] text-slate-400">
+                                            Kamera tidak aktif
+                                        </p>
                                     </div>
-                                    {/* Mute indicator */}
-                                    {muted && (
-                                        <div className="absolute top-2.5 right-2.5 rounded-full bg-red-600/90 p-1.5 shadow-sm">
-                                            <MicOff className="size-3 text-white" />
-                                        </div>
-                                    )}
-                                    {/* Name overlay */}
-                                    {session.candidate_name && (
-                                        <div className="absolute right-0 bottom-0 left-0 bg-linear-to-t from-black/80 to-transparent px-3 py-3">
-                                            <p className="text-xs font-semibold text-white">
-                                                {session.candidate_name}
-                                            </p>
-                                        </div>
-                                    )}
+                                )}
+                                {/* Live badge */}
+                                <div className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-black/70 px-2.5 py-1 backdrop-blur-sm">
+                                    <span className="size-1.5 animate-pulse rounded-full bg-red-500" />
+                                    <span className="text-[10px] font-bold tracking-wider text-white uppercase">
+                                        Live
+                                    </span>
+                                </div>
+                                {/* Mute indicator */}
+                                {muted && (
+                                    <div className="absolute top-2.5 right-2.5 rounded-full bg-red-600/90 p-1.5 shadow-sm">
+                                        <MicOff className="size-3 text-white" />
+                                    </div>
+                                )}
+                                {/* Name overlay */}
+                                {session.candidate_name && (
+                                    <div className="absolute right-0 bottom-0 left-0 bg-linear-to-t from-black/80 to-transparent px-3 py-3">
+                                        <p className="text-xs font-semibold text-white">
+                                            {session.candidate_name}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -3833,7 +4119,12 @@ function TurnStateIndicator({
     const Icon = cfg.icon;
 
     return (
-        <div className={cn('flex items-center gap-2.5 rounded-xl border p-3', cfg.color)}>
+        <div
+            className={cn(
+                'flex items-center gap-2.5 rounded-xl border p-3',
+                cfg.color,
+            )}
+        >
             <Icon
                 className={cn(
                     'size-4 shrink-0',
@@ -3997,7 +4288,8 @@ function AnswerForm({
             ),
         [session.questions, form.data.answers],
     );
-    const progressPercent = total === 0 ? 0 : Math.round((answeredCount / total) * 100);
+    const progressPercent =
+        total === 0 ? 0 : Math.round((answeredCount / total) * 100);
     const isLast = currentIndex === total - 1;
     const isFirst = currentIndex === 0;
 
@@ -4029,10 +4321,13 @@ function AnswerForm({
                 <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
                         <p className="text-[10px] font-bold tracking-[0.25em] text-primary-600 uppercase sm:text-xs">
-                            {t('candidate.ai_interview_show.answers_per_question')}
+                            {t(
+                                'candidate.ai_interview_show.answers_per_question',
+                            )}
                         </p>
                         <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground sm:text-sm">
-                            {answeredCount} / {total} terisi ({progressPercent}%)
+                            {answeredCount} / {total} terisi ({progressPercent}
+                            %)
                         </p>
                     </div>
                     <div className="shrink-0 rounded-full bg-primary-600 px-3 py-1.5 text-xs font-bold text-white sm:px-4 sm:py-2 sm:text-sm">
@@ -4050,7 +4345,8 @@ function AnswerForm({
                 {/* Question grid — compact */}
                 <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {session.questions.map((q, idx) => {
-                        const filled = (form.data.answers[q.id] ?? '').trim().length > 0;
+                        const filled =
+                            (form.data.answers[q.id] ?? '').trim().length > 0;
                         const isActive = idx === currentIndex;
 
                         return (
@@ -4097,8 +4393,12 @@ function AnswerForm({
                     autoFocus
                     className="min-h-40 w-full rounded-xl border border-input bg-transparent px-3 py-2.5 text-sm leading-6 shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:min-h-48 sm:px-4 sm:py-3"
                     value={form.data.answers[activeQuestion.id] ?? ''}
-                    onChange={(event) => updateAnswer(activeQuestion.id, event.target.value)}
-                    placeholder={t('candidate.ai_interview_show.write_answer_placeholder')}
+                    onChange={(event) =>
+                        updateAnswer(activeQuestion.id, event.target.value)
+                    }
+                    placeholder={t(
+                        'candidate.ai_interview_show.write_answer_placeholder',
+                    )}
                 />
                 <InputError message={errors[`answers.${activeQuestion.id}`]} />
             </div>
@@ -4109,7 +4409,9 @@ function AnswerForm({
                     type="button"
                     variant="outline"
                     disabled={isFirst}
-                    onClick={() => setCurrentIndex((idx) => Math.max(0, idx - 1))}
+                    onClick={() =>
+                        setCurrentIndex((idx) => Math.max(0, idx - 1))
+                    }
                     className="w-full sm:w-auto"
                 >
                     <ChevronLeft className="size-4" />
@@ -4125,13 +4427,17 @@ function AnswerForm({
                         <CheckCircle2 className="size-4" />
                         {form.processing
                             ? t('candidate.ai_interview_show.sending')
-                            : t('candidate.ai_interview_show.complete_and_submit')}
+                            : t(
+                                  'candidate.ai_interview_show.complete_and_submit',
+                              )}
                     </Button>
                 ) : (
                     <Button
                         type="button"
                         onClick={() =>
-                            setCurrentIndex((idx) => Math.min(total - 1, idx + 1))
+                            setCurrentIndex((idx) =>
+                                Math.min(total - 1, idx + 1),
+                            )
                         }
                         className="w-full sm:w-auto"
                     >
