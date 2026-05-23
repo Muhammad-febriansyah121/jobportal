@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Laravel\Ai\Files\Document;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Throwable;
 
@@ -58,18 +59,18 @@ class CandidateOnboardingController extends Controller
             );
         }
 
-        if ($candidate->experiences()->doesntExist()) {
-            foreach ($experiences as $exp) {
-                $companyName = trim((string) ($exp['company_name'] ?? ''));
+        $validExperiences = collect($experiences)
+            ->filter(fn ($exp): bool => is_array($exp) && trim((string) ($exp['company_name'] ?? '')) !== '')
+            ->values();
 
-                if ($companyName === '') {
-                    continue;
-                }
+        if ($validExperiences->isNotEmpty()) {
+            $candidate->experiences()->delete();
 
+            foreach ($validExperiences as $exp) {
                 $isCurrent = (bool) ($exp['is_current'] ?? false);
 
                 $candidate->experiences()->create([
-                    'company_name' => $companyName,
+                    'company_name' => trim((string) $exp['company_name']),
                     'job_title' => trim((string) ($exp['job_title'] ?? '')) ?: 'Tidak diketahui',
                     'start_date' => filled($exp['start_date'] ?? null) ? $exp['start_date'] : now()->toDateString(),
                     'end_date' => $isCurrent ? null : ($exp['end_date'] ?? null),
@@ -80,16 +81,16 @@ class CandidateOnboardingController extends Controller
             }
         }
 
-        if ($candidate->educations()->doesntExist()) {
-            foreach ($educations as $edu) {
-                $institution = trim((string) ($edu['institution'] ?? ''));
+        $validEducations = collect($educations)
+            ->filter(fn ($edu): bool => is_array($edu) && trim((string) ($edu['institution'] ?? '')) !== '')
+            ->values();
 
-                if ($institution === '') {
-                    continue;
-                }
+        if ($validEducations->isNotEmpty()) {
+            $candidate->educations()->delete();
 
+            foreach ($validEducations as $edu) {
                 $candidate->educations()->create([
-                    'institution' => $institution,
+                    'institution' => trim((string) $edu['institution']),
                     'degree' => trim((string) ($edu['degree'] ?? '')) ?: null,
                     'field_of_study' => trim((string) ($edu['field_of_study'] ?? '')) ?: null,
                     'start_year' => $edu['start_year'] ?? null,
@@ -114,28 +115,58 @@ class CandidateOnboardingController extends Controller
 
         @set_time_limit(120);
 
-        $file = $request->file('cv_file');
-        $cvText = $extractor->extractFromPath($file->getPathname(), (string) $file->getMimeType());
-
-        if (trim($cvText) === '') {
-            return response()->json(['error' => 'Teks tidak dapat diekstrak dari file ini. Coba file lain atau isi form manual.'], 422);
-        }
-
         if (! $ai->isConfigured()) {
             return response()->json(['error' => 'AI belum dikonfigurasi. Isi form manual.'], 422);
         }
 
-        $prompt = "Parse the following CV text:\n\n---\n{$cvText}\n---";
+        $file = $request->file('cv_file');
+        $fileName = (string) $file->getClientOriginalName();
+        $mimeType = (string) $file->getMimeType();
+        $isPdf = str_contains($mimeType, 'pdf')
+            || str_ends_with(Str::lower($fileName), '.pdf');
+
         $userId = $request->user()?->id;
-        $inputJson = ['cv_text_length' => mb_strlen($cvText), 'file_name' => $file->getClientOriginalName()];
-        $inputHash = hash('sha256', $prompt);
+        $attachments = [];
+        $prompt = 'Parse the attached CV and return the JSON object defined in the instructions.';
+        $inputJson = [
+            'file_name' => $fileName,
+            'mime' => $mimeType,
+            'file_size' => $file->getSize(),
+            'mode' => $isPdf ? 'attachment' : 'text',
+        ];
+
+        if ($isPdf) {
+            try {
+                $attachments[] = Document::fromPath($file->getPathname());
+            } catch (Throwable $exception) {
+                Log::warning('CvParserStream failed to load PDF attachment', [
+                    'user_id' => $userId,
+                    'file_name' => $fileName,
+                    'message' => $exception->getMessage(),
+                ]);
+
+                return response()->json(['error' => 'CV PDF tidak dapat dibaca. Coba file lain atau isi form manual.'], 422);
+            }
+        } else {
+            $cvText = $extractor->extractFromPath($file->getPathname(), $mimeType);
+
+            if (trim($cvText) === '') {
+                return response()->json(['error' => 'Teks tidak dapat diekstrak dari file ini. Coba file lain atau isi form manual.'], 422);
+            }
+
+            $prompt = "Parse the following CV text:\n\n---\n{$cvText}\n---";
+            $inputJson['cv_text_length'] = mb_strlen($cvText);
+        }
+
+        $inputHash = hash('sha256', $fileName.'|'.$file->getSize().'|'.$inputJson['mode']);
 
         try {
-            $stream = (new CvParserStream)->stream($prompt);
+            $stream = (new CvParserStream)->stream($prompt, attachments: $attachments);
         } catch (Throwable $exception) {
             Log::warning('CvParserStream failed to start', [
                 'user_id' => $userId,
-                'file_name' => $file->getClientOriginalName(),
+                'file_name' => $fileName,
+                'mode' => $inputJson['mode'],
                 'message' => $exception->getMessage(),
             ]);
 
@@ -152,16 +183,33 @@ class CandidateOnboardingController extends Controller
             return response()->json(['error' => 'AI tidak dapat memulai parsing. Coba lagi atau isi form manual.'], 502);
         }
 
-        $stream->then(function ($response) use ($userId, $inputJson, $inputHash): void {
+        $stream->then(function ($response) use ($userId, $fileName, $inputJson, $inputHash): void {
             $aiText = is_object($response) && property_exists($response, 'text') ? (string) $response->text : '';
             $usage = is_object($response) && property_exists($response, 'usage') ? $response->usage : null;
+
+            $parsedSummary = $this->summarizeParsedAiText($aiText);
+
+            if ($parsedSummary['experiences_count'] === 0 && $parsedSummary['educations_count'] === 0) {
+                Log::warning('CvParserStream returned empty experiences and educations', [
+                    'user_id' => $userId,
+                    'file_name' => $fileName,
+                    'mode' => $inputJson['mode'],
+                    'text_length' => mb_strlen($aiText),
+                ]);
+            }
 
             AiAuditLog::create([
                 'user_id' => $userId,
                 'feature' => 'candidate.onboarding.cv_parser_stream',
                 'input_hash' => $inputHash,
                 'input_json' => $inputJson,
-                'output_json' => ['text_length' => mb_strlen($aiText), 'preview' => mb_substr($aiText, 0, 500)],
+                'output_json' => [
+                    'text_length' => mb_strlen($aiText),
+                    'preview' => mb_substr($aiText, 0, 500),
+                    'experiences_count' => $parsedSummary['experiences_count'],
+                    'educations_count' => $parsedSummary['educations_count'],
+                    'skills_count' => $parsedSummary['skills_count'],
+                ],
                 'model_name' => 'gpt-5',
                 'prompt_tokens' => (int) ($usage?->inputTokens ?? 0),
                 'completion_tokens' => (int) ($usage?->outputTokens ?? 0),
@@ -177,6 +225,31 @@ class CandidateOnboardingController extends Controller
         $response->headers->set('Connection', 'keep-alive');
 
         return $response;
+    }
+
+    /**
+     * @return array{experiences_count: int, educations_count: int, skills_count: int}
+     */
+    private function summarizeParsedAiText(string $aiText): array
+    {
+        $start = mb_strpos($aiText, '{');
+        $end = mb_strrpos($aiText, '}');
+
+        if ($start === false || $end === false || $end <= $start) {
+            return ['experiences_count' => 0, 'educations_count' => 0, 'skills_count' => 0];
+        }
+
+        $decoded = json_decode(mb_substr($aiText, $start, $end - $start + 1), true);
+
+        if (! is_array($decoded)) {
+            return ['experiences_count' => 0, 'educations_count' => 0, 'skills_count' => 0];
+        }
+
+        return [
+            'experiences_count' => is_array($decoded['experiences'] ?? null) ? count($decoded['experiences']) : 0,
+            'educations_count' => is_array($decoded['educations'] ?? null) ? count($decoded['educations']) : 0,
+            'skills_count' => is_array($decoded['skills'] ?? null) ? count($decoded['skills']) : 0,
+        ];
     }
 
     public function parseCv(Request $request, CvTextExtractorService $extractor, AiService $ai): JsonResponse

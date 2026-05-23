@@ -144,6 +144,100 @@ test('candidate onboarding saves multiple experiences and educations', function 
     ]);
 });
 
+test('candidate onboarding replaces pre-existing experiences and educations on resubmit', function () {
+    $candidate = User::factory()->candidate()->create();
+    $profile = app(ResolveCandidateProfile::class)->handle($candidate->refresh());
+
+    $profile->experiences()->create([
+        'company_name' => 'CV-Parser Inserted Co',
+        'job_title' => 'Auto-Filled Title',
+        'start_date' => '2020-01-01',
+        'is_current' => false,
+    ]);
+    $profile->educations()->create([
+        'institution' => 'CV-Parser Inserted School',
+        'degree' => 'Auto',
+        'field_of_study' => 'Auto',
+        'start_year' => 2015,
+        'end_year' => 2019,
+    ]);
+
+    $this->actingAs($candidate)
+        ->post(route('candidate.onboarding.store'), [
+            'full_name' => 'Citra',
+            'work_mode_pref' => 'remote',
+            'experiences' => [
+                [
+                    'company_name' => 'PT Dipilih Manual',
+                    'job_title' => 'Senior Engineer',
+                    'start_date' => '2024-02-01',
+                    'is_current' => '1',
+                ],
+            ],
+            'educations' => [
+                [
+                    'institution' => 'Universitas Gadjah Mada',
+                    'degree' => 'S1',
+                    'field_of_study' => 'Teknik Informatika',
+                    'start_year' => 2018,
+                    'end_year' => 2022,
+                ],
+            ],
+        ])
+        ->assertRedirect(route('candidate.dashboard'));
+
+    $profile->refresh();
+
+    expect($profile->experiences()->count())->toBe(1);
+    expect($profile->educations()->count())->toBe(1);
+
+    $this->assertDatabaseMissing('candidate_experiences', [
+        'candidate_id' => $profile->id,
+        'company_name' => 'CV-Parser Inserted Co',
+    ]);
+    $this->assertDatabaseHas('candidate_experiences', [
+        'candidate_id' => $profile->id,
+        'company_name' => 'PT Dipilih Manual',
+        'job_title' => 'Senior Engineer',
+    ]);
+    $this->assertDatabaseMissing('candidate_educations', [
+        'candidate_id' => $profile->id,
+        'institution' => 'CV-Parser Inserted School',
+    ]);
+    $this->assertDatabaseHas('candidate_educations', [
+        'candidate_id' => $profile->id,
+        'institution' => 'Universitas Gadjah Mada',
+    ]);
+});
+
+test('candidate onboarding keeps existing experiences when none are submitted', function () {
+    $candidate = User::factory()->candidate()->create();
+    $profile = app(ResolveCandidateProfile::class)->handle($candidate->refresh());
+
+    $profile->experiences()->create([
+        'company_name' => 'PT Existing',
+        'job_title' => 'Engineer',
+        'start_date' => '2022-01-01',
+        'is_current' => true,
+    ]);
+
+    $this->actingAs($candidate)
+        ->post(route('candidate.onboarding.store'), [
+            'full_name' => 'Dewi',
+            'work_mode_pref' => 'hybrid',
+            'experiences' => [
+                ['company_name' => '', 'job_title' => '', 'start_date' => '', 'end_date' => ''],
+            ],
+        ])
+        ->assertRedirect(route('candidate.dashboard'));
+
+    expect($profile->refresh()->experiences()->count())->toBe(1);
+    $this->assertDatabaseHas('candidate_experiences', [
+        'candidate_id' => $profile->id,
+        'company_name' => 'PT Existing',
+    ]);
+});
+
 test('candidate can update profile preferences', function () {
     $candidate = User::factory()->candidate()->create();
 

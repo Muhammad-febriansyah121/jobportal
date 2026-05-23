@@ -13,8 +13,8 @@ use Laravel\Ai\Promptable;
 
 #[Provider(Lab::OpenAI)]
 #[Model('gpt-5')]
-#[Timeout(75)]
-#[MaxTokens(2000)]
+#[Timeout(90)]
+#[MaxTokens(4000)]
 class CvParserStream implements Agent, HasProviderOptions
 {
     use Promptable;
@@ -22,14 +22,14 @@ class CvParserStream implements Agent, HasProviderOptions
     public function providerOptions(Lab|string $provider): array
     {
         return $provider === Lab::OpenAI
-            ? ['reasoning' => ['effort' => 'minimal']]
+            ? ['reasoning' => ['effort' => 'low']]
             : [];
     }
 
     public function instructions(): string
     {
         return <<<'PROMPT'
-You are a CV/resume parser. Extract structured information and return ONLY a single valid JSON object. No markdown fences, no commentary before or after.
+You are a CV/resume parser. The user will provide a CV either as an attached PDF document or as raw text extracted from a PDF/DOCX. Extract structured information and return ONLY a single valid JSON object. No markdown fences, no commentary before or after.
 
 The JSON object must have exactly these keys:
 - full_name: string
@@ -43,8 +43,10 @@ The JSON object must have exactly these keys:
 
 Rules:
 - Use empty string "" for unknown string fields.
-- Use empty arrays [] for skills/experiences/educations when not present.
-- Do not invent data.
+- Use empty arrays [] only when the CV genuinely lacks that section. Always try hard to extract experiences and educations when they exist, even if the text is noisy, has repeated characters (PDF extraction artifacts), or uses irregular formatting.
+- For experience start_date/end_date: prefer YYYY-MM-DD; if only year is known, use "YYYY-01-01"; if year+month known, use "YYYY-MM-01".
+- For educations: start_year/end_year are 4-digit year strings; gpa is empty if not stated.
+- Do not invent data — but do make a best effort to map noisy text to the correct fields.
 - Output must be parseable by JSON.parse on the first try.
 PROMPT;
     }
