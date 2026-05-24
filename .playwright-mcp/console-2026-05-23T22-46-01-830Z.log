@@ -1,0 +1,601 @@
+[     133ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://127.0.0.1:8000/_boost/browser-logs @ http://127.0.0.1:8000/candidate/onboarding:73
+[     179ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:8000/candidate/onboarding:132
+[     221ms] Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <Inertia initialPage={{...}} initialComponent={function CandidateOnboarding} ...>
+      <AppLayout errors={{}} name="Karivia" branding={{name:"Karivia", ...}} auth={{...}} employer_unread_messages={0} ...>
+        <AppSidebarLayout breadcrumbs={[...]}>
+          <AppShell variant="sidebar">
+            <SidebarProvider defaultOpen={true}>
+              <div data-slot="sidebar-wr..." style={{...}} className="group/side...">
+                <AppSidebar>
+                <AppContent variant="sidebar" className="overflow-x...">
+                  <SidebarInset className="overflow-x...">
+                    <main data-slot="sidebar-inset" className="bg-backgro...">
+                      <AppSidebarHeader>
+                      <div className="px-4 pt-4 ...">
+                        <NotificationPermissionBanner>
++                         <div
++                           className="mb-4 flex items-start gap-3 rounded-xl border border-primary-200 bg-primary-50/..."
++                         >
+                      ...
+
+    at throwOnHydrationMismatch (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:8469:51)
+    at beginWork (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:11701:914)
+    at runWithFiberInDEV (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:6352:66)
+    at performUnitOfWork (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13930:92)
+    at workLoopSync (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13826:37)
+    at renderRootSync (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13810:6)
+    at performWorkOnRoot (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13458:181)
+    at performWorkOnRootViaSchedulerTask (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:14560:4)
+    at MessagePort.performWorkUntilDeadline (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:5537:38)
+[  360572ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://127.0.0.1:8000/_boost/browser-logs @ http://127.0.0.1:8000/candidate/onboarding:73
+[  360592ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:8000/candidate/onboarding:132
+[  360641ms] Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <Inertia initialPage={{...}} initialComponent={function CandidateOnboarding} ...>
+      <AppLayout errors={{}} name="Karivia" branding={{name:"Karivia", ...}} auth={{...}} employer_unread_messages={0} ...>
+        <AppSidebarLayout breadcrumbs={[...]}>
+          <AppShell variant="sidebar">
+            <SidebarProvider defaultOpen={true}>
+              <div data-slot="sidebar-wr..." style={{...}} className="group/side...">
+                <AppSidebar>
+                <AppContent variant="sidebar" className="overflow-x...">
+                  <SidebarInset className="overflow-x...">
+                    <main data-slot="sidebar-inset" className="bg-backgro...">
+                      <AppSidebarHeader>
+                      <div className="px-4 pt-4 ...">
+                        <NotificationPermissionBanner>
++                         <div
++                           className="mb-4 flex items-start gap-3 rounded-xl border border-primary-200 bg-primary-50/..."
++                         >
+                      ...
+
+    at throwOnHydrationMismatch (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:8469:51)
+    at beginWork (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:11701:914)
+    at runWithFiberInDEV (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:6352:66)
+    at performUnitOfWork (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13930:92)
+    at workLoopSync (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13826:37)
+    at renderRootSync (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13810:6)
+    at performWorkOnRoot (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13458:181)
+    at performWorkOnRootViaSchedulerTask (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:14560:4)
+    at MessagePort.performWorkUntilDeadline (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:5537:38)
+[  371724ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://127.0.0.1:8000/_boost/browser-logs @ http://127.0.0.1:8000/candidate/onboarding:73
+[  371737ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:8000/candidate/onboarding:132
+[  371779ms] Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <Inertia initialPage={{...}} initialComponent={function CandidateOnboarding} ...>
+      <AppLayout errors={{}} name="Karivia" branding={{name:"Karivia", ...}} auth={{...}} employer_unread_messages={0} ...>
+        <AppSidebarLayout breadcrumbs={[...]}>
+          <AppShell variant="sidebar">
+            <SidebarProvider defaultOpen={true}>
+              <div data-slot="sidebar-wr..." style={{...}} className="group/side...">
+                <AppSidebar>
+                <AppContent variant="sidebar" className="overflow-x...">
+                  <SidebarInset className="overflow-x...">
+                    <main data-slot="sidebar-inset" className="bg-backgro...">
+                      <AppSidebarHeader>
+                      <div className="px-4 pt-4 ...">
+                        <NotificationPermissionBanner>
++                         <div
++                           className="mb-4 flex items-start gap-3 rounded-xl border border-primary-200 bg-primary-50/..."
++                         >
+                      ...
+
+    at throwOnHydrationMismatch (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:8469:51)
+    at beginWork (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:11701:914)
+    at runWithFiberInDEV (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:6352:66)
+    at performUnitOfWork (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13930:92)
+    at workLoopSync (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13826:37)
+    at renderRootSync (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13810:6)
+    at performWorkOnRoot (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13458:181)
+    at performWorkOnRootViaSchedulerTask (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:14560:4)
+    at MessagePort.performWorkUntilDeadline (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:5537:38)
+[  371808ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/actions/App/Http/Controllers/LocaleController.ts?t=1779576733707:0
+[  371808ms] [ERROR] [vite] Failed to reload /resources/js/components/language-switcher.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372034ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/index.ts?t=1779576734081:0
+[  372034ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372034ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/ai-interviews/index.ts?t=1779576734051:0
+[  372034ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/applications/index.ts?t=1779576734039:0
+[  372035ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/career-coach/index.ts?t=1779576734033:0
+[  372036ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/company-reviews/index.ts?t=1779576734034:0
+[  372036ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/cvs/index.ts?t=1779576734042:0
+[  372037ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/pricing/index.ts?t=1779576734047:0
+[  372037ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/interviews/index.ts?t=1779576734048:0
+[  372037ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/messages/index.ts?t=1779576734031:0
+[  372038ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/onboarding/index.ts?t=1779576734082:0
+[  372039ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/saved-jobs/index.ts?t=1779576734032:0
+[  372039ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/system-reviews/index.ts?t=1779576734030:0
+[  372040ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/candidates/index.ts?t=1779576734065:0
+[  372041ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/email-settings/index.ts?t=1779576734068:0
+[  372042ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/messages/index.ts?t=1779576734067:0
+[  372042ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/talent-search/index.ts?t=1779576734066:0
+[  372046ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/whatsapp-bulk/index.ts?t=1779576734069:0
+[  372046ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372049ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372052ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372054ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372058ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372058ms] [ERROR] [vite] Failed to reload /resources/js/layouts/settings/layout.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372059ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/educations/index.ts?t=1779576734046:0
+[  372060ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/experiences/index.ts?t=1779576734035:0
+[  372060ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/profile/index.ts?t=1779576734036:0
+[  372061ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/skills/index.ts?t=1779576734044:0
+[  372061ms] [ERROR] [vite] Failed to reload /resources/js/layouts/settings/layout.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372062ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/security/index.ts?t=1779576734058:0
+[  372064ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372064ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar-header.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372065ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/profile/photo/index.ts?t=1779576734037:0
+[  372066ms] [ERROR] [vite] Failed to reload /resources/js/layouts/settings/layout.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372068ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372072ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372076ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372080ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372083ms] [ERROR] [vite] Failed to reload /Applications/laravel/jobportal/resources/js/pages/candidate/onboarding.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372084ms] [ERROR] [vite] Failed to reload /resources/js/layouts/settings/layout.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372085ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372088ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372092ms] [ERROR] [vite] Failed to reload /resources/js/layouts/settings/layout.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372093ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372096ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372099ms] [ERROR] [vite] Failed to reload /resources/js/layouts/settings/layout.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372100ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372108ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372123ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372130ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/index.ts?t=1779576734411:0
+[  372131ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/index.ts?t=1779576734390:0
+[  372132ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/activity-logs/index.ts?t=1779576734400:0
+[  372132ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/ai-audit-logs/index.ts?t=1779576734374:0
+[  372133ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/ai-health/index.ts?t=1779576734382:0
+[  372133ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/assessment-questions/index.ts?t=1779576734384:0
+[  372136ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/candidate-pricing-menus/index.ts?t=1779576734378:0
+[  372137ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/career-resources/index.ts?t=1779576734388:0
+[  372137ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/companies/index.ts?t=1779576734396:0
+[  372138ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/company-sizes/index.ts?t=1779576734373:0
+[  372138ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/company-verifications/index.ts?t=1779576734376:0
+[  372138ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/company-reviews/index.ts?t=1779576734380:0
+[  372143ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/system-reviews/index.ts?t=1779576734375:0
+[  372144ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/contact-messages/index.ts?t=1779576734377:0
+[  372145ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/faqs/index.ts?t=1779576734385:0
+[  372145ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/industries/index.ts?t=1779576734381:0
+[  372146ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/sub-industries/index.ts?t=1779576734399:0
+[  372146ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/jobs/index.ts?t=1779576734392:0
+[  372147ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/laporan/index.ts?t=1779576734379:0
+[  372147ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/legal/privacy/index.ts?t=1779576734393:0
+[  372149ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/legal/terms/index.ts?t=1779576734394:0
+[  372150ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/pricing-plans/index.ts?t=1779576734391:0
+[  372151ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/reports/index.ts?t=1779576734401:0
+[  372151ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/salary-insights/index.ts?t=1779576734397:0
+[  372153ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/settings/index.ts?t=1779576734372:0
+[  372154ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/skills/index.ts?t=1779576734389:0
+[  372156ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/subscriptions/index.ts?t=1779576734383:0
+[  372157ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/users/index.ts?t=1779576734387:0
+[  372157ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/whatsapp/index.ts?t=1779576734398:0
+[  372157ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/index.ts?t=1779576734360:0
+[  372159ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/analytics/index.ts?t=1779576734366:0
+[  372161ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/billing/index.ts?t=1779576734364:0
+[  372163ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/company/index.ts?t=1779576734367:0
+[  372164ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/jobs/index.ts?t=1779576734361:0
+[  372165ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/message-templates/index.ts?t=1779576734355:0
+[  372165ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/talent-pool/index.ts?t=1779576734353:0
+[  372176ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372181ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/team/index.ts?t=1779576734356:0
+[  372182ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372182ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/reviews/index.ts?t=1779576734368:0
+[  372182ms] [ERROR] [vite] Failed to reload /resources/js/layouts/settings/layout.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372187ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/whatsapp/index.ts?t=1779576734365:0
+[  372187ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372187ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/profile/index.ts?t=1779576734407:0
+[  372191ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372196ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372199ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372210ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372222ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372222ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372225ms] [ERROR] [vite] Failed to reload /Applications/laravel/jobportal/resources/js/pages/candidate/onboarding.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372229ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372232ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372235ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372238ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372241ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372243ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372246ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372248ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372251ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372254ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372256ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372259ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372260ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar-header.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372263ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/notifications/index.ts?t=1779576734416:0
+[  372263ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372267ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372270ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372273ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372277ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372279ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372282ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372285ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372288ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372292ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372295ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372300ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372303ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372309ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372312ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372314ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372318ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372320ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372323ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372327ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372329ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372332ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372336ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372340ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372343ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372346ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372349ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372352ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372354ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372357ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar-header.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372359ms] [ERROR] [vite] Failed to reload /resources/js/components/user-menu-content.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372360ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372360ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372360ms] [ERROR] [vite] Failed to reload /resources/js/components/user-menu-content.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372361ms] [ERROR] [vite] Failed to reload /resources/js/layouts/auth/auth-simple-layout.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372362ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar-header.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372362ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar-header.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372422ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar-header.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  372428ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  373100ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar-header.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  374035ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://127.0.0.1:8000/_boost/browser-logs @ http://127.0.0.1:8000/candidate/onboarding:73
+[  374077ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:8000/candidate/onboarding:132
+[  374135ms] Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <Inertia initialPage={{...}} initialComponent={function CandidateOnboarding} ...>
+      <AppLayout errors={{}} name="Karivia" branding={{name:"Karivia", ...}} auth={{...}} employer_unread_messages={0} ...>
+        <AppSidebarLayout breadcrumbs={[...]}>
+          <AppShell variant="sidebar">
+            <SidebarProvider defaultOpen={true}>
+              <div data-slot="sidebar-wr..." style={{...}} className="group/side...">
+                <AppSidebar>
+                <AppContent variant="sidebar" className="overflow-x...">
+                  <SidebarInset className="overflow-x...">
+                    <main data-slot="sidebar-inset" className="bg-backgro...">
+                      <AppSidebarHeader>
+                      <div className="px-4 pt-4 ...">
+                        <NotificationPermissionBanner>
++                         <div
++                           className="mb-4 flex items-start gap-3 rounded-xl border border-primary-200 bg-primary-50/..."
++                         >
+                      ...
+
+    at throwOnHydrationMismatch (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:8469:51)
+    at beginWork (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:11701:914)
+    at runWithFiberInDEV (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:6352:66)
+    at performUnitOfWork (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13930:92)
+    at workLoopSync (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13826:37)
+    at renderRootSync (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13810:6)
+    at performWorkOnRoot (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13458:181)
+    at performWorkOnRootViaSchedulerTask (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:14560:4)
+    at MessagePort.performWorkUntilDeadline (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:5537:38)
+[  408016ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://127.0.0.1:8000/_boost/browser-logs @ http://127.0.0.1:8000/candidate/onboarding:73
+[  408035ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408084ms] Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <Inertia initialPage={{...}} initialComponent={function CandidateOnboarding} ...>
+      <AppLayout errors={{}} name="Karivia" branding={{name:"Karivia", ...}} auth={{...}} employer_unread_messages={0} ...>
+        <AppSidebarLayout breadcrumbs={[...]}>
+          <AppShell variant="sidebar">
+            <SidebarProvider defaultOpen={true}>
+              <div data-slot="sidebar-wr..." style={{...}} className="group/side...">
+                <AppSidebar>
+                <AppContent variant="sidebar" className="overflow-x...">
+                  <SidebarInset className="overflow-x...">
+                    <main data-slot="sidebar-inset" className="bg-backgro...">
+                      <AppSidebarHeader>
+                      <div className="px-4 pt-4 ...">
+                        <NotificationPermissionBanner>
++                         <div
++                           className="mb-4 flex items-start gap-3 rounded-xl border border-primary-200 bg-primary-50/..."
++                         >
+                      ...
+
+    at throwOnHydrationMismatch (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:8469:51)
+    at beginWork (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:11701:914)
+    at runWithFiberInDEV (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:6352:66)
+    at performUnitOfWork (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13930:92)
+    at workLoopSync (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13826:37)
+    at renderRootSync (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13810:6)
+    at performWorkOnRoot (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13458:181)
+    at performWorkOnRootViaSchedulerTask (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:14560:4)
+    at MessagePort.performWorkUntilDeadline (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:5537:38)
+[  408103ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/actions/App/Http/Controllers/LocaleController.ts?t=1779576770009:0
+[  408104ms] [ERROR] [vite] Failed to reload /resources/js/components/language-switcher.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408463ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/ai-audit-logs/index.ts?t=1779576770572:0
+[  408463ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408463ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/candidate-pricing-menus/index.ts?t=1779576770576:0
+[  408464ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/company-sizes/index.ts?t=1779576770571:0
+[  408464ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/company-verifications/index.ts?t=1779576770574:0
+[  408465ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/system-reviews/index.ts?t=1779576770573:0
+[  408465ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/contact-messages/index.ts?t=1779576770575:0
+[  408466ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/settings/index.ts?t=1779576770570:0
+[  408466ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/index.ts?t=1779576770510:0
+[  408466ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/ai-interviews/index.ts?t=1779576770518:0
+[  408467ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/applications/index.ts?t=1779576770504:0
+[  408467ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/career-coach/index.ts?t=1779576770498:0
+[  408467ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/company-reviews/index.ts?t=1779576770499:0
+[  408468ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/cvs/index.ts?t=1779576770507:0
+[  408468ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/interviews/index.ts?t=1779576770514:0
+[  408469ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/messages/index.ts?t=1779576770496:0
+[  408469ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/onboarding/index.ts?t=1779576770517:0
+[  408470ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/pricing/index.ts?t=1779576770513:0
+[  408472ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/saved-jobs/index.ts?t=1779576770497:0
+[  408472ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/system-reviews/index.ts?t=1779576770495:0
+[  408472ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/index.ts?t=1779576770558:0
+[  408472ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/analytics/index.ts?t=1779576770564:0
+[  408472ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/billing/index.ts?t=1779576770562:0
+[  408472ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/candidates/index.ts?t=1779576770532:0
+[  408473ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/company/index.ts?t=1779576770565:0
+[  408474ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/email-settings/index.ts?t=1779576770535:0
+[  408474ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/jobs/index.ts?t=1779576770559:0
+[  408475ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/messages/index.ts?t=1779576770534:0
+[  408475ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/message-templates/index.ts?t=1779576770553:0
+[  408475ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/talent-pool/index.ts?t=1779576770551:0
+[  408476ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/talent-search/index.ts?t=1779576770533:0
+[  408478ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/team/index.ts?t=1779576770554:0
+[  408478ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/reviews/index.ts?t=1779576770566:0
+[  408478ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/whatsapp/index.ts?t=1779576770563:0
+[  408479ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/employer/whatsapp-bulk/index.ts?t=1779576770549:0
+[  408481ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408484ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408486ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408489ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408490ms] [ERROR] [vite] Failed to reload /resources/js/layouts/settings/layout.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408492ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/educations/index.ts?t=1779576770512:0
+[  408493ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/experiences/index.ts?t=1779576770500:0
+[  408493ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408493ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/profile/index.ts?t=1779576770501:0
+[  408494ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/profile/photo/index.ts?t=1779576770502:0
+[  408494ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/candidate/skills/index.ts?t=1779576770509:0
+[  408496ms] [ERROR] [vite] Failed to reload /resources/js/layouts/settings/layout.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408496ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar-header.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408497ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/security/index.ts?t=1779576770525:0
+[  408498ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408499ms] [ERROR] [vite] Failed to reload /resources/js/layouts/settings/layout.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408502ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408509ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408511ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408514ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408516ms] [ERROR] [vite] Failed to reload /resources/js/layouts/settings/layout.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408516ms] [ERROR] [vite] Failed to reload /Applications/laravel/jobportal/resources/js/pages/candidate/onboarding.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408518ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408521ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408522ms] [ERROR] [vite] Failed to reload /resources/js/layouts/settings/layout.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408523ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408534ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408539ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/index.ts?t=1779576770864:0
+[  408540ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/index.ts?t=1779576770843:0
+[  408540ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/activity-logs/index.ts?t=1779576770853:0
+[  408540ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/ai-health/index.ts?t=1779576770835:0
+[  408541ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/assessment-questions/index.ts?t=1779576770837:0
+[  408544ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/career-resources/index.ts?t=1779576770841:0
+[  408547ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/companies/index.ts?t=1779576770849:0
+[  408547ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/company-reviews/index.ts?t=1779576770833:0
+[  408547ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/faqs/index.ts?t=1779576770838:0
+[  408548ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/industries/index.ts?t=1779576770834:0
+[  408548ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/sub-industries/index.ts?t=1779576770852:0
+[  408549ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/jobs/index.ts?t=1779576770845:0
+[  408549ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/laporan/index.ts?t=1779576770832:0
+[  408550ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/legal/privacy/index.ts?t=1779576770846:0
+[  408550ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/legal/terms/index.ts?t=1779576770847:0
+[  408550ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/pricing-plans/index.ts?t=1779576770844:0
+[  408551ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/reports/index.ts?t=1779576770854:0
+[  408551ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/salary-insights/index.ts?t=1779576770850:0
+[  408553ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/skills/index.ts?t=1779576770842:0
+[  408553ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/subscriptions/index.ts?t=1779576770836:0
+[  408554ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/users/index.ts?t=1779576770840:0
+[  408554ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/admin/whatsapp/index.ts?t=1779576770851:0
+[  408554ms] [ERROR] [vite] Failed to reload /resources/js/layouts/settings/layout.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408554ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/profile/index.ts?t=1779576770860:0
+[  408557ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408559ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408561ms] [ERROR] [vite] Failed to reload /Applications/laravel/jobportal/resources/js/pages/candidate/onboarding.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408563ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408565ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408565ms] [ERROR] [vite] Failed to reload /resources/js/layouts/settings/layout.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408568ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408571ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408574ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408576ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408579ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408583ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408588ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408592ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408596ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408600ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408602ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408606ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408609ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408612ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408614ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408617ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408620ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408620ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar-header.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408623ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408626ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408629ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408632ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408636ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408639ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408642ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408646ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408646ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408649ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408652ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408656ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408662ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408666ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408669ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408672ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408675ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408678ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408681ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408684ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408688ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408691ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408694ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408697ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408699ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408703ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408706ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408708ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408712ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408713ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar-header.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408715ms] [ERROR] [vite] Failed to reload /resources/js/components/user-menu-content.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408716ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://[::1]:5173/resources/js/routes/notifications/index.ts?t=1779576770869:0
+[  408716ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408716ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408716ms] [ERROR] [vite] Failed to reload /resources/js/components/user-menu-content.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408718ms] [ERROR] [vite] Failed to reload /resources/js/layouts/auth/auth-simple-layout.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408719ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar-header.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408719ms] [ERROR] [vite] Failed to reload /resources/js/components/app-sidebar-header.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://127.0.0.1:8000/candidate/onboarding:132
+[  408818ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://127.0.0.1:8000/_boost/browser-logs @ http://127.0.0.1:8000/candidate/onboarding:73
+[  409639ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://127.0.0.1:8000/_boost/browser-logs @ http://127.0.0.1:8000/candidate/onboarding:73
+[  409683ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:8000/candidate/onboarding:132
+[  409735ms] Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <Inertia initialPage={{...}} initialComponent={function CandidateOnboarding} ...>
+      <AppLayout errors={{}} name="Karivia" branding={{name:"Karivia", ...}} auth={{...}} employer_unread_messages={0} ...>
+        <AppSidebarLayout breadcrumbs={[...]}>
+          <AppShell variant="sidebar">
+            <SidebarProvider defaultOpen={true}>
+              <div data-slot="sidebar-wr..." style={{...}} className="group/side...">
+                <AppSidebar>
+                <AppContent variant="sidebar" className="overflow-x...">
+                  <SidebarInset className="overflow-x...">
+                    <main data-slot="sidebar-inset" className="bg-backgro...">
+                      <AppSidebarHeader>
+                      <div className="px-4 pt-4 ...">
+                        <NotificationPermissionBanner>
++                         <div
++                           className="mb-4 flex items-start gap-3 rounded-xl border border-primary-200 bg-primary-50/..."
++                         >
+                      ...
+
+    at throwOnHydrationMismatch (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:8469:51)
+    at beginWork (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:11701:914)
+    at runWithFiberInDEV (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:6352:66)
+    at performUnitOfWork (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13930:92)
+    at workLoopSync (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13826:37)
+    at renderRootSync (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13810:6)
+    at performWorkOnRoot (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13458:181)
+    at performWorkOnRootViaSchedulerTask (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:14560:4)
+    at MessagePort.performWorkUntilDeadline (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:5537:38)
+[  434794ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://127.0.0.1:8000/_boost/browser-logs @ http://127.0.0.1:8000/candidate/onboarding:73
+[  434812ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:8000/candidate/onboarding:132
+[  434863ms] Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <Inertia initialPage={{...}} initialComponent={function CandidateOnboarding} ...>
+      <AppLayout errors={{}} name="Karivia" branding={{name:"Karivia", ...}} auth={{...}} employer_unread_messages={0} ...>
+        <AppSidebarLayout breadcrumbs={[...]}>
+          <AppShell variant="sidebar">
+            <SidebarProvider defaultOpen={true}>
+              <div data-slot="sidebar-wr..." style={{...}} className="group/side...">
+                <AppSidebar>
+                <AppContent variant="sidebar" className="overflow-x...">
+                  <SidebarInset className="overflow-x...">
+                    <main data-slot="sidebar-inset" className="bg-backgro...">
+                      <AppSidebarHeader>
+                      <div className="px-4 pt-4 ...">
+                        <NotificationPermissionBanner>
++                         <div
++                           className="mb-4 flex items-start gap-3 rounded-xl border border-primary-200 bg-primary-50/..."
++                         >
+                      ...
+
+    at throwOnHydrationMismatch (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:8469:51)
+    at beginWork (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:11701:914)
+    at runWithFiberInDEV (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:6352:66)
+    at performUnitOfWork (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13930:92)
+    at workLoopSync (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13826:37)
+    at renderRootSync (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13810:6)
+    at performWorkOnRoot (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:13458:181)
+    at performWorkOnRootViaSchedulerTask (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:14560:4)
+    at MessagePort.performWorkUntilDeadline (http://[::1]:5173/node_modules/.vite/deps/@inertiajs_react.js?v=3e0b2856:5537:38)
