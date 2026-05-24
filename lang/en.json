@@ -1056,6 +1056,8 @@
     "candidate.onboarding.preferred_role": "Preferred role",
     "candidate.onboarding.job_interest_checklist": "Job Interest Checklist",
     "candidate.onboarding.job_interest_hint": "Choose interests to auto-fill your preferred role.",
+    "candidate.onboarding.search_interest_placeholder": "Search job interests...",
+    "candidate.onboarding.interest_not_found": "Job interest not found.",
     "candidate.onboarding.main_skill": "Main skill",
     "candidate.onboarding.search_skill_placeholder": "Search skill...",
     "candidate.onboarding.skill_selected": "selected",

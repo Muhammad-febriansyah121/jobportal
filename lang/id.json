@@ -1056,6 +1056,8 @@
     "candidate.onboarding.preferred_role": "Role minat",
     "candidate.onboarding.job_interest_checklist": "Checklist Minat Pekerjaan",
     "candidate.onboarding.job_interest_hint": "Pilih minat untuk mengisi Role minat secara otomatis.",
+    "candidate.onboarding.search_interest_placeholder": "Cari minat pekerjaan...",
+    "candidate.onboarding.interest_not_found": "Minat pekerjaan tidak ditemukan.",
     "candidate.onboarding.main_skill": "Skill utama",
     "candidate.onboarding.search_skill_placeholder": "Cari skill...",
     "candidate.onboarding.skill_selected": "dipilih",

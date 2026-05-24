@@ -622,7 +622,7 @@ function OnboardingForm({
                 : prev.filter((_, i) => i !== index),
         );
 
-    const skillLabels = skills.slice(0, 12).map((s) => s.label);
+    const skillLabels = skills.map((s) => s.label);
     const interestChecklist =
         skillLabels.length > 0
             ? skillLabels
@@ -648,12 +648,20 @@ function OnboardingForm({
         merged.skill_ids.map(String),
     );
     const [skillSearch, setSkillSearch] = useState('');
+    const [interestSearch, setInterestSearch] = useState('');
 
     const normalizedSkillSearch = skillSearch.trim().toLowerCase();
     const filteredSkills = normalizedSkillSearch === ''
         ? skills
         : skills.filter((skill) =>
               skill.label.toLowerCase().includes(normalizedSkillSearch),
+          );
+
+    const normalizedInterestSearch = interestSearch.trim().toLowerCase();
+    const filteredInterests = normalizedInterestSearch === ''
+        ? interestChecklist
+        : interestChecklist.filter((interest) =>
+              interest.toLowerCase().includes(normalizedInterestSearch),
           );
 
     const toggleSkill = (skillId: string): void => {
@@ -992,49 +1000,94 @@ function OnboardingForm({
                                             name="preferred_role"
                                             error={undefined}
                                         >
-                                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-                                                {interestChecklist.map(
-                                                    (interest) => {
-                                                        const isSelected =
-                                                            selectedInterests.includes(
-                                                                interest,
-                                                            );
-                                                        const inputId = `interest-${interest.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-
-                                                        return (
-                                                            <label
-                                                                key={interest}
-                                                                htmlFor={
-                                                                    inputId
-                                                                }
-                                                                className="flex cursor-pointer items-center gap-2 rounded-lg border border-primary/15 bg-primary/5 px-3 py-2 text-xs font-medium text-foreground transition hover:bg-primary/10"
-                                                            >
-                                                                <input
-                                                                    id={inputId}
-                                                                    type="checkbox"
-                                                                    checked={
-                                                                        isSelected
-                                                                    }
-                                                                    onChange={() =>
-                                                                        toggleInterest(
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <Input
+                                                        type="search"
+                                                        value={interestSearch}
+                                                        onChange={(e) =>
+                                                            setInterestSearch(
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder={t(
+                                                            'candidate.onboarding.search_interest_placeholder',
+                                                        )}
+                                                        className="flex-1"
+                                                    />
+                                                    <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                                                        {selectedInterests.length}{' '}
+                                                        {t(
+                                                            'candidate.onboarding.skill_selected',
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                <div className="max-h-64 overflow-y-auto rounded-lg border border-primary/15 bg-primary/5 p-3">
+                                                    {filteredInterests.length ===
+                                                    0 ? (
+                                                        <p className="py-6 text-center text-xs text-muted-foreground">
+                                                            {t(
+                                                                'candidate.onboarding.interest_not_found',
+                                                            )}
+                                                        </p>
+                                                    ) : (
+                                                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
+                                                            {filteredInterests.map(
+                                                                (interest) => {
+                                                                    const isSelected =
+                                                                        selectedInterests.includes(
                                                                             interest,
-                                                                        )
-                                                                    }
-                                                                    className="size-4 rounded border-primary/30 text-primary focus:ring-primary/30"
-                                                                />
-                                                                <span>
-                                                                    {interest}
-                                                                </span>
-                                                            </label>
-                                                        );
-                                                    },
-                                                )}
+                                                                        );
+                                                                    const inputId = `interest-${interest.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+
+                                                                    return (
+                                                                        <label
+                                                                            key={
+                                                                                interest
+                                                                            }
+                                                                            htmlFor={
+                                                                                inputId
+                                                                            }
+                                                                            className={cn(
+                                                                                'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition',
+                                                                                isSelected
+                                                                                    ? 'border-primary/40 bg-primary/15 text-foreground'
+                                                                                    : 'border-primary/15 bg-background text-foreground hover:bg-primary/10',
+                                                                            )}
+                                                                        >
+                                                                            <input
+                                                                                id={
+                                                                                    inputId
+                                                                                }
+                                                                                type="checkbox"
+                                                                                checked={
+                                                                                    isSelected
+                                                                                }
+                                                                                onChange={() =>
+                                                                                    toggleInterest(
+                                                                                        interest,
+                                                                                    )
+                                                                                }
+                                                                                className="size-4 rounded border-primary/30 text-primary focus:ring-primary/30"
+                                                                            />
+                                                                            <span className="truncate">
+                                                                                {
+                                                                                    interest
+                                                                                }
+                                                                            </span>
+                                                                        </label>
+                                                                    );
+                                                                },
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {t(
+                                                        'candidate.onboarding.job_interest_hint',
+                                                    )}
+                                                </p>
                                             </div>
-                                            <p className="text-xs text-muted-foreground">
-                                                {t(
-                                                    'candidate.onboarding.job_interest_hint',
-                                                )}
-                                            </p>
                                         </Field>
 
                                         <Field
