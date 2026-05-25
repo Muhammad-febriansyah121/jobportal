@@ -765,7 +765,7 @@ test('candidate realtime client secret uses ai api key from settings table', fun
         ->assertOk()
         ->assertJson([
             'client_secret' => 'ephemeral-secret-from-openai',
-            'model' => 'gpt-realtime',
+            'model' => 'gpt-realtime-2',
         ]);
 
     Http::assertSent(function ($request): bool {
@@ -774,7 +774,10 @@ test('candidate realtime client secret uses ai api key from settings table', fun
 
         return $request->url() === 'https://api.openai.com/v1/realtime/client_secrets'
             && $request->hasHeader('Authorization', 'Bearer settings-table-key')
-            && ($data['session']['audio']['input']['transcription']['model'] ?? null) === 'gpt-4o-mini-transcribe'
+            && (
+                ($data['session']['audio']['input']['transcription']['model'] ?? null) === 'gpt-realtime-whisper' ||
+                ($data['session']['audio']['input']['transcription']['model'] ?? null) === 'gpt-4o-mini-transcribe'
+            )
             && ($data['session']['audio']['input']['transcription']['language'] ?? null) === 'en'
             && str_contains($instructions, 'Speak in English only for all spoken responses in this session.')
             && str_contains($instructions, 'Never output Indonesian')

@@ -28,6 +28,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -36,7 +37,7 @@ use Inertia\Response;
 
 class CandidateAiInterviewController extends Controller
 {
-    private const REALTIME_MODEL = 'gpt-realtime';
+    private const REALTIME_MODEL = 'gpt-realtime-2';
 
     private const SUPPORTED_INTERVIEW_LANGUAGES = ['id', 'en'];
 
@@ -649,6 +650,7 @@ class CandidateAiInterviewController extends Controller
 
         $languageConfig = $this->interviewLanguageConfig($interviewLanguage);
 
+        // Try with new models first
         $response = Http::withToken($apiKey)
             ->timeout(20)
             ->post('https://api.openai.com/v1/realtime/client_secrets', [
@@ -659,9 +661,8 @@ class CandidateAiInterviewController extends Controller
                     'audio' => [
                         'input' => [
                             'transcription' => [
-                                'model' => 'gpt-4o-mini-transcribe',
+                                'model' => 'gpt-realtime-whisper',
                                 'language' => $languageConfig['transcription_language'],
-                                'prompt' => $languageConfig['transcription_prompt'],
                             ],
                             'noise_reduction' => [
                                 'type' => 'near_field',
@@ -680,7 +681,49 @@ class CandidateAiInterviewController extends Controller
                 ],
             ]);
 
+        // Fallback to old models if new ones fail
         if (! $response->successful()) {
+            Log::warning('Voice AI: New model failed, trying fallback', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            $response = Http::withToken($apiKey)
+                ->timeout(20)
+                ->post('https://api.openai.com/v1/realtime/client_secrets', [
+                    'session' => [
+                        'type' => 'realtime',
+                        'model' => 'gpt-realtime',
+                        'instructions' => $this->realtimeInstructions($aiInterviewSession),
+                        'audio' => [
+                            'input' => [
+                                'transcription' => [
+                                    'model' => 'gpt-4o-mini-transcribe',
+                                    'language' => $languageConfig['transcription_language'],
+                                ],
+                                'noise_reduction' => [
+                                    'type' => 'near_field',
+                                ],
+                                'turn_detection' => [
+                                    'type' => 'semantic_vad',
+                                    'eagerness' => 'low',
+                                    'create_response' => false,
+                                    'interrupt_response' => false,
+                                ],
+                            ],
+                            'output' => [
+                                'voice' => $aiInterviewSession->voice ?: 'marin',
+                            ],
+                        ],
+                    ],
+                ]);
+        }
+
+        if (! $response->successful()) {
+            Log::error('Voice AI: Fallback also failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
             return response()->json([
                 'message' => 'Gagal menyiapkan sesi voice AI. Coba lagi beberapa saat.',
             ], 422);
@@ -688,7 +731,7 @@ class CandidateAiInterviewController extends Controller
 
         return response()->json([
             'client_secret' => $response->json('value') ?? $response->json('client_secret.value'),
-            'model' => self::REALTIME_MODEL,
+            'model' => $response->json('model') ?? self::REALTIME_MODEL,
         ]);
     }
 

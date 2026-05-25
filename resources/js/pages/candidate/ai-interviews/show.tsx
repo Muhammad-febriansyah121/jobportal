@@ -17,6 +17,7 @@ import {
     MicOff,
     Pause,
     PhoneOff,
+    Play,
     Radio,
     RotateCcw,
     Send,
@@ -37,6 +38,7 @@ import {
     Card,
     CardContent,
     CardDescription,
+    CardFooter,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
@@ -257,9 +259,19 @@ function scoreFromJitter(jitterMs: number | null): SignalQuality | null {
 }
 
 const ICE_SERVERS: RTCIceServer[] = [
+    // Google STUN servers
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+    // Cloudflare STUN
     { urls: 'stun:stun.cloudflare.com:3478' },
+    // Twilio STUN
+    { urls: 'stun:global.stun.twilio.com:3478' },
+    // Microsoft STUN
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
 ];
 
 export default function CandidateAiInterviewShow({
@@ -333,7 +345,35 @@ export default function CandidateAiInterviewShow({
     const [showMicHelp, setShowMicHelp] = useState(false);
     const [browser] = useState<BrowserKind>(() => detectBrowser());
     const [micLevel, setMicLevel] = useState(0);
+    const [waveformData, setWaveformData] = useState<number[]>([]);
     const [signalQuality, setSignalQuality] = useState<SignalQuality>('good');
+    const [connectionHealth, setConnectionHealth] = useState<{
+        rtt: number | null;
+        jitter: number | null;
+        packetLoss: number | null;
+        bitrate: number | null;
+    }>({
+        rtt: null,
+        jitter: null,
+        packetLoss: null,
+        bitrate: null,
+    });
+    const [voiceFailureCount, setVoiceFailureCount] = useState(0);
+    const [showFallbackOption, setShowFallbackOption] = useState(false);
+    const [sessionBackupKey, setSessionBackupKey] = useState(`ai-interview-${session.id}`);
+    const [isPaused, setIsPaused] = useState(false);
+    const [showReviewModal, setShowReviewModal] = useState(false);
+    const [speechAnalytics, setSpeechAnalytics] = useState<{
+        totalSpeechDuration: number;
+        averageSpeechSpeed: number; // words per minute
+        pauseCount: number;
+        fillerWordCount: number;
+    }>({
+        totalSpeechDuration: 0,
+        averageSpeechSpeed: 0,
+        pauseCount: 0,
+        fillerWordCount: 0,
+    });
     const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
     const [hasQuestionStarted, setHasQuestionStarted] = useState(false);
     const [activeAiQuestionText, setActiveAiQuestionText] = useState<
@@ -354,8 +394,17 @@ export default function CandidateAiInterviewShow({
     const userMutedRef = useRef(false);
     const silenceTimerRef = useRef<number | null>(null);
     const countdownIntervalRef = useRef<number | null>(null);
+    const lastValidQuestionIndexRef = useRef<number>(0);
+    const speechStartedAtRef = useRef<number>(0);
+    const recentShortSpeechCountRef = useRef<number>(0);
+    const hasValidTranscriptRef = useRef<boolean>(false);
+    const analyserRef = useRef<AnalyserNode | null>(null);
+    const speechStartTimeRef = useRef<number>(0);
+    const totalSpeechDurationRef = useRef<number>(0);
+    const wordCountRef = useRef<number>(0);
     const SILENCE_BEFORE_COUNTDOWN_MS = 5_000;
     const AUTO_ADVANCE_COUNTDOWN_S = 5;
+    const MIN_SPEECH_DURATION_MS = 1500; // Abaikan suara < 1.5 detik (batuk, hem hem, noise)
     const form = useForm({
         answers: Object.fromEntries(
             session.questions.map((question) => [
@@ -570,6 +619,7 @@ export default function CandidateAiInterviewShow({
         source.connect(analyser);
 
         const samples = new Uint8Array(analyser.fftSize);
+        const waveformBars = 32; // Number of bars in waveform
 
         const updateLevel = () => {
             analyser.getByteTimeDomainData(samples);
@@ -584,10 +634,25 @@ export default function CandidateAiInterviewShow({
             const rms = Math.sqrt(sumSquares / samples.length);
             setMicLevel(Math.min(100, Math.round(rms * 320)));
 
+            // Generate waveform data for visualization
+            const waveform = [];
+            const step = Math.floor(samples.length / waveformBars);
+            for (let i = 0; i < waveformBars; i++) {
+                const start = i * step;
+                let max = 0;
+                for (let j = 0; j < step; j++) {
+                    const value = Math.abs((samples[start + j] - 128) / 128);
+                    if (value > max) max = value;
+                }
+                waveform.push(max);
+            }
+            setWaveformData(waveform);
+
             micLevelFrameRef.current = requestAnimationFrame(updateLevel);
         };
 
         audioContextRef.current = audioContext;
+        analyserRef.current = analyser;
         micLevelFrameRef.current = requestAnimationFrame(updateLevel);
     };
 
@@ -829,6 +894,14 @@ export default function CandidateAiInterviewShow({
         const jitterScore = scoreFromJitter(jitterMs);
 
         setSignalQuality(worstSignal(rttScore, lossScore, jitterScore));
+
+        // Update connection health metrics for UI display
+        setConnectionHealth({
+            rtt: roundTripTimeMs,
+            jitter: jitterMs,
+            packetLoss: packetLossPct,
+            bitrate: null, // Could be calculated from bytesReceived over time
+        });
     };
 
     const startConnectionMonitor = () => {
@@ -847,6 +920,16 @@ export default function CandidateAiInterviewShow({
 
         const handleOnlineState = () => {
             setNetworkOnline(window.navigator.onLine);
+
+            // Attempt to reconnect voice AI if it was disconnected
+            if (window.navigator.onLine && peerConnectionRef.current && peerConnectionRef.current.connectionState === 'disconnected') {
+                console.log('[Voice AI] Network back, attempting ICE restart');
+                try {
+                    peerConnectionRef.current.restartIce();
+                } catch (err) {
+                    console.warn('[Voice AI] Failed to restart ICE:', err);
+                }
+            }
         };
 
         handleOnlineState();
@@ -897,6 +980,85 @@ export default function CandidateAiInterviewShow({
 
         return () => window.clearInterval(interval);
     }, [connected]);
+
+    // Auto-save session state to localStorage for recovery
+    useEffect(() => {
+        if (!connected || !hasQuestionStarted) {
+            return;
+        }
+
+        const saveInterval = window.setInterval(() => {
+            const backupData = {
+                currentQuestion,
+                elapsedSeconds,
+                transcript,
+                answers: form.data.answers,
+                timestamp: Date.now(),
+            };
+            try {
+                localStorage.setItem(sessionBackupKey, JSON.stringify(backupData));
+            } catch (error) {
+                console.warn('[Session Backup] Failed to save:', error);
+            }
+        }, 5000); // Save every 5 seconds
+
+        return () => window.clearInterval(saveInterval);
+    }, [connected, hasQuestionStarted, currentQuestion, elapsedSeconds, transcript, form.data.answers, sessionBackupKey]);
+
+    // Restore session state from localStorage on mount
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        try {
+            const backupData = localStorage.getItem(sessionBackupKey);
+            if (backupData) {
+                const parsed = JSON.parse(backupData);
+                const backupAge = Date.now() - parsed.timestamp;
+
+                // Only restore if backup is less than 1 hour old
+                if (backupAge < 3600000) {
+                    console.log('[Session Backup] Restoring from backup:', parsed);
+                    setCurrentQuestion(parsed.currentQuestion);
+                    setElapsedSeconds(parsed.elapsedSeconds);
+                    setTranscript(parsed.transcript);
+                    form.setData('answers', parsed.answers);
+                    toast.info('Sesi dipulihkan dari backup terakhir.');
+                } else {
+                    console.log('[Session Backup] Backup too old, clearing');
+                    localStorage.removeItem(sessionBackupKey);
+                }
+            }
+        } catch (error) {
+            console.warn('[Session Backup] Failed to restore:', error);
+        }
+    }, [sessionBackupKey]);
+
+    // Update speech analytics when transcript changes
+    useEffect(() => {
+        if (transcript.length > 0) {
+            updateSpeechAnalytics();
+        }
+    }, [transcript]);
+
+    // Warn user before leaving page during active interview
+    useEffect(() => {
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            // Show warning if interview is in progress or has started
+            if (session.status !== 'completed' && (connected || hasQuestionStarted)) {
+                event.preventDefault();
+                event.returnValue = 'Anda yakin ingin meninggalkan halaman ini? Progress interview mungkin hilang.';
+                return 'Anda yakin ingin meninggalkan halaman ini? Progress interview mungkin hilang.';
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [connected, hasQuestionStarted, session.status]);
 
     useEffect(() => {
         if (!connected || !hasTimerExpired || hasAutoSubmittedRef.current) {
@@ -1029,6 +1191,10 @@ export default function CandidateAiInterviewShow({
         remoteAudioRef.current.muted = false;
         remoteAudioRef.current.volume = 1;
 
+        // Improve audio playback settings to reduce stuttering
+        remoteAudioRef.current.autoplay = true;
+        remoteAudioRef.current.preload = 'auto';
+
         const playResult = remoteAudioRef.current.play();
 
         if (playResult && typeof playResult.then === 'function') {
@@ -1053,7 +1219,7 @@ export default function CandidateAiInterviewShow({
             {},
             {
                 preserveScroll: true,
-                onError: () => toast.error('Gagal mengonfirmasi undangan.'),
+                onError: () => toast.error('Gagal mengonfirmasi undangan. Coba refresh halaman dan ulangi.'),
             },
         );
     };
@@ -1064,7 +1230,7 @@ export default function CandidateAiInterviewShow({
             {},
             {
                 preserveScroll: true,
-                onError: () => toast.error('Gagal menolak undangan.'),
+                onError: () => toast.error('Gagal menolak undangan. Coba refresh halaman dan ulangi.'),
             },
         );
     };
@@ -1082,9 +1248,7 @@ export default function CandidateAiInterviewShow({
                 },
                 onError: () => {
                     toast.error(
-                        t(
-                            'candidate.ai_interview_show.check_reschedule_detail',
-                        ),
+                        'Gagal mengirim permintaan reschedule. Periksa detail dan coba lagi.',
                     );
                 },
             },
@@ -1100,7 +1264,7 @@ export default function CandidateAiInterviewShow({
             {
                 preserveScroll: true,
                 onError: () =>
-                    toast.error(t('candidate.ai_interview_show.start_failed')),
+                    toast.error('Gagal memulai sesi. Coba refresh halaman dan ulangi.'),
             },
         );
     };
@@ -1219,6 +1383,8 @@ export default function CandidateAiInterviewShow({
             const peerConnection = new RTCPeerConnection({
                 iceServers: ICE_SERVERS,
                 bundlePolicy: 'max-bundle',
+                iceTransportPolicy: 'all', // Allow both relay and direct connections
+                rtcpMuxPolicy: 'require', // Reduce overhead
             });
             peerConnectionRef.current = peerConnection;
             lastInboundAudioStatsRef.current = null;
@@ -1228,11 +1394,24 @@ export default function CandidateAiInterviewShow({
                 attachRemoteAudio();
             };
 
+            // Monitor overall connection state for complete failures
+            peerConnection.onconnectionstatechange = () => {
+                const state = peerConnection.connectionState;
+                console.debug('[Voice AI] Connection state:', state);
+
+                if (state === 'failed' || state === 'disconnected') {
+                    console.error('[Voice AI] Connection failed/disconnected:', state);
+                    toast.error('Koneksi voice AI terputus. Periksa koneksi internet dan coba lagi.');
+                    stopRealtime();
+                }
+            };
+
             // Auto recovery: network blip (WiFi handoff, 4G fluctuation) bikin ICE
             // sebentar disconnected. Browser akan reconnect sendiri kalau punya
-            // STUN/host candidates valid. Kalau gagal pulih dalam 8 detik, kita
-            // surface warning + coba restartIce sebagai best-effort.
+            // STUN/host candidates valid. Kalau gagal pulih dalam 5 detik, kita
+            // coba restartIce. Kalau masih gagal dalam 10 detik, surface warning.
             let iceRecoveryTimer: number | null = null;
+            let iceFailureTimer: number | null = null;
             peerConnection.oniceconnectionstatechange = () => {
                 const state = peerConnection.iceConnectionState;
 
@@ -1249,34 +1428,66 @@ export default function CandidateAiInterviewShow({
                                         'failed')
                             ) {
                                 try {
+                                    console.warn('[Voice AI] Attempting ICE restart');
                                     peerConnection.restartIce();
                                 } catch (error) {
-                                    console.warn(
-                                        'Voice AI: restartIce failed',
+                                    console.error(
+                                        '[Voice AI] restartIce failed',
                                         error,
                                     );
                                 }
                             }
-                        }, 8000);
+                        }, 5000);
                     }
 
                     return;
                 }
 
+                if (state === 'failed') {
+                    if (iceFailureTimer === null) {
+                        iceFailureTimer = window.setTimeout(() => {
+                            iceFailureTimer = null;
+
+                            if (
+                                peerConnectionRef.current === peerConnection &&
+                                peerConnection.iceConnectionState === 'failed'
+                            ) {
+                                toast.error(
+                                    'Koneksi voice AI terputus. Coba pindah ke jaringan yang lebih stabil lalu mulai ulang.',
+                                );
+                            }
+                        }, 10000);
+                    }
+
+                    return;
+                }
+
+                // Clear timers on successful states
                 if (iceRecoveryTimer !== null) {
                     window.clearTimeout(iceRecoveryTimer);
                     iceRecoveryTimer = null;
                 }
 
-                if (state === 'failed') {
-                    toast.error(
-                        'Koneksi voice AI terputus. Coba pindah ke jaringan yang lebih stabil lalu mulai ulang.',
-                    );
+                if (iceFailureTimer !== null) {
+                    window.clearTimeout(iceFailureTimer);
+                    iceFailureTimer = null;
                 }
             };
 
             stream.getTracks().forEach((track) => {
-                peerConnection.addTrack(track, stream);
+                if (track.kind === 'audio') {
+                    // Prefer OPUS codec for better audio quality
+                    const sender = peerConnection.addTrack(track, stream);
+                    const params = sender.getParameters();
+                    if (params.encodings) {
+                        params.encodings.forEach((encoding) => {
+                            encoding.scaleResolutionDownBy = 1;
+                        });
+                    }
+                    void sender.setParameters(params);
+                } else {
+                    peerConnection.addTrack(track, stream);
+                }
             });
 
             // Mulai dengan mic disable — AI bicara greeting+Q1 dulu, baru
@@ -1285,6 +1496,18 @@ export default function CandidateAiInterviewShow({
 
             if (audioTrack) {
                 audioTrack.enabled = false;
+
+                // Apply echo cancellation and noise suppression if supported
+                const settings = audioTrack.getSettings();
+                if (settings.echoCancellation !== undefined) {
+                    void audioTrack.applyConstraints({
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                    }).catch((err) => {
+                        console.warn('[Voice AI] Failed to apply audio constraints:', err);
+                    });
+                }
             }
 
             const dataChannel =
@@ -1298,6 +1521,22 @@ export default function CandidateAiInterviewShow({
             };
             dataChannel.onmessage = (event) => {
                 handleRealtimeEvent(String(event.data));
+            };
+            dataChannel.onclose = () => {
+                console.warn('[Voice AI] Data channel closed unexpectedly');
+                toast.warning('Koneksi data AI terputus. Memulai ulang...');
+                // Attempt to reconnect if still connected via WebRTC
+                if (peerConnection.connectionState === 'connected') {
+                    try {
+                        stopRealtime();
+                        void connectRealtime();
+                    } catch (error) {
+                        console.error('[Voice AI] Reconnect failed', error);
+                    }
+                }
+            };
+            dataChannel.onerror = (error) => {
+                console.error('[Voice AI] Data channel error', error);
             };
 
             const offer = await peerConnection.createOffer();
@@ -1328,12 +1567,23 @@ export default function CandidateAiInterviewShow({
             startConnectionMonitor();
             startRecording();
             toast.success('Voice AI terhubung.');
+            setVoiceFailureCount(0);
+            setShowFallbackOption(false);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : 'Gagal menghubungkan voice AI.',
-            );
+            setVoiceFailureCount((prev) => prev + 1);
+
+            if (voiceFailureCount >= 2) {
+                setShowFallbackOption(true);
+                toast.error(
+                    'Voice AI gagal terhubung. Coba mode teks sebagai alternatif.',
+                );
+            } else {
+                toast.error(
+                    error instanceof Error
+                        ? error.message
+                        : 'Gagal menghubungkan voice AI.',
+                );
+            }
             stopRealtime();
         } finally {
             setConnecting(false);
@@ -1474,6 +1724,7 @@ export default function CandidateAiInterviewShow({
         dataChannelRef.current = null;
         lastInboundAudioStatsRef.current = null;
         lastResponseDoneAtRef.current = 0;
+        lastValidQuestionIndexRef.current = 0;
         localStreamRef.current?.getTracks().forEach((track) => track.stop());
         localStreamRef.current = null;
         remoteAudioRef.current?.pause();
@@ -1513,6 +1764,63 @@ export default function CandidateAiInterviewShow({
         audioTrack.enabled = !nextMuted && !aiSpeaking;
     };
 
+    const togglePause = () => {
+        if (isPaused) {
+            // Resume
+            setIsPaused(false);
+            toast.info('Interview dilanjutkan.');
+        } else {
+            // Pause
+            setIsPaused(true);
+            clearAutoAdvanceTimers();
+            toast.info('Interview dijeda. Klik lanjutkan saat siap.');
+        }
+    };
+
+    const calculateSimilarity = (str1: string, str2: string): number => {
+        if (!str1 || !str2) return 0;
+
+        const words1 = str1.split(/\s+/);
+        const words2 = str2.split(/\s+/);
+
+        if (words1.length === 0 || words2.length === 0) return 0;
+
+        const set1 = new Set(words1);
+        const set2 = new Set(words2);
+
+        const intersection = new Set([...set1].filter(x => set2.has(x)));
+        const union = new Set([...set1, ...set2]);
+
+        return intersection.size / union.size;
+    };
+
+    const updateSpeechAnalytics = () => {
+        const totalDurationMs = totalSpeechDurationRef.current;
+        const totalDurationMinutes = totalDurationMs / 60000;
+        const wordsPerMinute = totalDurationMinutes > 0
+            ? Math.round(wordCountRef.current / totalDurationMinutes)
+            : 0;
+
+        // Count filler words from transcript
+        const fillerWords = ['um', 'uh', 'eh', 'mm', 'ehm', 'an', 'kan', 'sih', 'ya', 'eh'];
+        const transcriptText = transcript
+            .filter(item => item.speaker === 'Kandidat')
+            .map(item => item.text.toLowerCase())
+            .join(' ');
+        const fillerCount = fillerWords.reduce((count, word) => {
+            const regex = new RegExp(`\\b${word}\\b`, 'gi');
+            const matches = transcriptText.match(regex);
+            return count + (matches ? matches.length : 0);
+        }, 0);
+
+        setSpeechAnalytics({
+            totalSpeechDuration: totalDurationMs,
+            averageSpeechSpeed: wordsPerMinute,
+            pauseCount: transcript.filter(item => item.speaker === 'Kandidat').length,
+            fillerWordCount: fillerCount,
+        });
+    };
+
     const submitInterview = async () => {
         if (autoSubmitTimeoutRef.current !== null) {
             window.clearTimeout(autoSubmitTimeoutRef.current);
@@ -1520,6 +1828,13 @@ export default function CandidateAiInterviewShow({
         }
 
         setTimerExpiryNoticeVisible(false);
+
+        // Show review modal before actual submit
+        setShowReviewModal(true);
+    };
+
+    const confirmSubmitInterview = async () => {
+        setShowReviewModal(false);
 
         const recordingBlob = await finalizeRecording();
         stopRealtime();
@@ -1656,7 +1971,14 @@ export default function CandidateAiInterviewShow({
                     }
 
                     setAutoAdvanceRemaining(null);
-                    requestAiResponse();
+
+                    // Hanya auto-advance jika ada transkripsi valid (user benar-benar menjawab)
+                    if (hasValidTranscriptRef.current) {
+                        requestAiResponse();
+                    } else {
+                        console.debug('[Voice AI] No valid transcript, skipping auto-advance');
+                        toast.info('Tidak terdeteksi jawaban. Silakan jawab atau klik "Lanjut".');
+                    }
                 } else {
                     setAutoAdvanceRemaining(remaining);
                 }
@@ -1705,6 +2027,7 @@ export default function CandidateAiInterviewShow({
 
             if (event.type === 'response.created') {
                 clearAutoAdvanceTimers();
+                hasValidTranscriptRef.current = false;
                 setTurnState('ai-talking');
                 applyMicGate(true);
             }
@@ -1736,9 +2059,12 @@ export default function CandidateAiInterviewShow({
                 sinceAiDone < ECHO_SUPPRESSION_MS;
 
             if (event.type === 'input_audio_buffer.speech_started') {
-                if (inEchoWindow) {
+                if (inEchoWindow || isPaused) {
                     return;
                 }
+                speechStartedAtRef.current = Date.now();
+                speechStartTimeRef.current = Date.now(); // Track untuk analytics
+                hasValidTranscriptRef.current = false; // Reset untuk jawaban baru
                 setTurnState((current) => {
                     if (current === 'ai-talking' || current === 'ai-thinking') {
                         return current;
@@ -1754,11 +2080,43 @@ export default function CandidateAiInterviewShow({
                 if (inEchoWindow) {
                     return;
                 }
+
+                // Cek durasi speech - abaikan jika terlalu pendek (batuk, noise)
+                const speechDuration = Date.now() - speechStartedAtRef.current;
+                if (speechDuration < MIN_SPEECH_DURATION_MS) {
+                    console.debug('[Voice AI] Ignoring short speech:', speechDuration, 'ms');
+                    recentShortSpeechCountRef.current += 1;
+
+                    // Jika terlalu banyak speech pendek berulang, disable auto-advance sementara
+                    if (recentShortSpeechCountRef.current >= 3) {
+                        console.warn('[Voice AI] Too many short speeches, disabling auto-advance');
+                        clearAutoAdvanceTimers();
+                        toast.warning('Terlalu banyak noise. Tekan tombol "Lanjut" saat selesai menjawab.');
+                        recentShortSpeechCountRef.current = 0;
+                    }
+
+                    return;
+                }
+
+                // Reset counter jika speech valid
+                recentShortSpeechCountRef.current = 0;
+
+                // Update analytics: track speech duration
+                totalSpeechDurationRef.current += speechDuration;
+
+                // Jika speech duration cukup panjang (> 5 detik), mark sebagai valid meskipun transkrip di-skip
+                // Ini untuk fallback agar interview tidak stuck jika transkrip di-filter
+                if (speechDuration > 5000) {
+                    console.log('[Voice AI] Long speech detected, marking as valid despite transcript filter');
+                    hasValidTranscriptRef.current = true;
+                }
+
                 setTurnState((current) => {
                     if (current !== 'user-answering') {
                         return current;
                     }
 
+                    setTurnState('user-paused');
                     startAutoAdvanceTimers();
 
                     return 'user-paused';
@@ -1779,7 +2137,42 @@ export default function CandidateAiInterviewShow({
                     'conversation.item.input_audio_transcription.completed' &&
                 event.transcript
             ) {
-                appendTranscript('Kandidat', event.transcript);
+                const transcriptText = event.transcript.trim();
+
+                // Debug log untuk investigasi transcription ngaco
+                console.log('[Transcription] User transcript:', transcriptText);
+                console.log('[Transcription] Echo window:', inEchoWindow);
+                console.log('[Transcription] Time since AI done:', Date.now() - lastResponseDoneAtRef.current);
+
+                // Filter transkrip yang jelas-jelas echo dari AI (cocok dengan transcript AI terakhir)
+                const lastAiTranscript = transcript
+                    .filter(item => item.speaker === 'AI')
+                    .slice(-1)[0]?.text.toLowerCase() || '';
+                const transcriptLower = transcriptText.toLowerCase();
+
+                // Jika transkrip user SANGAT mirip dengan AI transcript (lebih dari 80% match), skip
+                // Threshold dinaikkan dari 0.5 ke 0.8 agar tidak terlalu strict
+                if (lastAiTranscript.length > 0) {
+                    const similarity = calculateSimilarity(transcriptLower, lastAiTranscript);
+                    if (similarity > 0.8) {
+                        console.warn('[Transcription] Skipping echo transcript, similarity:', similarity);
+                        return;
+                    }
+                }
+
+                // Hanya skip jika masih dalam echo window DAN transkrip sangat pendek (< 3 kata)
+                // Ini untuk mengizinkan transkrip valid yang datang sedikit setelah AI selesai
+                if (inEchoWindow && transcriptText.split(/\s+/).length < 3) {
+                    console.warn('[Transcription] Skipping short transcript in echo window');
+                    return;
+                }
+
+                hasValidTranscriptRef.current = true;
+                appendTranscript('Kandidat', transcriptText);
+
+                // Track word count for analytics
+                const words = transcriptText.split(/\s+/).filter((w: string) => w.length > 0);
+                wordCountRef.current += words.length;
             }
         } catch (err) {
             console.warn('[Realtime] failed to parse event', err, rawEvent);
@@ -1806,13 +2199,18 @@ export default function CandidateAiInterviewShow({
                 questionIndex >= 0 &&
                 questionIndex < session.questions.length
             ) {
-                setHasQuestionStarted(true);
-                setActiveAiQuestionText(
-                    trimmedText.replace(/\bQ\s*\d+\s*[:-]?\s*/i, ''),
-                );
-                setCurrentQuestion((current) =>
-                    questionIndex > current ? questionIndex : current,
-                );
+                // Hanya update jika question index valid dan tidak mundur dari last valid
+                const lastValid = lastValidQuestionIndexRef.current;
+                if (questionIndex >= lastValid) {
+                    lastValidQuestionIndexRef.current = questionIndex;
+                    setHasQuestionStarted(true);
+                    setActiveAiQuestionText(
+                        trimmedText.replace(/\bQ\s*\d+\s*[:-]?\s*/i, ''),
+                    );
+                    setCurrentQuestion((current) =>
+                        questionIndex > current ? questionIndex : current,
+                    );
+                }
 
                 return;
             }
@@ -1836,12 +2234,17 @@ export default function CandidateAiInterviewShow({
         );
 
         if (matchedQuestion) {
-            setHasQuestionStarted(true);
-            setCurrentQuestion((current) =>
-                matchedQuestion.index > current
-                    ? matchedQuestion.index
-                    : current,
-            );
+            // Hanya update jika matched index tidak mundur dari last valid
+            const lastValid = lastValidQuestionIndexRef.current;
+            if (matchedQuestion.index >= lastValid) {
+                lastValidQuestionIndexRef.current = matchedQuestion.index;
+                setHasQuestionStarted(true);
+                setCurrentQuestion((current) =>
+                    matchedQuestion.index > current
+                        ? matchedQuestion.index
+                        : current,
+                );
+            }
         }
     };
 
@@ -1871,33 +2274,47 @@ export default function CandidateAiInterviewShow({
 
     if (connected && isVoiceInterview) {
         return (
-            <ActiveVoiceSession
-                session={session}
-                activeQuestion={activeQuestion}
-                currentQuestion={currentQuestion}
-                remainingSeconds={remainingSeconds}
-                interviewDurationSeconds={interviewDurationSeconds}
-                transcript={transcript}
-                hasQuestionStarted={hasQuestionStarted}
-                hasSentGreeting={hasSentGreeting}
-                activeAiQuestionText={activeAiQuestionText}
-                timerExpiryNoticeVisible={timerExpiryNoticeVisible}
-                muted={muted}
-                formProcessing={form.processing}
-                onNext={() => advanceToNextQuestion()}
-                onMute={toggleMute}
-                onStop={stopRealtime}
-                onGreet={sendGreeting}
-                onSubmit={submitInterview}
-                onUserDone={handleUserDone}
-                onKeepTalking={handleKeepTalking}
-                turnState={turnState}
-                autoAdvanceRemaining={autoAdvanceRemaining}
-                remoteAudioRef={remoteAudioRef}
-                signalQuality={signalQuality}
-                cameraStream={cameraStream}
-                isPractice={isPractice}
-            />
+            <>
+                <ActiveVoiceSession
+                    session={session}
+                    activeQuestion={activeQuestion}
+                    currentQuestion={currentQuestion}
+                    remainingSeconds={remainingSeconds}
+                    interviewDurationSeconds={interviewDurationSeconds}
+                    transcript={transcript}
+                    hasQuestionStarted={hasQuestionStarted}
+                    hasSentGreeting={hasSentGreeting}
+                    activeAiQuestionText={activeAiQuestionText}
+                    timerExpiryNoticeVisible={timerExpiryNoticeVisible}
+                    muted={muted}
+                    formProcessing={form.processing}
+                    onNext={() => advanceToNextQuestion()}
+                    onMute={toggleMute}
+                    onStop={stopRealtime}
+                    onGreet={sendGreeting}
+                    onSubmit={submitInterview}
+                    onUserDone={handleUserDone}
+                    onKeepTalking={handleKeepTalking}
+                    onPause={togglePause}
+                    isPaused={isPaused}
+                    speechAnalytics={speechAnalytics}
+                    turnState={turnState}
+                    autoAdvanceRemaining={autoAdvanceRemaining}
+                    remoteAudioRef={remoteAudioRef}
+                    signalQuality={signalQuality}
+                    connectionHealth={connectionHealth}
+                    cameraStream={cameraStream}
+                    isPractice={isPractice}
+                />
+                <ReviewModal
+                    show={showReviewModal}
+                    onClose={() => setShowReviewModal(false)}
+                    onConfirm={confirmSubmitInterview}
+                    questions={session.questions}
+                    answers={form.data.answers}
+                    processing={form.processing}
+                />
+            </>
         );
     }
 
@@ -1905,6 +2322,14 @@ export default function CandidateAiInterviewShow({
         <>
             <Head title={t('candidate.ai_interview_show.preparation_title')} />
             {questionsPreparing && <QuestionsPreparingOverlay />}
+            <ReviewModal
+                show={showReviewModal}
+                onClose={() => setShowReviewModal(false)}
+                onConfirm={confirmSubmitInterview}
+                questions={session.questions}
+                answers={form.data.answers}
+                processing={form.processing}
+            />
             <div className="min-h-screen bg-slate-50">
                 {/* Hero header */}
                 <div className="relative overflow-hidden bg-linear-to-br from-[#01296A] via-[#013580] to-[#01296A] px-4 pt-8 pb-8 md:px-8 md:pt-10 md:pb-10 lg:px-12">
@@ -2030,6 +2455,20 @@ export default function CandidateAiInterviewShow({
                                                           : 'Tidak Ditemukan'
                                             }
                                         />
+                                        {micPermission === 'granted' && waveformData.length > 0 && (
+                                            <div className="flex items-end gap-0.5 h-4">
+                                                {waveformData.map((value, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className="w-1 bg-primary-500 rounded-full transition-all duration-75"
+                                                        style={{
+                                                            height: `${Math.max(4, value * 100)}%`,
+                                                            opacity: value > 0.1 ? 1 : 0.3,
+                                                        }}
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
                                         <DeviceStatusPill
                                             icon={Radio}
                                             label={t(
@@ -2064,7 +2503,62 @@ export default function CandidateAiInterviewShow({
                                                 ).label
                                             }
                                         />
+                                        {(connectionHealth.rtt !== null ||
+                                            connectionHealth.jitter !== null ||
+                                            connectionHealth.packetLoss !== null) && (
+                                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                                                {connectionHealth.rtt !== null && (
+                                                    <span>
+                                                        RTT: {Math.round(connectionHealth.rtt)}ms
+                                                    </span>
+                                                )}
+                                                {connectionHealth.jitter !== null && (
+                                                    <>
+                                                        <span>•</span>
+                                                        <span>
+                                                            Jitter: {Math.round(connectionHealth.jitter)}ms
+                                                        </span>
+                                                    </>
+                                                )}
+                                                {connectionHealth.packetLoss !== null && (
+                                                    <>
+                                                        <span>•</span>
+                                                        <span>
+                                                            Loss: {connectionHealth.packetLoss.toFixed(1)}%
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
+
+                                    {showFallbackOption && (
+                                        <div className="border-t border-amber-100 bg-amber-50/60 px-4 py-3">
+                                            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                                                <div className="flex items-start gap-2.5">
+                                                    <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
+                                                    <div className="text-[13px] leading-relaxed text-amber-900">
+                                                        <p className="font-semibold">
+                                                            Voice AI tidak dapat terhubung
+                                                        </p>
+                                                        <p className="text-amber-700/90">
+                                                            Koneksi voice AI gagal beberapa kali. Kamu bisa lanjut dengan mode teks sebagai alternatif.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="border-amber-400 bg-white text-amber-900 hover:bg-amber-100"
+                                                    onClick={() => {
+                                                        window.location.href = CandidateAiInterviewController.show.url(session.id) + '?mode=text';
+                                                    }}
+                                                >
+                                                    Gunakan Mode Teks
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {(micPermission === 'denied' ||
                                         micErrorKind === 'not-found' ||
@@ -3418,10 +3912,14 @@ function ActiveVoiceSession({
     onSubmit,
     onUserDone,
     onKeepTalking,
+    onPause,
+    isPaused,
+    speechAnalytics,
     turnState,
     autoAdvanceRemaining,
     remoteAudioRef,
     signalQuality,
+    connectionHealth,
     cameraStream,
     isPractice,
 }: {
@@ -3444,6 +3942,14 @@ function ActiveVoiceSession({
     onSubmit: () => void;
     onUserDone: () => void;
     onKeepTalking: () => void;
+    onPause: () => void;
+    isPaused: boolean;
+    speechAnalytics: {
+        totalSpeechDuration: number;
+        averageSpeechSpeed: number;
+        pauseCount: number;
+        fillerWordCount: number;
+    };
     turnState:
         | 'ai-talking'
         | 'user-turn'
@@ -3453,6 +3959,12 @@ function ActiveVoiceSession({
     autoAdvanceRemaining: number | null;
     remoteAudioRef: React.RefObject<HTMLAudioElement | null>;
     signalQuality: SignalQuality;
+    connectionHealth: {
+        rtt: number | null;
+        jitter: number | null;
+        packetLoss: number | null;
+        bitrate: number | null;
+    };
     cameraStream: MediaStream | null;
     isPractice: boolean;
 }) {
@@ -3723,6 +4235,27 @@ function ActiveVoiceSession({
                             <Button
                                 size="lg"
                                 variant="outline"
+                                className={cn(
+                                    'w-full border-primary-200 bg-white/70 text-slate-700 hover:border-primary-300 hover:bg-white hover:text-slate-900',
+                                    isPaused && 'bg-amber-50 border-amber-300 text-amber-800',
+                                )}
+                                onClick={onPause}
+                            >
+                                {isPaused ? (
+                                    <>
+                                        <Play className="size-4" />
+                                        Lanjutkan
+                                    </>
+                                ) : (
+                                    <>
+                                        <Pause className="size-4" />
+                                        Jeda
+                                    </>
+                                )}
+                            </Button>
+                            <Button
+                                size="lg"
+                                variant="outline"
                                 className="w-full border-primary-200 bg-white/70 text-slate-700 hover:border-primary-300 hover:bg-white hover:text-slate-900"
                                 disabled={
                                     currentQuestion ===
@@ -3882,11 +4415,24 @@ function ActiveVoiceSession({
 
                         {/* Live transcript */}
                         <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-primary-100 bg-white/70 text-left shadow-sm backdrop-blur-sm md:max-w-2xl">
-                            <div className="flex items-center gap-2 border-b border-primary-100/60 px-4 py-2.5">
-                                <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
-                                <p className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
-                                    Live Transcription
-                                </p>
+                            <div className="flex items-center justify-between border-b border-primary-100/60 px-4 py-2.5">
+                                <div className="flex items-center gap-2">
+                                    <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
+                                    <p className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+                                        Live Transcription
+                                    </p>
+                                </div>
+                                {speechAnalytics.totalSpeechDuration > 0 && (
+                                    <div className="flex items-center gap-3 text-[10px] text-slate-500">
+                                        <span className="font-medium">
+                                            {Math.round(speechAnalytics.averageSpeechSpeed)} wpm
+                                        </span>
+                                        <span>•</span>
+                                        <span className="font-medium">
+                                            {speechAnalytics.fillerWordCount} filler
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                             <div className="min-h-16 p-4">
                                 {transcript.length > 0 ? (
@@ -4447,6 +4993,78 @@ function AnswerForm({
                 )}
             </div>
         </form>
+    );
+}
+
+// Review Modal Component
+function ReviewModal({
+    show,
+    onClose,
+    onConfirm,
+    questions,
+    answers,
+    processing,
+}: {
+    show: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    questions: AiInterviewShowProps['session']['questions'];
+    answers: Record<number, string>;
+    processing: boolean;
+}) {
+    if (!show) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <Card className="w-full max-w-2xl">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <ListChecks className="size-5 text-primary-600" />
+                        Review Jawaban
+                    </CardTitle>
+                    <CardDescription>
+                        Periksa jawaban Anda sebelum mengirim ke perusahaan.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 max-h-[60vh] overflow-y-auto">
+                    {questions.map((question, index) => (
+                        <div
+                            key={question.id}
+                            className="rounded-lg border border-slate-200 p-4"
+                        >
+                            <div className="mb-2 flex items-start justify-between gap-2">
+                                <p className="text-sm font-semibold text-slate-900">
+                                    Q{index + 1}: {question.question}
+                                </p>
+                            </div>
+                            <div className="rounded-md bg-slate-50 p-3">
+                                <p className="text-sm text-slate-700">
+                                    {answers[question.id] || 'Belum dijawab'}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
+                </CardContent>
+                <CardFooter className="flex justify-end gap-3">
+                    <Button variant="outline" onClick={onClose}>
+                        Kembali
+                    </Button>
+                    <Button onClick={onConfirm} disabled={processing}>
+                        {processing ? (
+                            <>
+                                <Loader2 className="mr-2 size-4 animate-spin" />
+                                Mengirim...
+                            </>
+                        ) : (
+                            <>
+                                <Send className="mr-2 size-4" />
+                                Kirim Jawaban
+                            </>
+                        )}
+                    </Button>
+                </CardFooter>
+            </Card>
+        </div>
     );
 }
 
