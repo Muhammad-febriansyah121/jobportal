@@ -37,6 +37,7 @@ class CandidateOnboardingController extends Controller
             'profile' => $this->profilePayload($candidate),
             'industries' => $this->industries(),
             'skills' => $this->skills(),
+            'skillCategories' => $this->skillCategories(),
         ]);
     }
 
@@ -412,6 +413,19 @@ class CandidateOnboardingController extends Controller
                 'value' => (string) $skill->id,
                 'label' => $skill->name,
             ])
+            ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function skillCategories(): array
+    {
+        return Skill::query()
+            ->whereNotNull('category')
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category')
             ->all();
     }
 }

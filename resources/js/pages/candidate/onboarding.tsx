@@ -47,6 +47,7 @@ type OnboardingProps = {
     };
     industries: Option[];
     skills: Option[];
+    skillCategories: string[];
 };
 
 type CvExperience = {
@@ -83,6 +84,7 @@ export default function CandidateOnboarding({
     profile,
     industries,
     skills,
+    skillCategories,
 }: OnboardingProps) {
     const { t } = useTranslate();
     const [step, setStep] = useState<Step>('choice');
@@ -129,6 +131,7 @@ export default function CandidateOnboarding({
             cvPrefill={cvPrefill}
             industries={industries}
             skills={skills}
+            skillCategories={skillCategories}
             t={t}
         />
     );
@@ -526,12 +529,14 @@ function OnboardingForm({
     cvPrefill,
     industries,
     skills,
+    skillCategories,
     t,
 }: {
     profile: OnboardingProps['profile'];
     cvPrefill: CvPrefill | null;
     industries: Option[];
     skills: Option[];
+    skillCategories: string[];
     t: (key: string) => string;
 }) {
     const merged = {
@@ -622,10 +627,9 @@ function OnboardingForm({
                 : prev.filter((_, i) => i !== index),
         );
 
-    const skillLabels = skills.map((s) => s.label);
     const interestChecklist =
-        skillLabels.length > 0
-            ? skillLabels
+        skillCategories.length > 0
+            ? skillCategories
             : [
                   'Backend Developer',
                   'Frontend Developer',
