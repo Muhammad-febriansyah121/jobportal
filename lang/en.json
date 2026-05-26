@@ -1062,6 +1062,8 @@
     "candidate.onboarding.search_skill_placeholder": "Search skill...",
     "candidate.onboarding.skill_selected": "selected",
     "candidate.onboarding.skill_not_found": "Skill not found.",
+    "candidate.onboarding.add_skill": "Add",
+    "candidate.onboarding.add_skill_placeholder": "Not in the list? Type your own skill...",
     "candidate.onboarding.additional_records_hint": "AI will also save :exp additional work experiences and :edu additional educations from your CV.",
     "candidate.onboarding.work_experience": "Work Experience",
     "candidate.onboarding.work_experience_description": "Add as many work experiences as you have. Leave empty if you have none yet.",

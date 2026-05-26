@@ -73,6 +73,47 @@ test('candidate can complete onboarding and attach primary skills', function () 
     expect($candidate->refresh()->onboarding_completed_at)->toBeNull();
 });
 
+test('candidate can add custom skills during onboarding', function () {
+    $candidate = User::factory()->candidate()->create();
+    $existing = Skill::create(['name' => 'Laravel', 'slug' => 'laravel']);
+
+    $this->actingAs($candidate)
+        ->post(route('candidate.onboarding.store'), [
+            'full_name' => 'Budi Santoso',
+            'work_mode_pref' => 'remote',
+            'skill_ids' => [$existing->id],
+            'new_skills' => ['Rust', 'WebAssembly', 'Rust'],
+        ])
+        ->assertRedirect(route('candidate.dashboard'));
+
+    $candidateProfile = $candidate->refresh()->candidateProfile()->firstOrFail();
+
+    $this->assertDatabaseHas('skills', ['name' => 'Rust', 'slug' => 'rust']);
+    $this->assertDatabaseHas('skills', ['name' => 'WebAssembly', 'slug' => 'webassembly']);
+
+    expect(Skill::where('slug', 'rust')->count())->toBe(1);
+    expect($candidateProfile->skills()->pluck('skills.id'))
+        ->toContain($existing->id, Skill::where('slug', 'rust')->value('id'));
+});
+
+test('candidate onboarding reuses an existing skill instead of duplicating it', function () {
+    $candidate = User::factory()->candidate()->create();
+    $existing = Skill::create(['name' => 'Go', 'slug' => 'go']);
+
+    $this->actingAs($candidate)
+        ->post(route('candidate.onboarding.store'), [
+            'full_name' => 'Citra',
+            'work_mode_pref' => 'remote',
+            'new_skills' => ['go'],
+        ])
+        ->assertRedirect(route('candidate.dashboard'));
+
+    expect(Skill::where('slug', 'go')->count())->toBe(1);
+
+    $candidateProfile = $candidate->refresh()->candidateProfile()->firstOrFail();
+    expect($candidateProfile->skills()->pluck('skills.id'))->toContain($existing->id);
+});
+
 test('candidate onboarding saves multiple experiences and educations', function () {
     $candidate = User::factory()->candidate()->create();
 

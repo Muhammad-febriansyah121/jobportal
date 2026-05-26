@@ -39,6 +39,8 @@ class SaveCandidateProfileRequest extends FormRequest
             'portfolio_url' => ['nullable', 'url', 'max:255'],
             'skill_ids' => ['nullable', 'array'],
             'skill_ids.*' => ['integer', 'exists:skills,id'],
+            'new_skills' => ['nullable', 'array', 'max:20'],
+            'new_skills.*' => ['string', 'max:50'],
             'experiences' => ['nullable', 'array', 'max:30'],
             'experiences.*.company_name' => ['nullable', 'string', 'max:255'],
             'experiences.*.job_title' => ['nullable', 'string', 'max:255', 'required_with:experiences.*.company_name'],

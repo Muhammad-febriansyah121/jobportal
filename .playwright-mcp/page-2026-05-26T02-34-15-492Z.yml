@@ -1,0 +1,306 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e7]:
+      - list [ref=e9]:
+        - listitem [ref=e10]:
+          - link "Karivia logo Karivia Kandidat Pilihan" [ref=e11] [cursor=pointer]:
+            - /url: /candidate
+            - img "Karivia logo" [ref=e13]
+            - generic:
+              - generic: Karivia
+              - generic: Kandidat Pilihan
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]:
+            - paragraph [ref=e17]: Ringkasan
+            - list [ref=e18]:
+              - listitem [ref=e19]:
+                - link "Beranda" [ref=e20] [cursor=pointer]:
+                  - /url: /candidate
+                  - img [ref=e21]
+                  - generic [ref=e23]: Beranda
+          - generic [ref=e24]:
+            - paragraph [ref=e25]: Lamaran & Seleksi
+            - list [ref=e26]:
+              - listitem [ref=e27]:
+                - button "Lamaran Saya" [disabled]:
+                  - img
+                  - generic: Lamaran Saya
+              - listitem [ref=e28]:
+                - button "Lowongan Tersimpan" [disabled]:
+                  - img
+                  - generic: Lowongan Tersimpan
+              - listitem [ref=e29]:
+                - button "Jadwal Interview" [disabled]:
+                  - img
+                  - generic: Jadwal Interview
+              - listitem [ref=e30]:
+                - button "Pesan" [disabled]:
+                  - img
+                  - generic: Pesan
+          - generic [ref=e31]:
+            - paragraph [ref=e32]: Tools Jobseeker
+            - list [ref=e33]:
+              - listitem [ref=e34]:
+                - button "Simulasi Interview AI" [disabled]:
+                  - img
+                  - generic: Simulasi Interview AI
+              - listitem [ref=e35]:
+                - button "Pembuatan CV ATS" [disabled]:
+                  - img
+                  - generic: Pembuatan CV ATS
+              - listitem [ref=e36]:
+                - button "Career Coach" [disabled]:
+                  - img
+                  - generic: Career Coach
+          - generic [ref=e37]:
+            - paragraph [ref=e38]: Ulasan
+            - list [ref=e39]:
+              - listitem [ref=e40]:
+                - button "Ulasan Karivia" [disabled]:
+                  - img
+                  - generic: Ulasan Karivia
+              - listitem [ref=e41]:
+                - button "Ulasan Perusahaan" [disabled]:
+                  - img
+                  - generic: Ulasan Perusahaan
+          - generic [ref=e42]:
+            - paragraph [ref=e43]: Akun
+            - list [ref=e44]:
+              - listitem [ref=e45]:
+                - button "Paket & Saldo" [disabled]:
+                  - img
+                  - generic: Paket & Saldo
+              - listitem [ref=e46]:
+                - button "Pengaturan" [disabled]:
+                  - img
+                  - generic: Pengaturan
+        - generic [ref=e47]:
+          - paragraph [ref=e48]: Lengkapi Profil
+          - paragraph [ref=e49]: Menu lain akan terbuka setelah onboarding profil selesai.
+          - link "Isi Profil Sekarang" [ref=e50] [cursor=pointer]:
+            - /url: /candidate/onboarding
+      - generic [ref=e51]:
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - img [ref=e56]
+            - generic [ref=e58]:
+              - paragraph [ref=e59]: Butuh bantuan?
+              - paragraph [ref=e60]: Tim Karivia siap menjawab pertanyaanmu seputar karier, lamaran, dan fitur.
+          - link "Hubungi via WhatsApp" [ref=e61] [cursor=pointer]:
+            - /url: https://wa.me/6281234567890?text=Halo%20Tim%20Karivia%20%F0%9F%91%8B%0A%0ASaya%20Alya%20Prameswari%2C%20butuh%20bantuan%20terkait%20akun%20atau%20fitur%20Karivia.%20Mohon%20panduannya%2C%20terima%20kasih.
+            - text: Hubungi via WhatsApp
+            - img [ref=e62]
+        - generic [ref=e64]:
+          - generic [ref=e65]: Bahasa
+          - button "Bahasa" [ref=e66] [cursor=pointer]:
+            - generic [ref=e67]: 🇮🇩
+            - generic [ref=e68]: id
+    - main [ref=e69]:
+      - generic [ref=e70]:
+        - generic [ref=e71]:
+          - button "Toggle sidebar" [ref=e72]:
+            - img
+            - generic [ref=e73]: Toggle sidebar
+          - generic [ref=e74]:
+            - img [ref=e75]
+            - textbox "Cari pekerjaan, perusahaan, atau skill..." [ref=e78]
+        - generic [ref=e79]:
+          - button "Bahasa" [ref=e80] [cursor=pointer]:
+            - generic [ref=e81]: 🇮🇩
+            - generic [ref=e82]: id
+          - button "Notifikasi" [ref=e83]:
+            - img
+            - generic [ref=e84]: "2"
+          - button "Alya Prameswari Kandidat Pilihan AP" [ref=e86]:
+            - generic [ref=e87]:
+              - generic [ref=e88]: Alya Prameswari
+              - generic [ref=e89]: Kandidat Pilihan
+            - generic [ref=e90]: AP
+      - generic [ref=e93]:
+        - generic [ref=e94]:
+          - generic [ref=e96]:
+            - generic [ref=e97]:
+              - img [ref=e99]
+              - generic [ref=e101]:
+                - paragraph [ref=e102]: Onboarding belum selesai
+                - paragraph [ref=e103]: Selesaikan onboarding untuk membuka pengalaman Karivia sepenuhnya
+            - link "Lanjutkan Onboarding" [ref=e104] [cursor=pointer]:
+              - /url: /candidate/onboarding
+          - generic [ref=e106]:
+            - generic [ref=e107]:
+              - paragraph [ref=e108]: Halo, Ermawan
+              - paragraph [ref=e109]: Ada 1 rekomendasi pekerjaan untukmu hari ini
+              - generic [ref=e110]:
+                - link "Lihat Lowongan Rekomendasi" [ref=e111] [cursor=pointer]:
+                  - /url: /candidate/jobs?tab=recommended
+                - link "Edit Profil" [ref=e112] [cursor=pointer]:
+                  - /url: /candidate/profile
+            - generic [ref=e114]: EB
+          - generic [ref=e115]:
+            - generic [ref=e116]:
+              - img [ref=e118]
+              - generic [ref=e122]:
+                - generic [ref=e123]: "2"
+                - text: Lamaran Aktif
+            - generic [ref=e124]:
+              - img [ref=e126]
+              - generic [ref=e128]:
+                - generic [ref=e129]: "5"
+                - text: Lowongan Tersimpan
+            - generic [ref=e130]:
+              - img [ref=e132]
+              - generic [ref=e136]:
+                - generic [ref=e137]: "0"
+                - text: Wawancara
+            - generic [ref=e138]:
+              - img [ref=e140]
+              - generic [ref=e143]:
+                - generic [ref=e144]: "3"
+                - text: Skill Terverifikasi
+          - generic [ref=e145]:
+            - generic [ref=e147]: Pelacak Lamaran
+            - generic [ref=e149]:
+              - generic [ref=e150]:
+                - generic [ref=e151]:
+                  - img [ref=e153]
+                  - generic [ref=e157]:
+                    - generic [ref=e158]: Full Stack Developer
+                    - generic [ref=e159]: SehatLink Indonesia · 12 Apr 2026
+                - generic [ref=e160]: Wawancara
+              - generic [ref=e161]:
+                - generic [ref=e162]:
+                  - img [ref=e164]
+                  - paragraph [ref=e167]: Terkirim
+                - generic [ref=e168]:
+                  - img [ref=e170]
+                  - paragraph [ref=e173]: Wawancara
+                - generic [ref=e174]:
+                  - generic [ref=e175]: "0"
+                  - paragraph [ref=e177]: Penawaran
+          - generic [ref=e178]:
+            - generic [ref=e180]: Keahlian Anda
+            - generic [ref=e181]:
+              - generic [ref=e182]:
+                - link "React intermediate" [ref=e183] [cursor=pointer]:
+                  - /url: /candidate/ai-interviews
+                  - img [ref=e185]
+                  - generic [ref=e188]:
+                    - generic [ref=e189]: React
+                    - text: intermediate
+                - link "Product Management Terverifikasi" [ref=e190] [cursor=pointer]:
+                  - /url: /candidate/ai-interviews
+                  - img [ref=e192]
+                  - generic [ref=e195]:
+                    - generic [ref=e196]: Product Management
+                    - text: Terverifikasi
+                - link "AWS beginner" [ref=e197] [cursor=pointer]:
+                  - /url: /candidate/ai-interviews
+                  - img [ref=e199]
+                  - generic [ref=e202]:
+                    - generic [ref=e203]: AWS
+                    - text: beginner
+                - link "SQL Terverifikasi" [ref=e204] [cursor=pointer]:
+                  - /url: /candidate/ai-interviews
+                  - img [ref=e206]
+                  - generic [ref=e209]:
+                    - generic [ref=e210]: SQL
+                    - text: Terverifikasi
+                - link "Data Analysis advanced" [ref=e211] [cursor=pointer]:
+                  - /url: /candidate/ai-interviews
+                  - img [ref=e213]
+                  - generic [ref=e216]:
+                    - generic [ref=e217]: Data Analysis
+                    - text: advanced
+                - link "PostgreSQL Terverifikasi" [ref=e218] [cursor=pointer]:
+                  - /url: /candidate/ai-interviews
+                  - img [ref=e220]
+                  - generic [ref=e223]:
+                    - generic [ref=e224]: PostgreSQL
+                    - text: Terverifikasi
+              - link "Tambah Keahlian" [ref=e225] [cursor=pointer]:
+                - /url: /candidate/skills
+          - generic [ref=e226]:
+            - generic [ref=e228]: Jadwal Wawancara
+            - generic [ref=e232]:
+              - paragraph [ref=e233]: Belum ada wawancara mendatang
+              - paragraph [ref=e234]: Jadwal wawancara mendatang akan muncul di sini
+        - complementary [ref=e235]:
+          - generic [ref=e237]:
+            - generic [ref=e238]:
+              - generic [ref=e239]:
+                - generic [ref=e240]: Kelengkapan Profil
+                - generic [ref=e241]: 85%
+              - img [ref=e242]
+            - paragraph [ref=e247]: Lengkapi profil Anda untuk menarik lebih banyak perekrut
+            - generic [ref=e248]:
+              - paragraph [ref=e249]: Belum lengkap
+              - paragraph [ref=e250]: 2 kurang
+              - list [ref=e251]:
+                - listitem [ref=e252]:
+                  - generic [ref=e254]:
+                    - generic [ref=e255]: Ketersediaan kerja
+                    - link "Lengkapi profil Anda" [ref=e256] [cursor=pointer]:
+                      - /url: /candidate/profile
+                - listitem [ref=e257]:
+                  - generic [ref=e259]:
+                    - generic [ref=e260]: Foto profil
+                    - link "Unggah foto profil" [ref=e261] [cursor=pointer]:
+                      - /url: /settings/profile
+            - link "Lengkapi Profil" [ref=e262] [cursor=pointer]:
+              - /url: /candidate/profile
+          - generic [ref=e263]:
+            - generic [ref=e264]:
+              - generic [ref=e265]: Direkomendasikan untuk Anda
+              - link "Lihat semua" [ref=e266] [cursor=pointer]:
+                - /url: /candidate/jobs
+            - link "RA Ipsum qui lorem null RantaiKirim Logistics · Sabang, Aceh Contract Onsite" [ref=e268] [cursor=pointer]:
+              - /url: /candidate/jobs/ipsum-qui-lorem-null
+              - generic [ref=e270]: RA
+              - paragraph [ref=e271]: Ipsum qui lorem null
+              - paragraph [ref=e272]: RantaiKirim Logistics · Sabang, Aceh
+              - generic [ref=e273]:
+                - generic [ref=e274]: Contract
+                - generic [ref=e275]: Onsite
+          - generic [ref=e276]:
+            - generic [ref=e278]: Tips Karier
+            - generic [ref=e279]:
+              - generic [ref=e280]:
+                - generic [ref=e282]: Job Search
+                - generic [ref=e283]:
+                  - paragraph [ref=e284]: Using LinkedIn Effectively for Job Hunting
+                  - paragraph [ref=e285]: 5 menit baca · article
+              - generic [ref=e286]:
+                - img [ref=e288]
+                - generic [ref=e293]:
+                  - generic [ref=e294]: Resume Templates for Fresh Graduates
+                  - text: Resume
+              - generic [ref=e295]:
+                - img [ref=e297]
+                - generic [ref=e302]:
+                  - generic [ref=e303]: Building a Personal Brand on LinkedIn
+                  - text: Career Growth
+          - generic [ref=e304]:
+            - generic [ref=e306]: Buat Draft CV AI
+            - generic [ref=e307]:
+              - generic [ref=e308]:
+                - generic [ref=e309]:
+                  - generic [ref=e310]:
+                    - paragraph [ref=e311]: CV Builder
+                    - paragraph [ref=e312]: Buat CV yang rapi dan ATS-friendly dengan bantuan AI
+                  - img [ref=e313]
+                - generic [ref=e318]:
+                  - paragraph [ref=e319]: Saldo Token AI 0
+                  - paragraph [ref=e320]: Sisa kuota 0
+                  - paragraph [ref=e321]: Draft AI pertama Anda gratis
+              - link "Buka CV Builder" [ref=e323] [cursor=pointer]:
+                - /url: /candidate/cvs
+          - generic [ref=e324]:
+            - generic [ref=e326]: CV Utama
+            - link "CV Aktif 14 Apr 2026" [ref=e328] [cursor=pointer]:
+              - /url: /storage/demo/cvs/candidate-2.pdf
+              - img [ref=e329]
+              - generic [ref=e332]:
+                - generic [ref=e333]: CV Aktif
+                - text: 14 Apr 2026
+  - region "Notifications alt+T"

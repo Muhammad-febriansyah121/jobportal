@@ -1062,6 +1062,8 @@
     "candidate.onboarding.search_skill_placeholder": "Cari skill...",
     "candidate.onboarding.skill_selected": "dipilih",
     "candidate.onboarding.skill_not_found": "Skill tidak ditemukan.",
+    "candidate.onboarding.add_skill": "Tambah",
+    "candidate.onboarding.add_skill_placeholder": "Tidak ada di daftar? Ketik skill sendiri...",
     "candidate.onboarding.additional_records_hint": "AI juga akan menyimpan :exp pengalaman kerja lain dan :edu pendidikan lain dari CV-mu.",
     "candidate.onboarding.work_experience": "Pengalaman Kerja",
     "candidate.onboarding.work_experience_description": "Tambah pengalaman kerja sebanyak yang kamu punya. Boleh dikosongkan kalau belum ada.",

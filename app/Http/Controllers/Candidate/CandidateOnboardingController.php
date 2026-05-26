@@ -46,15 +46,22 @@ class CandidateOnboardingController extends Controller
         $candidate = $resolveCandidateProfile->handle($request->user());
         $data = $request->validated();
         $skillIds = $data['skill_ids'] ?? [];
+        $newSkills = $data['new_skills'] ?? [];
         $experiences = $data['experiences'] ?? [];
         $educations = $data['educations'] ?? [];
-        unset($data['skill_ids'], $data['experiences'], $data['educations']);
+        unset($data['skill_ids'], $data['new_skills'], $data['experiences'], $data['educations']);
 
         $candidate->update($data);
 
-        if ($skillIds !== []) {
+        $allSkillIds = collect($skillIds)
+            ->map(fn ($skillId): int => (int) $skillId)
+            ->merge($this->resolveNewSkillIds($newSkills))
+            ->unique()
+            ->values();
+
+        if ($allSkillIds->isNotEmpty()) {
             $candidate->skills()->syncWithoutDetaching(
-                collect($skillIds)->mapWithKeys(fn (int $skillId): array => [
+                $allSkillIds->mapWithKeys(fn (int $skillId): array => [
                     $skillId => ['proficiency' => 'intermediate'],
                 ])->all()
             );
@@ -400,6 +407,26 @@ class CandidateOnboardingController extends Controller
                 'value' => (string) $industry->id,
                 'label' => $industry->name,
             ])
+            ->all();
+    }
+
+    /**
+     * Resolve candidate-supplied skill names into skill IDs, creating any that don't exist yet.
+     *
+     * @param  array<int, mixed>  $names
+     * @return list<int>
+     */
+    private function resolveNewSkillIds(array $names): array
+    {
+        return collect($names)
+            ->map(fn ($name): string => trim((string) $name))
+            ->filter(fn (string $name): bool => $name !== '')
+            ->unique(fn (string $name): string => Str::lower($name))
+            ->map(fn (string $name): int => Skill::firstOrCreate(
+                ['slug' => Str::slug($name)],
+                ['name' => $name],
+            )->id)
+            ->values()
             ->all();
     }
 

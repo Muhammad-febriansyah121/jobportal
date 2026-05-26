@@ -653,6 +653,8 @@ function OnboardingForm({
     );
     const [skillSearch, setSkillSearch] = useState('');
     const [interestSearch, setInterestSearch] = useState('');
+    const [customSkills, setCustomSkills] = useState<string[]>([]);
+    const [newSkillInput, setNewSkillInput] = useState('');
 
     const normalizedSkillSearch = skillSearch.trim().toLowerCase();
     const filteredSkills = normalizedSkillSearch === ''
@@ -674,6 +676,32 @@ function OnboardingForm({
                 ? previous.filter((id) => id !== skillId)
                 : [...previous, skillId],
         );
+    };
+
+    const addCustomSkill = (): void => {
+        const value = newSkillInput.trim();
+
+        if (value === '') {
+            return;
+        }
+
+        const lower = value.toLowerCase();
+        const existsInList = skills.some(
+            (skill) => skill.label.toLowerCase() === lower,
+        );
+        const alreadyAdded = customSkills.some(
+            (skill) => skill.toLowerCase() === lower,
+        );
+
+        if (!existsInList && !alreadyAdded) {
+            setCustomSkills((previous) => [...previous, value]);
+        }
+
+        setNewSkillInput('');
+    };
+
+    const removeCustomSkill = (skill: string): void => {
+        setCustomSkills((previous) => previous.filter((item) => item !== skill));
     };
 
     const toggleInterest = (interest: string): void => {
@@ -1117,7 +1145,8 @@ function OnboardingForm({
                                                         className="flex-1"
                                                     />
                                                     <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                                                        {selectedSkillIds.length}{' '}
+                                                        {selectedSkillIds.length +
+                                                            customSkills.length}{' '}
                                                         {t(
                                                             'candidate.onboarding.skill_selected',
                                                         )}
@@ -1183,12 +1212,79 @@ function OnboardingForm({
                                                         </div>
                                                     )}
                                                 </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Input
+                                                        value={newSkillInput}
+                                                        onChange={(e) =>
+                                                            setNewSkillInput(
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        onKeyDown={(e) => {
+                                                            if (
+                                                                e.key ===
+                                                                'Enter'
+                                                            ) {
+                                                                e.preventDefault();
+                                                                addCustomSkill();
+                                                            }
+                                                        }}
+                                                        placeholder={t(
+                                                            'candidate.onboarding.add_skill_placeholder',
+                                                        )}
+                                                        className="flex-1"
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={addCustomSkill}
+                                                    >
+                                                        +{' '}
+                                                        {t(
+                                                            'candidate.onboarding.add_skill',
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                                {customSkills.length > 0 && (
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {customSkills.map(
+                                                            (skill) => (
+                                                                <span
+                                                                    key={skill}
+                                                                    className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-xs font-medium text-foreground"
+                                                                >
+                                                                    {skill}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            removeCustomSkill(
+                                                                                skill,
+                                                                            )
+                                                                        }
+                                                                        className="text-muted-foreground hover:text-foreground"
+                                                                    >
+                                                                        <X className="size-3" />
+                                                                    </button>
+                                                                </span>
+                                                            ),
+                                                        )}
+                                                    </div>
+                                                )}
                                                 {selectedSkillIds.map((id) => (
                                                     <input
                                                         key={id}
                                                         type="hidden"
                                                         name="skill_ids[]"
                                                         value={id}
+                                                    />
+                                                ))}
+                                                {customSkills.map((skill) => (
+                                                    <input
+                                                        key={skill}
+                                                        type="hidden"
+                                                        name="new_skills[]"
+                                                        value={skill}
                                                     />
                                                 ))}
                                             </div>
