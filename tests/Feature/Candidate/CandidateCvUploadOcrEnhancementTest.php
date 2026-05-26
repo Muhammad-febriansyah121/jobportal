@@ -60,6 +60,43 @@ test('cv upload populates user phone when blank', function () {
     expect($user->phone)->toBe('6281234567890');
 });
 
+test('cv upload backfills phone from extracted text when ai misses it', function () {
+    Storage::fake('public');
+    Setting::set('ai_api_key', 'test-ai-key');
+
+    $user = User::factory()->candidate()->create([
+        'onboarding_completed_at' => now(),
+        'phone' => null,
+    ]);
+
+    // Extracted text contains the phone, but the AI parser returns it blank.
+    fakeOcrExtractor('Budi Santoso | Kontak: 0812-3456-7890 | budi@example.com');
+    fakeAiResponse([
+        'full_name' => 'Budi Santoso',
+        'headline' => 'Engineer',
+        'summary' => 's',
+        'phone' => '',
+        'email' => '',
+        'location_city' => 'Bandung',
+        'location_province' => 'Jawa Barat',
+        'linkedin_url' => '',
+        'github_url' => '',
+        'portfolio_url' => '',
+        'skills' => [],
+        'experiences' => [],
+        'educations' => [],
+    ]);
+
+    $this->actingAs($user)->post(route('candidate.cvs.store'), [
+        'cv_file' => UploadedFile::fake()->create('cv.pdf', 100, 'application/pdf'),
+        'is_primary' => '1',
+    ])->assertRedirect();
+
+    $user->refresh();
+
+    expect($user->phone)->toBe('6281234567890');
+});
+
 test('cv upload does not overwrite existing user phone', function () {
     Storage::fake('public');
     Setting::set('ai_api_key', 'test-ai-key');

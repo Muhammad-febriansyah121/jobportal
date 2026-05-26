@@ -8,7 +8,9 @@ use App\Models\CandidateCv;
 use App\Models\CandidateProfile;
 use App\Models\Skill;
 use App\Services\AiService;
-use App\Services\CvTextExtractorService;
+use App\Services\CvDocumentLoaderService;
+use App\Support\CvContactExtractor;
+use App\Support\CvDocumentPayload;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -30,7 +32,7 @@ class ParseUploadedCvJob implements ShouldQueue
         public readonly CandidateProfile $candidate,
     ) {}
 
-    public function handle(AiService $ai, CvTextExtractorService $extractor): void
+    public function handle(AiService $ai, CvDocumentLoaderService $loader): void
     {
         $storagePath = $this->resolveStoragePath($this->cv->file_url);
 
@@ -45,9 +47,9 @@ class ParseUploadedCvJob implements ShouldQueue
         }
 
         $mimeType = mime_content_type($absolutePath) ?: '';
-        $cvText = $extractor->extractFromPath($absolutePath, $mimeType);
+        $payload = $loader->load($absolutePath, $mimeType);
 
-        if (trim($cvText) === '') {
+        if (! $payload->isUsable()) {
             return;
         }
 
@@ -55,11 +57,11 @@ class ParseUploadedCvJob implements ShouldQueue
             return;
         }
 
-        $prompt = $this->buildPrompt($cvText);
+        $prompt = $this->buildPrompt($payload);
         $parsed = null;
 
         try {
-            $response = (new CvUploadParser)->prompt($prompt);
+            $response = (new CvUploadParser)->prompt($prompt, attachments: $payload->attachments);
             if (isset($response->structured) && is_array($response->structured)) {
                 $parsed = $response->structured;
             }
@@ -71,6 +73,8 @@ class ParseUploadedCvJob implements ShouldQueue
             return;
         }
 
+        $parsed = $this->mergeContactHints($parsed, $payload->contactHints);
+
         $this->cv->update(['parsed_json' => $parsed]);
 
         $this->fillProfile($parsed);
@@ -81,12 +85,40 @@ class ParseUploadedCvJob implements ShouldQueue
         AiAuditLog::create([
             'user_id' => $this->candidate->user_id,
             'feature' => 'cv_ocr_parse',
-            'input_hash' => hash('sha256', $cvText),
-            'input_json' => ['cv_text_preview' => mb_substr($cvText, 0, 200)],
+            'input_hash' => hash_file('sha256', $absolutePath) ?: hash('sha256', $absolutePath),
+            'input_json' => [
+                'mode' => $payload->mode,
+                'has_attachment' => $payload->hasAttachments(),
+                'cv_text_preview' => mb_substr($payload->text, 0, 200),
+            ],
             'output_json' => $parsed,
-            'model_name' => (string) (config('services.openai.model') ?: 'gpt-5'),
+            'model_name' => (string) (config('services.openai.model') ?: 'gpt-4o'),
             'status' => 'success',
         ]);
+    }
+
+    /**
+     * Backfill contact fields the AI parser left blank or returned invalid,
+     * using deterministic hints pulled from the extracted text. The AI result
+     * always wins when it is present and valid.
+     *
+     * @param  array<string, mixed>  $parsed
+     * @param  array{phone: string, email: string, linkedin_url: string, github_url: string, portfolio_url: string}  $hints
+     * @return array<string, mixed>
+     */
+    private function mergeContactHints(array $parsed, array $hints): array
+    {
+        if ($this->normalizePhone((string) ($parsed['phone'] ?? '')) === '' && $hints['phone'] !== '') {
+            $parsed['phone'] = $hints['phone'];
+        }
+
+        foreach (['email', 'linkedin_url', 'github_url', 'portfolio_url'] as $field) {
+            if (trim((string) ($parsed[$field] ?? '')) === '' && $hints[$field] !== '') {
+                $parsed[$field] = $hints[$field];
+            }
+        }
+
+        return $parsed;
     }
 
     private function fillProfile(array $parsed): void
@@ -132,21 +164,7 @@ class ParseUploadedCvJob implements ShouldQueue
 
     private function normalizePhone(string $phone): string
     {
-        $digits = preg_replace('/\D+/', '', $phone) ?? '';
-
-        if ($digits === '') {
-            return '';
-        }
-
-        if (str_starts_with($digits, '0')) {
-            $digits = '62'.substr($digits, 1);
-        }
-
-        if (strlen($digits) < 8 || strlen($digits) > 16) {
-            return '';
-        }
-
-        return $digits;
+        return CvContactExtractor::normalizePhone($phone);
     }
 
     private function fillExperiences(array $parsed): void
@@ -335,8 +353,13 @@ class ParseUploadedCvJob implements ShouldQueue
         return Str::of($target)->after('/storage/')->toString();
     }
 
-    private function buildPrompt(string $cvText): string
+    private function buildPrompt(CvDocumentPayload $payload): string
     {
-        return "Parse the following CV text and extract structured data:\n\n---\n{$cvText}\n---";
+        if ($payload->hasAttachments()) {
+            return 'Parse the attached CV document and extract the structured data defined in the schema. '
+                .'Pay special attention to contact details (phone, email, links) in headers, footers, and sidebars.';
+        }
+
+        return "Parse the following CV text and extract structured data:\n\n---\n{$payload->text}\n---";
     }
 }
