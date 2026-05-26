@@ -36,3 +36,6 @@ AGENTS.md
 .codex/
 .agents/
 .github/skills/
+
+# Playwright MCP artifacts
+.playwright-mcp/
