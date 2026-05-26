@@ -115,7 +115,7 @@ class CandidateOnboardingController extends Controller
         return to_route('candidate.dashboard');
     }
 
-    public function parseCvStream(Request $request, CvTextExtractorService $extractor, AiService $ai): SymfonyResponse
+    public function parseCvStream(Request $request, CvTextExtractorService $extractor, AiService $ai, ResolveCandidateProfile $resolveCandidateProfile): SymfonyResponse
     {
         $request->validate([
             'cv_file' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
@@ -167,6 +167,29 @@ class CandidateOnboardingController extends Controller
         }
 
         $inputHash = hash('sha256', $fileName.'|'.$file->getSize().'|'.$inputJson['mode']);
+
+        $savedCvUrl = null;
+        if ($request->user() !== null) {
+            try {
+                $candidate = $resolveCandidateProfile->handle($request->user());
+                $storedPath = $file->store('candidate-cvs', 'public');
+                if ($storedPath !== false) {
+                    $candidate->cvs()->update(['is_primary' => false]);
+                    $candidate->cvs()->create([
+                        'file_url' => Storage::disk('public')->url($storedPath),
+                        'source' => 'upload',
+                        'is_primary' => true,
+                        'uploaded_at' => now(),
+                    ]);
+                    $savedCvUrl = '/storage/'.$storedPath;
+                }
+            } catch (Throwable $saveException) {
+                Log::warning('parseCvStream: failed to persist CV file', [
+                    'user_id' => $userId,
+                    'message' => $saveException->getMessage(),
+                ]);
+            }
+        }
 
         try {
             $stream = (new CvParserStream)->stream($prompt, attachments: $attachments);
@@ -231,6 +254,10 @@ class CandidateOnboardingController extends Controller
         $response->headers->set('X-Accel-Buffering', 'no');
         $response->headers->set('Cache-Control', 'no-cache, no-transform');
         $response->headers->set('Connection', 'keep-alive');
+
+        if ($savedCvUrl !== null) {
+            $response->headers->set('X-Cv-File-Url', $savedCvUrl);
+        }
 
         return $response;
     }

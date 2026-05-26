@@ -90,12 +90,14 @@ export default function CandidateOnboarding({
     const [step, setStep] = useState<Step>('choice');
     const [cvPrefill, setCvPrefill] = useState<CvPrefill | null>(null);
     const [cvFormKey, setCvFormKey] = useState(0);
+    const [savedCvFileUrl, setSavedCvFileUrl] = useState<string | null>(null);
 
     const handleManual = () => setStep('form');
 
-    const handleCvParsed = (data: CvPrefill) => {
+    const handleCvParsed = (data: CvPrefill, cvFileUrl?: string) => {
         setCvPrefill(data);
         setCvFormKey((k) => k + 1);
+        if (cvFileUrl) setSavedCvFileUrl(cvFileUrl);
         setStep('form');
     };
 
@@ -129,6 +131,7 @@ export default function CandidateOnboarding({
             key={cvFormKey}
             profile={profile}
             cvPrefill={cvPrefill}
+            savedCvFileUrl={savedCvFileUrl}
             industries={industries}
             skills={skills}
             skillCategories={skillCategories}
@@ -143,7 +146,7 @@ function CvUploadCard({
     skills,
     t,
 }: {
-    onParsed: (data: CvPrefill) => void;
+    onParsed: (data: CvPrefill, savedCvFileUrl?: string) => void;
     onSkipToManual: () => void;
     skills: Option[];
     t: (key: string) => string;
@@ -291,6 +294,8 @@ function CvUploadCard({
                 return;
             }
 
+            const savedCvFileUrl = res.headers.get('X-Cv-File-Url') ?? undefined;
+
             if (!res.body) {
                 throw new Error('no-stream-body');
             }
@@ -339,7 +344,7 @@ function CvUploadCard({
                 fullText.slice(jsonStart, jsonEnd + 1),
             );
 
-            onParsed(normalize(parsed));
+            onParsed(normalize(parsed), savedCvFileUrl);
         } catch (error) {
             if ((error as Error).name === 'AbortError') {
                 return;
@@ -527,6 +532,7 @@ function ManualCard({
 function OnboardingForm({
     profile,
     cvPrefill,
+    savedCvFileUrl,
     industries,
     skills,
     skillCategories,
@@ -534,6 +540,7 @@ function OnboardingForm({
 }: {
     profile: OnboardingProps['profile'];
     cvPrefill: CvPrefill | null;
+    savedCvFileUrl?: string | null;
     industries: Option[];
     skills: Option[];
     skillCategories: string[];
@@ -555,7 +562,9 @@ function OnboardingForm({
         expected_salary_max: profile.expected_salary_max,
         work_mode_pref: profile.work_mode_pref,
         availability: profile.availability || '',
-        primary_cv: profile.primary_cv,
+        primary_cv:
+            profile.primary_cv ??
+            (savedCvFileUrl ? { file_url: savedCvFileUrl } : null),
     };
 
     const emptyExperience = (): CvExperience => ({
