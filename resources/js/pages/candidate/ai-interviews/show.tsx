@@ -679,10 +679,6 @@ export default function CandidateAiInterviewShow({
     };
 
     const startRecording = () => {
-        if (isPractice) {
-            return;
-        }
-
         if (typeof MediaRecorder === 'undefined') {
             return;
         }

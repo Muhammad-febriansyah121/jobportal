@@ -59,6 +59,7 @@ type FeedbackPageProps = {
         question_feedbacks: Array<{
             question?: string | null;
             category?: string | null;
+            answer?: string | null;
             score?: number | null;
             analysis?: string | null;
         }>;
@@ -685,16 +686,31 @@ function QuestionFeedbackItem({
                 />
             </button>
             {open ? (
-                <div className="space-y-2 border-t bg-muted/20 px-3 py-3 text-sm leading-6">
+                <div className="space-y-3 border-t bg-muted/20 px-3 py-3 text-sm leading-6">
                     {feedback.category ? (
                         <Badge variant="outline" className="text-[10px] capitalize">
                             {formatReadableLabel(feedback.category)}
                         </Badge>
                     ) : null}
-                    <p className="text-foreground/80">
-                        {feedback.analysis ||
-                            t('candidate.ai_interview_feedback.analysis_unavailable')}
-                    </p>
+                    <div className="rounded-md border border-border/60 bg-background p-3">
+                        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {t('candidate.ai_interview_feedback.your_answer_label')}
+                        </p>
+                        <p className="whitespace-pre-line text-foreground/90">
+                            {feedback.answer?.trim()
+                                ? feedback.answer
+                                : t('candidate.ai_interview_feedback.answer_unavailable')}
+                        </p>
+                    </div>
+                    <div>
+                        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {t('candidate.ai_interview_feedback.ai_feedback_label')}
+                        </p>
+                        <p className="text-foreground/80">
+                            {feedback.analysis ||
+                                t('candidate.ai_interview_feedback.analysis_unavailable')}
+                        </p>
+                    </div>
                 </div>
             ) : null}
         </div>

@@ -724,6 +724,7 @@ class CandidateAiInterviewController extends Controller
                 'status' => $response->status(),
                 'body' => $response->body(),
             ]);
+
             return response()->json([
                 'message' => 'Gagal menyiapkan sesi voice AI. Coba lagi beberapa saat.',
             ], 422);
@@ -947,6 +948,7 @@ class CandidateAiInterviewController extends Controller
                     ->map(fn (AiInterviewResponse $response): array => [
                         'question' => $response->question?->question,
                         'category' => $response->question?->category,
+                        'answer' => $response->answer_text,
                         'score' => $response->ai_score,
                         'analysis' => $response->ai_analysis,
                     ]),
@@ -1518,9 +1520,9 @@ class CandidateAiInterviewController extends Controller
             'reschedule_reviewed_at' => $session->reschedule_reviewed_at?->format('d M Y H:i'),
             'reschedule_rejected_reason' => $session->reschedule_rejected_reason,
             'reschedule_timeline' => $this->rescheduleTimeline($session),
-            // Hanya tampilkan rekaman untuk interview real (employer-scheduled).
-            // Sesi simulator/practice tidak menampilkan rekaman walau filenya sempat tersimpan.
-            'recording_url' => $this->isEmployerScheduled($session) && $session->recording_url
+            // Rekaman ditampilkan untuk pemilik sesi, termasuk sesi latihan/practice
+            // supaya kandidat bisa menonton ulang dan belajar dari interviewnya.
+            'recording_url' => $session->recording_url
                 ? (str_starts_with((string) $session->recording_url, 'http')
                     ? $session->recording_url
                     : asset($session->recording_url))
