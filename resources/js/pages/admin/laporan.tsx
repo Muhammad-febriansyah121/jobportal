@@ -225,7 +225,7 @@ function RevenueByPlanDonut({
     const total = data.reduce((s, d) => s + d.total, 0);
     const options: ApexOptions = {
         chart: { ...BASE, type: 'donut', id: 'plan-donut' },
-        colors: [C.primary, C.blue, C.emerald, C.amber, C.violet],
+        colors: [C.blue, C.amber, C.emerald, C.violet, C.rose],
         labels: data.map((d) => d.plan),
         plotOptions: {
             pie: {

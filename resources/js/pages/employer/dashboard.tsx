@@ -994,12 +994,12 @@ function PipelineFunnelCard({
     const { t } = useTranslate();
     const palette = [
         '#3b82f6',
-        '#8b5cf6',
-        '#6366f1',
-        '#0ea5e9',
+        '#f59e0b',
         '#10b981',
-        '#059669',
+        '#8b5cf6',
         '#f43f5e',
+        '#06b6d4',
+        '#f97316',
     ];
 
     const options: ApexOptions = {

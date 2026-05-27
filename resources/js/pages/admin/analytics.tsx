@@ -76,15 +76,15 @@ const C = {
 } as const;
 
 const PALETTE = [
-    C.primary,
     C.blue,
-    C.violet,
-    C.emerald,
     C.amber,
+    C.emerald,
+    C.violet,
     C.rose,
     C.sky,
-    C.indigo,
     C.green,
+    C.red,
+    C.indigo,
     C.gray,
 ];
 
@@ -354,7 +354,7 @@ export default function AdminAnalytics({
         plotOptions: {
             bar: { distributed: true, borderRadius: 6, columnWidth: '55%' },
         },
-        colors: [C.blue, C.violet, C.indigo, C.sky, C.emerald, C.green],
+        colors: [C.blue, C.amber, C.emerald, C.violet, C.rose, C.sky],
         dataLabels: {
             enabled: true,
             formatter: (v) => (Number(v) === 0 ? '' : `${v}`),
@@ -386,8 +386,8 @@ export default function AdminAnalytics({
     // ── Status distribution donut ──
     const statusColorMap: Record<string, string> = {
         applied: C.blue,
-        screened: C.violet,
-        shortlisted: C.indigo,
+        screened: C.amber,
+        shortlisted: C.violet,
         interview: C.sky,
         offer: C.emerald,
         hired: C.green,
@@ -479,7 +479,7 @@ export default function AdminAnalytics({
     const workModeOptions: ApexOptions = {
         chart: { ...BASE_CHART, type: 'pie' },
         labels: workModeEntries.map(([k]) => workModeMap[k] ?? k),
-        colors: [C.violet, C.sky, C.primary],
+        colors: [C.blue, C.amber, C.emerald],
         legend: { position: 'bottom', fontSize: '12px' },
         dataLabels: {
             enabled: true,

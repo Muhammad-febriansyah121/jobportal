@@ -895,7 +895,7 @@ function RevenueDonutChart({
         );
     }
 
-    const COLORS = [C.primary, '#1E4D96', C.blue, '#60A5FA', '#93C5FD'];
+    const COLORS = [C.blue, C.amber, C.emerald, C.violet, C.rose];
 
     const options: ApexOptions = {
         chart: { ...BASE, type: 'donut' },
@@ -973,7 +973,7 @@ function GrowthAreaChart({
 
     const options: ApexOptions = {
         chart: { ...BASE, type: 'area', stacked: false },
-        colors: [C.primary, C.blue, C.emerald],
+        colors: [C.blue, C.amber, C.emerald],
         stroke: { curve: 'smooth', width: 2.5 },
         fill: {
             type: 'gradient',
