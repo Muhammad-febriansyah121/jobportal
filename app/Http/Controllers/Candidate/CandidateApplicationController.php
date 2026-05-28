@@ -63,6 +63,8 @@ class CandidateApplicationController extends Controller
         $candidate = $resolveCandidateProfile->handle($request->user());
         $data = $request->validated();
 
+        $request->user()->update(['phone' => $data['phone']]);
+
         if ($candidate->applications()->where('job_listing_id', $jobListing->id)->exists()) {
             throw ValidationException::withMessages([
                 'job' => 'Kamu sudah melamar lowongan ini.',

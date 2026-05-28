@@ -51,12 +51,14 @@ type ApplyJobPageProps = {
         is_primary: boolean;
         uploaded_at?: string | null;
     }>;
+    candidate_phone?: string | null;
 };
 
 export default function CandidateJobApplyPage({
     job,
     application_chance,
     cvs,
+    candidate_phone,
 }: ApplyJobPageProps) {
     const { t } = useTranslate();
 
@@ -140,6 +142,25 @@ export default function CandidateJobApplyPage({
                             >
                                 {({ processing, errors }) => (
                                     <>
+                                        <Field
+                                            label={t('candidate.apply.phone_label')}
+                                            name="phone"
+                                            error={errors.phone}
+                                            required
+                                        >
+                                            <Input
+                                                type="tel"
+                                                name="phone"
+                                                inputMode="tel"
+                                                defaultValue={candidate_phone ?? ''}
+                                                placeholder={t('candidate.apply.phone_placeholder')}
+                                                required
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                {t('candidate.apply.phone_hint')}
+                                            </p>
+                                        </Field>
+
                                         <Field
                                             label={t('candidate.apply.cv_label')}
                                             name="candidate_cv_id"

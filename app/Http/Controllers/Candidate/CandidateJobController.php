@@ -245,6 +245,7 @@ class CandidateJobController extends Controller
                         'company_logo' => $job->is_anonymous ? null : $job->company?->logo_url,
                     ]),
                 'application_chance' => $shouldRenderApplyPage ? $applicationChance : null,
+                'candidate_phone' => $shouldRenderApplyPage ? $request->user()?->phone : null,
             ]
         );
     }
