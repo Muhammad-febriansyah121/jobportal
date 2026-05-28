@@ -1,5 +1,6 @@
 import { Form, Head, Link, router, useForm } from '@inertiajs/react';
 import {
+    AlertCircle,
     BookOpen,
     Brain,
     Briefcase,
@@ -17,6 +18,7 @@ import {
     Type,
     Users,
     X,
+    Zap,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { ComponentType } from 'react';
@@ -34,6 +36,7 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslate } from '@/hooks/use-translate';
+import { cn } from '@/lib/utils';
 import { history, index, show } from '@/routes/candidate/ai-interviews';
 
 type Option = { value: string; label: string };
@@ -160,26 +163,70 @@ export default function CandidateAiInterviewIndex({
                     </Button>
                 </div>
 
-                <div className="flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 md:flex-row md:items-center md:justify-between">
-                    <div className="space-y-1">
-                        <p className="text-sm font-semibold text-primary">
-                            Sisa kuota simulasi: {setup.options.quota.balance}x
-                        </p>
-                        {setup.options.quota.expires_label ? (
-                            <p className="text-xs text-muted-foreground">
-                                Berlaku sampai {setup.options.quota.expires_label}
+                <div
+                    className={cn(
+                        'flex flex-col gap-4 rounded-xl border p-5 md:flex-row md:items-center md:justify-between',
+                        setup.options.quota.balance < 1
+                            ? 'border-destructive/40 bg-destructive/5'
+                            : setup.options.quota.balance <= 2
+                              ? 'border-orange-400/40 bg-orange-50 dark:bg-orange-950/20'
+                              : 'border-primary/20 bg-primary/5',
+                    )}
+                >
+                    <div className="flex items-center gap-4">
+                        <div
+                            className={cn(
+                                'flex size-12 shrink-0 items-center justify-center rounded-full',
+                                setup.options.quota.balance < 1
+                                    ? 'bg-destructive/15 text-destructive'
+                                    : setup.options.quota.balance <= 2
+                                      ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
+                                      : 'bg-primary/10 text-primary',
+                            )}
+                        >
+                            {setup.options.quota.balance < 1 ? (
+                                <AlertCircle className="size-6" />
+                            ) : setup.options.quota.balance <= 2 ? (
+                                <Zap className="size-6" />
+                            ) : (
+                                <Zap className="size-6" />
+                            )}
+                        </div>
+                        <div className="space-y-1">
+                            <p
+                                className={cn(
+                                    'text-base font-bold',
+                                    setup.options.quota.balance < 1
+                                        ? 'text-destructive'
+                                        : setup.options.quota.balance <= 2
+                                          ? 'text-orange-600 dark:text-orange-400'
+                                          : 'text-primary',
+                                )}
+                            >
+                                Sisa kuota simulasi:{' '}
+                                <span className="text-2xl">{setup.options.quota.balance}x</span>
                             </p>
-                        ) : (
-                            <p className="text-xs text-muted-foreground">
-                                Topup paket Jobseeker untuk 5x simulasi/bulan.
-                            </p>
-                        )}
+                            {setup.options.quota.expires_label ? (
+                                <p className="text-sm text-muted-foreground">
+                                    Berlaku sampai {setup.options.quota.expires_label}
+                                </p>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    {setup.options.quota.balance < 1
+                                        ? 'Kuota habis. Topup untuk melanjutkan simulasi.'
+                                        : 'Topup paket Jobseeker untuk 5x simulasi/bulan.'}
+                                </p>
+                            )}
+                        </div>
                     </div>
-                    {setup.options.quota.balance < 1 ? (
-                        <Button asChild size="sm">
-                            <Link href={setup.options.quota.topup_url}>
-                                Topup Sekarang
-                            </Link>
+                    {setup.options.quota.balance <= 2 ? (
+                        <Button
+                            asChild
+                            size="default"
+                            variant={setup.options.quota.balance < 1 ? 'destructive' : 'default'}
+                            className="shrink-0"
+                        >
+                            <Link href={setup.options.quota.topup_url}>Topup Sekarang</Link>
                         </Button>
                     ) : null}
                 </div>

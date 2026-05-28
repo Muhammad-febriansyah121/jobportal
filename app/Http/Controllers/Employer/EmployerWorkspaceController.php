@@ -746,7 +746,7 @@ class EmployerWorkspaceController extends Controller
                     ]),
             ],
             'aiSuggestions' => $this->talentSearchSuggestions($search, $skillId, $location),
-            'recommendationSource' => 'computed',
+            'recommendationSource' => $deferredRerank !== null ? 'ai' : 'computed',
             'aiRerankedCandidates' => $deferredRerank,
             'candidates' => $candidates,
             'totalCandidates' => CandidateProfile::count(),
@@ -855,17 +855,36 @@ class EmployerWorkspaceController extends Controller
 
     private function computedTalentScore(CandidateProfile $candidate, Collection $skills, string $search): int
     {
-        $score = 50 + (int) floor(($candidate->profile_completion ?? 0) * 0.25) + min(15, $skills->count() * 3);
+        // Skill coverage — 35%: normalized by skill count (max at 10 skills)
+        $skillScore = min(35.0, $skills->count() * 3.5);
+
+        // Pengalaman kerja — 25%: estimated from experience count (max at 5 jobs = 25)
+        $expCount = $candidate->experiences?->count() ?? 0;
+        $expScore = min(25.0, $expCount * 5.0);
+
+        // Posisi/jabatan — 15%: has a meaningful headline
+        $positionScore = filled($candidate->headline) ? 15.0 : 7.5;
+
+        // Level senioritas — 10%: profile completeness as proxy
+        $seniorityScore = (($candidate->profile_completion ?? 0) >= 80) ? 10.0 : (($candidate->profile_completion ?? 0) >= 50 ? 6.0 : 3.0);
+
+        // Industri — 5%: has preferred industry set
+        $industryScore = filled($candidate->preferred_industry_id) ? 5.0 : 0.0;
+
+        // Preferensi kerja — 10%: has work_mode_pref + expected salary
+        $workPrefScore = (filled($candidate->work_mode_pref) && $candidate->work_mode_pref !== 'any') ? 5.0 : 2.5;
+        $salaryPrefScore = filled($candidate->expected_salary_min) ? 5.0 : 0.0;
+
+        $score = (int) round($skillScore + $expScore + $positionScore + $seniorityScore + $industryScore + $workPrefScore + $salaryPrefScore);
 
         if ($search !== '') {
             $haystack = str($candidate->full_name.' '.$candidate->headline.' '.$candidate->preferred_role.' '.$skills->pluck('name')->join(' '))->lower();
-
             if ($haystack->contains(str($search)->lower())) {
-                $score += 10;
+                $score = min(100, $score + 5);
             }
         }
 
-        return max(55, min(98, $score));
+        return max(15, min(100, $score));
     }
 
     /**

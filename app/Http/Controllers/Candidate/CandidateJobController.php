@@ -9,6 +9,7 @@ use App\Actions\Candidate\ResolveCandidateProfile;
 use App\Http\Controllers\Controller;
 use App\Models\AiMatchScore;
 use App\Models\CandidateIntentSignal;
+use App\Models\CandidateProfile;
 use App\Models\Industry;
 use App\Models\JobListing;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,7 +21,7 @@ class CandidateJobController extends Controller
 {
     public function index(Request $request, ResolveCandidateProfile $resolveCandidateProfile): Response
     {
-        $candidate = $resolveCandidateProfile->handle($request->user())->load(['skills:id', 'intentSignal']);
+        $candidate = $resolveCandidateProfile->handle($request->user())->load(['skills:id', 'intentSignal', 'experiences', 'preferredIndustry:id']);
         $skillIds = $candidate->skills->pluck('id')->all();
         $activeTab = $request->string('tab', 'recommended')->toString();
 
@@ -95,6 +96,13 @@ class CandidateJobController extends Controller
             ->get()
             ->keyBy('job_listing_id');
 
+        $candidateSkillIds = $candidate->skills->pluck('id')->all();
+        $candidateExperienceYears = $this->totalYearsExperience($candidate);
+        $candidateIndustryId = $candidate->preferredIndustry?->id;
+        $candidateHeadlineLower = $candidate->headline ? mb_strtolower($candidate->headline) : null;
+        $candidateWorkModePref = $candidate->work_mode_pref ?? 'any';
+        $candidateExpectedSalaryMin = $candidate->expected_salary_min;
+
         return Inertia::render('candidate/jobs/index', [
             'filters' => [
                 'tab' => $activeTab,
@@ -114,7 +122,13 @@ class CandidateJobController extends Controller
                 $job,
                 $savedJobIds->contains($job->id),
                 $appliedJobIds->contains($job->id),
-                $matchScores->get($job->id)
+                $matchScores->get($job->id),
+                $candidateSkillIds,
+                $candidateExperienceYears,
+                $candidateIndustryId,
+                $candidateHeadlineLower,
+                $candidateWorkModePref,
+                $candidateExpectedSalaryMin,
             )),
         ]);
     }
@@ -250,9 +264,76 @@ class CandidateJobController extends Controller
         );
     }
 
-    private function jobCard(JobListing $job, bool $isSaved, bool $hasApplied, ?AiMatchScore $matchScore): array
-    {
+    /**
+     * @param  array<int>  $candidateSkillIds
+     */
+    private function jobCard(
+        JobListing $job,
+        bool $isSaved,
+        bool $hasApplied,
+        ?AiMatchScore $matchScore,
+        array $candidateSkillIds = [],
+        float $candidateExperienceYears = 0,
+        ?int $candidateIndustryId = null,
+        ?string $candidateHeadlineLower = null,
+        string $candidateWorkModePref = 'any',
+        ?int $candidateExpectedSalaryMin = null,
+    ): array {
         $isAnonymous = (bool) $job->is_anonymous;
+
+        $aiMatchScore = $matchScore?->overall_score;
+        $aiMatchExplanation = $matchScore?->explanation;
+
+        if ($aiMatchScore === null) {
+            // Skill match — 35%
+            $jobSkills = $job->skills;
+            $requiredCount = $jobSkills->count();
+            $requiredIds = $jobSkills->pluck('id')->all();
+            $matchedCount = count(array_intersect($requiredIds, $candidateSkillIds));
+            $skillScore = $requiredCount > 0 ? ($matchedCount / $requiredCount) * 35 : 17.5;
+
+            // Pengalaman kerja — 25%
+            $minYears = (int) ($jobSkills->max('pivot.min_years') ?? 0);
+            $expScore = $minYears > 0
+                ? min(25.0, ($candidateExperienceYears / max(1, $minYears)) * 25)
+                : 12.5;
+
+            // Posisi/jabatan — 15% (keyword overlap: job title vs candidate headline)
+            $positionScore = 7.5;
+            if ($candidateHeadlineLower && $job->title) {
+                $jobWords = array_filter(explode(' ', mb_strtolower($job->title)), fn (string $w): bool => mb_strlen($w) > 2);
+                $matches = array_filter($jobWords, fn (string $w): bool => str_contains($candidateHeadlineLower, $w));
+                $positionScore = $jobWords !== []
+                    ? min(15.0, (count($matches) / count($jobWords)) * 15)
+                    : 7.5;
+            }
+
+            // Level senioritas — 10%
+            $seniorityScore = match ($job->experience_level) {
+                'entry' => $candidateExperienceYears <= 2 ? 10.0 : ($candidateExperienceYears <= 4 ? 6.0 : 3.0),
+                'mid' => $candidateExperienceYears >= 2 && $candidateExperienceYears <= 6 ? 10.0 : ($candidateExperienceYears < 2 ? 5.0 : 7.0),
+                'senior' => $candidateExperienceYears >= 5 ? 10.0 : ($candidateExperienceYears >= 3 ? 6.0 : 2.0),
+                'lead' => $candidateExperienceYears >= 7 ? 10.0 : ($candidateExperienceYears >= 5 ? 6.0 : 2.0),
+                default => 5.0,
+            };
+
+            // Industri — 5%
+            $industryScore = $candidateIndustryId && $job->industry_id === $candidateIndustryId ? 5.0 : 0.0;
+
+            // Preferensi kerja — 10% (work_mode 5% + salary 5%)
+            $workModeScore = ($candidateWorkModePref === 'any' || $candidateWorkModePref === $job->work_mode) ? 5.0 : 0.0;
+            $salaryScore = 0.0;
+            if ($candidateExpectedSalaryMin === null) {
+                $salaryScore = 2.5;
+            } elseif ($job->salary_max !== null && $job->salary_max >= $candidateExpectedSalaryMin) {
+                $salaryScore = 5.0;
+            } elseif ($job->salary_min !== null && $job->salary_min >= $candidateExpectedSalaryMin * 0.8) {
+                $salaryScore = 2.5;
+            }
+
+            $total = $skillScore + $expScore + $positionScore + $seniorityScore + $industryScore + $workModeScore + $salaryScore;
+            $aiMatchScore = max(15, min(100, (int) round($total)));
+        }
 
         return [
             'id' => $job->id,
@@ -271,8 +352,8 @@ class CandidateJobController extends Controller
             'published_at' => $job->published_at?->format('d M Y'),
             'closes_at' => $job->closes_at?->format('d M Y'),
             'matched_skills_count' => $job->matched_skills_count ?? null,
-            'ai_match_score' => $matchScore?->overall_score,
-            'ai_match_explanation' => $matchScore?->explanation,
+            'ai_match_score' => $aiMatchScore,
+            'ai_match_explanation' => $aiMatchExplanation,
             'is_saved' => $isSaved,
             'has_applied' => $hasApplied,
             'skills' => $job->skills->map(fn ($skill): array => [
@@ -280,6 +361,24 @@ class CandidateJobController extends Controller
                 'name' => $skill->name,
             ]),
         ];
+    }
+
+    private function totalYearsExperience(CandidateProfile $candidate): float
+    {
+        $months = 0.0;
+
+        foreach ($candidate->experiences as $experience) {
+            $start = $experience->start_date;
+
+            if (! $start) {
+                continue;
+            }
+
+            $end = $experience->is_current ? now() : ($experience->end_date ?? now());
+            $months += max(0.0, (float) $start->diffInMonths($end));
+        }
+
+        return round($months / 12, 1);
     }
 
     private function salaryRange(JobListing $job): string

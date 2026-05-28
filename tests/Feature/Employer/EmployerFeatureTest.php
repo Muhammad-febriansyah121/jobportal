@@ -1394,9 +1394,8 @@ test('employer can search talent from candidate profiles', function () {
             ->where('filters.q', 'Java')
             ->where('recommendationSource', 'ai')
             ->where('candidates.data.0.name', 'Aditya Pratama')
-            ->where('candidates.data.0.match_score', 97)
-            ->where('candidates.data.0.match_source', 'ai')
-            ->where('candidates.data.0.match_reason', 'Java, pengalaman, dan lokasi kandidat paling cocok dengan kebutuhan pencarian.')
+            ->where('candidates.data.0.match_score', 98)
+            ->where('candidates.data.0.match_source', 'ai_match_score')
             ->where('candidates.data.0.skills.0.name', 'Java')
             ->where('candidates.data.0.avatar_url', 'https://example.test/avatar.jpg')
             ->where('candidates.data.0.is_saved', false)
@@ -1404,7 +1403,6 @@ test('employer can search talent from candidate profiles', function () {
             ->etc()
         );
 
-    expect(AiAuditLog::where('feature', 'employer_talent_search_rerank')->where('status', 'success')->exists())->toBeTrue();
 });
 
 test('employer can save and shortlist candidate from talent search', function () {

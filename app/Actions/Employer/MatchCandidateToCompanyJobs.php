@@ -15,7 +15,7 @@ class MatchCandidateToCompanyJobs
      */
     public function handle(Company $company, CandidateProfile $candidate): Collection
     {
-        $candidate->loadMissing(['skills:id,name', 'experiences', 'preferredIndustry']);
+        $candidate->loadMissing(['skills:id,name', 'experiences', 'preferredIndustry:id']);
 
         $candidateSkillIds = $candidate->skills->pluck('id')->all();
         $totalYears = $this->totalYearsExperience($candidate);
@@ -47,29 +47,55 @@ class MatchCandidateToCompanyJobs
             $matchedSkills = $required->whereIn('id', $matchedIds)->pluck('name')->values()->all();
             $missingSkills = $required->whereIn('id', $missingIds)->pluck('name')->values()->all();
 
+            // Skill match — 35%
             $skillScore = $requiredCount > 0
-                ? (count($matchedIds) / $requiredCount) * 60
-                : 30;
+                ? (count($matchedIds) / $requiredCount) * 35
+                : 17.5;
 
+            // Pengalaman kerja — 25%
             $minYears = (int) ($required->max('pivot.min_years') ?? 0);
             $expScore = $minYears > 0
-                ? min(20, ($totalYears / max(1, $minYears)) * 20)
-                : 15;
+                ? min(25.0, ($totalYears / max(1, $minYears)) * 25)
+                : 12.5;
 
-            $locationScore = 0;
-            if ($candidate->location_city && $job->location_city) {
-                $locationScore = mb_strtolower($candidate->location_city) === mb_strtolower($job->location_city)
-                    ? 10
-                    : 4;
+            // Posisi/jabatan — 15% (headline vs job title keyword overlap)
+            $positionScore = 7.5;
+            $headlineLower = $candidate->headline ? mb_strtolower($candidate->headline) : null;
+            if ($headlineLower && $job->title) {
+                $jobWords = array_filter(explode(' ', mb_strtolower($job->title)), fn (string $w): bool => mb_strlen($w) > 2);
+                $matches = array_filter($jobWords, fn (string $w): bool => str_contains($headlineLower, $w));
+                $positionScore = $jobWords !== [] ? min(15.0, (count($matches) / count($jobWords)) * 15) : 7.5;
             }
 
+            // Level senioritas — 10%
+            $seniorityScore = match ($job->experience_level) {
+                'entry' => $totalYears <= 2 ? 10.0 : ($totalYears <= 4 ? 6.0 : 3.0),
+                'mid' => $totalYears >= 2 && $totalYears <= 6 ? 10.0 : ($totalYears < 2 ? 5.0 : 7.0),
+                'senior' => $totalYears >= 5 ? 10.0 : ($totalYears >= 3 ? 6.0 : 2.0),
+                'lead' => $totalYears >= 7 ? 10.0 : ($totalYears >= 5 ? 6.0 : 2.0),
+                default => 5.0,
+            };
+
+            // Industri — 5%
             $industryScore = $candidate->preferredIndustry && $job->industry
                 && $candidate->preferredIndustry->id === $job->industry->id
-                ? 10
-                : 0;
+                ? 5.0
+                : 0.0;
 
-            $computed = (int) round($skillScore + $expScore + $locationScore + $industryScore);
-            $computed = max(20, min(100, $computed));
+            // Preferensi kerja — 10% (work_mode 5% + salary fit 5%)
+            $workModePref = $candidate->work_mode_pref ?? 'any';
+            $workModeScore = ($workModePref === 'any' || $workModePref === $job->work_mode) ? 5.0 : 0.0;
+            $salaryScore = 0.0;
+            if ($candidate->expected_salary_min === null) {
+                $salaryScore = 2.5;
+            } elseif ($job->salary_max !== null && $job->salary_max >= $candidate->expected_salary_min) {
+                $salaryScore = 5.0;
+            } elseif ($job->salary_min !== null && $job->salary_min >= $candidate->expected_salary_min * 0.8) {
+                $salaryScore = 2.5;
+            }
+
+            $computed = (int) round($skillScore + $expScore + $positionScore + $seniorityScore + $industryScore + $workModeScore + $salaryScore);
+            $computed = max(15, min(100, $computed));
 
             $aiScore = $aiScores->get($job->id);
             $finalScore = $aiScore?->overall_score
