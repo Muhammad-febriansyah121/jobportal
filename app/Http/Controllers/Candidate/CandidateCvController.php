@@ -65,7 +65,7 @@ class CandidateCvController extends Controller
         $candidate = $walletManager->ensureFreeQuota(
             $resolveCandidateProfile->handle($request->user())
         )
-            ->load(['cvs']);
+            ->load(['cvs', 'skills:id,name', 'experiences', 'educations', 'user:id,email']);
 
         return Inertia::render('candidate/cv', [
             'cvs' => $candidate->cvs()
@@ -730,6 +730,83 @@ class CandidateCvController extends Controller
         $educations = $this->filterNestedEntries($data['educations'] ?? [], ['school_name', 'degree', 'field_of_study']);
         $projects = $this->filterNestedEntries($data['projects'] ?? [], ['name', 'role', 'description']);
         $certifications = $this->filterNestedEntries($data['certifications'] ?? [], ['name', 'issuer', 'year']);
+
+        // Auto-populate from profile when builder data is empty (first time open)
+        if ($skills === [] && $candidate->relationLoaded('skills')) {
+            $skills = $candidate->skills->pluck('name')->filter()->values()->all();
+        }
+
+        if ($experiences === [] && $candidate->relationLoaded('experiences')) {
+            $experiences = $candidate->experiences
+                ->map(fn ($exp): array => [
+                    'job_title' => (string) ($exp->job_title ?? ''),
+                    'company_name' => (string) ($exp->company_name ?? ''),
+                    'start_date' => $exp->start_date?->format('M Y') ?? '',
+                    'end_date' => $exp->is_current ? 'Sekarang' : ($exp->end_date?->format('M Y') ?? ''),
+                    'is_current' => (bool) $exp->is_current,
+                    'location' => (string) ($exp->location ?? ''),
+                    'description' => (string) ($exp->description ?? ''),
+                ])
+                ->filter(fn (array $e): bool => $e['job_title'] !== '' || $e['company_name'] !== '')
+                ->values()
+                ->all();
+        }
+
+        if ($educations === [] && $candidate->relationLoaded('educations')) {
+            $educations = $candidate->educations
+                ->map(fn ($edu): array => [
+                    'school_name' => (string) ($edu->institution ?? ''),
+                    'degree' => (string) ($edu->degree ?? ''),
+                    'field_of_study' => (string) ($edu->field_of_study ?? ''),
+                    'start_year' => (string) ($edu->start_year ?? ''),
+                    'end_year' => (string) ($edu->end_year ?? ''),
+                    'gpa' => (string) ($edu->gpa ?? ''),
+                ])
+                ->filter(fn (array $e): bool => $e['school_name'] !== '')
+                ->values()
+                ->all();
+        }
+
+        // Fallback to primary CV parsed_json when profile relations also empty
+        if (($skills === [] || $experiences === []) && $candidate->relationLoaded('cvs')) {
+            $primaryCv = $candidate->cvs->firstWhere('is_primary', true) ?? $candidate->cvs->first();
+            $parsed = is_array($primaryCv?->parsed_json) ? $primaryCv->parsed_json : [];
+
+            if ($skills === [] && isset($parsed['skills']) && is_array($parsed['skills'])) {
+                $skills = collect($parsed['skills'])->filter()->values()->all();
+            }
+
+            if ($experiences === [] && isset($parsed['experiences']) && is_array($parsed['experiences'])) {
+                $experiences = collect($parsed['experiences'])
+                    ->map(fn (array $exp): array => [
+                        'job_title' => (string) ($exp['job_title'] ?? ''),
+                        'company_name' => (string) ($exp['company_name'] ?? ''),
+                        'start_date' => (string) ($exp['start_date'] ?? ''),
+                        'end_date' => (string) ($exp['end_date'] ?? ''),
+                        'is_current' => (bool) ($exp['is_current'] ?? false),
+                        'location' => (string) ($exp['location'] ?? ''),
+                        'description' => (string) ($exp['description'] ?? ''),
+                    ])
+                    ->filter(fn (array $e): bool => $e['company_name'] !== '')
+                    ->values()
+                    ->all();
+            }
+
+            if ($educations === [] && isset($parsed['educations']) && is_array($parsed['educations'])) {
+                $educations = collect($parsed['educations'])
+                    ->map(fn (array $edu): array => [
+                        'school_name' => (string) ($edu['institution'] ?? ''),
+                        'degree' => (string) ($edu['degree'] ?? ''),
+                        'field_of_study' => (string) ($edu['field_of_study'] ?? ''),
+                        'start_year' => (string) ($edu['start_year'] ?? ''),
+                        'end_year' => (string) ($edu['end_year'] ?? ''),
+                        'gpa' => (string) ($edu['gpa'] ?? ''),
+                    ])
+                    ->filter(fn (array $e): bool => $e['school_name'] !== '')
+                    ->values()
+                    ->all();
+            }
+        }
 
         return [
             'template' => 'ats',
