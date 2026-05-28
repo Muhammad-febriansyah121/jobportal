@@ -13,7 +13,7 @@ use Laravel\Ai\Promptable;
 #[Provider(Lab::OpenAI)]
 #[Model('gpt-4o')]
 #[Timeout(60)]
-#[MaxTokens(5000)]
+#[MaxTokens(10000)]
 class CvReviewer implements Agent
 {
     use Promptable;

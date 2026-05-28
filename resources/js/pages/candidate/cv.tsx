@@ -422,13 +422,16 @@ export default function CandidateCv({
 
             const jsonStart = fullText.indexOf('{');
             const jsonEnd = fullText.lastIndexOf('}');
-            if (jsonStart === -1 || jsonEnd === -1) {
-                throw new Error('AI tidak mengembalikan JSON valid.');
+            if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
+                throw new Error('AI tidak mengembalikan JSON valid. Coba review lagi.');
             }
 
-            const parsed = JSON.parse(
-                fullText.slice(jsonStart, jsonEnd + 1),
-            );
+            let parsed: ReturnType<typeof JSON.parse>;
+            try {
+                parsed = JSON.parse(fullText.slice(jsonStart, jsonEnd + 1));
+            } catch {
+                throw new Error('Respons AI terpotong. Coba review lagi.');
+            }
 
             router.reload({
                 only: ['builderData', 'builderUpdatedAt'],
