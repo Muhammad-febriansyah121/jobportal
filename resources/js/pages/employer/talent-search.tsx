@@ -2,6 +2,7 @@ import { Deferred, Head, Link, router } from '@inertiajs/react';
 import {
     BadgeCheck,
     Banknote,
+    BrainCircuit,
     Check,
     Bookmark,
     BookmarkCheck,
@@ -9,11 +10,17 @@ import {
     CalendarCheck,
     ChevronsUpDown,
     Clock3,
+    Eye,
+    GraduationCap,
+    Gauge,
+    Info,
     ListFilter,
     MapPin,
-    Search,
+    MessageCircle,
     SlidersHorizontal,
     Sparkles,
+    Target,
+    UserCheck,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -59,6 +66,11 @@ type TalentCandidate = {
     match_score: number;
     match_source: 'ai' | 'ai_match_score' | 'computed';
     match_reason: string | null;
+    score_breakdown: Array<{
+        label: string;
+        weight: number;
+        raw_pct: number;
+    }> | null;
     is_saved: boolean;
     is_shortlisted: boolean;
     conversation_id: number | null;
@@ -301,17 +313,35 @@ export default function EmployerTalentSearch({
                         <div className="inline-flex flex-wrap gap-1.5">
                             {(
                                 [
-                                    { v: 'all', label: 'Semua', count: poolTotalCount },
-                                    { v: 'saved', label: 'Tersimpan', count: savedCandidatesCount },
-                                    { v: 'shortlisted', label: 'Shortlisted', count: shortlistedCount },
+                                    {
+                                        v: 'all',
+                                        label: 'Semua',
+                                        count: poolTotalCount,
+                                    },
+                                    {
+                                        v: 'saved',
+                                        label: 'Tersimpan',
+                                        count: savedCandidatesCount,
+                                    },
+                                    {
+                                        v: 'shortlisted',
+                                        label: 'Shortlisted',
+                                        count: shortlistedCount,
+                                    },
                                 ] as const
                             ).map((opt) => {
-                                const active = (filters.pool ?? 'all') === opt.v;
+                                const active =
+                                    (filters.pool ?? 'all') === opt.v;
 
                                 return (
                                     <Link
                                         key={opt.v}
-                                        href={talentPoolIndex({ query: { ...currentQuery, pool: opt.v } })}
+                                        href={talentPoolIndex({
+                                            query: {
+                                                ...currentQuery,
+                                                pool: opt.v,
+                                            },
+                                        })}
                                         preserveScroll
                                         className={cn(
                                             'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition',
@@ -324,7 +354,9 @@ export default function EmployerTalentSearch({
                                         <span
                                             className={cn(
                                                 'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold',
-                                                active ? 'bg-primary-600 text-white' : 'bg-zinc-100 text-zinc-700',
+                                                active
+                                                    ? 'bg-primary-600 text-white'
+                                                    : 'bg-zinc-100 text-zinc-700',
                                             )}
                                         >
                                             {opt.count}
@@ -340,11 +372,80 @@ export default function EmployerTalentSearch({
                         onSubmit={submitSearch}
                         ref={formRef}
                     >
+                        <div className="overflow-hidden rounded-lg border border-primary-100 bg-white shadow-sm">
+                            <div className="grid lg:grid-cols-[minmax(0,1fr)_380px]">
+                                <div className="relative p-5 sm:p-6">
+                                    <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+                                        <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary-600 text-white shadow-sm">
+                                            <BrainCircuit className="size-6" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="inline-flex items-center gap-2 rounded-full border border-primary-100 bg-primary-50 px-3 py-1 text-[11px] font-bold tracking-wide text-primary-700 uppercase">
+                                                <Sparkles className="size-3.5" />
+                                                AI Talent Matching
+                                            </div>
+                                            <h2 className="mt-3 text-xl font-bold tracking-tight text-slate-950">
+                                                Cara kerja pencarian AI
+                                            </h2>
+                                            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                                                Tulis kebutuhan hiring seperti
+                                                brief recruiter. AI membaca
+                                                intensi pencarian, lalu
+                                                menggabungkannya dengan filter,
+                                                skill, pengalaman, lokasi,
+                                                ekspektasi gaji, dan preferensi
+                                                kerja kandidat.
+                                            </p>
+
+                                            <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                                                <p className="text-[11px] font-bold tracking-wide text-slate-500 uppercase">
+                                                    Contoh query yang efektif
+                                                </p>
+                                                <p className="mt-1 text-sm font-semibold text-slate-800">
+                                                    React senior Bandung, siap
+                                                    WFO, 5 tahun pengalaman,
+                                                    terbiasa SaaS
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-slate-200 bg-slate-50/70 lg:border-t-0 lg:border-l">
+                                    <div className="divide-y divide-slate-200">
+                                        <AiGuideItem
+                                            icon={Target}
+                                            number="01"
+                                            title="Baca kebutuhan"
+                                            text="AI memahami role, senioritas, skill utama, lokasi, dan konteks pekerjaan dari query."
+                                        />
+                                        <AiGuideItem
+                                            icon={SlidersHorizontal}
+                                            number="02"
+                                            title="Gabungkan filter"
+                                            text="Filter skill, gaji, pengalaman, dan ketersediaan tetap dipakai untuk mempersempit hasil."
+                                        />
+                                        <AiGuideItem
+                                            icon={Gauge}
+                                            number="03"
+                                            title="Ranking kandidat"
+                                            text="Badge AI berarti hasil diranking ulang; AUTO berarti memakai skor standar profil."
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="rounded-lg border border-zinc-200 bg-white p-3 shadow-sm">
                             <div className="flex flex-col gap-3 md:flex-row md:items-center">
                                 <div className="flex min-h-12 flex-1 items-center gap-3 px-2">
-                                    <Search className="size-5 text-primary-600" />
-                                    <Sparkles className="size-6 text-primary-600" />
+                                    <div className="flex shrink-0 items-center gap-1.5">
+                                        <Sparkles className="size-5 text-primary-600" />
+                                        <span className="rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-bold tracking-wider text-primary-700 uppercase">
+                                            AI
+                                        </span>
+                                    </div>
+                                    <div className="mx-1 h-5 w-px bg-zinc-200" />
                                     <input
                                         className="h-12 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-slate-400"
                                         name="q"
@@ -358,12 +459,36 @@ export default function EmployerTalentSearch({
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                            <Sparkles className="size-4 text-slate-500" />
-                            {aiSuggestions.map((suggestion) => (
-                                <span key={suggestion}>{suggestion}</span>
-                            ))}
-                        </div>
+                        {aiSuggestions.length > 0 ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-xs font-medium text-slate-400">
+                                    Coba:
+                                </span>
+                                {aiSuggestions.map((suggestion) => (
+                                    <button
+                                        key={suggestion}
+                                        type="button"
+                                        onClick={() =>
+                                            router.get(
+                                                listingRoute(),
+                                                {
+                                                    ...currentQuery,
+                                                    q: suggestion,
+                                                },
+                                                {
+                                                    preserveScroll: true,
+                                                    preserveState: true,
+                                                },
+                                            )
+                                        }
+                                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-primary-100 bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700 transition hover:border-primary-300 hover:bg-primary-100"
+                                    >
+                                        <Sparkles className="size-3" />
+                                        {suggestion}
+                                    </button>
+                                ))}
+                            </div>
+                        ) : null}
 
                         <div className="flex flex-wrap items-center gap-3">
                             <FilterSelect
@@ -415,7 +540,9 @@ export default function EmployerTalentSearch({
                                 className="rounded-lg"
                                 variant="secondary"
                             >
-                                <Link href={listingRoute()}>{t('employer.talent_search.reset_filter')}</Link>
+                                <Link href={listingRoute()}>
+                                    {t('employer.talent_search.reset_filter')}
+                                </Link>
                             </Button>
                             <input
                                 type="hidden"
@@ -464,22 +591,66 @@ export default function EmployerTalentSearch({
                         data="aiRerankedCandidates"
                         fallback={
                             hasActiveAiFilter ? (
-                                <div className="flex items-center gap-2 rounded-lg border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-semibold text-primary-700">
-                                    <Sparkles className="size-4 animate-pulse" />
-                                    AI sedang menyusun ulang kandidat berdasarkan query Anda...
+                                <div className="flex items-center gap-3 rounded-lg border border-primary-100 bg-primary-50 px-4 py-3.5">
+                                    <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-100">
+                                        <Sparkles className="size-4 animate-pulse text-primary-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-primary-700">
+                                            AI sedang menganalisis kandidat...
+                                        </p>
+                                        <p className="mt-0.5 text-xs text-primary-500">
+                                            Menyusun ulang berdasarkan relevansi
+                                            query, skill, dan pengalaman
+                                        </p>
+                                    </div>
                                 </div>
                             ) : (
-                                <div className="rounded-lg border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-semibold text-primary-700">
-                                    Menampilkan kandidat dengan skor computed dari profil dan skill.
+                                <div className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3.5">
+                                    <SlidersHorizontal className="size-4 shrink-0 text-slate-400" />
+                                    <p className="text-sm text-slate-500">
+                                        Ketik query untuk mengaktifkan
+                                        perankingan AI
+                                    </p>
                                 </div>
                             )
                         }
                     >
-                        <div className="rounded-lg border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-semibold text-primary-700">
-                            {effectiveSource === 'ai'
-                                ? 'Rekomendasi diurutkan ulang oleh AI berdasarkan query dan data kandidat.'
-                                : 'AI belum aktif atau gagal merespons, sementara memakai skor computed dari profil dan skill.'}
-                        </div>
+                        {effectiveSource === 'ai' ? (
+                            <div className="flex items-center gap-3 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3.5">
+                                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                                    <Sparkles className="size-4 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-emerald-800">
+                                        Diurutkan oleh AI
+                                    </p>
+                                    <p className="mt-0.5 text-xs text-emerald-600">
+                                        Kandidat disusun ulang dari kombinasi
+                                        query, filter aktif, kecocokan skill,
+                                        senioritas, riwayat pengalaman, lokasi,
+                                        gaji, dan preferensi kerja. Gunakan skor
+                                        sebagai bantuan awal, lalu validasi dari
+                                        detail profil kandidat.
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3.5">
+                                <Info className="size-4 shrink-0 text-slate-400" />
+                                <div>
+                                    <p className="text-sm font-medium text-slate-600">
+                                        Menggunakan skor standar
+                                    </p>
+                                    <p className="mt-0.5 text-xs text-slate-500">
+                                        AI belum meranking ulang hasil, sehingga
+                                        urutan memakai perhitungan profil,
+                                        skill, pengalaman, posisi, preferensi
+                                        kerja, dan industri yang tersedia.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </Deferred>
 
                     <div className="space-y-4">
@@ -523,254 +694,467 @@ function CandidateCard({ candidate }: { candidate: TalentCandidate }) {
               ? 'text-secondary-700'
               : 'text-slate-600';
     const availabilityLabel = formatAvailability(candidate.availability, t);
+    const scoreTone =
+        candidate.match_score >= 70
+            ? {
+                  ring: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+                  bar: 'bg-emerald-500',
+                  label: 'Kuat',
+              }
+            : candidate.match_score >= 40
+              ? {
+                    ring: 'border-amber-200 bg-amber-50 text-amber-700',
+                    bar: 'bg-amber-500',
+                    label: 'Perlu cek',
+                }
+              : {
+                    ring: 'border-rose-200 bg-rose-50 text-rose-700',
+                    bar: 'bg-rose-500',
+                    label: 'Rendah',
+                };
+    const topSkills = candidate.skills.slice(0, 8);
+    const hiddenSkillCount = Math.max(
+        0,
+        candidate.skills.length - topSkills.length,
+    );
+    const primaryExperience = candidate.experiences[0];
+    const primaryEducation = candidate.educations[0];
 
     return (
-        <article className="relative rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-            <div className="absolute top-[-14px] right-[-12px] flex size-14 items-center justify-center rounded-full border-4 border-white bg-primary-600 text-sm font-bold text-white shadow-sm">
-                {candidate.match_score}%
-            </div>
+        <article className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:border-primary-200 hover:shadow-md">
+            <div className="grid lg:grid-cols-[minmax(0,1fr)_248px]">
+                <div className="min-w-0 p-5">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                        <Avatar className="size-16 shrink-0 rounded-lg">
+                            <AvatarImage
+                                className="rounded-lg object-cover"
+                                src={candidate.avatar_url ?? undefined}
+                                alt={candidate.name}
+                            />
+                            <AvatarFallback className="rounded-lg bg-slate-900 text-lg font-bold text-white">
+                                {getInitials(candidate.name)}
+                            </AvatarFallback>
+                        </Avatar>
 
-            <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                <div className="flex min-w-0 flex-1 gap-5">
-                    <Avatar className="size-20 rounded-lg">
-                        <AvatarImage
-                            className="rounded-lg object-cover"
-                            src={candidate.avatar_url ?? undefined}
-                            alt={candidate.name}
-                        />
-                        <AvatarFallback className="rounded-lg bg-slate-900 text-lg font-bold text-white">
-                            {getInitials(candidate.name)}
-                        </AvatarFallback>
-                    </Avatar>
+                        <div className="min-w-0 flex-1">
+                            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                                <div className="min-w-0 flex-1">
+                                    <h2 className="truncate text-xl leading-tight font-bold text-slate-950">
+                                        {candidate.name}
+                                    </h2>
+                                    <p className="mt-1 line-clamp-2 text-sm font-medium text-slate-600">
+                                        {candidate.headline ||
+                                            'Headline belum dilengkapi'}
+                                    </p>
+                                </div>
+                                <div className="flex shrink-0 flex-wrap gap-1.5">
+                                    {candidate.profile_completion >= 80 ? (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
+                                            <BadgeCheck className="size-3.5" />
+                                            Profil lengkap
+                                        </span>
+                                    ) : null}
+                                    {candidate.is_shortlisted ? (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700">
+                                            <UserCheck className="size-3.5" />
+                                            Shortlisted
+                                        </span>
+                                    ) : null}
+                                </div>
+                            </div>
 
-                    <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-xl leading-tight font-bold">
-                                {candidate.name}
-                            </h2>
-                            {candidate.profile_completion >= 80 ? (
-                                <BadgeCheck className="size-5 text-blue-500" />
+                            <div className="mt-4 grid gap-2 rounded-lg border border-slate-100 bg-slate-50/70 p-3 sm:grid-cols-2 xl:grid-cols-4">
+                                <TalentMeta
+                                    icon={MapPin}
+                                    label="Lokasi"
+                                    text={candidate.location || '-'}
+                                />
+                                <TalentMeta
+                                    icon={BriefcaseBusiness}
+                                    label="Pengalaman"
+                                    text={`${candidate.max_years_exp || 0} tahun`}
+                                />
+                                <TalentMeta
+                                    icon={Banknote}
+                                    label="Ekspektasi"
+                                    text={candidate.salary_range}
+                                />
+                                <TalentMeta
+                                    className={availabilityTone}
+                                    icon={
+                                        availabilityTone.includes('green')
+                                            ? CalendarCheck
+                                            : Clock3
+                                    }
+                                    label="Ketersediaan"
+                                    text={availabilityLabel}
+                                />
+                            </div>
+
+                            <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)]">
+                                <div className="rounded-lg border border-slate-100 p-3">
+                                    <div className="mb-2 flex items-center justify-between gap-3">
+                                        <p className="text-[11px] font-bold tracking-wide text-slate-500 uppercase">
+                                            Skill kandidat
+                                        </p>
+                                        {candidate.skills.length ? (
+                                            <span className="text-xs text-slate-400">
+                                                {candidate.skills.length} skill
+                                            </span>
+                                        ) : null}
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {topSkills.length ? (
+                                            <>
+                                                {topSkills.map(
+                                                    (skill, index) => (
+                                                        <Badge
+                                                            className={cn(
+                                                                'rounded-md border-transparent px-2.5 py-1',
+                                                                index < 3
+                                                                    ? 'bg-primary-50 text-primary-700'
+                                                                    : 'bg-slate-100 text-slate-600',
+                                                            )}
+                                                            key={skill.name}
+                                                            variant="outline"
+                                                        >
+                                                            {skill.name}
+                                                            {skill.years_exp ? (
+                                                                <span className="ml-1 text-[10px] text-slate-400">
+                                                                    {
+                                                                        skill.years_exp
+                                                                    }
+                                                                    th
+                                                                </span>
+                                                            ) : null}
+                                                        </Badge>
+                                                    ),
+                                                )}
+                                                {hiddenSkillCount > 0 ? (
+                                                    <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
+                                                        +{hiddenSkillCount}
+                                                    </span>
+                                                ) : null}
+                                            </>
+                                        ) : (
+                                            <span className="text-sm text-slate-500">
+                                                Skill belum dilengkapi
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-3">
+                                    <CandidateFact
+                                        icon={BriefcaseBusiness}
+                                        label="Pengalaman terbaru"
+                                        title={
+                                            primaryExperience?.job_title ||
+                                            'Belum ada pengalaman'
+                                        }
+                                        meta={[
+                                            primaryExperience?.company_name,
+                                            primaryExperience?.start_date
+                                                ? `${primaryExperience.start_date} - ${
+                                                      primaryExperience.is_current
+                                                          ? 'Sekarang'
+                                                          : primaryExperience.end_date ||
+                                                            '-'
+                                                  }`
+                                                : null,
+                                        ]}
+                                    />
+                                    <CandidateFact
+                                        icon={GraduationCap}
+                                        label="Pendidikan"
+                                        title={
+                                            primaryEducation?.degree ||
+                                            'Belum ada pendidikan'
+                                        }
+                                        meta={[
+                                            primaryEducation?.field_of_study,
+                                            primaryEducation?.institution,
+                                            primaryEducation?.end_year
+                                                ? String(
+                                                      primaryEducation.end_year,
+                                                  )
+                                                : null,
+                                        ]}
+                                    />
+                                </div>
+                            </div>
+
+                            {candidate.match_reason ? (
+                                <div className="mt-5 border-t border-slate-100 pt-4">
+                                    <p className="max-w-3xl text-sm leading-6 text-slate-600">
+                                        <span className="font-semibold text-primary-700">
+                                            Alasan AI:
+                                        </span>{' '}
+                                        {candidate.match_reason}
+                                    </p>
+                                </div>
                             ) : null}
                         </div>
-                        <p className="mt-1 text-sm font-medium text-slate-600">
-                            {candidate.headline}
-                        </p>
-
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            {candidate.skills.length ? (
-                                candidate.skills.map((skill, index) => (
-                                    <Badge
-                                        className={cn(
-                                            'rounded-lg border-transparent',
-                                            index < 3
-                                                ? 'bg-primary-50 text-primary-700'
-                                                : 'bg-slate-100 text-slate-600',
-                                        )}
-                                        key={skill.name}
-                                        variant="outline"
-                                    >
-                                        {skill.name}
-                                    </Badge>
-                                ))
-                            ) : (
-                                <span className="text-sm text-slate-500">
-                                    Skill belum dilengkapi
-                                </span>
-                            )}
-                        </div>
-
-                        {candidate.experiences.length > 0 ? (
-                            <div className="mt-4 space-y-1.5 rounded-lg border border-slate-100 bg-slate-50/60 p-3">
-                                <p className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-                                    Pengalaman
-                                </p>
-                                {candidate.experiences.map((exp, index) => (
-                                    <p
-                                        key={`${exp.job_title}-${index}`}
-                                        className="text-sm text-slate-700"
-                                    >
-                                        <span className="font-semibold">
-                                            {exp.job_title || '-'}
-                                        </span>
-                                        {exp.company_name ? (
-                                            <span className="text-slate-500">
-                                                {' '}
-                                                · {exp.company_name}
-                                            </span>
-                                        ) : null}
-                                        {exp.start_date ? (
-                                            <span className="text-xs text-slate-400">
-                                                {' '}
-                                                ({exp.start_date} -{' '}
-                                                {exp.is_current
-                                                    ? 'Sekarang'
-                                                    : exp.end_date || '-'})
-                                            </span>
-                                        ) : null}
-                                    </p>
-                                ))}
-                            </div>
-                        ) : null}
-
-                        {candidate.educations.length > 0 ? (
-                            <div className="mt-2 space-y-1.5 rounded-lg border border-slate-100 bg-slate-50/60 p-3">
-                                <p className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-                                    Pendidikan
-                                </p>
-                                {candidate.educations.map((edu, index) => (
-                                    <p
-                                        key={`${edu.institution}-${index}`}
-                                        className="text-sm text-slate-700"
-                                    >
-                                        <span className="font-semibold">
-                                            {edu.degree || '-'}
-                                        </span>
-                                        {edu.field_of_study ? (
-                                            <span className="text-slate-500">
-                                                {' '}
-                                                · {edu.field_of_study}
-                                            </span>
-                                        ) : null}
-                                        {edu.institution ? (
-                                            <span className="text-slate-500">
-                                                {' '}
-                                                — {edu.institution}
-                                            </span>
-                                        ) : null}
-                                        {edu.end_year ? (
-                                            <span className="text-xs text-slate-400">
-                                                {' '}
-                                                ({edu.end_year})
-                                            </span>
-                                        ) : null}
-                                    </p>
-                                ))}
-                            </div>
-                        ) : null}
-
-                        <div className="mt-5 flex flex-wrap gap-x-7 gap-y-3 text-sm text-slate-500">
-                            <TalentMeta
-                                icon={MapPin}
-                                text={candidate.location || '-'}
-                            />
-                            <TalentMeta
-                                icon={Banknote}
-                                text={candidate.salary_range}
-                            />
-                            <TalentMeta
-                                icon={BriefcaseBusiness}
-                                text={`${candidate.max_years_exp || 0} Tahun`}
-                            />
-                            <TalentMeta
-                                className={availabilityTone}
-                                icon={
-                                    availabilityTone.includes('green')
-                                        ? CalendarCheck
-                                        : Clock3
-                                }
-                                text={availabilityLabel}
-                            />
-                        </div>
-                        {candidate.match_reason ? (
-                            <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-500">
-                                <span className="font-semibold text-primary-700">
-                                    Alasan AI:
-                                </span>{' '}
-                                {candidate.match_reason}
-                            </p>
-                        ) : null}
                     </div>
                 </div>
 
-                <div className="grid w-full gap-3 sm:w-40">
-                    <Button
-                        asChild
-                        className="rounded-lg bg-primary-600 hover:bg-primary-700"
-                    >
-                        <Link href={talentSearchShow(candidate.id)}>
-                            Lihat Detail
-                        </Link>
-                    </Button>
-                    {candidate.is_shortlisted ? (
+                <aside className="border-t border-slate-200 bg-slate-50/80 p-5 lg:border-t-0 lg:border-l">
+                    <div className="flex items-start justify-between gap-3 lg:block">
+                        <div>
+                            <div
+                                className={cn(
+                                    'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold',
+                                    scoreTone.ring,
+                                )}
+                            >
+                                <Sparkles className="size-3.5" />
+                                {candidate.match_source === 'ai' ||
+                                candidate.match_source === 'ai_match_score'
+                                    ? 'AI Match'
+                                    : 'Auto Match'}
+                            </div>
+                            <div className="mt-4 flex items-end gap-2">
+                                <span className="text-4xl font-bold tracking-tight text-slate-950">
+                                    {candidate.match_score}
+                                </span>
+                                <span className="pb-1 text-sm font-semibold text-slate-500">
+                                    %
+                                </span>
+                            </div>
+                            <p className="mt-1 text-sm font-semibold text-slate-700">
+                                {scoreTone.label}
+                            </p>
+                        </div>
+
+                        <ScoreBreakdownPopover candidate={candidate} />
+                    </div>
+
+                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-white">
+                        <div
+                            className={cn('h-full rounded-full', scoreTone.bar)}
+                            style={{ width: `${candidate.match_score}%` }}
+                        />
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-2 gap-2 text-xs text-slate-600 lg:grid-cols-1">
+                        <ScoreMetric
+                            label="Profil"
+                            value={`${candidate.profile_completion}% lengkap`}
+                        />
+                        <ScoreMetric
+                            label="Riwayat apply"
+                            value={`${candidate.company_applications_count} lamaran`}
+                        />
+                    </div>
+
+                    <div className="mt-5 grid gap-2">
                         <Button
                             asChild
-                            className="rounded-lg border-primary-200 text-primary-700 hover:bg-primary-50"
-                            variant="outline"
+                            className="h-10 rounded-lg bg-primary-600 hover:bg-primary-700"
                         >
-                            <Link
-                                as="button"
-                                href={talentSearchUnshortlist(candidate.id)}
-                                method="delete"
-                                preserveScroll
-                            >
-                                Shortlisted
+                            <Link href={talentSearchShow(candidate.id)}>
+                                <Eye className="size-4" />
+                                Detail
                             </Link>
                         </Button>
-                    ) : (
-                        <Button
-                            asChild
-                            className="rounded-lg border-primary-200 text-primary-700 hover:bg-primary-50"
-                            variant="outline"
-                        >
-                            <Link
-                                as="button"
-                                href={talentSearchShortlist(candidate.id)}
-                                method="post"
-                                preserveScroll
+                        <div className="grid grid-cols-2 gap-2">
+                            <Button
+                                asChild
+                                className="h-10 rounded-lg border-primary-200 text-primary-700 hover:bg-primary-50"
+                                variant="outline"
                             >
-                                Shortlist
-                            </Link>
-                        </Button>
-                    )}
-                    <Button
-                        asChild
-                        className="rounded-lg border-primary-200 text-primary-700 hover:bg-primary-50"
-                        variant="outline"
-                    >
-                        <Link
-                            as="button"
-                            href={talentSearchContact(candidate.id)}
-                            method="post"
-                        >
-                            Hubungi
-                        </Link>
-                    </Button>
-                    {candidate.is_saved ? (
+                                <Link
+                                    as="button"
+                                    href={
+                                        candidate.is_shortlisted
+                                            ? talentSearchUnshortlist(
+                                                  candidate.id,
+                                              )
+                                            : talentSearchShortlist(
+                                                  candidate.id,
+                                              )
+                                    }
+                                    method={
+                                        candidate.is_shortlisted
+                                            ? 'delete'
+                                            : 'post'
+                                    }
+                                    preserveScroll
+                                >
+                                    <UserCheck className="size-4" />
+                                    {candidate.is_shortlisted
+                                        ? 'Batal'
+                                        : 'Shortlist'}
+                                </Link>
+                            </Button>
+                            <Button
+                                asChild
+                                className="h-10 rounded-lg border-primary-200 text-primary-700 hover:bg-primary-50"
+                                variant="outline"
+                            >
+                                <Link
+                                    as="button"
+                                    href={talentSearchContact(candidate.id)}
+                                    method="post"
+                                >
+                                    <MessageCircle className="size-4" />
+                                    Hubungi
+                                </Link>
+                            </Button>
+                        </div>
                         <Button
                             asChild
-                            className="rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100"
+                            className={cn(
+                                'h-10 rounded-lg',
+                                candidate.is_saved
+                                    ? 'bg-primary-50 text-primary-700 hover:bg-primary-100'
+                                    : 'bg-white text-slate-700 hover:bg-slate-100',
+                            )}
                             variant="secondary"
                         >
                             <Link
                                 as="button"
-                                href={talentSearchUnsave(candidate.id)}
-                                method="delete"
+                                href={
+                                    candidate.is_saved
+                                        ? talentSearchUnsave(candidate.id)
+                                        : talentSearchSave(candidate.id)
+                                }
+                                method={candidate.is_saved ? 'delete' : 'post'}
                                 preserveScroll
                             >
-                                <BookmarkCheck className="size-4" />
-                                Tersimpan
+                                {candidate.is_saved ? (
+                                    <BookmarkCheck className="size-4" />
+                                ) : (
+                                    <Bookmark className="size-4" />
+                                )}
+                                {candidate.is_saved ? 'Tersimpan' : 'Simpan'}
                             </Link>
                         </Button>
-                    ) : (
-                        <Button
-                            asChild
-                            className="rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"
-                            variant="secondary"
-                        >
-                            <Link
-                                as="button"
-                                href={talentSearchSave(candidate.id)}
-                                method="post"
-                                preserveScroll
-                            >
-                                <Bookmark className="size-4" />
-                                Simpan
-                            </Link>
-                        </Button>
-                    )}
-                </div>
+                    </div>
+                </aside>
             </div>
         </article>
+    );
+}
+
+function ScoreBreakdownPopover({ candidate }: { candidate: TalentCandidate }) {
+    const visibleBreakdown =
+        candidate.score_breakdown?.filter((item) => item.raw_pct > 0) ?? [];
+
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+                <button
+                    type="button"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-primary-200 hover:text-primary-700"
+                >
+                    <Gauge className="size-3.5" />
+                    Rincian
+                </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 p-0">
+                <div className="border-b px-4 py-3">
+                    <p className="text-sm font-semibold text-zinc-900">
+                        Rincian Penilaian
+                    </p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                        {candidate.match_source === 'ai' ||
+                        candidate.match_source === 'ai_match_score'
+                            ? 'Skor dihitung oleh AI'
+                            : 'Skor otomatis berdasarkan profil'}
+                    </p>
+                </div>
+                <div className="px-4 py-3">
+                    {visibleBreakdown.length > 0 ? (
+                        <div className="space-y-2.5">
+                            {visibleBreakdown.map((item) => (
+                                <div key={item.label}>
+                                    <div className="mb-1 flex items-center justify-between text-xs">
+                                        <span className="font-medium text-zinc-700">
+                                            {item.label}
+                                        </span>
+                                        <span className="text-slate-500 tabular-nums">
+                                            {item.raw_pct}%{' '}
+                                            <span className="text-slate-400">
+                                                x{item.weight}%
+                                            </span>
+                                        </span>
+                                    </div>
+                                    <div className="h-1.5 overflow-hidden rounded-full bg-zinc-100">
+                                        <div
+                                            className={cn(
+                                                'h-full rounded-full transition-all',
+                                                item.raw_pct >= 70
+                                                    ? 'bg-emerald-500'
+                                                    : item.raw_pct >= 40
+                                                      ? 'bg-amber-400'
+                                                      : 'bg-rose-400',
+                                            )}
+                                            style={{
+                                                width: `${item.raw_pct}%`,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="mt-3 flex items-center justify-between border-t pt-3 text-xs font-semibold text-zinc-800">
+                                <span>Total</span>
+                                <span>{candidate.match_score}%</span>
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="text-xs leading-5 text-slate-500">
+                            Breakdown belum tersedia. Gunakan skor total dan
+                            detail profil sebagai validasi awal.
+                        </p>
+                    )}
+                </div>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
+function CandidateFact({
+    icon: Icon,
+    label,
+    title,
+    meta,
+}: {
+    icon: typeof BriefcaseBusiness;
+    label: string;
+    title: string;
+    meta: Array<string | number | null | undefined>;
+}) {
+    const visibleMeta = meta.filter(Boolean);
+
+    return (
+        <div className="flex min-w-0 gap-3 rounded-lg border border-slate-100 bg-white p-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500">
+                <Icon className="size-4" />
+            </div>
+            <div className="min-w-0">
+                <p className="text-[11px] font-bold tracking-wide text-slate-500 uppercase">
+                    {label}
+                </p>
+                <p className="mt-0.5 line-clamp-1 text-sm font-semibold text-slate-800">
+                    {title}
+                </p>
+                {visibleMeta.length ? (
+                    <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">
+                        {visibleMeta.join(' · ')}
+                    </p>
+                ) : null}
+            </div>
+        </div>
+    );
+}
+
+function ScoreMetric({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="flex items-center justify-between gap-3 border-t border-slate-200 pt-2 first:border-t-0 first:pt-0">
+            <span>{label}</span>
+            <span className="font-semibold text-slate-800">{value}</span>
+        </div>
     );
 }
 
@@ -816,6 +1200,37 @@ function FilterSelect({
                 </option>
             ))}
         </select>
+    );
+}
+
+function AiGuideItem({
+    icon: Icon,
+    number,
+    title,
+    text,
+}: {
+    icon: typeof BrainCircuit;
+    number: string;
+    title: string;
+    text: string;
+}) {
+    return (
+        <div className="flex gap-3 px-4 py-4 sm:px-5">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary-100 bg-white text-primary-600 shadow-sm">
+                <Icon className="size-4" />
+            </div>
+            <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] font-bold text-slate-400">
+                        {number}
+                    </span>
+                    <p className="text-sm font-semibold text-slate-900">
+                        {title}
+                    </p>
+                </div>
+                <p className="mt-1 text-xs leading-5 text-slate-600">{text}</p>
+            </div>
+        </div>
     );
 }
 
@@ -934,17 +1349,28 @@ function SearchableFilterSelect({
 
 function TalentMeta({
     icon: Icon,
+    label,
     text,
     className,
 }: {
     icon: typeof MapPin;
+    label?: string;
     text: string;
     className?: string;
 }) {
     return (
-        <span className={cn('inline-flex items-center gap-2', className)}>
-            <Icon className="size-4" />
-            {text}
+        <span className={cn('flex min-w-0 items-start gap-2', className)}>
+            <Icon className="mt-0.5 size-4 shrink-0" />
+            <span className="min-w-0">
+                {label ? (
+                    <span className="block text-[10px] font-bold tracking-wide text-slate-400 uppercase">
+                        {label}
+                    </span>
+                ) : null}
+                <span className="block truncate text-sm font-medium">
+                    {text}
+                </span>
+            </span>
         </span>
     );
 }

@@ -1,6 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { Bell, Volume2, X } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { testNotificationSound, useFcm } from '@/hooks/use-fcm';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
@@ -12,12 +12,17 @@ export function NotificationPermissionBanner() {
     const { t } = useTranslate();
     const { auth } = usePage<{ auth: { user?: { id?: number } | null } }>().props;
     const { permission, requesting, request } = useFcm();
-    const [dismissed, setDismissed] = useState(() => {
-        if (typeof window === 'undefined') {
-            return false;
+    const [mounted, setMounted] = useState(false);
+    const [dismissed, setDismissed] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        if (window.localStorage.getItem(DISMISS_KEY) === '1') {
+            setDismissed(true);
         }
-        return window.localStorage.getItem(DISMISS_KEY) === '1';
-    });
+    }, []);
+
+    if (!mounted) return null;
 
     if (!auth?.user?.id) {
         return null;

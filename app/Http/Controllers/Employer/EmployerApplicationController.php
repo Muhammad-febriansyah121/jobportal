@@ -84,8 +84,8 @@ class EmployerApplicationController extends Controller
                 'screening_answers' => $this->normalizeScreeningAnswers($application->screening_answers_json),
                 'ai_fit_score' => $application->ai_fit_score,
                 'ai_skill_match' => [
-                    'matched' => $application->ai_skill_match['matched'] ?? [],
-                    'missing' => $application->ai_skill_match['missing'] ?? [],
+                    'matched' => $application->ai_skill_match['matched_skills'] ?? $application->ai_skill_match['matched'] ?? [],
+                    'missing' => $application->ai_skill_match['missing_skills'] ?? $application->ai_skill_match['missing'] ?? [],
                 ],
                 'job' => [
                     'id' => $application->jobListing?->id,

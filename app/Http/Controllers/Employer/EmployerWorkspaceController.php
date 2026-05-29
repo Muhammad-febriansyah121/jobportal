@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Employer;
 
+use App\Actions\Candidate\ComputeRuleBasedFitScore;
 use App\Actions\Employer\GenerateTalentSearchRecommendations;
 use App\Actions\Employer\MatchCandidateToCompanyJobs;
 use App\Actions\Employer\ResolveEmployerCompany;
@@ -27,6 +28,7 @@ class EmployerWorkspaceController extends Controller
     public function candidates(
         Request $request,
         ResolveEmployerCompany $resolveEmployerCompany,
+        ComputeRuleBasedFitScore $computeRuleBasedFitScore,
         WhatsAppGatewayService $whatsApp,
     ): Response|RedirectResponse {
         $company = $resolveEmployerCompany->handle($request->user());
@@ -48,9 +50,12 @@ class EmployerWorkspaceController extends Controller
             ->with([
                 'candidate.user:id,name,email,phone,avatar_url',
                 'candidate.skills:id,name',
+                'candidate.experiences:id,candidate_id,start_date,end_date,is_current,job_title',
                 'candidate.preferredIndustry:id,name',
                 'cv:id,candidate_id,file_url,is_primary,uploaded_at',
-                'jobListing:id,company_id,title,status',
+                'jobListing:id,company_id,title,status,experience_level,work_mode,salary_min,salary_max,industry_id',
+                'jobListing.skills:id,name',
+                'jobListing.industry:id,name',
                 'latestStatusHistory',
                 'interviews' => fn ($query) => $query
                     ->select(['id', 'application_id', 'scheduled_at', 'mode', 'status'])
@@ -87,7 +92,7 @@ class EmployerWorkspaceController extends Controller
             ->latest('applied_at')
             ->paginate(12)
             ->withQueryString()
-            ->through(fn (Application $application): array => $this->candidateRow($application));
+            ->through(fn (Application $application): array => $this->candidateRow($application, $computeRuleBasedFitScore));
 
         $selectedJob = null;
         $suggestedQuestions = [];
@@ -829,6 +834,11 @@ class EmployerWorkspaceController extends Controller
             ->values()
             ->all();
 
+        $profileScore = $this->computedTalentScore($candidate, $skills, $search);
+        $computedScore = $aiScore > 0
+            ? ['score' => $aiScore, 'breakdown' => $profileScore['breakdown']]
+            : $profileScore;
+
         return [
             'id' => $candidate->id,
             'name' => $candidate->full_name ?? $candidate->user?->name ?? 'Kandidat',
@@ -841,8 +851,9 @@ class EmployerWorkspaceController extends Controller
             'work_mode_pref' => $candidate->work_mode_pref ? str($candidate->work_mode_pref)->headline()->toString() : '-',
             'profile_completion' => $candidate->profile_completion,
             'company_applications_count' => $candidate->company_applications_count,
-            'match_score' => $aiScore > 0 ? $aiScore : $this->computedTalentScore($candidate, $skills, $search),
+            'match_score' => $computedScore['score'],
             'match_source' => $aiScore > 0 ? 'ai_match_score' : 'computed',
+            'score_breakdown' => $computedScore['breakdown'],
             'match_reason' => $candidate->aiMatchScores->first()?->explanation,
             'skills' => $skills->take(5)->all(),
             'experiences' => $experiences,
@@ -853,25 +864,22 @@ class EmployerWorkspaceController extends Controller
         ];
     }
 
-    private function computedTalentScore(CandidateProfile $candidate, Collection $skills, string $search): int
+    /**
+     * @return array{score: int, breakdown: array<int, array{label: string, weight: int, raw_pct: int}>}
+     */
+    private function computedTalentScore(CandidateProfile $candidate, Collection $skills, string $search): array
     {
-        // Skill coverage — 35%: normalized by skill count (max at 10 skills)
         $skillScore = min(35.0, $skills->count() * 3.5);
 
-        // Pengalaman kerja — 25%: estimated from experience count (max at 5 jobs = 25)
-        $expCount = $candidate->experiences?->count() ?? 0;
-        $expScore = min(25.0, $expCount * 5.0);
+        $totalYears = $this->candidateTotalYearsExperience($candidate);
+        $expScore = min(25.0, ($totalYears / 5) * 25);
 
-        // Posisi/jabatan — 15%: has a meaningful headline
         $positionScore = filled($candidate->headline) ? 15.0 : 7.5;
 
-        // Level senioritas — 10%: profile completeness as proxy
         $seniorityScore = (($candidate->profile_completion ?? 0) >= 80) ? 10.0 : (($candidate->profile_completion ?? 0) >= 50 ? 6.0 : 3.0);
 
-        // Industri — 5%: has preferred industry set
         $industryScore = filled($candidate->preferred_industry_id) ? 5.0 : 0.0;
 
-        // Preferensi kerja — 10%: has work_mode_pref + expected salary
         $workPrefScore = (filled($candidate->work_mode_pref) && $candidate->work_mode_pref !== 'any') ? 5.0 : 2.5;
         $salaryPrefScore = filled($candidate->expected_salary_min) ? 5.0 : 0.0;
 
@@ -884,7 +892,32 @@ class EmployerWorkspaceController extends Controller
             }
         }
 
-        return max(15, min(100, $score));
+        return [
+            'score' => max(15, min(100, $score)),
+            'breakdown' => [
+                ['label' => 'Skill', 'weight' => 35, 'raw_pct' => (int) round(($skillScore / 35) * 100)],
+                ['label' => 'Pengalaman', 'weight' => 25, 'raw_pct' => (int) round(($expScore / 25) * 100)],
+                ['label' => 'Posisi', 'weight' => 15, 'raw_pct' => (int) round(($positionScore / 15) * 100)],
+                ['label' => 'Senioritas', 'weight' => 10, 'raw_pct' => (int) round(($seniorityScore / 10) * 100)],
+                ['label' => 'Preferensi', 'weight' => 10, 'raw_pct' => (int) round((($workPrefScore + $salaryPrefScore) / 10) * 100)],
+                ['label' => 'Industri', 'weight' => 5, 'raw_pct' => (int) round(($industryScore / 5) * 100)],
+            ],
+        ];
+    }
+
+    private function candidateTotalYearsExperience(CandidateProfile $candidate): float
+    {
+        $totalMonths = $candidate->experiences
+            ->filter(fn ($experience): bool => $experience->start_date !== null)
+            ->sum(function ($experience): int {
+                $endDate = $experience->is_current
+                    ? now()
+                    : ($experience->end_date ?? now());
+
+                return (int) max(0, $experience->start_date->diffInMonths($endDate));
+            });
+
+        return $totalMonths / 12;
     }
 
     /**
@@ -903,11 +936,43 @@ class EmployerWorkspaceController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function candidateRow(Application $application): array
+    private function candidateRow(Application $application, ComputeRuleBasedFitScore $computeRuleBasedFitScore): array
     {
         $candidate = $application->candidate;
         $interview = $application->interviews->first();
         $aiSession = $application->latestAiInterviewSession;
+        $aiSkillMatch = collect([
+            'matched' => $application->ai_skill_match['matched_skills'] ?? $application->ai_skill_match['matched'] ?? [],
+            'missing' => $application->ai_skill_match['missing_skills'] ?? $application->ai_skill_match['missing'] ?? [],
+            'skill_score' => $application->ai_skill_match['skill_score'] ?? null,
+            'experience_score' => $application->ai_skill_match['experience_score'] ?? null,
+            'position_score' => $application->ai_skill_match['position_score'] ?? null,
+            'seniority_score' => $application->ai_skill_match['seniority_score'] ?? null,
+            'industry_score' => $application->ai_skill_match['industry_score'] ?? null,
+            'work_preference_score' => $application->ai_skill_match['work_preference_score'] ?? null,
+        ])->filter(fn ($value): bool => $value !== null)->all();
+
+        $hasCompleteScoreBreakdown = collect([
+            'skill_score',
+            'experience_score',
+            'position_score',
+            'seniority_score',
+            'industry_score',
+            'work_preference_score',
+        ])->every(fn (string $key): bool => isset($aiSkillMatch[$key]) && is_numeric($aiSkillMatch[$key]));
+
+        if (! $hasCompleteScoreBreakdown && $candidate !== null && $application->jobListing !== null) {
+            $ruleResult = $computeRuleBasedFitScore->handle($application->jobListing, $candidate);
+
+            $aiSkillMatch = array_merge($aiSkillMatch, [
+                'skill_score' => $ruleResult['skill_score'],
+                'experience_score' => $ruleResult['experience_score'],
+                'position_score' => $ruleResult['position_score'],
+                'seniority_score' => $ruleResult['seniority_score'],
+                'industry_score' => $ruleResult['industry_score'],
+                'work_preference_score' => $ruleResult['work_preference_score'],
+            ]);
+        }
 
         return [
             'id' => $application->id,
@@ -916,10 +981,7 @@ class EmployerWorkspaceController extends Controller
             'applied_at' => $application->applied_at?->format('d M Y') ?? '-',
             'first_responded_at' => $application->first_responded_at?->format('d M Y') ?? null,
             'ai_fit_score' => $application->ai_fit_score,
-            'ai_skill_match' => [
-                'matched' => $application->ai_skill_match['matched'] ?? [],
-                'missing' => $application->ai_skill_match['missing'] ?? [],
-            ],
+            'ai_skill_match' => $aiSkillMatch,
             'cover_letter' => str(strip_tags((string) $application->cover_letter))->limit(180)->toString(),
             'candidate' => [
                 'id' => $candidate?->id,

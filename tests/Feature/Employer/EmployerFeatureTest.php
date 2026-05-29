@@ -1350,7 +1350,7 @@ test('employer can view incoming candidates for their company', function () {
         'uploaded_at' => now(),
     ]);
 
-    Application::create([
+    $application = Application::create([
         'job_listing_id' => $job->id,
         'candidate_id' => $candidate->id,
         'candidate_cv_id' => $cv->id,
@@ -1358,8 +1358,8 @@ test('employer can view incoming candidates for their company', function () {
         'cover_letter' => 'Saya cocok untuk posisi ini.',
         'ai_fit_score' => 86,
         'ai_skill_match' => [
-            'matched' => ['Laravel'],
-            'missing' => ['Redis'],
+            'matched_skills' => ['Laravel'],
+            'missing_skills' => ['Redis'],
         ],
         'applied_at' => now(),
     ]);
@@ -1374,6 +1374,22 @@ test('employer can view incoming candidates for their company', function () {
             ->where('applications.data.0.candidate.name', 'Alya Prameswari')
             ->where('applications.data.0.job.title', 'Backend Engineer')
             ->where('applications.data.0.ai_fit_score', 86)
+            ->where('applications.data.0.ai_skill_match.skill_score', 50)
+            ->where('applications.data.0.ai_skill_match.experience_score', 50)
+            ->where('applications.data.0.ai_skill_match.position_score', 50)
+            ->where('applications.data.0.ai_skill_match.seniority_score', 50)
+            ->where('applications.data.0.ai_skill_match.industry_score', 100)
+            ->where('applications.data.0.ai_skill_match.work_preference_score', 75)
+            ->etc()
+        );
+
+    actingAs($employer)
+        ->get(route('employer.candidates.show', $application))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('employer/candidates/show')
+            ->where('application.ai_skill_match.matched.0', 'Laravel')
+            ->where('application.ai_skill_match.missing.0', 'Redis')
             ->etc()
         );
 });
@@ -1476,6 +1492,8 @@ test('employer can search talent from candidate profiles', function () {
             ->where('candidates.data.0.name', 'Aditya Pratama')
             ->where('candidates.data.0.match_score', 98)
             ->where('candidates.data.0.match_source', 'ai_match_score')
+            ->where('candidates.data.0.score_breakdown.0.label', 'Skill')
+            ->where('candidates.data.0.score_breakdown.0.raw_pct', 10)
             ->where('candidates.data.0.skills.0.name', 'Java')
             ->where('candidates.data.0.avatar_url', 'https://example.test/avatar.jpg')
             ->where('candidates.data.0.is_saved', false)

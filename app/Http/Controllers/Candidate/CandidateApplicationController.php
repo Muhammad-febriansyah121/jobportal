@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Candidate;
 
-use App\Actions\Candidate\PredictItJobAcceptance;
+use App\Actions\Candidate\ComputeRuleBasedFitScore;
 use App\Actions\Candidate\ResolveCandidateProfile;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Candidate\ApplyJobRequest;
+use App\Jobs\ComputeAiFitScoreJob;
 use App\Jobs\ComputeCandidateIntentJob;
 use App\Models\AiInterviewSession;
 use App\Models\AiMatchScore;
@@ -56,7 +57,7 @@ class CandidateApplicationController extends Controller
         ApplyJobRequest $request,
         JobListing $jobListing,
         ResolveCandidateProfile $resolveCandidateProfile,
-        PredictItJobAcceptance $predictItJobAcceptance,
+        ComputeRuleBasedFitScore $computeRuleBasedFitScore,
     ): RedirectResponse {
         abort_unless($jobListing->status === 'published', 404);
 
@@ -84,13 +85,30 @@ class CandidateApplicationController extends Controller
         $screeningAnswers = $data['screening_answers'] ?? [];
         $this->validateScreeningAnswers($jobListing, $screeningAnswers);
 
-        $matchScore = AiMatchScore::query()
+        // Cek pre-computed AI match score, fallback ke rule-based (instant)
+        $preComputed = AiMatchScore::query()
             ->where('candidate_id', $candidate->id)
             ->where('job_listing_id', $jobListing->id)
             ->first();
-        $predictedChance = $matchScore?->overall_score === null
-            ? $predictItJobAcceptance->handle($jobListing, $candidate)
-            : null;
+
+        $ruleResult = $computeRuleBasedFitScore->handle($jobListing, $candidate);
+
+        if ($preComputed?->overall_score) {
+            $initialScore = (int) $preComputed->overall_score;
+            $scoreResult = [
+                'matched_skills' => $preComputed->matched_skills ?? [],
+                'missing_skills' => $preComputed->missing_skills ?? [],
+                'skill_score' => (int) $preComputed->skill_score ?: $ruleResult['skill_score'],
+                'experience_score' => (int) $preComputed->experience_score ?: $ruleResult['experience_score'],
+                'position_score' => $ruleResult['position_score'],
+                'seniority_score' => $ruleResult['seniority_score'],
+                'industry_score' => (int) $preComputed->industry_score ?: $ruleResult['industry_score'],
+                'work_preference_score' => $ruleResult['work_preference_score'],
+            ];
+        } else {
+            $scoreResult = $ruleResult;
+            $initialScore = $scoreResult['fit_score'];
+        }
 
         $application = $candidate->applications()->create([
             'job_listing_id' => $jobListing->id,
@@ -98,10 +116,16 @@ class CandidateApplicationController extends Controller
             'status' => 'applied',
             'cover_letter' => $data['cover_letter'] ?? null,
             'screening_answers_json' => $screeningAnswers,
-            'ai_fit_score' => $matchScore?->overall_score ?? $predictedChance['percentage'] ?? null,
+            'ai_fit_score' => $initialScore,
             'ai_skill_match' => [
-                'matched_skills' => $matchScore?->matched_skills ?? [],
-                'missing_skills' => $matchScore?->missing_skills ?? [],
+                'matched_skills' => $scoreResult['matched_skills'],
+                'missing_skills' => $scoreResult['missing_skills'],
+                'skill_score' => $scoreResult['skill_score'],
+                'experience_score' => $scoreResult['experience_score'],
+                'position_score' => $scoreResult['position_score'],
+                'seniority_score' => $scoreResult['seniority_score'],
+                'industry_score' => $scoreResult['industry_score'],
+                'work_preference_score' => $scoreResult['work_preference_score'],
             ],
             'applied_at' => now(),
         ]);
@@ -114,6 +138,7 @@ class CandidateApplicationController extends Controller
             ->increment('apply_clicks_count');
 
         ComputeCandidateIntentJob::dispatch($candidate);
+        ComputeAiFitScoreJob::dispatch($application->id);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Lamaran berhasil dikirim.']);
 

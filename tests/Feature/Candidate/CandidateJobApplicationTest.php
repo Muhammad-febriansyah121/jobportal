@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureCandidateOnboardingIsComplete;
 use App\Models\ActivityLog;
+use App\Models\Application;
 use App\Models\CandidateCv;
 use App\Models\CandidateExperience;
 use App\Models\CandidateProfile;
@@ -152,12 +153,23 @@ test('candidate sees predicted acceptance percentage for admin background applyi
         ])
         ->assertRedirect();
 
-    $this->assertDatabaseHas('applications', [
-        'candidate_id' => $candidate->id,
-        'job_listing_id' => $job->id,
-        'candidate_cv_id' => $cv->id,
-        'ai_fit_score' => 32,
-    ]);
+    // Skor dihitung rule-based (ComputeRuleBasedFitScore), bukan PredictItJobAcceptance
+    $application = Application::where('candidate_id', $candidate->id)
+        ->where('job_listing_id', $job->id)
+        ->first();
+    expect($application)->not->toBeNull();
+    expect($application->ai_fit_score)->toBeGreaterThan(0)->toBeLessThanOrEqual(100);
+    expect($application->ai_skill_match)
+        ->toHaveKeys([
+            'matched_skills',
+            'missing_skills',
+            'skill_score',
+            'experience_score',
+            'position_score',
+            'seniority_score',
+            'industry_score',
+            'work_preference_score',
+        ]);
 });
 
 test('candidate cannot apply twice to the same job', function () {

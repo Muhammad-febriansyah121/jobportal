@@ -7,7 +7,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Services\WhatsAppGatewayService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class EmployerCandidateActionController extends Controller
 {
@@ -81,6 +85,62 @@ class EmployerCandidateActionController extends Controller
         return response()->json([
             'message' => 'Pesan WhatsApp berhasil dikirim.',
         ]);
+    }
+
+    public function updateStatus(
+        Request $request,
+        Application $application,
+        ResolveEmployerCompany $resolveEmployerCompany,
+    ): RedirectResponse {
+        $company = $resolveEmployerCompany->handle($request->user());
+
+        abort_unless(
+            $company !== null && $application->jobListing?->company_id === $company->id,
+            403,
+        );
+
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(['screened', 'shortlisted', 'interview', 'offer', 'hired', 'rejected'])],
+            'note' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $newStatus = $validated['status'];
+
+        if ($application->status === $newStatus) {
+            return back();
+        }
+
+        DB::transaction(function () use ($application, $newStatus, $request, $validated): void {
+            $fromStatus = $application->status;
+
+            $application->update([
+                'status' => $newStatus,
+                'first_responded_at' => $application->first_responded_at ?? now(),
+            ]);
+
+            $application->statusHistories()->create([
+                'from_status' => $fromStatus,
+                'to_status' => $newStatus,
+                'changed_by' => $request->user()->id,
+                'note' => $validated['note'] ?? null,
+            ]);
+        });
+
+        $labels = [
+            'screened' => 'Diseleksi',
+            'shortlisted' => 'Diprioritaskan',
+            'interview' => 'Interview',
+            'offer' => 'Penawaran',
+            'hired' => 'Diterima',
+            'rejected' => 'Ditolak',
+        ];
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Status kandidat diperbarui ke '.($labels[$newStatus] ?? $newStatus).'.',
+        ]);
+
+        return back();
     }
 
     private function normalizePhone(string $phone): string

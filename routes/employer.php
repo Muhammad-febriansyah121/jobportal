@@ -43,6 +43,7 @@ Route::prefix('employer')
         Route::delete('google-calendar', [EmployerGoogleCalendarController::class, 'disconnect'])->name('google-calendar.disconnect');
         Route::post('applications/{application}/google-meet', [EmployerGoogleCalendarController::class, 'generateMeet'])->name('applications.google-meet');
         Route::post('applications/{application}/whatsapp', [EmployerCandidateActionController::class, 'sendWhatsapp'])->name('applications.whatsapp.send');
+        Route::patch('applications/{application}/status', [EmployerCandidateActionController::class, 'updateStatus'])->name('applications.status.update');
         Route::get('messages', [EmployerWorkspaceController::class, 'messages'])->name('messages.index');
         Route::get('messages/{conversation}', [EmployerMessageController::class, 'show'])->name('messages.show');
         Route::post('messages/{conversation}/messages', [EmployerMessageController::class, 'store'])->name('messages.store');

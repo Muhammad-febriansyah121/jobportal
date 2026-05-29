@@ -1,14 +1,20 @@
-import { Head, Link, router } from '@inertiajs/react';
+import React from 'react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useTranslate } from '@/hooks/use-translate';
 import {
+    Bot,
     BriefcaseBusiness,
     CalendarClock,
+    CalendarPlus,
     CheckCircle2,
+    ChevronDown,
     Mail,
+    Mic,
     Search,
     Sparkles,
     Users,
 } from 'lucide-react';
+import { useState } from 'react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,8 +25,27 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { index, show } from '@/routes/employer/candidates';
+import { store as storeInterview } from '@/routes/employer/applications/interviews';
+import { store as storeAiInterview } from '@/routes/employer/jobs/ai-interviews';
+import { update as updateStatus } from '@/routes/employer/applications/status';
 
 type Option = {
     value: string;
@@ -37,6 +62,12 @@ type CandidateApplication = {
     ai_skill_match: {
         matched: string[];
         missing: string[];
+        skill_score?: number | null;
+        experience_score?: number | null;
+        position_score?: number | null;
+        seniority_score?: number | null;
+        industry_score?: number | null;
+        work_preference_score?: number | null;
     };
     cover_letter: string;
     candidate: {
@@ -140,7 +171,9 @@ export default function EmployerCandidates({
             <div className="space-y-6 p-4 md:p-6">
                 <Heading
                     title={t('employer.candidates.page_title')}
-                    description={t('employer.candidates.page_desc', { company: company.name })}
+                    description={t('employer.candidates.page_desc', {
+                        company: company.name,
+                    })}
                 />
 
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -172,7 +205,9 @@ export default function EmployerCandidates({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>{t('employer.candidates.filter_title')}</CardTitle>
+                        <CardTitle>
+                            {t('employer.candidates.filter_title')}
+                        </CardTitle>
                         <CardDescription>
                             {t('employer.candidates.filter_desc')}
                         </CardDescription>
@@ -188,7 +223,9 @@ export default function EmployerCandidates({
                                     name="search"
                                     defaultValue={filters.search ?? ''}
                                     className="pl-9"
-                                    placeholder={t('employer.candidates.search_placeholder')}
+                                    placeholder={t(
+                                        'employer.candidates.search_placeholder',
+                                    )}
                                 />
                             </div>
                             <select
@@ -196,7 +233,9 @@ export default function EmployerCandidates({
                                 defaultValue={filters.status ?? ''}
                                 className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                             >
-                                <option value="">{t('employer.candidates.tab_all')}</option>
+                                <option value="">
+                                    {t('employer.candidates.tab_all')}
+                                </option>
                                 {statusOptions.map((status) => (
                                     <option
                                         key={status.value}
@@ -211,7 +250,9 @@ export default function EmployerCandidates({
                                 defaultValue={filters.job_id ?? ''}
                                 className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                             >
-                                <option value="">{t('employer.candidates.all_jobs')}</option>
+                                <option value="">
+                                    {t('employer.candidates.all_jobs')}
+                                </option>
                                 {jobOptions.map((job) => (
                                     <option key={job.value} value={job.value}>
                                         {job.label}
@@ -274,93 +315,203 @@ export default function EmployerCandidates({
     );
 }
 
-function CandidateRow({
-    application,
-}: {
-    application: CandidateApplication;
-}) {
+function CandidateRow({ application }: { application: CandidateApplication }) {
     const { t } = useTranslate();
     const fitScore = application.ai_fit_score ?? 0;
+    const hasScoreBreakdown = [
+        application.ai_skill_match.skill_score,
+        application.ai_skill_match.experience_score,
+        application.ai_skill_match.position_score,
+        application.ai_skill_match.seniority_score,
+        application.ai_skill_match.work_preference_score,
+        application.ai_skill_match.industry_score,
+    ].every((score) => typeof score === 'number');
+    const scoreBreakdown = hasScoreBreakdown
+        ? [
+              {
+                  label: 'Skill',
+                  score: application.ai_skill_match.skill_score ?? 0,
+              },
+              {
+                  label: 'Pengalaman',
+                  score: application.ai_skill_match.experience_score ?? 0,
+              },
+              {
+                  label: 'Posisi',
+                  score: application.ai_skill_match.position_score ?? 0,
+              },
+              {
+                  label: 'Senioritas',
+                  score: application.ai_skill_match.seniority_score ?? 0,
+              },
+              {
+                  label: 'Preferensi',
+                  score: application.ai_skill_match.work_preference_score ?? 0,
+              },
+              {
+                  label: 'Industri',
+                  score: application.ai_skill_match.industry_score ?? 0,
+              },
+          ].filter((item) => item.score > 0)
+        : [];
 
     return (
-        <article className="rounded-lg border bg-white p-5 shadow-sm">
-            <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                <div className="min-w-0 flex-1">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                        <Avatar
-                            name={application.candidate.name}
-                            src={application.candidate.avatar_url}
-                        />
-                        <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <h2 className="text-lg font-semibold text-foreground">
-                                    {application.candidate.name}
-                                </h2>
-                                <StatusBadge
-                                    status={application.status}
-                                    label={application.status_label}
-                                />
+        <article className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div className="grid xl:grid-cols-[minmax(0,1fr)_360px]">
+                <div className="min-w-0 p-5">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex min-w-0 flex-1 gap-4">
+                            <Avatar
+                                name={application.candidate.name}
+                                src={application.candidate.avatar_url}
+                            />
+                            <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <h2 className="min-w-0 text-lg leading-tight font-semibold text-foreground">
+                                        {application.candidate.name}
+                                    </h2>
+                                    <StatusBadge
+                                        status={application.status}
+                                        label={application.status_label}
+                                    />
+                                </div>
+                                <p className="mt-1 line-clamp-2 text-sm leading-5 text-muted-foreground">
+                                    {application.candidate.headline ||
+                                        application.candidate.preferred_role ||
+                                        t(
+                                            'employer.candidates.row_default_headline',
+                                        )}
+                                </p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <MetaPill
+                                        value={
+                                            application.candidate.location ||
+                                            '-'
+                                        }
+                                    />
+                                    <MetaPill
+                                        value={
+                                            application.candidate.work_mode_pref
+                                        }
+                                    />
+                                    <MetaPill
+                                        value={`${t('employer.candidates.row_available')} ${application.candidate.availability}`}
+                                    />
+                                </div>
                             </div>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                {application.candidate.headline ||
-                                    application.candidate.preferred_role ||
-                                    t('employer.candidates.row_default_headline')}
+                        </div>
+
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left sm:text-right">
+                            <p className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+                                AI Fit
                             </p>
-                            <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                <span>{application.candidate.location || '-'}</span>
-                                <span>•</span>
-                                <span>
-                                    {application.candidate.work_mode_pref}
-                                </span>
-                                <span>•</span>
-                                <span>
-                                    {t('employer.candidates.row_available')}{' '}{application.candidate.availability}
-                                </span>
-                            </div>
+                            <p
+                                className={`text-lg leading-none font-bold ${fitScore >= 70 ? 'text-emerald-600' : fitScore >= 40 ? 'text-amber-600' : 'text-red-500'}`}
+                            >
+                                {fitScore}%
+                            </p>
                         </div>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="mt-5 flex flex-wrap gap-2">
                         {application.candidate.skills.length > 0 ? (
-                            application.candidate.skills.map((skill) => (
-                                <Badge
-                                    key={skill}
-                                    variant="outline"
-                                    className="bg-[#f8fafc]"
-                                >
-                                    {skill}
-                                </Badge>
-                            ))
+                            application.candidate.skills
+                                .slice(0, 8)
+                                .map((skill) => (
+                                    <Badge
+                                        key={skill}
+                                        variant="outline"
+                                        className="rounded-md border-slate-200 bg-slate-50 text-slate-700"
+                                    >
+                                        {skill}
+                                    </Badge>
+                                ))
                         ) : (
                             <span className="text-sm text-muted-foreground">
                                 {t('employer.candidates.row_skills_empty')}
                             </span>
                         )}
+                        {application.candidate.skills.length > 8 ? (
+                            <Badge
+                                variant="outline"
+                                className="rounded-md border-slate-200 bg-white text-slate-500"
+                            >
+                                +{application.candidate.skills.length - 8}
+                            </Badge>
+                        ) : null}
                     </div>
 
-                    <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                    <p className="mt-4 line-clamp-3 text-sm leading-6 text-muted-foreground">
                         {application.cover_letter ||
                             t('employer.candidates.row_no_cover_letter')}
                     </p>
+
+                    <div className="mt-5 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <SmallDetail
+                            label={t('employer.candidates.row_salary')}
+                            value={application.candidate.expected_salary}
+                        />
+                        <SmallDetail
+                            label={t('employer.candidates.row_profile')}
+                            value={t(
+                                'employer.candidates.row_profile_complete',
+                                {
+                                    percent:
+                                        application.candidate
+                                            .profile_completion,
+                                },
+                            )}
+                        />
+                        <SmallDetail
+                            label={t('employer.candidates.row_interview')}
+                            value={
+                                application.interview
+                                    ? `${application.interview.mode}, ${application.interview.scheduled_at ?? '-'}`
+                                    : t(
+                                          'employer.candidates.row_interview_count',
+                                          {
+                                              count: application.interviews_count,
+                                          },
+                                      )
+                            }
+                        />
+                        <SmallDetail
+                            label={t('employer.candidates.row_last_update')}
+                            value={
+                                application.latest_history?.created_at ?? '-'
+                            }
+                        />
+                    </div>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 xl:w-[420px] xl:grid-cols-1">
-                    <InfoBlock
-                        icon={BriefcaseBusiness}
-                        label={t('employer.candidates.row_job_label')}
-                        value={application.job.title}
-                        helper={t('employer.candidates.row_applied_at', { date: application.applied_at })}
-                    />
-                    <div className="rounded-lg border p-4">
-                        <div className="mb-2 flex items-center justify-between">
-                            <span className="text-xs font-medium text-muted-foreground uppercase">
-                                AI fit score
+                <aside className="border-t border-slate-200 bg-slate-50/80 p-5 xl:border-t-0 xl:border-l">
+                    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
+                        <div className="mb-1 flex items-center gap-2 text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+                            <BriefcaseBusiness className="size-3.5" />
+                            {t('employer.candidates.row_job_label')}
+                        </div>
+                        <p className="line-clamp-2 text-sm font-semibold text-slate-900">
+                            {application.job.title}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            {t('employer.candidates.row_applied_at', {
+                                date: application.applied_at,
+                            })}
+                        </p>
+                    </div>
+
+                    <div className="mt-3 rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
+                        <div className="mb-3 flex items-center justify-between">
+                            <span className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+                                AI Fit Score
                             </span>
-                            <span className="text-sm font-semibold">
+                            <span
+                                className={`text-sm font-bold ${fitScore >= 70 ? 'text-emerald-600' : fitScore >= 40 ? 'text-amber-600' : 'text-red-500'}`}
+                            >
                                 {fitScore}%
                             </span>
                         </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-[#e5e7eb]">
+                        <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                             <div
                                 className={scoreBarClass(fitScore)}
                                 style={{
@@ -368,56 +519,77 @@ function CandidateRow({
                                 }}
                             />
                         </div>
-                        <div className="mt-3 space-y-1 text-xs text-muted-foreground">
-                            <p>
-                                Match:{' '}
-                                {application.ai_skill_match.matched.length > 0
-                                    ? application.ai_skill_match.matched.join(', ')
-                                    : '-'}
-                            </p>
-                            <p>
-                                Gap:{' '}
-                                {application.ai_skill_match.missing.length > 0
-                                    ? application.ai_skill_match.missing.join(', ')
-                                    : '-'}
-                            </p>
-                        </div>
+
+                        {scoreBreakdown.length > 0 ? (
+                            <div className="mt-4 space-y-2.5">
+                                {scoreBreakdown.map((item) => (
+                                    <div
+                                        key={item.label}
+                                        className="grid grid-cols-[84px_minmax(0,1fr)_42px] items-center gap-2"
+                                    >
+                                        <span className="truncate text-[11px] text-muted-foreground">
+                                            {item.label}
+                                        </span>
+                                        <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                                            <div
+                                                className={scoreBarClass(
+                                                    item.score,
+                                                )}
+                                                style={{
+                                                    width: `${Math.min(item.score, 100)}%`,
+                                                }}
+                                            />
+                                        </div>
+                                        <span className="text-right text-[11px] font-medium text-muted-foreground">
+                                            {item.score}%
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-3">
+                                <p className="text-xs font-semibold text-slate-700">
+                                    Detail komponen belum tersedia
+                                </p>
+                                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                    Skor total sudah dihitung. Rincian Skill,
+                                    Pengalaman, Posisi, Senioritas, Preferensi,
+                                    dan Industri akan muncul setelah analisis AI
+                                    detail selesai.
+                                </p>
+                            </div>
+                        )}
                     </div>
-                </div>
+
+                    {application.ai_skill_match.matched.length > 0 ||
+                    application.ai_skill_match.missing.length > 0 ? (
+                        <SkillMatchSummary
+                            matched={application.ai_skill_match.matched}
+                            missing={application.ai_skill_match.missing}
+                        />
+                    ) : null}
+                </aside>
             </div>
 
-            <div className="mt-5 grid gap-3 border-t pt-4 md:grid-cols-2 xl:grid-cols-4">
-                <SmallDetail
-                    label={t('employer.candidates.row_salary')}
-                    value={application.candidate.expected_salary}
-                />
-                <SmallDetail
-                    label={t('employer.candidates.row_profile')}
-                    value={t('employer.candidates.row_profile_complete', { percent: application.candidate.profile_completion })}
-                />
-                <SmallDetail
-                    label={t('employer.candidates.row_interview')}
-                    value={
-                        application.interview
-                            ? `${application.interview.mode}, ${application.interview.scheduled_at ?? '-'}`
-                            : t('employer.candidates.row_interview_count', { count: application.interviews_count })
-                    }
-                />
-                <SmallDetail
-                    label={t('employer.candidates.row_last_update')}
-                    value={application.latest_history?.created_at ?? '-'}
-                />
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" asChild>
+            <div className="flex flex-col gap-3 border-t border-slate-200 bg-white px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-slate-200 text-slate-700 hover:bg-slate-50"
+                        asChild
+                    >
                         <Link href={show(application.id)}>
                             {t('employer.candidates.row_view_profile')}
                         </Link>
                     </Button>
                     {application.candidate.email ? (
-                        <Button variant="outline" size="sm" asChild>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-sky-200 text-sky-700 hover:bg-sky-50"
+                            asChild
+                        >
                             <a href={`mailto:${application.candidate.email}`}>
                                 <Mail className="size-4" />
                                 {t('employer.candidates.row_email')}
@@ -425,7 +597,12 @@ function CandidateRow({
                         </Button>
                     ) : null}
                     {application.cv ? (
-                        <Button variant="outline" size="sm" asChild>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-teal-200 text-teal-700 hover:bg-teal-50"
+                            asChild
+                        >
                             <a
                                 href={application.cv.file_url}
                                 target="_blank"
@@ -435,18 +612,623 @@ function CandidateRow({
                             </a>
                         </Button>
                     ) : null}
+                    <StatusUpdateButton application={application} t={t} />
+                    <ScheduleDialog application={application} t={t} />
                 </div>
+
                 {application.first_responded_at ? (
                     <p className="text-xs text-muted-foreground">
-                        {t('employer.candidates.row_first_response', { date: application.first_responded_at })}
+                        {t('employer.candidates.row_first_response', {
+                            date: application.first_responded_at,
+                        })}
                     </p>
                 ) : (
-                    <p className="text-xs font-medium text-[#b45309]">
+                    <p className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
                         {t('employer.candidates.row_no_response')}
                     </p>
                 )}
             </div>
         </article>
+    );
+}
+
+function MetaPill({ value }: { value: string }) {
+    return (
+        <span className="inline-flex max-w-full items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
+            <span className="truncate">{value || '-'}</span>
+        </span>
+    );
+}
+
+function SkillMatchSummary({
+    matched,
+    missing,
+}: {
+    matched: string[];
+    missing: string[];
+}) {
+    if (matched.length === 0 && missing.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="mt-3 space-y-2 rounded-lg border border-slate-200 bg-white p-3">
+            {matched.length > 0 ? (
+                <div>
+                    <p className="text-[10px] font-bold tracking-wide text-emerald-700 uppercase">
+                        Skill Dimiliki
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-emerald-700">
+                        {matched.join(', ')}
+                    </p>
+                </div>
+            ) : null}
+            {missing.length > 0 ? (
+                <div>
+                    <p className="text-[10px] font-bold tracking-wide text-rose-600 uppercase">
+                        Skill Belum Dimiliki
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-rose-600">
+                        {missing.join(', ')}
+                    </p>
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
+const STATUS_OPTIONS = [
+    { value: 'screened', label: 'Diseleksi', color: 'text-blue-600' },
+    { value: 'shortlisted', label: 'Diprioritaskan', color: 'text-indigo-600' },
+    { value: 'interview', label: 'Interview', color: 'text-amber-600' },
+    { value: 'offer', label: 'Penawaran', color: 'text-violet-600' },
+    { value: 'hired', label: 'Diterima', color: 'text-emerald-600' },
+    { value: 'rejected', label: 'Ditolak', color: 'text-red-600' },
+] as const;
+
+function StatusUpdateButton({
+    application,
+}: {
+    application: CandidateApplication;
+    t: (key: string, replacements?: Record<string, string | number>) => string;
+}) {
+    const [pending, setPending] = useState<
+        (typeof STATUS_OPTIONS)[number] | null
+    >(null);
+    const [note, setNote] = useState('');
+    const [processing, setProcessing] = useState(false);
+
+    function openConfirm(opt: (typeof STATUS_OPTIONS)[number]) {
+        setPending(opt);
+        setNote('');
+    }
+
+    function submit() {
+        if (!pending) return;
+        setProcessing(true);
+        router.patch(
+            updateStatus(application.id).url,
+            { status: pending.value, note: note.trim() || undefined },
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setProcessing(false);
+                    setPending(null);
+                },
+            },
+        );
+    }
+
+    return (
+        <>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-amber-200 text-amber-700 hover:bg-amber-50"
+                        disabled={processing}
+                    >
+                        <ChevronDown className="size-4" />
+                        Update Status
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-44">
+                    {STATUS_OPTIONS.map((opt, i) => (
+                        <React.Fragment key={opt.value}>
+                            {i === STATUS_OPTIONS.length - 1 && (
+                                <DropdownMenuSeparator />
+                            )}
+                            <DropdownMenuItem
+                                disabled={application.status === opt.value}
+                                onClick={() => openConfirm(opt)}
+                                className={opt.color}
+                            >
+                                {opt.label}
+                                {application.status === opt.value && (
+                                    <span className="ml-auto text-xs opacity-50">
+                                        aktif
+                                    </span>
+                                )}
+                            </DropdownMenuItem>
+                        </React.Fragment>
+                    ))}
+                </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Dialog
+                open={!!pending}
+                onOpenChange={(open) => {
+                    if (!open) setPending(null);
+                }}
+            >
+                <DialogContent className="max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>Update Status</DialogTitle>
+                        <DialogDescription>
+                            <span className={pending?.color ?? ''}>
+                                {application.candidate.name}
+                            </span>
+                            {' → '}
+                            <span
+                                className={`font-semibold ${pending?.color ?? ''}`}
+                            >
+                                {pending?.label}
+                            </span>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-1.5">
+                        <Label htmlFor={`note_${application.id}`}>
+                            Catatan (opsional)
+                        </Label>
+                        <textarea
+                            id={`note_${application.id}`}
+                            rows={3}
+                            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground"
+                            placeholder="Alasan perubahan status, feedback, dll."
+                            value={note}
+                            onChange={(e) => setNote(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => setPending(null)}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            size="sm"
+                            className="flex-1 bg-[#01296A] hover:bg-[#001D4D]"
+                            disabled={processing}
+                            onClick={submit}
+                        >
+                            {processing ? 'Menyimpan...' : 'Simpan'}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}
+
+const DEFAULT_AI_QUESTIONS = [
+    {
+        question: 'Ceritakan pengalaman paling relevan Anda untuk posisi ini.',
+        category: 'behavioral',
+        rubric: 'Cari contoh konkret, konteks masalah, aksi, dan dampaknya.',
+        weight: 25,
+        allow_ai_followup: true,
+    },
+    {
+        question:
+            'Bagaimana Anda menyelesaikan masalah teknis paling sulit di pekerjaan sebelumnya?',
+        category: 'technical',
+        rubric: 'Nilai kedalaman teknis, cara berpikir, trade-off, dan ownership.',
+        weight: 25,
+        allow_ai_followup: true,
+    },
+    {
+        question:
+            'Apa pendekatan Anda saat harus bekerja dengan deadline ketat dan kebutuhan berubah?',
+        category: 'problem_solving',
+        rubric: 'Nilai prioritas, komunikasi, adaptasi, dan manajemen risiko.',
+        weight: 25,
+        allow_ai_followup: false,
+    },
+    {
+        question: 'Mengapa Anda tertarik dengan posisi dan perusahaan ini?',
+        category: 'motivation',
+        rubric: 'Cari kecocokan nilai, motivasi riil, dan rencana jangka panjang.',
+        weight: 25,
+        allow_ai_followup: false,
+    },
+];
+
+type InterviewType = 'online' | 'onsite' | 'ai';
+
+function ScheduleDialog({
+    application,
+    t,
+}: {
+    application: CandidateApplication;
+    t: (key: string, replacements?: Record<string, string | number>) => string;
+}) {
+    const [open, setOpen] = useState(false);
+    const [type, setType] = useState<InterviewType>('online');
+
+    const regular = useForm({
+        mode: 'online' as 'online' | 'onsite',
+        scheduled_at: '',
+        duration_minutes: 60,
+        meeting_url: '',
+        address: '',
+        notes: '',
+    });
+
+    const ai = useForm({
+        application_id: application.id,
+        interview_mode: 'voice' as 'voice' | 'text',
+        scheduled_at: '',
+        duration_minutes: 30,
+        meeting_url: '',
+        voice: 'marin',
+        questions: DEFAULT_AI_QUESTIONS,
+    });
+
+    function handleTypeChange(t: InterviewType) {
+        setType(t);
+        if (t !== 'ai') regular.setData('mode', t as 'online' | 'onsite');
+    }
+
+    function submitRegular(e: React.FormEvent) {
+        e.preventDefault();
+        regular.post(storeInterview(application.id).url, {
+            onSuccess: () => {
+                regular.reset();
+                setOpen(false);
+            },
+        });
+    }
+
+    function submitAi(e: React.FormEvent) {
+        e.preventDefault();
+        ai.post(storeAiInterview(application.job.id ?? 0).url, {
+            onSuccess: () => {
+                ai.reset();
+                setOpen(false);
+            },
+        });
+    }
+
+    const MODES: {
+        key: InterviewType;
+        label: string;
+        desc: string;
+        icon: React.ReactNode;
+    }[] = [
+        {
+            key: 'online',
+            label: 'Online',
+            desc: 'Via Google Meet, Zoom, dll.',
+            icon: <CalendarPlus className="size-3.5" />,
+        },
+        {
+            key: 'onsite',
+            label: 'Onsite',
+            desc: 'Datang ke kantor.',
+            icon: <BriefcaseBusiness className="size-3.5" />,
+        },
+        {
+            key: 'ai',
+            label: 'AI Interview',
+            desc: 'Otomatis via AI (voice/text).',
+            icon: <Bot className="size-3.5" />,
+        },
+    ];
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm" className="bg-violet-600 hover:bg-violet-700">
+                    <CalendarPlus className="size-4" />
+                    {t('employer.candidates.row_schedule_interview')}
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>
+                        {t('employer.candidates.interview_dialog_title')}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {application.candidate.name} · {application.job.title}
+                    </DialogDescription>
+                </DialogHeader>
+
+                {/* Type picker */}
+                <div className="grid grid-cols-3 gap-2 pt-1">
+                    {MODES.map((m) => (
+                        <button
+                            key={m.key}
+                            type="button"
+                            onClick={() => handleTypeChange(m.key)}
+                            className={[
+                                'rounded-lg border p-2.5 text-left text-sm transition-all',
+                                type === m.key
+                                    ? m.key === 'ai'
+                                        ? 'border-violet-500 bg-violet-50 text-violet-700'
+                                        : 'border-[#01296A] bg-[#01296A]/5 text-[#01296A]'
+                                    : 'border-border hover:border-muted-foreground',
+                            ].join(' ')}
+                        >
+                            <p className="flex items-center gap-1 font-medium">
+                                {m.icon}
+                                {m.label}
+                            </p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                                {m.desc}
+                            </p>
+                        </button>
+                    ))}
+                </div>
+
+                {/* Regular interview form */}
+                {type !== 'ai' && (
+                    <form onSubmit={submitRegular} className="space-y-4 pt-1">
+                        <div className="space-y-1.5">
+                            <Label htmlFor={`r_sched_${application.id}`}>
+                                {t(
+                                    'employer.candidates.interview_datetime_label',
+                                )}
+                            </Label>
+                            <Input
+                                id={`r_sched_${application.id}`}
+                                type="datetime-local"
+                                value={regular.data.scheduled_at}
+                                onChange={(e) =>
+                                    regular.setData(
+                                        'scheduled_at',
+                                        e.target.value,
+                                    )
+                                }
+                            />
+                            {regular.errors.scheduled_at && (
+                                <p className="text-xs text-destructive">
+                                    {regular.errors.scheduled_at}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label htmlFor={`r_dur_${application.id}`}>
+                                {t(
+                                    'employer.candidates.interview_duration_label',
+                                )}
+                            </Label>
+                            <select
+                                id={`r_dur_${application.id}`}
+                                value={regular.data.duration_minutes}
+                                onChange={(e) =>
+                                    regular.setData(
+                                        'duration_minutes',
+                                        Number(e.target.value),
+                                    )
+                                }
+                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                            >
+                                {[15, 30, 45, 60, 90, 120].map((d) => (
+                                    <option key={d} value={d}>
+                                        {d} menit
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {type === 'online' ? (
+                            <div className="space-y-1.5">
+                                <Label htmlFor={`r_url_${application.id}`}>
+                                    {t(
+                                        'employer.candidates.interview_meeting_url_label',
+                                    )}
+                                </Label>
+                                <Input
+                                    id={`r_url_${application.id}`}
+                                    type="url"
+                                    placeholder="https://meet.google.com/..."
+                                    value={regular.data.meeting_url}
+                                    onChange={(e) =>
+                                        regular.setData(
+                                            'meeting_url',
+                                            e.target.value,
+                                        )
+                                    }
+                                />
+                                {regular.errors.meeting_url && (
+                                    <p className="text-xs text-destructive">
+                                        {regular.errors.meeting_url}
+                                    </p>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="space-y-1.5">
+                                <Label htmlFor={`r_addr_${application.id}`}>
+                                    {t(
+                                        'employer.candidates.interview_address_label',
+                                    )}
+                                </Label>
+                                <Input
+                                    id={`r_addr_${application.id}`}
+                                    placeholder="Jl. Sudirman No.1, Ruang Meeting A"
+                                    value={regular.data.address}
+                                    onChange={(e) =>
+                                        regular.setData(
+                                            'address',
+                                            e.target.value,
+                                        )
+                                    }
+                                />
+                                {regular.errors.address && (
+                                    <p className="text-xs text-destructive">
+                                        {regular.errors.address}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="space-y-1.5">
+                            <Label htmlFor={`r_notes_${application.id}`}>
+                                {t('employer.candidates.interview_notes_label')}
+                            </Label>
+                            <textarea
+                                id={`r_notes_${application.id}`}
+                                rows={2}
+                                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground"
+                                placeholder="Siapkan portofolio, dress code formal, dll."
+                                value={regular.data.notes}
+                                onChange={(e) =>
+                                    regular.setData('notes', e.target.value)
+                                }
+                            />
+                        </div>
+
+                        <Button
+                            type="submit"
+                            disabled={regular.processing}
+                            className="w-full bg-[#01296A] hover:bg-[#001D4D]"
+                        >
+                            {regular.processing
+                                ? t('employer.candidates.interview_submitting')
+                                : t('employer.candidates.interview_submit')}
+                        </Button>
+                    </form>
+                )}
+
+                {/* AI interview form */}
+                {type === 'ai' && (
+                    <form onSubmit={submitAi} className="space-y-4 pt-1">
+                        <div className="space-y-1.5">
+                            <Label>Mode AI</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {(['voice', 'text'] as const).map((m) => (
+                                    <button
+                                        key={m}
+                                        type="button"
+                                        onClick={() =>
+                                            ai.setData('interview_mode', m)
+                                        }
+                                        className={[
+                                            'rounded-lg border p-2.5 text-left text-sm transition-all',
+                                            ai.data.interview_mode === m
+                                                ? 'border-violet-500 bg-violet-50 text-violet-700'
+                                                : 'border-border hover:border-muted-foreground',
+                                        ].join(' ')}
+                                    >
+                                        <p className="flex items-center gap-1.5 font-medium">
+                                            {m === 'voice' ? (
+                                                <Mic className="size-3.5" />
+                                            ) : (
+                                                <Bot className="size-3.5" />
+                                            )}
+                                            {m === 'voice'
+                                                ? 'Voice AI'
+                                                : 'Text AI'}
+                                        </p>
+                                        <p className="mt-0.5 text-xs text-muted-foreground">
+                                            {m === 'voice'
+                                                ? 'Interview via suara'
+                                                : 'Interview via teks'}
+                                        </p>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label htmlFor={`ai_sched_${application.id}`}>
+                                Tanggal & jam
+                            </Label>
+                            <Input
+                                id={`ai_sched_${application.id}`}
+                                type="datetime-local"
+                                value={ai.data.scheduled_at}
+                                onChange={(e) =>
+                                    ai.setData('scheduled_at', e.target.value)
+                                }
+                            />
+                            {ai.errors.scheduled_at && (
+                                <p className="text-xs text-destructive">
+                                    {ai.errors.scheduled_at}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label htmlFor={`ai_dur_${application.id}`}>
+                                Durasi
+                            </Label>
+                            <select
+                                id={`ai_dur_${application.id}`}
+                                value={ai.data.duration_minutes}
+                                onChange={(e) =>
+                                    ai.setData(
+                                        'duration_minutes',
+                                        Number(e.target.value),
+                                    )
+                                }
+                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                            >
+                                {[15, 30, 45, 60].map((d) => (
+                                    <option key={d} value={d}>
+                                        {d} menit
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label>{ai.data.questions.length} pertanyaan</Label>
+                            <div className="space-y-1.5 rounded-lg border bg-muted/30 p-3">
+                                {ai.data.questions.map((q, i) => (
+                                    <div
+                                        key={i}
+                                        className="flex items-start gap-2 text-sm"
+                                    >
+                                        <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-violet-100 text-xs font-semibold text-violet-700">
+                                            {i + 1}
+                                        </span>
+                                        <span className="text-foreground/80">
+                                            {q.question}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Pertanyaan dapat diubah di halaman detail
+                                kandidat setelah dijadwalkan.
+                            </p>
+                        </div>
+
+                        {ai.errors.questions && (
+                            <p className="text-xs text-destructive">
+                                {ai.errors.questions as unknown as string}
+                            </p>
+                        )}
+
+                        <Button
+                            type="submit"
+                            disabled={ai.processing}
+                            className="w-full bg-violet-600 hover:bg-violet-700"
+                        >
+                            {ai.processing
+                                ? 'Menjadwalkan...'
+                                : 'Kirim Undangan AI Interview'}
+                        </Button>
+                    </form>
+                )}
+            </DialogContent>
+        </Dialog>
     );
 }
 
