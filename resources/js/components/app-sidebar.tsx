@@ -118,6 +118,7 @@ import { index as candidateInterviews } from '@/routes/candidate/interviews';
 import { index as candidateMessages } from '@/routes/candidate/messages';
 import { edit as candidateOnboardingEdit } from '@/routes/candidate/onboarding';
 import { index as candidatePricing } from '@/routes/candidate/pricing';
+import { index as candidateJobs } from '@/routes/candidate/jobs';
 import { index as candidateSavedJobs } from '@/routes/candidate/saved-jobs';
 import { index as candidateSystemReviews } from '@/routes/candidate/system-reviews';
 import { dashboard as employerDashboard } from '@/routes/employer';
@@ -597,6 +598,12 @@ function CandidateSidebar() {
             {
                 label: t('nav.section.application_selection'),
                 items: [
+                    {
+                        title: t('nav.candidate.jobs'),
+                        href: candidateJobs(),
+                        icon: BriefcaseBusiness,
+                        lockWhenProfileIncomplete: true,
+                    },
                     {
                         title: t('nav.candidate.applications'),
                         href: candidateApplications(),
