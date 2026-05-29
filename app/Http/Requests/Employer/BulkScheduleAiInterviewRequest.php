@@ -31,6 +31,9 @@ class BulkScheduleAiInterviewRequest extends FormRequest
             'questions.*.rubric' => ['nullable', 'string', 'max:2000'],
             'questions.*.weight' => ['required', 'integer', 'min:1', 'max:100'],
             'questions.*.allow_ai_followup' => ['sometimes', 'boolean'],
+            'questions.*.question_type' => ['nullable', Rule::in(['open', 'multiple_choice'])],
+            'questions.*.options' => ['nullable', 'array', 'max:6'],
+            'questions.*.options.*' => ['nullable', 'string', 'max:255'],
         ];
     }
 

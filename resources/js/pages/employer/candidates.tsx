@@ -49,6 +49,7 @@ import { store as storeInterview } from '@/routes/employer/applications/intervie
 import {
     store as storeAiInterview,
     storeBulk as storeBulkAiInterview,
+    generateQuestions,
 } from '@/routes/employer/jobs/ai-interviews';
 import { update as updateStatus } from '@/routes/employer/applications/status';
 
@@ -919,13 +920,25 @@ function StatusUpdateButton({
     );
 }
 
-const DEFAULT_AI_QUESTIONS = [
+type AiQuestion = {
+    question: string;
+    category: string;
+    rubric: string;
+    weight: number;
+    allow_ai_followup: boolean;
+    question_type: 'open' | 'multiple_choice';
+    options: string[];
+};
+
+const DEFAULT_AI_QUESTIONS: AiQuestion[] = [
     {
         question: 'Ceritakan pengalaman paling relevan Anda untuk posisi ini.',
         category: 'behavioral',
         rubric: 'Cari contoh konkret, konteks masalah, aksi, dan dampaknya.',
         weight: 25,
         allow_ai_followup: true,
+        question_type: 'open',
+        options: [],
     },
     {
         question:
@@ -934,6 +947,8 @@ const DEFAULT_AI_QUESTIONS = [
         rubric: 'Nilai kedalaman teknis, cara berpikir, trade-off, dan ownership.',
         weight: 25,
         allow_ai_followup: true,
+        question_type: 'open',
+        options: [],
     },
     {
         question:
@@ -942,6 +957,8 @@ const DEFAULT_AI_QUESTIONS = [
         rubric: 'Nilai prioritas, komunikasi, adaptasi, dan manajemen risiko.',
         weight: 25,
         allow_ai_followup: false,
+        question_type: 'open',
+        options: [],
     },
     {
         question: 'Mengapa Anda tertarik dengan posisi dan perusahaan ini?',
@@ -949,10 +966,10 @@ const DEFAULT_AI_QUESTIONS = [
         rubric: 'Cari kecocokan nilai, motivasi riil, dan rencana jangka panjang.',
         weight: 25,
         allow_ai_followup: false,
+        question_type: 'open',
+        options: [],
     },
 ];
-
-type AiQuestion = (typeof DEFAULT_AI_QUESTIONS)[number];
 
 type InterviewType = 'online' | 'onsite' | 'ai';
 
@@ -978,10 +995,33 @@ function BulkAiInterviewDialog({
         questions: DEFAULT_AI_QUESTIONS,
     });
 
+    const [generatingQuestions, setGeneratingQuestions] = useState(false);
+
+    async function generateAiQuestions() {
+        if (!jobId) return;
+        setGeneratingQuestions(true);
+        try {
+            const res = await fetch(generateQuestions(jobId).url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+                },
+                body: JSON.stringify({ interview_mode: form.data.interview_mode }),
+            });
+            if (res.ok) {
+                const data: { questions: AiQuestion[] } = await res.json();
+                form.setData('questions', data.questions);
+            }
+        } finally {
+            setGeneratingQuestions(false);
+        }
+    }
+
     function updateQuestion(
         index: number,
         field: keyof AiQuestion,
-        value: string | number | boolean,
+        value: string | number | boolean | string[],
     ) {
         form.setData(
             'questions',
@@ -1002,6 +1042,8 @@ function BulkAiInterviewDialog({
                 rubric: 'Nilai jawaban berdasarkan relevansi, contoh konkret, dan kejelasan komunikasi.',
                 weight: 10,
                 allow_ai_followup: true,
+                question_type: 'open' as const,
+                options: [],
             },
         ]);
     }
@@ -1013,6 +1055,15 @@ function BulkAiInterviewDialog({
             'questions',
             form.data.questions.filter(
                 (_, questionIndex) => questionIndex !== index,
+            ),
+        );
+    }
+
+    function updateQuestionOptions(index: number, options: string[]) {
+        form.setData(
+            'questions',
+            form.data.questions.map((q, i) =>
+                i === index ? { ...q, options } : q,
             ),
         );
     }
@@ -1065,7 +1116,7 @@ function BulkAiInterviewDialog({
 
                     <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
                         <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
-                            <div className="space-y-4">
+                            <div className="space-y-4 xl:sticky xl:top-0 xl:self-start">
                                 <div className="rounded-lg border border-violet-200 bg-violet-50 p-4">
                                     <p className="text-sm font-semibold text-violet-800">
                                         Kandidat yang diundang
@@ -1092,7 +1143,7 @@ function BulkAiInterviewDialog({
 
                                 <div className="space-y-1.5">
                                     <Label>Mode AI</Label>
-                                    <div className="grid gap-2">
+                                    <div className="grid grid-cols-2 gap-2">
                                         {(['voice', 'text'] as const).map(
                                             (mode) => (
                                                 <button
@@ -1105,15 +1156,15 @@ function BulkAiInterviewDialog({
                                                         )
                                                     }
                                                     className={[
-                                                        'rounded-lg border p-3 text-left text-sm transition-all',
+                                                        'flex flex-col gap-0.5 rounded-xl border-2 px-3 py-2.5 text-left text-sm transition-all focus:outline-none',
                                                         form.data
                                                             .interview_mode ===
                                                         mode
-                                                            ? 'border-violet-500 bg-violet-50 text-violet-700'
-                                                            : 'border-border hover:border-muted-foreground',
+                                                            ? 'border-violet-500 bg-violet-50'
+                                                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
                                                     ].join(' ')}
                                                 >
-                                                    <p className="flex items-center gap-1.5 font-medium">
+                                                    <p className={['flex items-center gap-1.5 font-semibold text-xs', form.data.interview_mode === mode ? 'text-violet-700' : 'text-slate-600'].join(' ')}>
                                                         {mode === 'voice' ? (
                                                             <Mic className="size-3.5" />
                                                         ) : (
@@ -1123,7 +1174,7 @@ function BulkAiInterviewDialog({
                                                             ? 'Voice AI'
                                                             : 'Text AI'}
                                                     </p>
-                                                    <p className="mt-0.5 text-xs text-muted-foreground">
+                                                    <p className="text-[11px] text-muted-foreground">
                                                         {mode === 'voice'
                                                             ? 'Interview via suara'
                                                             : 'Interview via teks'}
@@ -1133,6 +1184,26 @@ function BulkAiInterviewDialog({
                                         )}
                                     </div>
                                 </div>
+
+                                {form.data.interview_mode === 'voice' && (
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="bulk_ai_voice">Suara AI</Label>
+                                        <select
+                                            id="bulk_ai_voice"
+                                            value={form.data.voice}
+                                            onChange={(event) =>
+                                                form.setData('voice', event.target.value)
+                                            }
+                                            className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                        >
+                                            {['alloy', 'ash', 'ballad', 'coral', 'echo', 'marin', 'sage', 'shimmer', 'verse', 'cedar'].map((v) => (
+                                                <option key={v} value={v}>
+                                                    {v.charAt(0).toUpperCase() + v.slice(1)}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
 
                                 <div className="space-y-1.5">
                                     <Label htmlFor="bulk_ai_sched">
@@ -1189,6 +1260,9 @@ function BulkAiInterviewDialog({
                                 onAdd={addQuestion}
                                 onRemove={removeQuestion}
                                 onUpdate={updateQuestion}
+                                onUpdateOptions={updateQuestionOptions}
+                                onGenerate={generateAiQuestions}
+                                generating={generatingQuestions}
                             />
                         </div>
                     </div>
@@ -1220,6 +1294,9 @@ function AiQuestionEditor({
     onAdd,
     onRemove,
     onUpdate,
+    onUpdateOptions,
+    onGenerate,
+    generating,
 }: {
     questions: AiQuestion[];
     errors: Record<string, string | undefined>;
@@ -1228,36 +1305,112 @@ function AiQuestionEditor({
     onUpdate: (
         index: number,
         field: keyof AiQuestion,
-        value: string | number | boolean,
+        value: string | number | boolean | string[],
     ) => void;
+    onUpdateOptions: (index: number, options: string[]) => void;
+    onGenerate: () => void;
+    generating: boolean;
 }) {
+    const [visibleCount, setVisibleCount] = useState(questions.length);
+    const prevGenerating = React.useRef(generating);
+    const timeouts = React.useRef<ReturnType<typeof setTimeout>[]>([]);
+
+    const clearAllTimeouts = () => {
+        timeouts.current.forEach(clearTimeout);
+        timeouts.current = [];
+    };
+
+    React.useEffect(() => {
+        if (prevGenerating.current && !generating) {
+            clearAllTimeouts();
+            setVisibleCount(0);
+            questions.forEach((_, i) => {
+                const id = setTimeout(() => setVisibleCount(i + 1), i * 120);
+                timeouts.current.push(id);
+            });
+        } else if (!generating) {
+            clearAllTimeouts();
+            setVisibleCount(questions.length);
+        }
+        prevGenerating.current = generating;
+    }, [generating, questions.length]);
+
+    React.useEffect(() => () => clearAllTimeouts(), []);
+
     return (
         <div className="space-y-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <Label>{questions.length} pertanyaan</Label>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                        Edit pertanyaan sebelum undangan dikirim.
-                    </p>
+            <div className="sticky top-0 z-10 -mx-1 rounded-lg bg-white/95 px-1 py-2 backdrop-blur-sm">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <Label>{questions.length} pertanyaan</Label>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                            Edit pertanyaan sebelum undangan dikirim.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={onGenerate}
+                            disabled={generating}
+                            className="border-violet-200 text-violet-700 hover:bg-violet-50 disabled:opacity-70"
+                        >
+                            <Sparkles className={['size-3.5', generating ? 'animate-spin' : ''].join(' ')} />
+                            {generating ? 'Generating...' : 'Generate dengan AI'}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={onAdd}
+                            disabled={questions.length >= 12 || generating}
+                        >
+                            <Plus className="size-4" />
+                            Tambah
+                        </Button>
+                    </div>
                 </div>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={onAdd}
-                    disabled={questions.length >= 12}
-                    className="w-full sm:w-auto"
-                >
-                    <Plus className="size-4" />
-                    Tambah pertanyaan
-                </Button>
             </div>
 
             <div className="grid gap-3 lg:grid-cols-2">
-                {questions.map((question, index) => (
+                {generating ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                        <div
+                            key={i}
+                            className="animate-pulse rounded-lg border border-slate-200 bg-white p-4 shadow-xs"
+                        >
+                            <div className="mb-3 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="size-6 rounded-full bg-violet-100" />
+                                    <div className="h-4 w-24 rounded bg-slate-200" />
+                                </div>
+                                <div className="h-6 w-16 rounded-lg bg-slate-100" />
+                            </div>
+                            <div className="space-y-2">
+                                <div className="h-3 w-full rounded bg-slate-200" />
+                                <div className="h-3 w-4/5 rounded bg-slate-200" />
+                                <div className="h-3 w-3/5 rounded bg-slate-200" />
+                            </div>
+                            <div className="mt-4 grid grid-cols-[minmax(0,1fr)_80px] gap-3">
+                                <div className="h-8 rounded bg-slate-100" />
+                                <div className="h-8 rounded bg-slate-100" />
+                            </div>
+                            <div className="mt-3 space-y-1.5">
+                                <div className="h-3 w-20 rounded bg-slate-200" />
+                                <div className="h-14 rounded bg-slate-100" />
+                            </div>
+                        </div>
+                    ))
+                ) : questions.map((question, index) => {
+                    const isVisible = index < visibleCount;
+                    return (
                     <div
                         key={index}
-                        className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs"
+                        className={[
+                            'rounded-lg border border-slate-200 bg-white p-4 shadow-xs transition-all duration-300',
+                            isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
+                        ].join(' ')}
                     >
                         <div className="mb-3 flex items-center justify-between gap-2">
                             <span className="inline-flex items-center gap-2 text-sm font-semibold text-violet-700">
@@ -1266,26 +1419,106 @@ function AiQuestionEditor({
                                 </span>
                                 Pertanyaan {index + 1}
                             </span>
-                            <button
-                                type="button"
-                                className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-40"
-                                onClick={() => onRemove(index)}
-                                disabled={questions.length <= 1}
-                                aria-label="Hapus pertanyaan"
-                            >
-                                <Trash2 className="size-4" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                                <div className="flex rounded-lg border border-slate-200 text-xs overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => onUpdate(index, 'question_type', 'open')}
+                                        className={[
+                                            'px-2.5 py-1 font-medium transition-colors',
+                                            question.question_type === 'open'
+                                                ? 'bg-violet-600 text-white'
+                                                : 'text-slate-500 hover:bg-slate-50',
+                                        ].join(' ')}
+                                    >
+                                        Essay
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => onUpdate(index, 'question_type', 'multiple_choice')}
+                                        className={[
+                                            'px-2.5 py-1 font-medium transition-colors border-l border-slate-200',
+                                            question.question_type === 'multiple_choice'
+                                                ? 'bg-violet-600 text-white'
+                                                : 'text-slate-500 hover:bg-slate-50',
+                                        ].join(' ')}
+                                    >
+                                        PG
+                                    </button>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-40"
+                                    onClick={() => onRemove(index)}
+                                    disabled={questions.length <= 1}
+                                    aria-label="Hapus pertanyaan"
+                                >
+                                    <Trash2 className="size-4" />
+                                </button>
+                            </div>
                         </div>
 
                         <textarea
                             rows={3}
-                            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground"
+                            className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                             placeholder="Tulis pertanyaan interview..."
                             value={question.question}
                             onChange={(event) =>
                                 onUpdate(index, 'question', event.target.value)
                             }
                         />
+
+                        {question.question_type === 'multiple_choice' && (
+                            <div className="mt-3 space-y-1.5">
+                                <Label className="text-xs font-semibold text-violet-700">
+                                    Pilihan jawaban
+                                </Label>
+                                {(question.options.length === 0 ? ['', '', '', ''] : question.options).map((opt, optIdx) => (
+                                    <div key={optIdx} className="flex items-center gap-2">
+                                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-500">
+                                            {String.fromCharCode(65 + optIdx)}
+                                        </span>
+                                        <Input
+                                            value={opt}
+                                            placeholder={`Pilihan ${String.fromCharCode(65 + optIdx)}`}
+                                            className="h-8 text-xs"
+                                            onChange={(e) => {
+                                                const base = question.options.length === 0 ? ['', '', '', ''] : [...question.options];
+                                                while (base.length <= optIdx) base.push('');
+                                                base[optIdx] = e.target.value;
+                                                onUpdateOptions(index, base);
+                                            }}
+                                        />
+                                        {question.options.length > 2 && optIdx >= 2 && (
+                                            <button
+                                                type="button"
+                                                className="shrink-0 text-slate-400 hover:text-red-500"
+                                                onClick={() => {
+                                                    const updated = [...question.options];
+                                                    updated.splice(optIdx, 1);
+                                                    onUpdateOptions(index, updated);
+                                                }}
+                                            >
+                                                <Trash2 className="size-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                                {(question.options.length === 0 ? 4 : question.options.length) < 6 && (
+                                    <button
+                                        type="button"
+                                        className="mt-1 flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800"
+                                        onClick={() => {
+                                            const base = question.options.length === 0 ? ['', '', '', ''] : [...question.options];
+                                            onUpdateOptions(index, [...base, '']);
+                                        }}
+                                    >
+                                        <Plus className="size-3" />
+                                        Tambah pilihan
+                                    </button>
+                                )}
+                            </div>
+                        )}
 
                         <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_110px]">
                             <div className="space-y-1">
@@ -1330,7 +1563,7 @@ function AiQuestionEditor({
                             </Label>
                             <textarea
                                 rows={3}
-                                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-xs shadow-sm placeholder:text-muted-foreground"
+                                className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-xs shadow-xs placeholder:text-muted-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                 placeholder="Rubrik penilaian..."
                                 value={question.rubric}
                                 onChange={(event) =>
@@ -1343,24 +1576,27 @@ function AiQuestionEditor({
                             />
                         </div>
 
-                        <label className="mt-3 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
-                            <input
-                                type="checkbox"
-                                checked={question.allow_ai_followup}
-                                onChange={(event) =>
-                                    onUpdate(
-                                        index,
-                                        'allow_ai_followup',
-                                        event.target.checked,
-                                    )
-                                }
-                                className="mt-0.5 size-4 rounded border-input"
-                            />
-                            Izinkan AI bertanya lanjutan berdasarkan jawaban
-                            kandidat
-                        </label>
+                        {question.question_type === 'open' && (
+                            <label className="mt-3 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+                                <input
+                                    type="checkbox"
+                                    checked={question.allow_ai_followup}
+                                    onChange={(event) =>
+                                        onUpdate(
+                                            index,
+                                            'allow_ai_followup',
+                                            event.target.checked,
+                                        )
+                                    }
+                                    className="mt-0.5 size-4 rounded border-input"
+                                />
+                                Izinkan AI bertanya lanjutan berdasarkan jawaban
+                                kandidat
+                            </label>
+                        )}
                     </div>
-                ))}
+                    );
+                })}
             </div>
 
             {errors.questions && (
@@ -1458,7 +1694,7 @@ function ScheduleDialog({
     function updateAiQuestion(
         index: number,
         field: keyof AiQuestion,
-        value: string | number | boolean,
+        value: string | number | boolean | string[],
     ) {
         ai.setData(
             'questions',
@@ -1482,6 +1718,8 @@ function ScheduleDialog({
                 rubric: 'Nilai jawaban berdasarkan relevansi, contoh konkret, dan kejelasan komunikasi.',
                 weight: 10,
                 allow_ai_followup: true,
+                question_type: 'open' as const,
+                options: [],
             },
         ]);
     }
@@ -1495,6 +1733,39 @@ function ScheduleDialog({
                 (_, questionIndex) => questionIndex !== index,
             ),
         );
+    }
+
+    function updateAiQuestionOptions(index: number, options: string[]) {
+        ai.setData(
+            'questions',
+            ai.data.questions.map((q, i) =>
+                i === index ? { ...q, options } : q,
+            ),
+        );
+    }
+
+    const [generatingAiQuestions, setGeneratingAiQuestions] = useState(false);
+
+    async function generateAiQuestionsForSchedule() {
+        const jobId = application.job.id;
+        if (!jobId) return;
+        setGeneratingAiQuestions(true);
+        try {
+            const res = await fetch(generateQuestions(jobId).url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+                },
+                body: JSON.stringify({ interview_mode: ai.data.interview_mode }),
+            });
+            if (res.ok) {
+                const data: { questions: AiQuestion[] } = await res.json();
+                ai.setData('questions', data.questions);
+            }
+        } finally {
+            setGeneratingAiQuestions(false);
+        }
     }
 
     return (
@@ -1750,10 +2021,10 @@ function ScheduleDialog({
                         {type === 'ai' && (
                             <form onSubmit={submitAi} className="space-y-5">
                                 <div className="grid gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
-                                    <div className="space-y-4">
+                                    <div className="space-y-4 xl:sticky xl:top-0 xl:self-start">
                                         <div className="space-y-1.5">
                                             <Label>Mode AI</Label>
-                                            <div className="grid gap-2">
+                                            <div className="grid grid-cols-2 gap-2">
                                                 {(
                                                     ['voice', 'text'] as const
                                                 ).map((m) => (
@@ -1767,15 +2038,15 @@ function ScheduleDialog({
                                                             )
                                                         }
                                                         className={[
-                                                            'rounded-lg border p-3 text-left text-sm transition-all',
+                                                            'flex flex-col gap-0.5 rounded-xl border-2 px-3 py-2.5 text-left text-sm transition-all focus:outline-none',
                                                             ai.data
                                                                 .interview_mode ===
                                                             m
-                                                                ? 'border-violet-500 bg-violet-50 text-violet-700'
-                                                                : 'border-border hover:border-muted-foreground',
+                                                                ? 'border-violet-500 bg-violet-50'
+                                                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
                                                         ].join(' ')}
                                                     >
-                                                        <p className="flex items-center gap-1.5 font-medium">
+                                                        <p className={['flex items-center gap-1.5 font-semibold text-xs', ai.data.interview_mode === m ? 'text-violet-700' : 'text-slate-600'].join(' ')}>
                                                             {m === 'voice' ? (
                                                                 <Mic className="size-3.5" />
                                                             ) : (
@@ -1785,7 +2056,7 @@ function ScheduleDialog({
                                                                 ? 'Voice AI'
                                                                 : 'Text AI'}
                                                         </p>
-                                                        <p className="mt-0.5 text-xs text-muted-foreground">
+                                                        <p className="text-[11px] text-muted-foreground">
                                                             {m === 'voice'
                                                                 ? 'Interview via suara'
                                                                 : 'Interview via teks'}
@@ -1794,6 +2065,28 @@ function ScheduleDialog({
                                                 ))}
                                             </div>
                                         </div>
+
+                                        {ai.data.interview_mode === 'voice' && (
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor={`ai_voice_${application.id}`}>
+                                                    Suara AI
+                                                </Label>
+                                                <select
+                                                    id={`ai_voice_${application.id}`}
+                                                    value={ai.data.voice}
+                                                    onChange={(e) =>
+                                                        ai.setData('voice', e.target.value)
+                                                    }
+                                                    className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                                >
+                                                    {['alloy', 'ash', 'ballad', 'coral', 'echo', 'marin', 'sage', 'shimmer', 'verse', 'cedar'].map((v) => (
+                                                        <option key={v} value={v}>
+                                                            {v.charAt(0).toUpperCase() + v.slice(1)}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
 
                                         <div className="space-y-1.5">
                                             <Label
@@ -1851,6 +2144,9 @@ function ScheduleDialog({
                                         onAdd={addAiQuestion}
                                         onRemove={removeAiQuestion}
                                         onUpdate={updateAiQuestion}
+                                        onUpdateOptions={updateAiQuestionOptions}
+                                        onGenerate={generateAiQuestionsForSchedule}
+                                        generating={generatingAiQuestions}
                                     />
                                 </div>
 

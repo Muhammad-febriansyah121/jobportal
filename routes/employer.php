@@ -16,6 +16,7 @@ use App\Http\Controllers\Employer\EmployerDashboardController;
 use App\Http\Controllers\Employer\EmployerEmailSettingsController;
 use App\Http\Controllers\Employer\EmployerGoogleCalendarController;
 use App\Http\Controllers\Employer\EmployerInterviewController;
+use App\Http\Controllers\Employer\EmployerInterviewQuestionGeneratorController;
 use App\Http\Controllers\Employer\EmployerJobListingController;
 use App\Http\Controllers\Employer\EmployerMessageController;
 use App\Http\Controllers\Employer\EmployerMessageTemplateController;
@@ -97,6 +98,7 @@ Route::prefix('employer')
         Route::resource('jobs', EmployerJobListingController::class)
             ->parameters(['jobs' => 'jobListing'])
             ->only(['index', 'show', 'create', 'store', 'edit', 'update', 'destroy']);
+        Route::post('jobs/{jobListing}/ai-interviews/generate-questions', EmployerInterviewQuestionGeneratorController::class)->name('jobs.ai-interviews.generate-questions');
         Route::post('jobs/{jobListing}/ai-interviews', [EmployerAiInterviewController::class, 'store'])->name('jobs.ai-interviews.store');
         Route::post('jobs/{jobListing}/ai-interviews/bulk', [EmployerAiInterviewController::class, 'storeBulk'])->name('jobs.ai-interviews.store-bulk');
         Route::get('jobs/{jobListing}/ai-interviews/compare', [EmployerAiInterviewController::class, 'compare'])->name('jobs.ai-interviews.compare');

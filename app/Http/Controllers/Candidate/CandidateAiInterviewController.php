@@ -426,8 +426,8 @@ class CandidateAiInterviewController extends Controller
             'application.jobListing.company:id,name',
             'application.candidate:id,user_id,full_name,headline',
             'application.candidate.user:id,name',
-            'questions:id,application_id,session_id,question,category,rubric,weight,allow_ai_followup,order_number',
-            'responses.question:id,question,category,rubric,weight,allow_ai_followup,order_number',
+            'questions:id,application_id,session_id,question,category,rubric,weight,allow_ai_followup,question_type,options,order_number',
+            'responses.question:id,question,category,rubric,weight,allow_ai_followup,question_type,options,order_number',
             'analysis',
             'rescheduleHistories.actor:id,name',
         ]);
@@ -467,6 +467,8 @@ class CandidateAiInterviewController extends Controller
                         'rubric' => $question->rubric,
                         'weight' => $question->weight,
                         'allow_ai_followup' => $question->allow_ai_followup,
+                        'question_type' => $question->question_type ?? 'open',
+                        'options' => $question->options ?? [],
                         'answer_text' => $responses->get($question->id)?->answer_text,
                         'ai_score' => $hideResults ? null : $responses->get($question->id)?->ai_score,
                         'ai_analysis' => $hideResults ? null : $responses->get($question->id)?->ai_analysis,
@@ -1683,14 +1685,35 @@ class CandidateAiInterviewController extends Controller
         $questions = $session->questions
             ->sortBy('order_number')
             ->values()
-            ->map(fn (AiInterviewQuestion $question, int $index): string => sprintf(
-                'Q%d. %s Category: %s. Rubric: %s. AI follow-up: %s.',
-                $index + 1,
-                $question->question,
-                $question->category ?? 'general',
-                $question->rubric ?: 'Nilai jawaban berdasarkan kejelasan, relevansi, dan contoh konkret.',
-                $question->allow_ai_followup ? 'allowed for one short follow-up' : 'not allowed'
-            ))
+            ->map(function (AiInterviewQuestion $question, int $index): string {
+                $isMultipleChoice = ($question->question_type ?? 'open') === 'multiple_choice';
+                $options = is_array($question->options) && count($question->options) > 0
+                    ? $question->options
+                    : [];
+
+                $optionsText = '';
+                if ($isMultipleChoice && count($options) > 0) {
+                    $letters = range('A', 'Z');
+                    $optionLines = array_map(
+                        fn ($opt, $i) => "{$letters[$i]}. {$opt}",
+                        $options,
+                        array_keys($options)
+                    );
+                    $optionsText = ' Options: '.implode(', ', $optionLines).'.'.
+                        ' Read all options aloud before waiting for the answer. Candidate answers by selecting a letter (A/B/C/D).'.
+                        ' No AI follow-up allowed for this question.';
+                }
+
+                return sprintf(
+                    'Q%d. %s%s Category: %s. Rubric: %s. AI follow-up: %s.',
+                    $index + 1,
+                    $question->question,
+                    $optionsText,
+                    $question->category ?? 'general',
+                    $question->rubric ?: 'Nilai jawaban berdasarkan kejelasan, relevansi, dan contoh konkret.',
+                    ($isMultipleChoice || ! $question->allow_ai_followup) ? 'not allowed' : 'allowed for one short follow-up'
+                );
+            })
             ->implode("\n");
 
         if ($isEnglishInterview) {

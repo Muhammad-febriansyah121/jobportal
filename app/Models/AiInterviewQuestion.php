@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'rubric',
     'weight',
     'allow_ai_followup',
+    'question_type',
+    'options',
     'order_number',
 ])]
 class AiInterviewQuestion extends Model
@@ -38,6 +40,7 @@ class AiInterviewQuestion extends Model
     {
         return [
             'allow_ai_followup' => 'boolean',
+            'options' => 'array',
         ];
     }
 }

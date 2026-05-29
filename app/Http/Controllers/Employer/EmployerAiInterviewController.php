@@ -81,6 +81,7 @@ class EmployerAiInterviewController extends Controller
             $session->questions()->delete();
 
             collect($data['questions'])->values()->each(function (array $question, int $index) use ($application, $session): void {
+                $questionType = $question['question_type'] ?? 'open';
                 $createdQuestion = AiInterviewQuestion::create([
                     'application_id' => $application->id,
                     'session_id' => $session->id,
@@ -89,6 +90,8 @@ class EmployerAiInterviewController extends Controller
                     'rubric' => $question['rubric'] ?? null,
                     'weight' => $question['weight'],
                     'allow_ai_followup' => (bool) ($question['allow_ai_followup'] ?? false),
+                    'question_type' => $questionType,
+                    'options' => $questionType === 'multiple_choice' ? ($question['options'] ?? null) : null,
                     'order_number' => $index + 1,
                 ]);
 
@@ -191,6 +194,7 @@ class EmployerAiInterviewController extends Controller
                 ]);
 
                 collect($data['questions'])->values()->each(function (array $question, int $index) use ($application, $session): void {
+                    $questionType = $question['question_type'] ?? 'open';
                     $createdQuestion = AiInterviewQuestion::create([
                         'application_id' => $application->id,
                         'session_id' => $session->id,
@@ -199,6 +203,8 @@ class EmployerAiInterviewController extends Controller
                         'rubric' => $question['rubric'] ?? null,
                         'weight' => $question['weight'],
                         'allow_ai_followup' => (bool) ($question['allow_ai_followup'] ?? false),
+                        'question_type' => $questionType,
+                        'options' => $questionType === 'multiple_choice' ? ($question['options'] ?? null) : null,
                         'order_number' => $index + 1,
                     ]);
 

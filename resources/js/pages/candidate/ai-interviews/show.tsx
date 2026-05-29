@@ -102,6 +102,8 @@ type AiInterviewShowProps = {
             rubric?: string | null;
             weight?: number | null;
             allow_ai_followup?: boolean | null;
+            question_type?: 'open' | 'multiple_choice' | null;
+            options?: string[] | null;
             answer_text?: string | null;
             ai_score?: number | null;
             ai_analysis?: string | null;
@@ -4931,17 +4933,48 @@ function AnswerForm({
                     </div>
                 </div>
 
-                <textarea
-                    autoFocus
-                    className="min-h-40 w-full rounded-xl border border-input bg-transparent px-3 py-2.5 text-sm leading-6 shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:min-h-48 sm:px-4 sm:py-3"
-                    value={form.data.answers[activeQuestion.id] ?? ''}
-                    onChange={(event) =>
-                        updateAnswer(activeQuestion.id, event.target.value)
-                    }
-                    placeholder={t(
-                        'candidate.ai_interview_show.write_answer_placeholder',
-                    )}
-                />
+                {activeQuestion.question_type === 'multiple_choice' && (activeQuestion.options?.length ?? 0) > 0 ? (
+                    <div className="space-y-2.5">
+                        {activeQuestion.options!.map((option, optIdx) => {
+                            const selected = form.data.answers[activeQuestion.id] === option;
+                            return (
+                                <button
+                                    key={optIdx}
+                                    type="button"
+                                    onClick={() => updateAnswer(activeQuestion.id, selected ? '' : option)}
+                                    className={cn(
+                                        'flex w-full items-start gap-3 rounded-xl border-2 px-4 py-3 text-left text-sm leading-6 transition-all',
+                                        selected
+                                            ? 'border-primary-500 bg-primary-50 font-medium text-primary-800'
+                                            : 'border-input hover:border-slate-300 hover:bg-slate-50',
+                                    )}
+                                >
+                                    <span className={cn(
+                                        'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-2 text-[10px] font-bold transition-colors',
+                                        selected
+                                            ? 'border-primary-500 bg-primary-500 text-white'
+                                            : 'border-slate-300 text-slate-400',
+                                    )}>
+                                        {String.fromCharCode(65 + optIdx)}
+                                    </span>
+                                    <span>{option}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <textarea
+                        autoFocus
+                        className="min-h-40 w-full rounded-xl border border-input bg-transparent px-3 py-2.5 text-sm leading-6 shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:min-h-48 sm:px-4 sm:py-3"
+                        value={form.data.answers[activeQuestion.id] ?? ''}
+                        onChange={(event) =>
+                            updateAnswer(activeQuestion.id, event.target.value)
+                        }
+                        placeholder={t(
+                            'candidate.ai_interview_show.write_answer_placeholder',
+                        )}
+                    />
+                )}
                 <InputError message={errors[`answers.${activeQuestion.id}`]} />
             </div>
 
