@@ -3124,6 +3124,7 @@
     "employer.candidates.row_view_profile": "View profile",
     "employer.candidates.row_whatsapp_no_number": "Candidate has not filled in WhatsApp number",
     "employer.candidates.row_ai_interview_result": "AI Interview Result",
+    "employer.candidates.row_view_cv": "View CV",
     "employer.candidates.row_interview_scheduled": "Interview scheduled",
     "employer.candidates.row_schedule_interview": "Schedule Interview",
     "employer.candidates.row_first_response": "First response :date",

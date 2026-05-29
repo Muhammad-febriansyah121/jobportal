@@ -130,6 +130,8 @@ class EmployerApplicationController extends Controller
                     ])
                     ->all(),
                 'ai_sessions' => $application->aiInterviewSessions
+                    ->whereNotNull('scheduled_at')
+                    ->values()
                     ->map(fn (AiInterviewSession $session): array => [
                         'id' => $session->id,
                         'status' => $session->status,

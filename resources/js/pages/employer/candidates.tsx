@@ -426,7 +426,7 @@ function CandidateRow({
                                 target="_blank"
                                 rel="noreferrer"
                             >
-                                {t('employer.candidates.row_ai_interview_result')}
+                                {t('employer.candidates.row_view_cv')}
                             </a>
                         </Button>
                     ) : null}

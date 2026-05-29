@@ -52,9 +52,10 @@ class Application extends Model
 
     public function latestAiInterviewSession(): HasOne
     {
-        return $this->hasOne(AiInterviewSession::class)
-            ->whereNotNull('scheduled_at')
-            ->latestOfMany();
+        return $this->hasOne(AiInterviewSession::class)->ofMany(
+            ['id' => 'max'],
+            fn ($q) => $q->whereNotNull('scheduled_at'),
+        );
     }
 
     protected function casts(): array
