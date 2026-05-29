@@ -188,7 +188,9 @@ export default function CandidateCv({
     const [isDrafting, setIsDrafting] = useState(false);
     const [aiDraftSheetOpen, setAiDraftSheetOpen] = useState(false);
     const [savedCvsSheetOpen, setSavedCvsSheetOpen] = useState(false);
-    const [previewVisible, setPreviewVisible] = useState(true);
+    const [previewVisible, setPreviewVisible] = useState(
+        () => typeof window !== 'undefined' && window.innerWidth >= 1280,
+    );
     const [rightPanelView, setRightPanelView] = useState<'preview' | 'review'>('preview');
     const [openSections, setOpenSections] = useState<Set<string>>(
         () => new Set(['data-dasar']),
@@ -1074,18 +1076,18 @@ export default function CandidateCv({
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className="hidden xl:inline-flex"
                                 onClick={() => setPreviewVisible((v) => !v)}
                             >
                                 {previewVisible ? (
                                     <>
                                         <EyeOff className="size-3.5" />
-                                        Sembunyikan
+                                        <span className="hidden sm:inline">Sembunyikan</span>
                                     </>
                                 ) : (
                                     <>
                                         <Eye className="size-3.5" />
-                                        Tampilkan Preview
+                                        <span className="hidden sm:inline">Tampilkan Preview</span>
+                                        <span className="sm:hidden">Preview</span>
                                     </>
                                 )}
                             </Button>
@@ -2388,7 +2390,6 @@ export default function CandidateCv({
                                                 type="button"
                                                 size="sm"
                                                 variant="ghost"
-                                                className="hidden xl:inline-flex"
                                                 onClick={() =>
                                                     setPreviewVisible(false)
                                                 }
@@ -2433,7 +2434,7 @@ export default function CandidateCv({
                                         </TabsList>
                                     </div>
                                     <TabsContent value="preview" className="mt-3">
-                                        <CardContent className="max-h-[82vh] overflow-y-auto p-0">
+                                        <CardContent className="max-h-[65vh] overflow-y-auto p-0 xl:max-h-[82vh]">
                                             <CvLivePreview
                                                 data={form.data}
                                                 t={t}
@@ -2441,7 +2442,7 @@ export default function CandidateCv({
                                         </CardContent>
                                     </TabsContent>
                                     <TabsContent value="review" className="mt-3">
-                                        <CardContent className="max-h-[82vh] space-y-4 overflow-y-auto">
+                                        <CardContent className="max-h-[65vh] space-y-4 overflow-y-auto xl:max-h-[82vh]">
                                             <Field
                                                 label={t(
                                                     'candidate.cv_builder.upload_for_review',

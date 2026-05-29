@@ -13,7 +13,7 @@ use Laravel\Ai\Enums\Lab;
 use Laravel\Ai\Promptable;
 
 #[Provider(Lab::OpenAI)]
-#[Model('gpt-4o')]
+#[Model('gpt-5')]
 #[Timeout(120)]
 #[MaxTokens(2000)]
 class CvUploadParser implements Agent, HasStructuredOutput

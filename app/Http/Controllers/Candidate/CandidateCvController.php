@@ -265,6 +265,10 @@ class CandidateCvController extends Controller
         ReviewCandidateCvRequest $request,
         ResolveCandidateProfile $resolveCandidateProfile,
     ): SymfonyResponse {
+        if (! $this->ai->isConfigured()) {
+            return response()->json(['message' => 'AI belum dikonfigurasi.'], 422);
+        }
+
         $candidate = $resolveCandidateProfile->handle($request->user());
         $builderData = $this->mergeWithBuilderDefaults($request->validated(), $candidate);
         $targetJob = $request->string('target_job')->toString();

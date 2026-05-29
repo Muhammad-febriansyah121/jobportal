@@ -92,7 +92,7 @@ class ParseUploadedCvJob implements ShouldQueue
                 'cv_text_preview' => mb_substr($payload->text, 0, 200),
             ],
             'output_json' => $parsed,
-            'model_name' => (string) (config('services.openai.model') ?: 'gpt-4o'),
+            'model_name' => (string) (config('services.openai.model') ?: 'gpt-5'),
             'status' => 'success',
         ]);
     }
