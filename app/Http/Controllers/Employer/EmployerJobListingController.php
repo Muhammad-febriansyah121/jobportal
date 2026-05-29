@@ -70,6 +70,12 @@ class EmployerJobListingController extends Controller
             return to_route('employer.company.edit');
         }
 
+        if (! $company->isApproved()) {
+            Inertia::flash('toast', ['type' => 'warning', 'message' => 'Perusahaan Anda belum disetujui. Tunggu proses verifikasi sebelum membuat lowongan.']);
+
+            return to_route('employer.jobs.index');
+        }
+
         return Inertia::render('employer/jobs/form', [
             'mode' => 'create',
             'job' => null,
@@ -253,6 +259,12 @@ class EmployerJobListingController extends Controller
             return to_route('employer.company.edit');
         }
 
+        if (! $company->isApproved()) {
+            Inertia::flash('toast', ['type' => 'warning', 'message' => 'Perusahaan Anda belum disetujui. Tunggu proses verifikasi sebelum membuat lowongan.']);
+
+            return to_route('employer.jobs.index');
+        }
+
         $data = $this->normalizeJobData($request->validated());
         $data['slug'] = UniqueSlug::make(JobListing::class, $data['title'], 'lowongan');
 
@@ -354,6 +366,12 @@ class EmployerJobListingController extends Controller
         abort_if($company === null, 404);
 
         $this->ensureBelongsToCompany($jobListing, $company->id);
+
+        if (! $company->isApproved()) {
+            Inertia::flash('toast', ['type' => 'warning', 'message' => 'Perusahaan Anda belum disetujui. Tunggu proses verifikasi sebelum mempublikasikan lowongan.']);
+
+            return to_route('employer.jobs.index');
+        }
 
         Validator::make($jobListing->toArray(), [
             'description' => ['required', 'string'],

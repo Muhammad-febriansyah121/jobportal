@@ -1,7 +1,6 @@
 <?php
 
 use App\Ai\Agents\TalentReranker;
-use App\Models\AiAuditLog;
 use App\Models\AiInterviewQuestion;
 use App\Models\AiInterviewRescheduleHistory;
 use App\Models\AiInterviewResponse;
@@ -286,6 +285,87 @@ test('employer cannot publish new job without mandatory publish fields', functio
 
     expect(JobListing::query()->where('title', 'Backend Engineer Publish')->exists())
         ->toBeFalse();
+});
+
+test('employer with unapproved company cannot access create job listing form', function () {
+    $employer = User::factory()->employer()->create();
+    $industry = Industry::create(['name' => 'Teknologi Unapproved', 'slug' => 'teknologi-unapproved']);
+
+    foreach (['unverified', 'pending', 'rejected', 'need_revision'] as $status) {
+        Company::query()->where('owner_id', $employer->id)->delete();
+
+        Company::create([
+            'owner_id' => $employer->id,
+            'industry_id' => $industry->id,
+            'name' => 'Karivia Unapproved',
+            'slug' => 'karivia-unapproved-'.$status,
+            'verification_status' => $status,
+        ]);
+
+        actingAs($employer)
+            ->get(route('employer.jobs.create'))
+            ->assertRedirect(route('employer.jobs.index'));
+    }
+});
+
+test('employer with unapproved company cannot store job listing', function () {
+    $employer = User::factory()->employer()->create();
+    $industry = Industry::create(['name' => 'Teknologi Store Block', 'slug' => 'teknologi-store-block']);
+
+    Company::create([
+        'owner_id' => $employer->id,
+        'industry_id' => $industry->id,
+        'name' => 'Karivia Store Block',
+        'slug' => 'karivia-store-block',
+        'verification_status' => 'pending',
+    ]);
+
+    actingAs($employer)
+        ->post(route('employer.jobs.store'), [
+            'title' => 'Blocked Job',
+            'industry_id' => $industry->id,
+            'work_mode' => 'remote',
+            'job_type' => 'full_time',
+            'experience_level' => 'entry',
+            'salary_currency' => 'IDR',
+            'is_salary_visible' => true,
+        ])
+        ->assertRedirect(route('employer.jobs.index'));
+
+    expect(JobListing::query()->where('title', 'Blocked Job')->exists())->toBeFalse();
+});
+
+test('employer with unapproved company cannot publish job listing', function () {
+    $employer = User::factory()->employer()->create();
+    $industry = Industry::create(['name' => 'Teknologi Publish Block', 'slug' => 'teknologi-publish-block']);
+
+    $company = Company::create([
+        'owner_id' => $employer->id,
+        'industry_id' => $industry->id,
+        'name' => 'Karivia Publish Block',
+        'slug' => 'karivia-publish-block',
+        'verification_status' => 'pending',
+    ]);
+
+    $job = JobListing::create([
+        'company_id' => $company->id,
+        'created_by' => $employer->id,
+        'title' => 'Draft Blocked Job',
+        'slug' => 'draft-blocked-job',
+        'status' => 'draft',
+        'work_mode' => 'remote',
+        'job_type' => 'full_time',
+        'experience_level' => 'entry',
+        'description' => 'Test',
+        'required_qualifications' => 'Test',
+    ]);
+
+    actingAs($employer)
+        ->patch(route('employer.jobs.publish', $job))
+        ->assertRedirect(route('employer.jobs.index'));
+
+    $job->refresh();
+    expect($job->status)->toBe('draft');
 });
 
 test('employer can view their job listing detail page', function () {

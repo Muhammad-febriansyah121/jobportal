@@ -1,0 +1,491 @@
+job_name,company,lokasi,tingkat_job,lama_pengalaman,jenis_job,ukuran_company,industri,gaji,median_gaji,sumber
+data scientist,perusahaan dirahasiakan,dki jakarta,senior tingkat menengah,5.0,penuh waktu,,,"[20000000, 25000000]",22500000.0,jobstreet
+data scientist,pt main games indonesia (jakarta),dki jakarta,asosiasi,3.0,penuh waktu,1-50 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data scientist,pt mega central finance,dki jakarta,senior tingkat menengah,5.0,penuh waktu,1.001-5.000 pekerja,keuangan,,,jobstreet
+data scientist,kompas gramedia - kg media - kg media,dki jakarta,asosiasi,3.0,penuh waktu,1-50 pekerja,media,,,jobstreet
+data scientist,pt berlian sistem informasi,dki jakarta,asosiasi,3.0,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data scientist,pt. lippo karawaci tbk,banten,asosiasi,4.0,penuh waktu,1.001-5.000 pekerja,properti,,,jobstreet
+data scientist,pt sharing vision indonesia,dki jakarta,asosiasi,2.0,penuh waktu,51-200 pekerja,konsultasi,"[12000000, 20000000]",16000000.0,jobstreet
+data scientist,pt kamoro maxima integra,dki jakarta,asosiasi,3.0,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data scientist,pt eigerindo multi produk industri,jawa barat,asosiasi,3.0,penuh waktu,1.001-5.000 pekerja,ekonomi,,,jobstreet
+data scientist,yayasan aidhub indonesia,bali,senior tingkat menengah,2.0,penuh waktu,1-50 pekerja,teknologi informasi dan komunikasi,"[9000000, 12600000]",10800000.0,jobstreet
+data scientist,pt. prima vista solusi,dki jakarta,senior tingkat menengah,5.0,penuh waktu,501-1.000 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data scientist,pt kideco jaya agung (kideco),kalimantan timur,senior tingkat menengah,2.0,kontrak,201-500 pekerja,pertambangan,,,jobstreet
+data scientist,pt os selnajaya indonesia,dki jakarta,senior tingkat menengah,5.0,penuh waktu,201-500 pekerja,konsultasi,,,jobstreet
+data scientist,pt. persolkelly recruitment indonesia,dki jakarta,asosiasi,3.0,penuh waktu,1.001-5.000 pekerja,konsultasi,,,jobstreet
+data scientist,pt dua empat tujuh,dki jakarta,asosiasi,1.0,penuh waktu,501-1.000 pekerja,konsultasi,,,jobstreet
+data scientist,pt pratesis,dki jakarta,asosiasi,1.0,penuh waktu,51-200 pekerja,konsultasi,,,jobstreet
+data scientist,pt metra-net,dki jakarta,asosiasi,2.0,kontrak,51-200 pekerja,teknologi informasi dan komunikasi,"[5000000, 7000000]",6000000.0,jobstreet
+data scientist,pt prodia widyahusada tbk,dki jakarta,asosiasi,1.0,penuh waktu,1.001-5.000 pekerja,kesehatan,,,jobstreet
+data scientist,quipper,dki jakarta,,,,,,,,jobstreet
+data scientist,friesland campina,dki jakarta,,,,,,,,jobstreet
+data scientist,pt finaccel teknologi indonesia,dki jakarta,,,,201-500 pekerja,keuangan,,,jobstreet
+data scientist,pt metrodata electronics tbk,dki jakarta,,,,1.001-5.000 pekerja,konsultasi,,,jobstreet
+data scientist,pt grab taxi indonesia,dki jakarta,,,,201-500 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data analyst,"pt bank sinarmas, tbk",dki jakarta,asosiasi,2.0,penuh waktu,>5.000 pekerja,keuangan,,,jobstreet
+data analyst,pt link net,banten,senior tingkat menengah,2.0,kontrak,501-1.000 pekerja,media,"[15000000, 25000000]",20000000.0,jobstreet
+data analyst,pt indika multi properti,dki jakarta,senior tingkat menengah,7.0,penuh waktu,1-50 pekerja,properti,,,jobstreet
+data analyst,pt asyx indonesia,banten,asosiasi,1.0,penuh waktu,1-50 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data analyst,pt. majoo teknologi indonesia,dki jakarta,asosiasi,2.0,penuh waktu,201-500 pekerja,keuangan,,,jobstreet
+data analyst,pt parkland world indonesia (adidas),banten,asosiasi,1.0,penuh waktu,>5.000 pekerja,ekonomi,"[4500000, 5300000]",4900000.0,jobstreet
+data analyst,pt ako media asia,dki jakarta,senior tingkat menengah,5.0,penuh waktu,51-200 pekerja,konsultasi,,,jobstreet
+data analyst,pt smartfren telecom tbk,dki jakarta,tingkat pemula,,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data analyst,jd .id (pt ritel bersama nasional),dki jakarta,senior tingkat menengah,5.0,penuh waktu,501-1.000 pekerja,ekonomi,,,jobstreet
+data analyst,pt agate international,jawa barat,asosiasi,,penuh waktu,51-200 pekerja,media,,,jobstreet
+data analyst,pt atana technologies indonesia,jawa timur,asosiasi,1.0,penuh waktu,1-50 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data analyst,perusahaan dirahasiakan,dki jakarta,asosiasi,2.0,penuh waktu,,,,,jobstreet
+data analyst,pt. kalbe farma tbk. (international division),dki jakarta,senior tingkat menengah,2.0,penuh waktu,201-500 pekerja,kesehatan,,,jobstreet
+data analyst,pt ultra prima abadi (orang tua group),dki jakarta,asosiasi,1.0,penuh waktu,>5.000 pekerja,ekonomi,,,jobstreet
+data analyst,pt. lg cns indonesia,dki jakarta,asosiasi,5.0,kontrak,1-50 pekerja,teknologi informasi dan komunikasi,"[12000000, 18000000]",15000000.0,jobstreet
+data analyst,pt ming jaya sejahtera,jawa timur,asosiasi,,penuh waktu,51-200 pekerja,ekonomi,,,jobstreet
+data analyst,pt pepper services indonesia,dki jakarta,senior tingkat menengah,5.0,penuh waktu,201-500 pekerja,keuangan,,,jobstreet
+data analyst,pt abc kogen dairy,dki jakarta,asosiasi,3.0,penuh waktu,51-200 pekerja,ekonomi,,,jobstreet
+data analyst,pt cimb niaga tbk,dki jakarta,asosiasi,1.0,penuh waktu,>5.000 pekerja,keuangan,,,jobstreet
+data analyst,pt ads komunikasi indonesia,dki jakarta,asosiasi,1.0,penuh waktu,51-200 pekerja,pemasaran & periklanan,"[3000000, 4000000]",3500000.0,jobstreet
+data analyst,"pt smart,tbk",dki jakarta,senior tingkat menengah,2.0,penuh waktu,>5.000 pekerja,agrikultur,,,jobstreet
+data analyst,pt allure alluminio,dki jakarta,asosiasi,3.0,penuh waktu,201-500 pekerja,konstruksi,,,jobstreet
+data analyst,pt. multifortuna sinardelta,dki jakarta,asosiasi,2.0,kontrak,201-500 pekerja,ekonomi,,,jobstreet
+data analyst,rgf hr agent indonesia,dki jakarta,asosiasi,3.0,penuh waktu,1-50 pekerja,,"[15000000, 30000000]",22500000.0,jobstreet
+data analyst,pt wook global technology,dki jakarta,senior tingkat menengah,2.0,penuh waktu,1.001-5.000 pekerja,elektronik,,,jobstreet
+data analyst,magix metro media,dki jakarta,asosiasi,1.0,penuh waktu,51-200 pekerja,acara,"[3500000, 4500000]",4000000.0,jobstreet
+data analyst,maxi group,dki jakarta,senior tingkat menengah,5.0,penuh waktu,201-500 pekerja,pakaian & mode,,,jobstreet
+data analyst,pt fajar mas murni,jawa barat,asosiasi,2.0,penuh waktu,201-500 pekerja,permesinan,,,jobstreet
+data analyst,pt finaccel teknologi indonesia,dki jakarta,asosiasi,2.0,penuh waktu,201-500 pekerja,keuangan,,,jobstreet
+data analyst,pt big fish hunter,dki jakarta,senior tingkat menengah,3.0,penuh waktu,1-50 pekerja,konsultasi,"[40000000, 60000000]",50000000.0,jobstreet
+data analyst,pt ratna dewi tunggal abadi textile,dki jakarta,tingkat pemula,,penuh waktu,51-200 pekerja,ekonomi,,,jobstreet
+data analyst,pt great giant pineapple,dki jakarta,asosiasi,2.0,penuh waktu,>5.000 pekerja,agrikultur,,,jobstreet
+data analyst,pt samudera indonesia tbk,dki jakarta,senior tingkat menengah,1.0,penuh waktu,1.001-5.000 pekerja,transportasi,"[7000000, 11000000]",9000000.0,jobstreet
+data analyst,pt pp london sumatra indonesia.tbk,dki jakarta,asosiasi,1.0,penuh waktu,>5.000 pekerja,agrikultur,,,jobstreet
+data analyst,pt asuransi jiwa sinarmas msig tbk.,dki jakarta,asosiasi,3.0,penuh waktu,501-1.000 pekerja,keuangan,,,jobstreet
+data analyst,indokaryaabadi,banten,senior tingkat menengah,2.0,penuh waktu,1-50 pekerja,ekonomi,,,jobstreet
+data analyst,pt eigerindo multi produk industri,jawa barat,asosiasi,1.0,penuh waktu,1.001-5.000 pekerja,ekonomi,,,jobstreet
+data analyst,pt. kalbe farma tbk. (international division),dki jakarta,senior tingkat menengah,5.0,penuh waktu,201-500 pekerja,kesehatan,,,jobstreet
+data analyst,pt enseval putera megatrading tbk,dki jakarta,magang,,paruh waktu,>5.000 pekerja,transportasi,,,jobstreet
+data analyst,pt valbury sekuritas indonesia,dki jakarta,asosiasi,1.0,penuh waktu,201-500 pekerja,saham,,,jobstreet
+data analyst,"pt wahana ottomitra multiartha (wom finance), tbk",dki jakarta,senior tingkat menengah,1.0,penuh waktu,>5.000 pekerja,keuangan,,,jobstreet
+data analyst,ismaya group,dki jakarta,tingkat pemula,,penuh waktu,1.001-5.000 pekerja,makanan & minuman,,,jobstreet
+data analyst,pt esensi solusi buana,banten,asosiasi,1.0,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,"[6000000, 10000000]",8000000.0,jobstreet
+data analyst,pt charoen pokphand indonesia,dki jakarta,tingkat pemula,,penuh waktu,>5.000 pekerja,agrikultur,,,jobstreet
+data analyst,pt jac indonesia,dki jakarta,senior tingkat menengah,5.0,penuh waktu,51-200 pekerja,,"[15000000, 19500000]",17250000.0,jobstreet
+data analyst,pt lucky mom indonesia,dki jakarta,asosiasi,2.0,penuh waktu,201-500 pekerja,ekonomi,,,jobstreet
+data analyst,pt morula indonesia,jawa timur,asosiasi,2.0,penuh waktu,201-500 pekerja,kesehatan,,,jobstreet
+data analyst,boga group,banten,asosiasi,1.0,penuh waktu,1.001-5.000 pekerja,makanan & minuman,,,jobstreet
+data analyst,pt surya pratista hutama (suprama),jawa timur,asosiasi,1.0,kontrak,1.001-5.000 pekerja,ekonomi,,,jobstreet
+data analyst,pt mindo small business solutions,diy,asosiasi,2.0,penuh waktu,51-200 pekerja,konsultasi,"[2500000, 4000000]",3250000.0,jobstreet
+data analyst,pt bussan auto finance (baf),dki jakarta,senior tingkat menengah,2.0,penuh waktu,>5.000 pekerja,keuangan,,,jobstreet
+data analyst,pt teknologi api dua sisi,dki jakarta,asosiasi,2.0,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,"[8000000, 15000000]",11500000.0,jobstreet
+data analyst,perusahaan dirahasiakan,dki jakarta,asosiasi,3.0,penuh waktu,,,,,jobstreet
+data analyst,pt global unggul mandiri (paxel),dki jakarta,senior tingkat menengah,3.0,penuh waktu,201-500 pekerja,transportasi,,,jobstreet
+data analyst,ecloudvalley technology limited,dki jakarta,senior tingkat menengah,2.0,penuh waktu,201-500 pekerja,konsultasi,"[20000000, 32000000]",26000000.0,jobstreet
+data analyst,pt atria artha persada,sumatera utara,asosiasi,1.0,penuh waktu,51-200 pekerja,ekonomi,,,jobstreet
+data analyst,pt global unggul mandiri (paxel),dki jakarta,senior tingkat menengah,5.0,penuh waktu,201-500 pekerja,transportasi,,,jobstreet
+data analyst,pt indonesia logam pratama,dki jakarta,asosiasi,3.0,penuh waktu,1-50 pekerja,ekonomi,,,jobstreet
+data analyst,pt. elabram systems,dki jakarta,tingkat pemula,,penuh waktu,51-200 pekerja,,"[6000000, 7000000]",6500000.0,jobstreet
+data analyst,pt. panthera biru indonesia,dki jakarta,asosiasi,2.0,penuh waktu,51-200 pekerja,transportasi,,,jobstreet
+data analyst,pt adlink sinemedia indonesia,dki jakarta,asosiasi,3.0,penuh waktu,51-200 pekerja,pemasaran & periklanan,,,jobstreet
+data analyst,ottopay,dki jakarta,senior tingkat menengah,2.0,penuh waktu,201-500 pekerja,konsultasi,,,jobstreet
+data analyst,pt.nugraha indah citarasa indonesia,dki jakarta,tingkat pemula,,penuh waktu,201-500 pekerja,ekonomi,"[5000000, 5500000]",5250000.0,jobstreet
+data analyst,"tri7 solutions, inc.",,tingkat pemula,,penuh waktu,201-500 pekerja,bpo,,,jobstreet
+data analyst,pt hino motors sales indonesia,dki jakarta,asosiasi,2.0,kontrak,201-500 pekerja,ekonomi,,,jobstreet
+data analyst,boga group,banten,senior tingkat menengah,2.0,penuh waktu,1.001-5.000 pekerja,makanan & minuman,,,jobstreet
+data analyst,pt tani hub indonesia,dki jakarta,asosiasi,3.0,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,"[13000000, 18200000]",15600000.0,jobstreet
+data analyst,pt bussan auto finance (baf),dki jakarta,asosiasi,1.0,penuh waktu,>5.000 pekerja,keuangan,,,jobstreet
+data analyst,pt seahub media indonesia,dki jakarta,asosiasi,1.0,penuh waktu,51-200 pekerja,media,,,jobstreet
+data analyst,pt. sumbawa apsara beton,dki jakarta,asosiasi,1.0,penuh waktu,1.001-5.000 pekerja,konstruksi,"[5500000, 7700000]",6600000.0,jobstreet
+data analyst,"pt wahana ottomitra multiartha (wom finance), tbk",dki jakarta,tingkat pemula,,kontrak,>5.000 pekerja,keuangan,,,jobstreet
+data analyst,pt enseval putera megatrading tbk,dki jakarta,asosiasi,1.0,penuh waktu,>5.000 pekerja,transportasi,,,jobstreet
+data analyst,pt. aurora group,dki jakarta,asosiasi,2.0,penuh waktu,1-50 pekerja,konsultasi,"[10000000, 13000000]",11500000.0,jobstreet
+data analyst,pt priamanaya energi,dki jakarta,asosiasi,2.0,penuh waktu,201-500 pekerja,konstruksi,,,jobstreet
+data analyst,pt akasha wira international tbk,dki jakarta,asosiasi,1.0,penuh waktu,1.001-5.000 pekerja,ekonomi,"[4400000, 5720000]",5060000.0,jobstreet
+data analyst,pt surya dermato medica labs,dki jakarta,asosiasi,2.0,penuh waktu,201-500 pekerja,kesehatan,,,jobstreet
+data analyst,pt depoguna bangunan online,dki jakarta,senior tingkat menengah,4.0,penuh waktu,1-50 pekerja,ekonomi,,,jobstreet
+data analyst,pt infimedia solusi pratama,dki jakarta,asosiasi,1.0,penuh waktu,1-50 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data analyst,pt cipta urban darsana,dki jakarta,asosiasi,1.0,penuh waktu,51-200 pekerja,pemasaran & periklanan,"[5000000, 6000000]",5500000.0,jobstreet
+data analyst,pt mitsui leasing capital indonesia,dki jakarta,asosiasi,2.0,penuh waktu,501-1.000 pekerja,keuangan,"[6000000, 7500000]",6750000.0,jobstreet
+data analyst,pt os selnajaya indonesia,jawa barat,senior tingkat menengah,5.0,penuh waktu,201-500 pekerja,,"[11000000, 15000000]",13000000.0,jobstreet
+data analyst,xendit,dki jakarta,,,,,,,,jobstreet
+data analyst,aruna,dki jakarta,,,,,,,,jobstreet
+data analyst,pt pt cicil solusi mitra teknologi solusi mitra teknologi,dki jakarta,,,,1-50 pekerja,keuangan,,,jobstreet
+data analyst,pt zuzu teknologi servis,dki jakarta,,,,1-50 pekerja,pariwisata,,,jobstreet
+data analyst,pt intersoft solutions,dki jakarta,,,magang,1-50 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data analyst,pt agate international,jawa barat,,,,51-200 pekerja,media,,,jobstreet
+data analyst,pt bayer indonesia,dki jakarta,,,,1.001-5.000 pekerja,kesehatan,,,jobstreet
+data analyst,pt grab taxi indonesia,dki jakarta,,,,201-500 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data engineer,dexa group,banten,asosiasi,1.0,penuh waktu,>5.000 pekerja,kesehatan,,,jobstreet
+data engineer,pt agate international,jawa barat,asosiasi,,penuh waktu,51-200 pekerja,media,,,jobstreet
+data engineer,perusahaan dirahasiakan,dki jakarta,asosiasi,3.0,penuh waktu,,,"[9000000, 15000000]",12000000.0,jobstreet
+data engineer,pt. abeam analytics indonesia,dki jakarta,asosiasi,2.0,penuh waktu,51-200 pekerja,konsultasi,,,jobstreet
+data engineer,pt mitra informatika,jawa timur,asosiasi,1.0,penuh waktu,1-50 pekerja,teknologi informasi dan komunikasi,"[4300000, 6020000]",5160000.0,jobstreet
+data engineer,pt cimb niaga tbk,dki jakarta,senior tingkat menengah,2.0,penuh waktu,>5.000 pekerja,keuangan,,,jobstreet
+data engineer,pt inti citra agung (optik melawai),dki jakarta,senior tingkat menengah,2.0,kontrak,1.001-5.000 pekerja,ekonomi,,,jobstreet
+data engineer,perusahaan dirahasiakan,dki jakarta,senior tingkat menengah,5.0,penuh waktu,,,"[15000000, 20000000]",17500000.0,jobstreet
+data engineer,pt smartfren telecom tbk,dki jakarta,senior tingkat menengah,5.0,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data engineer,pt metrodata electronics tbk,dki jakarta,asosiasi,3.0,penuh waktu,1.001-5.000 pekerja,konsultasi,,,jobstreet
+data engineer,pt insura media solusi (jakarta),dki jakarta,asosiasi,1.0,penuh waktu,1-50 pekerja,teknologi informasi dan komunikasi,"[6000000, 12000000]",9000000.0,jobstreet
+data engineer,pt lawencon internasional internasional,dki jakarta,asosiasi,3.0,penuh waktu,51-200 pekerja,konsultasi,,,jobstreet
+data engineer,agung sedayu group,dki jakarta,asosiasi,1.0,penuh waktu,>5.000 pekerja,properti,,,jobstreet
+data engineer,onlinepajak,dki jakarta,senior tingkat menengah,5.0,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data engineer,pt izeno teknologi indonesia,dki jakarta,senior tingkat menengah,3.0,penuh waktu,51-200 pekerja,konsultasi,,,jobstreet
+data engineer,pt graha karya informasi,dki jakarta,asosiasi,1.0,kontrak,201-500 pekerja,konsultasi,,,jobstreet
+data engineer,pt hata arziki indonesia (jakarta),dki jakarta,magang,,magang,1-50 pekerja,,"[4600000, 6440000]",5520000.0,jobstreet
+data engineer,pt infoflow solutions,dki jakarta,asosiasi,5.0,penuh waktu,1-50 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data engineer,pt hebros,dki jakarta,asosiasi,2.0,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data engineer,pt fullerton health indonesia,dki jakarta,asosiasi,4.0,penuh waktu,201-500 pekerja,kesehatan,,,jobstreet
+data engineer,deloitte consulting sea,dki jakarta,senior tingkat menengah,2.0,penuh waktu,501-1.000 pekerja,konsultasi,,,jobstreet
+data engineer,pt kamoro maxima integra,dki jakarta,asosiasi,2.0,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,"[7500000, 15000000]",11250000.0,jobstreet
+data engineer,yayasan bina nusantara,dki jakarta,asosiasi,2.0,penuh waktu,1.001-5.000 pekerja,pendidikan,,,jobstreet
+data engineer,pt metrodata electronics tbk,dki jakarta,asosiasi,2.0,penuh waktu,1.001-5.000 pekerja,konsultasi,,,jobstreet
+data engineer,pt. htc global software services,dki jakarta,asosiasi,2.0,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data engineer,pt lunaria annua teknologi (koinworks),dki jakarta,asosiasi,1.0,penuh waktu,201-500 pekerja,keuangan,,,jobstreet
+data engineer,pt sense health indonesia,jawa barat,senior tingkat menengah,3.0,penuh waktu,1-50 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data engineer,pt. usaha pintar pratama,dki jakarta,senior tingkat menengah,5.0,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data engineer,geekhunter,dki jakarta,asosiasi,2.0,penuh waktu,1-50 pekerja,konsultasi,,,jobstreet
+data engineer,pt sehatq harsana emedika,dki jakarta,asosiasi,3.0,penuh waktu,51-200 pekerja,kesehatan,,,jobstreet
+data engineer,pt prodia widyahusada tbk,dki jakarta,asosiasi,1.0,penuh waktu,1.001-5.000 pekerja,kesehatan,,,jobstreet
+data engineer,pt phiraka sinergi indonesia,dki jakarta,asosiasi,3.0,penuh waktu,,,,,jobstreet
+data engineer,pt depoguna bangunan online,dki jakarta,senior tingkat menengah,4.0,penuh waktu,1-50 pekerja,ekonomi,,,jobstreet
+data engineer,pt nomura research institute indonesia,dki jakarta,senior tingkat menengah,1.0,penuh waktu,1-50 pekerja,konsultasi,"[10000000, 20000000]",15000000.0,jobstreet
+data engineer,pt adicipta inovasi teknologi,dki jakarta,asosiasi,1.0,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,,,jobstreet
+data engineer,pt eigerindo multi produk industri,jawa barat,asosiasi,1.0,penuh waktu,1.001-5.000 pekerja,ekonomi,,,jobstreet
+data engineer,pt linktone indonesia - okezone,dki jakarta,senior tingkat menengah,3.0,penuh waktu,501-1.000 pekerja,media,,,jobstreet
+data engineer,pt k-24 indonesia,diy,asosiasi,1.0,penuh waktu,1.001-5.000 pekerja,kesehatan,,,jobstreet
+data engineer,pt os selnajaya indonesia,dki jakarta,asosiasi,3.0,penuh waktu,201-500 pekerja,,"[10000000, 20000000]",15000000.0,jobstreet
+data engineer,j-express (pt jaya ekspress transindo) (pt jaya ekspress transindo),dki jakarta,asosiasi,1.0,penuh waktu,1.001-5.000 pekerja,transportasi,,,jobstreet
+data engineer,pt diksha teknologi indonesia,dki jakarta,asosiasi,2.0,kontrak,201-500 pekerja,konsultasi,,,jobstreet
+data engineer,pt os selnajaya indonesia,dki jakarta,senior tingkat menengah,5.0,penuh waktu,201-500 pekerja,konsultasi,,,jobstreet
+data engineer,xendit,dki jakarta,,,,,,,,jobstreet
+data engineer,quipper,dki jakarta,,,,,,,,jobstreet
+data engineer,pt agate international,jawa barat,,,,51-200 pekerja,media,,,jobstreet
+data engineer,pt finaccel teknologi indonesia,dki jakarta,,,,201-500 pekerja,keuangan,,,jobstreet
+data engineer,pt abeam consulting indonesia,dki jakarta,,,,51-200 pekerja,konsultasi,,,jobstreet
+data engineer,pt bank dbs indonesia,dki jakarta,,,,1.001-5.000 pekerja,keuangan,,,jobstreet
+data scientist,advance.ai,dki jakarta,senior tingkat menengah,,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data scientist,bukalapak,dki jakarta,senior tingkat menengah,,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data scientist,gojek,dki jakarta,tingkat pemula,,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data scientist,telkomsel,dki jakarta,senior tingkat menengah,,penuh waktu,>5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data scientist,grab,dki jakarta,tingkat pemula,,penuh waktu,>5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data scientist,ajaib,dki jakarta,senior tingkat menengah,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data scientist,pt kamoro maxima integra,banten,,,penuh waktu,,,,,linkedin
+data scientist,"quantumblack, a mckinsey company",dki jakarta,eksekutif,,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data scientist,tata consultancy services,dki jakarta,senior tingkat menengah,,penuh waktu,>5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data scientist,koinworks,dki jakarta,asosiasi,,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,"[1250000, 1666667]",1458334.0,linkedin
+data scientist,traveloka,banten,tingkat pemula,,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data scientist,impact credit solutions,banten,,,penuh waktu,,,,,linkedin
+data scientist,bank ocbc nisp,dki jakarta,senior tingkat menengah,,penuh waktu,>5.000 pekerja,keuangan,,,linkedin
+data scientist,asia pulp & paper,banten,asosiasi,,penuh waktu,>5.000 pekerja,agrikultur,,,linkedin
+data scientist,dana indonesia,dki jakarta,senior tingkat menengah,,penuh waktu,501-1.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data scientist,pt. teknologi kode indonesia,diy,asosiasi,,penuh waktu,,,,,linkedin
+data scientist,ajaib,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data scientist,bumi pt. amartha mikro fintek teknologi mandiri,dki jakarta,tingkat pemula,,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data scientist,xendit,dki jakarta,asosiasi,,penuh waktu,201-500 pekerja,keuangan,,,linkedin
+data scientist,telkom digital solution by pt telkom indonesia,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data scientist,id/x partners,dki jakarta,senior tingkat menengah,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data scientist,philip morris international,dki jakarta,,,penuh waktu,>5.000 pekerja,agrikultur,,,linkedin
+data scientist,data+,dki jakarta,asosiasi,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,"[5000000, 20000000]",12500000.0,linkedin
+data scientist,pgi data,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data scientist,emtrade,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data scientist,pt. informasi teknologi indonesia,kalimantan barat,tingkat pemula,,penuh waktu,,,"[833333, 1666667]",1250000.0,linkedin
+data scientist,pt sharing vision indonesia,dki jakarta,asosiasi,,penuh waktu,,,"[9000000, 15000000]",12000000.0,linkedin
+data scientist,pt komunitas anak bangsa,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data scientist,thinkmatch,dki jakarta,asosiasi,,penuh waktu,,,"[0, 10000000]",5000000.0,linkedin
+data scientist,michael page,dki jakarta,asosiasi,,penuh waktu,>5.000 pekerja,human resources,,,linkedin
+data scientist,pt. cudo communications,banten,asosiasi,,penuh waktu,,,,,linkedin
+data scientist,deloitte,dki jakarta,tingkat pemula,,penuh waktu,>5.000 pekerja,konsultasi,,,linkedin
+data scientist,pt. rumah belajar indonesia,banten,senior tingkat menengah,,penuh waktu,,,"[5000000, 10000000]",7500000.0,linkedin
+data scientist,pt bfi finance indonesia tbk,banten,tingkat pemula,,penuh waktu,,,,,linkedin
+data scientist,agriaku,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data scientist,seon indonesia,banten,asosiasi,,penuh waktu,,,,,linkedin
+data scientist,ilmuone data,dki jakarta,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data scientist,pt. astra welab digital arta,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data scientist,pt. mediator komunitas indonesia (crowdo),dki jakarta,senior tingkat menengah,,penuh waktu,,,"[0, 15000000]",7500000.0,linkedin
+data scientist,nri (nomura research institute),dki jakarta,tingkat pemula,,penuh waktu,>5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data scientist,pt datasintesa teknologi nusantara,dki jakarta,asosiasi,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data scientist,julo,dki jakarta,asosiasi,,penuh waktu,,,"[1250000, 2500000]",1875000.0,linkedin
+data scientist,xfers,dki jakarta,tingkat pemula,,penuh waktu,51-200 pekerja,keuangan,,,linkedin
+data scientist,vidio,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data scientist,data arts xperience,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data scientist,id/x partners,dki jakarta,asosiasi,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data scientist,sayurbox,dki jakarta,senior tingkat menengah,,penuh waktu,201-500 pekerja,ekonomi,,,linkedin
+data scientist,pt platinumetrix global inovasi,dki jakarta,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data scientist,female daily network,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data scientist,niometrics,dki jakarta,tingkat pemula,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data scientist,zenius,dki jakarta,asosiasi,,penuh waktu,51-200 pekerja,pendidikan,,,linkedin
+data scientist,pt simplefi teknologi indonesia,dki jakarta,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data scientist,leadbook,dki jakarta,tingkat pemula,,penuh waktu,,,"[1166667, 2333333]",1750000.0,linkedin
+data scientist,kompas gramedia - kg media,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data scientist,finaccel,dki jakarta,tingkat pemula,,penuh waktu,201-500 pekerja,keuangan,,,linkedin
+data scientist,impact credit solutions,dki jakarta,senior tingkat menengah,,penuh waktu,1-50 pekerja,keuangan,,,linkedin
+data scientist,moslem community application,dki jakarta,asosiasi,,penuh waktu,,,"[10000000, 15000000]",12500000.0,linkedin
+data scientist,the bonza,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data scientist,ruangguru.com,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data scientist,pt higo fitur indonesia,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data scientist,pt whim management indonesia (evos e-sports),dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data scientist,,dki jakarta,,,penuh waktu,1-50 pekerja,,,,linkedin
+data scientist,pt pt higo fitur indonesia fitur indonesia,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data scientist,pt swift logistics solutions,dki jakarta,tingkat pemula,,penuh waktu,,,"[666667, 1666667]",1166667.0,linkedin
+data scientist,pt. prima vista solusi,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data scientist,delman.io,dki jakarta,asosiasi,,penuh waktu,,,"[6000000, 15000000]",10500000.0,linkedin
+data scientist,pt simplefi teknologi indonesia,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data scientist,pt autentika digital indonesia,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data scientist,sayurbox,dki jakarta,tingkat pemula,,penuh waktu,201-500 pekerja,ekonomi,,,linkedin
+data scientist,byorange,dki jakarta,eksekutif,,penuh waktu,51-200 pekerja,ekonomi,,,linkedin
+data scientist,agriaku,dki jakarta,asosiasi,,penuh waktu,51-200 pekerja,agrikultur,,,linkedin
+data scientist,pt. astra welab digital arta,dki jakarta,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data scientist,pt simplefi teknologi indonesia,dki jakarta,tingkat pemula,,magang,,,,,linkedin
+data analyst,gojek,dki jakarta,asosiasi,,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,mobile premier league indonesia (mpl),dki jakarta,senior tingkat menengah,,penuh waktu,1-50 pekerja,kesehatan,,,linkedin
+data analyst,home credit indonesia,dki jakarta,asosiasi,,penuh waktu,>5.000 pekerja,keuangan,,,linkedin
+data analyst,grab,dki jakarta,senior tingkat menengah,,penuh waktu,>5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,grab,sulawesi selatan,tingkat pemula,,penuh waktu,>5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,pegipegi,dki jakarta,asosiasi,,penuh waktu,201-500 pekerja,pariwisata,,,linkedin
+data analyst,ada,dki jakarta,tingkat pemula,,penuh waktu,501-1.000 pekerja,pemasaran & periklanan,,,linkedin
+data analyst,migo,dki jakarta,tingkat pemula,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,pt bank neo commerce tbk,dki jakarta,asosiasi,,penuh waktu,201-500 pekerja,keuangan,,,linkedin
+data analyst,traveloka,banten,tingkat pemula,,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,gojek,dki jakarta,tingkat pemula,,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,lazada,dki jakarta,senior tingkat menengah,,penuh waktu,>5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,detikcom,dki jakarta,tingkat pemula,,penuh waktu,501-1.000 pekerja,media,,,linkedin
+data analyst,awan tunai,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,mobile premier league indonesia (mpl),dki jakarta,asosiasi,,penuh waktu,1-50 pekerja,kesehatan,,,linkedin
+data analyst,agoda,dki jakarta,asosiasi,,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,ajaib,dki jakarta,senior tingkat menengah,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,diary bunda,dki jakarta,tingkat pemula,,penuh waktu,,,"[833333, 1666667]",1250000.0,linkedin
+data analyst,efishery,jawa barat,senior tingkat menengah,,penuh waktu,501-1.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,thinkmatch,dki jakarta,asosiasi,,penuh waktu,,,"[0, 10000000]",5000000.0,linkedin
+data analyst,ninja van,dki jakarta,asosiasi,,penuh waktu,501-1.000 pekerja,ekonomi,,,linkedin
+data analyst,koinworks,dki jakarta,asosiasi,,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,"[1000000, 1416667]",1208334.0,linkedin
+data analyst,persolkelly indonesia,dki jakarta,asosiasi,,penuh waktu,51-200 pekerja,human resources,,,linkedin
+data analyst,sirclo,banten,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,traveloka,banten,asosiasi,,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,pt merah cipta media,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,sampingan,dki jakarta,asosiasi,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,reddoorz,dki jakarta,asosiasi,,penuh waktu,501-1.000 pekerja,pariwisata,,,linkedin
+data analyst,pegipegi,dki jakarta,senior tingkat menengah,,penuh waktu,201-500 pekerja,pariwisata,,,linkedin
+data analyst,pt rifan financindo semarang,jawa tengah,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,pt. idaku cipta niaga,jawa timur,,,penuh waktu,,,,,linkedin
+data analyst,pt xapiens teknologi indonesia,kalimantan barat,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,amar bank,dki jakarta,tingkat pemula,,penuh waktu,501-1.000 pekerja,keuangan,,,linkedin
+data analyst,brainworx solusi integrasi,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,pt bobobox mitra indonesia,jawa timur,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,xfers,dki jakarta,tingkat pemula,,penuh waktu,51-200 pekerja,keuangan,,,linkedin
+data analyst,mnc group,dki jakarta,tingkat pemula,,kontrak,,,,,linkedin
+data analyst,payfazz (pt. payfazz teknologi nusantara),dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,99.co,dki jakarta,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data analyst,tjetak,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,pt pt mitramas infosys global,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,detikcom,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,pt. dhana jasa konsultan,bali,senior tingkat menengah,,penuh waktu,,,"[13000000, 25000000]",19000000.0,linkedin
+data analyst,riliv,jawa timur,asosiasi,,penuh waktu,51-200 pekerja,kesehatan,,,linkedin
+data analyst,tunaiku,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,happyfresh,dki jakarta,asosiasi,,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,it ommey bintang indonesia,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,pt bobobox mitra indonesia,banten,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,happyfresh,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,pt mitramas infosys global,dki jakarta,asosiasi,,penuh waktu,,,"[5000000, 7000000]",6000000.0,linkedin
+data analyst,celerates,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,bintango,dki jakarta,senior tingkat menengah,,penuh waktu,1-50 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,codemi,diy,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,seon indonesia,banten,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,xendit,dki jakarta,tingkat pemula,,penuh waktu,201-500 pekerja,keuangan,,,linkedin
+data analyst,lemonilo,dki jakarta,tingkat pemula,,penuh waktu,201-500 pekerja,kesehatan,,,linkedin
+data analyst,altech teknologi indonesia,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,mnc group,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,ara savis sejahtera pt,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,analytico asia,dki jakarta,tingkat pemula,,penuh waktu,,,[3146244],3146244.0,linkedin
+data analyst,ula,dki jakarta,asosiasi,,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,j-express (pt jaya ekspress transindo),dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,match and work,dki jakarta,asosiasi,,penuh waktu,1-50 pekerja,human resources,"[4000000, 8000000]",6000000.0,linkedin
+data analyst,surplus (pt ekonomi sirkular indonesia),dki jakarta,,,penuh waktu,1-50 pekerja,makanan & minuman,,,linkedin
+data analyst,pt. pt. amartha mikro fintek mikro fintek,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,pt. astra welab digital arta,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,talenta sumber daya manusia pt,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,pt kita teknologi andalan,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,rates,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,modal rakyat indonesia indonesia,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,shipper,dki jakarta,tingkat pemula,,penuh waktu,201-500 pekerja,ekonomi,,,linkedin
+data analyst,pahamify,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,warung pintar,dki jakarta,senior tingkat menengah,,penuh waktu,1.001-5.000 pekerja,ekonomi,,,linkedin
+data analyst,modal rakyat indonesia,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,kompas gramedia - kg media,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,mnc group,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,pt lawencon internasional,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,pt qwords company international,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,summit institute of development,ntb,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data analyst,inspigo,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,moladin,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,segari,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,pt tani hub indonesia,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,boga group,kalimantan barat,tingkat pemula,,penuh waktu,,,"[833333, 1083333]",958333.0,linkedin
+data analyst,moladin,dki jakarta,tingkat pemula,,penuh waktu,501-1.000 pekerja,permesinan,,,linkedin
+data analyst,warung pintar,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,virgo,dki jakarta,senior tingkat menengah,,penuh waktu,201-500 pekerja,keuangan,,,linkedin
+data analyst,saturdays,dki jakarta,tingkat pemula,,kontrak,51-200 pekerja,ekonomi,,,linkedin
+data analyst,mnc group,dki jakarta,direktur,,penuh waktu,,,,,linkedin
+data analyst,ralali.com - b2b marketplace,dki jakarta,asosiasi,,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,finaccel,dki jakarta,tingkat pemula,,penuh waktu,201-500 pekerja,keuangan,,,linkedin
+data analyst,tinvio,dki jakarta,,,penuh waktu,51-200 pekerja,,,,linkedin
+data analyst,moslem community application,dki jakarta,senior tingkat menengah,,penuh waktu,,,"[15000000, 20000000]",17500000.0,linkedin
+data analyst,red comm indonesia,dki jakarta,,,penuh waktu,51-200 pekerja,,,,linkedin
+data analyst,pt paragon pratama teknologi (stickearn),dki jakarta,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data analyst,act foundation,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,pt fajar lestari sejati,dki jakarta,asosiasi,,penuh waktu,,,"[5000000, 8000000]",6500000.0,linkedin
+data analyst,monex investindo futures,dki jakarta,,,penuh waktu,51-200 pekerja,,,,linkedin
+data analyst,celerates,dki jakarta,direktur,,penuh waktu,,,,,linkedin
+data analyst,evermos,jawa timur,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,bithealth,dki jakarta,asosiasi,,penuh waktu,1-50 pekerja,teknologi informasi dan komunikasi,"[10000000, 20000000]",15000000.0,linkedin
+data analyst,dezire technologies pte ltd,dki jakarta,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data analyst,ruangguru.com,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data analyst,bintango,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,arcstone,dki jakarta,asosiasi,,penuh waktu,,,"[12000000, 17000000]",14500000.0,linkedin
+data analyst,bfi technologies,dki jakarta,,,penuh waktu,,,,,linkedin
+data analyst,"love, bonito",dki jakarta,asosiasi,,penuh waktu,201-500 pekerja,pakaian & mode,,,linkedin
+data analyst,ruangguru.com,dki jakarta,,,penuh waktu,1.001-5.000 pekerja,,,,linkedin
+data analyst,michael page,dki jakarta,asosiasi,,penuh waktu,>5.000 pekerja,human resources,,,linkedin
+data analyst,eden farm,dki jakarta,,,penuh waktu,201-500 pekerja,,,,linkedin
+data analyst,,dki jakarta,asosiasi,,penuh waktu,1-50 pekerja,pemasaran & periklanan,,,linkedin
+data analyst,byorange,dki jakarta,senior tingkat menengah,,penuh waktu,51-200 pekerja,ekonomi,,,linkedin
+data analyst,hypefast,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data analyst,diageo,dki jakarta,asosiasi,,penuh waktu,>5.000 pekerja,makanan & minuman,,,linkedin
+data analyst,lifepal,dki jakarta,senior tingkat menengah,,penuh waktu,,,"[10000000, 25000000]",17500000.0,linkedin
+data analyst,bitlabs academy,dki jakarta,asosiasi,,paruh waktu,,,,,linkedin
+data analyst,pt hara anargya indonesia,banten,asosiasi,,penuh waktu,,,"[3800000, 6000000]",4900000.0,linkedin
+data analyst,ajaib,dki jakarta,asosiasi,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,pegipegi,dki jakarta,magang,,magang,,,[83333],83333.0,linkedin
+data analyst,bali united football club,dki jakarta,asosiasi,,magang,,,,,linkedin
+data analyst,qoala,dki jakarta,magang,,paruh waktu,201-500 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data analyst,telunjuk.com,dki jakarta,,,magang,,,,,linkedin
+data analyst,rata,kalimantan barat,magang,,magang,,,,,linkedin
+data analyst,asmaraku,jawa barat,tingkat pemula,,magang,,,,,linkedin
+data analyst,pt procon indo sekata,dki jakarta,,,magang,,,,,linkedin
+data engineer,dkatalis (digital katalis),dki jakarta,senior tingkat menengah,,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,"quantumblack, a mckinsey company",dki jakarta,tingkat pemula,,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,ajaib,dki jakarta,senior tingkat menengah,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,gojek,dki jakarta,tingkat pemula,,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,dagangan,diy,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,"lancesoft, inc.",dki jakarta,asosiasi,,kontrak,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,pt. yuinsight technologies international,dki jakarta,asosiasi,,penuh waktu,>5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,mpm group (pt mitra pinasthika mustika tbk),dki jakarta,asosiasi,,penuh waktu,>5.000 pekerja,permesinan,,,linkedin
+data engineer,tata consultancy services,dki jakarta,senior tingkat menengah,,penuh waktu,>5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,aplikasi super (yc w18),jawa timur,asosiasi,,penuh waktu,51-200 pekerja,ekonomi,,,linkedin
+data engineer,philip morris international,dki jakarta,,,penuh waktu,>5.000 pekerja,agrikultur,,,linkedin
+data engineer,glints,dki jakarta,tingkat pemula,,penuh waktu,201-500 pekerja,human resources,,,linkedin
+data engineer,somethinc - beautyhaul,dki jakarta,asosiasi,,penuh waktu,201-500 pekerja,kosmetik,,,linkedin
+data engineer,agoda,dki jakarta,senior tingkat menengah,,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,zalora group,dki jakarta,senior tingkat menengah,,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,accenture southeast asia,dki jakarta,senior tingkat menengah,,penuh waktu,>5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,dana indonesia,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data engineer,philip morris international,dki jakarta,senior tingkat menengah,,penuh waktu,>5.000 pekerja,agrikultur,,,linkedin
+data engineer,ritase.com.com,dki jakarta,,,penuh waktu,51-200 pekerja,,,,linkedin
+data engineer,deloitte,dki jakarta,tingkat pemula,,penuh waktu,>5.000 pekerja,konsultasi,,,linkedin
+data engineer,alodokter,dki jakarta,senior tingkat menengah,,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,karya talents,dki jakarta,asosiasi,,penuh waktu,1-50 pekerja,human resources,,,linkedin
+data engineer,oy! indonesia,dki jakarta,asosiasi,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,all data international,dki jakarta,,,penuh waktu,1-50 pekerja,,,,linkedin
+data engineer,gojek,dki jakarta,asosiasi,,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,"love, bonito",dki jakarta,asosiasi,,penuh waktu,201-500 pekerja,pakaian & mode,,,linkedin
+data engineer,bukalapak,dki jakarta,senior tingkat menengah,,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,widya analytic,diy,asosiasi,,penuh waktu,,,"[3000000, 4000000]",3500000.0,linkedin
+data engineer,mamikos.com,dki jakarta,asosiasi,,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,insight timer,bali,,,penuh waktu,51-200 pekerja,kesehatan,,,linkedin
+data engineer,pt k-24 indonesia,diy,asosiasi,,penuh waktu,,,"[3000000, 5000000]",4000000.0,linkedin
+data engineer,thinkmatch,dki jakarta,asosiasi,,penuh waktu,,,"[0, 10000000]",5000000.0,linkedin
+data engineer,pt 360 teknologi indonesia,dki jakarta,asosiasi,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,kompas gramedia - kg media,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,itb career center,banten,asosiasi,,kontrak,1-50 pekerja,human resources,,,linkedin
+data engineer,sirclo,banten,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,ula,dki jakarta,asosiasi,,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,j-express (pt jaya ekspress transindo),dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,ruangguru.com,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,it ommey bintang indonesia,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data engineer,pt. jasa teknologi informasi ibm,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,xendit,dki jakarta,tingkat pemula,,penuh waktu,201-500 pekerja,keuangan,,,linkedin
+data engineer,pt pt generasi teknologi buana,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,lion parcel,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,tada,dki jakarta,tingkat pemula,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,"[666667, 1250000]",958334.0,linkedin
+data engineer,pt xapiens teknologi indonesia,banten,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,kumparan.com,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,pintap,dki jakarta,tingkat pemula,,penuh waktu,,,"[666667, 1250000]",958334.0,linkedin
+data engineer,pt gits indonesia,banten,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data engineer,mnc group,dki jakarta,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data engineer,pt generasi teknologi buana,dki jakarta,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data engineer,mnc group,dki jakarta,tingkat pemula,,kontrak,,,,,linkedin
+data engineer,pt. astra welab digital arta,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,pt. jaya ekspress transindo (jx),dki jakarta,,,penuh waktu,1.001-5.000 pekerja,,,,linkedin
+data engineer,pt fan integrasi teknologi,dki jakarta,,,penuh waktu,51-200 pekerja,,,,linkedin
+data engineer,livit international,bali,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,haistar (pt bintang dagang internasional),dki jakarta,,,penuh waktu,,,,,linkedin
+data engineer,pt rpay finansial digital indonesia,dki jakarta,senior tingkat menengah,,penuh waktu,,,"[8000000, 14000000]",11000000.0,linkedin
+data engineer,pt sharing vision indonesia,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data engineer,jubelio,kalimantan barat,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,id/x partners,dki jakarta,asosiasi,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,stickearn,dki jakarta,,,penuh waktu,51-200 pekerja,,,,linkedin
+data engineer,sirclo,banten,,,penuh waktu,201-500 pekerja,,,,linkedin
+data engineer,pt cicil solusi mitra teknologi,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,pt. barrans global mandiri,dki jakarta,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data engineer,pt. informasi teknologi indonesia,kalimantan barat,tingkat pemula,,penuh waktu,,,"[833333, 1666667]",1250000.0,linkedin
+data engineer,cobblestone energy,nad,tingkat pemula,,penuh waktu,1-50 pekerja,pertambangan,,,linkedin
+data engineer,emtrade,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,pt metrodata electronics tbk,banten,,,penuh waktu,,,,,linkedin
+data engineer,pt stampindo lancar jaya,dki jakarta,senior tingkat menengah,,penuh waktu,,,"[7000000, 12000000]",9500000.0,linkedin
+data engineer,pt paragon pratama teknologi (stickearn),dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data engineer,ritase.com,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,pt fan integrasi teknologi,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data engineer,livit international,bali,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data engineer,pt. pt. dhana jasa konsultan,dki jakarta,senior tingkat menengah,,penuh waktu,,,"[10000000, 16000000]",13000000.0,linkedin
+data engineer,vidio,dki jakarta,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data engineer,smdv,dki jakarta,tingkat pemula,,penuh waktu,1-50 pekerja,ekonomi,,,linkedin
+data engineer,dkatalis (digital katalis),dki jakarta,tingkat pemula,,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,amar bank,dki jakarta,tingkat pemula,,penuh waktu,501-1.000 pekerja,keuangan,,,linkedin
+data engineer,tunaiku,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,pt koltiva,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,pt swift logistics solutions,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,hexamatics infotech,dki jakarta,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data engineer,michael page,dki jakarta,tingkat pemula,,penuh waktu,>5.000 pekerja,human resources,,,linkedin
+data engineer,ogya tekno nusantara,dki jakarta,senior tingkat menengah,,penuh waktu,,,"[7000000, 14000000]",10500000.0,linkedin
+data engineer,zalora group,dki jakarta,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data engineer,bitlabs academy academy,dki jakarta,asosiasi,,paruh waktu,,,,,linkedin
+data engineer,kuncie,dki jakarta,tingkat pemula,,penuh waktu,1-50 pekerja,pendidikan,,,linkedin
+data engineer,telkomsigma,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,ralali.com - b2b marketplace,dki jakarta,asosiasi,,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,pt. metra digital media,dki jakarta,,,penuh waktu,201-500 pekerja,,,,linkedin
+data engineer,g2academy (school of gifted geeks),dki jakarta,,,penuh waktu,51-200 pekerja,,,,linkedin
+data engineer,pt linov roket prestasi,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data engineer,pt global urban esensial,banten,,,penuh waktu,51-200 pekerja,,,,linkedin
+data engineer,pt. asian sigma technology,dki jakarta,asosiasi,,penuh waktu,,,"[8000000, 11000000]",9500000.0,linkedin
+data engineer,celerates,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data engineer,pt metrodata electronics tbk,dki jakarta,tingkat pemula,,penuh waktu,1.001-5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,confidential,dki jakarta,,,penuh waktu,,,,,linkedin
+data engineer,halodoc id,dki jakarta,asosiasi,,penuh waktu,,,"[1666667, 3333333]",2500000.0,linkedin
+data engineer,one code solution,banten,,,penuh waktu,1-50 pekerja,,,,linkedin
+data engineer,finaccel,dki jakarta,tingkat pemula,,penuh waktu,201-500 pekerja,keuangan,,,linkedin
+data engineer,ajaib,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data engineer,lifepal,dki jakarta,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data engineer,koinworks,dki jakarta,asosiasi,,penuh waktu,201-500 pekerja,teknologi informasi dan komunikasi,"[1000000, 1416667]",1208334.0,linkedin
+data engineer,sayurbox,dki jakarta,senior tingkat menengah,,penuh waktu,201-500 pekerja,ekonomi,,,linkedin
+data engineer,delman.io,dki jakarta,asosiasi,,penuh waktu,,,"[10000000, 18000000]",14000000.0,linkedin
+data engineer,99.co,dki jakarta,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data engineer,pt. amartha mikro fintek,dki jakarta,asosiasi,,penuh waktu,,,"[833333, 2083333]",1458333.0,linkedin
+data engineer,fis clouds,dki jakarta,,,penuh waktu,1-50 pekerja,,,,linkedin
+data engineer,byorange,dki jakarta,senior tingkat menengah,,penuh waktu,51-200 pekerja,ekonomi,,,linkedin
+data engineer,tada,dki jakarta,asosiasi,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,"[1500000, 2083333]",1791666.0,linkedin
+data engineer,ntt ltd.,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,pt. pt. amartha mikro fintek mikro fintek,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data engineer,pt. citra kreasi hutama,dki jakarta,senior tingkat menengah,,penuh waktu,,,,,linkedin
+data engineer,matchatalent,dki jakarta,tingkat pemula,,penuh waktu,,,"[833333, 1000000]",916666.0,linkedin
+data engineer,zenius,dki jakarta,senior tingkat menengah,,penuh waktu,51-200 pekerja,pendidikan,,,linkedin
+data engineer,fabelio,dki jakarta,asosiasi,,penuh waktu,201-500 pekerja,perabot,,,linkedin
+data engineer,pt cerdas digital nusantara (cakap),dki jakarta,direktur,,penuh waktu,,,,,linkedin
+data engineer,pt pt generasi teknologi buana,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data engineer,pt generasi teknologi buana,dki jakarta,direktur,,penuh waktu,,,,,linkedin
+data engineer,payfazz (pt. payfazz teknologi nusantara),dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data engineer,the bonza,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data engineer,pt pintu kemana saja (pintu),dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data engineer,geekhunter,dki jakarta,,,penuh waktu,1-50 pekerja,,,,linkedin
+data engineer,vidio,dki jakarta,tingkat pemula,,penuh waktu,,,,,linkedin
+data engineer,ntt ltd.,dki jakarta,asosiasi,,penuh waktu,>5.000 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,somethinc - beautyhaul,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin
+data engineer,michael page,dki jakarta,asosiasi,,penuh waktu,>5.000 pekerja,human resources,,,linkedin
+data engineer,niometrics,dki jakarta,tingkat pemula,,penuh waktu,51-200 pekerja,teknologi informasi dan komunikasi,,,linkedin
+data engineer,ruangguru.com,dki jakarta,asosiasi,,penuh waktu,1.001-5.000 pekerja,pendidikan,,,linkedin
+data engineer,matchatalent,dki jakarta,asosiasi,,penuh waktu,1-50 pekerja,human resources,,,linkedin
+data engineer,pt tani hub indonesia,dki jakarta,asosiasi,,penuh waktu,,,,,linkedin

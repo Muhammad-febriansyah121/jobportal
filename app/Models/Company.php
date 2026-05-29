@@ -81,6 +81,11 @@ class Company extends Model
         return $this->hasOne(Subscription::class)->where('status', 'active')->latestOfMany();
     }
 
+    public function isApproved(): bool
+    {
+        return $this->verification_status === 'approved';
+    }
+
     protected function casts(): array
     {
         return [
