@@ -270,6 +270,54 @@ test('candidate cannot apply without a whatsapp number', function () {
     ]);
 });
 
+test('candidate cannot apply to a non-published job', function () {
+    $candidateUser = User::factory()->candidate()->create([
+        'onboarding_completed_at' => now(),
+    ]);
+    $candidate = CandidateProfile::create([
+        'user_id' => $candidateUser->id,
+        'full_name' => 'Kandidat',
+        'work_mode_pref' => 'any',
+    ]);
+    $cv = CandidateCv::create([
+        'candidate_id' => $candidate->id,
+        'file_url' => '/storage/candidate-cvs/cv.pdf',
+        'source' => 'upload',
+        'is_primary' => true,
+        'uploaded_at' => now(),
+    ]);
+    $employer = User::factory()->employer()->create();
+    $company = Company::create([
+        'owner_id' => $employer->id,
+        'name' => 'Karivia Pending',
+        'slug' => 'karivia-pending',
+    ]);
+    $job = JobListing::create([
+        'company_id' => $company->id,
+        'created_by' => $employer->id,
+        'title' => 'Draft Backend Engineer',
+        'slug' => 'draft-backend-engineer',
+        'description' => 'Belum siap ditayangkan.',
+        'work_mode' => 'remote',
+        'job_type' => 'full_time',
+        'experience_level' => 'mid',
+        'status' => 'draft',
+    ]);
+
+    $this->actingAs($candidateUser)
+        ->post(route('candidate.jobs.apply', $job), [
+            'phone' => '081234567890',
+            'candidate_cv_id' => $cv->id,
+            'cover_letter' => 'Saya tertarik dengan posisi ini dan ingin mengajukan lamaran, tetapi sistem tetap harus menolak karena lowongan belum ditayangkan dan belum boleh menerima kandidat.',
+        ])
+        ->assertNotFound();
+
+    $this->assertDatabaseMissing('applications', [
+        'candidate_id' => $candidate->id,
+        'job_listing_id' => $job->id,
+    ]);
+});
+
 test('candidate can view non-published job detail when they have applied', function () {
     $candidateUser = User::factory()->candidate()->create([
         'onboarding_completed_at' => now(),

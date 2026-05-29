@@ -10,8 +10,10 @@ import {
     ChevronDown,
     Mail,
     Mic,
+    Plus,
     Search,
     Sparkles,
+    Trash2,
     Users,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -44,7 +46,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { index, show } from '@/routes/employer/candidates';
 import { store as storeInterview } from '@/routes/employer/applications/interviews';
-import { store as storeAiInterview } from '@/routes/employer/jobs/ai-interviews';
+import {
+    store as storeAiInterview,
+    storeBulk as storeBulkAiInterview,
+} from '@/routes/employer/jobs/ai-interviews';
 import { update as updateStatus } from '@/routes/employer/applications/status';
 
 type Option = {
@@ -144,6 +149,45 @@ export default function EmployerCandidates({
     applications,
 }: CandidatesPageProps) {
     const { t } = useTranslate();
+    const [selectedApplicationIds, setSelectedApplicationIds] = useState<
+        number[]
+    >([]);
+    const selectedApplications = applications.data.filter((application) =>
+        selectedApplicationIds.includes(application.id),
+    );
+    const selectableApplications = applications.data.filter(
+        (application) => application.job.id !== null,
+    );
+    const selectedJobIds = new Set(
+        selectedApplications
+            .map((application) => application.job.id)
+            .filter((jobId): jobId is number => jobId !== null),
+    );
+    const canBulkSchedule =
+        selectedApplications.length > 0 && selectedJobIds.size === 1;
+
+    function toggleApplicationSelection(applicationId: number) {
+        setSelectedApplicationIds((current) =>
+            current.includes(applicationId)
+                ? current.filter((id) => id !== applicationId)
+                : [...current, applicationId],
+        );
+    }
+
+    function toggleAllVisibleApplications() {
+        const visibleIds = selectableApplications.map(
+            (application) => application.id,
+        );
+        const allVisibleSelected =
+            visibleIds.length > 0 &&
+            visibleIds.every((id) => selectedApplicationIds.includes(id));
+
+        setSelectedApplicationIds((current) =>
+            allVisibleSelected
+                ? current.filter((id) => !visibleIds.includes(id))
+                : Array.from(new Set([...current, ...visibleIds])),
+        );
+    }
 
     function submitFilter(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -266,12 +310,56 @@ export default function EmployerCandidates({
                     </CardContent>
                 </Card>
 
+                {applications.data.length > 0 ? (
+                    <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+                        <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                            <input
+                                type="checkbox"
+                                checked={
+                                    selectableApplications.length > 0 &&
+                                    selectableApplications.every(
+                                        (application) =>
+                                            selectedApplicationIds.includes(
+                                                application.id,
+                                            ),
+                                    )
+                                }
+                                onChange={toggleAllVisibleApplications}
+                                className="size-4 rounded border-slate-300"
+                            />
+                            Pilih semua kandidat di halaman ini
+                        </label>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <p className="text-sm text-muted-foreground">
+                                {selectedApplications.length} kandidat terpilih
+                                {selectedApplications.length > 0 &&
+                                !canBulkSchedule
+                                    ? ' · pilih kandidat dari lowongan yang sama untuk bulk interview'
+                                    : ''}
+                            </p>
+                            <BulkAiInterviewDialog
+                                applications={selectedApplications}
+                                disabled={!canBulkSchedule}
+                                onScheduled={() =>
+                                    setSelectedApplicationIds([])
+                                }
+                            />
+                        </div>
+                    </div>
+                ) : null}
+
                 <div className="space-y-4">
                     {applications.data.length > 0 ? (
                         applications.data.map((application) => (
                             <CandidateRow
                                 key={application.id}
                                 application={application}
+                                selected={selectedApplicationIds.includes(
+                                    application.id,
+                                )}
+                                onToggleSelected={() =>
+                                    toggleApplicationSelection(application.id)
+                                }
                             />
                         ))
                     ) : (
@@ -315,7 +403,15 @@ export default function EmployerCandidates({
     );
 }
 
-function CandidateRow({ application }: { application: CandidateApplication }) {
+function CandidateRow({
+    application,
+    selected,
+    onToggleSelected,
+}: {
+    application: CandidateApplication;
+    selected: boolean;
+    onToggleSelected: () => void;
+}) {
     const { t } = useTranslate();
     const fitScore = application.ai_fit_score ?? 0;
     const hasScoreBreakdown = [
@@ -361,6 +457,15 @@ function CandidateRow({ application }: { application: CandidateApplication }) {
                 <div className="min-w-0 p-5">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="flex min-w-0 flex-1 gap-4">
+                            <label className="mt-3 flex size-5 shrink-0 items-center justify-center">
+                                <input
+                                    type="checkbox"
+                                    checked={selected}
+                                    onChange={onToggleSelected}
+                                    className="size-4 rounded border-slate-300"
+                                    aria-label={`Pilih ${application.candidate.name}`}
+                                />
+                            </label>
                             <Avatar
                                 name={application.candidate.name}
                                 src={application.candidate.avatar_url}
@@ -847,7 +952,428 @@ const DEFAULT_AI_QUESTIONS = [
     },
 ];
 
+type AiQuestion = (typeof DEFAULT_AI_QUESTIONS)[number];
+
 type InterviewType = 'online' | 'onsite' | 'ai';
+
+function BulkAiInterviewDialog({
+    applications,
+    disabled,
+    onScheduled,
+}: {
+    applications: CandidateApplication[];
+    disabled: boolean;
+    onScheduled: () => void;
+}) {
+    const [open, setOpen] = useState(false);
+    const jobId = applications[0]?.job.id;
+    const jobTitle = applications[0]?.job.title ?? '-';
+    const form = useForm({
+        application_ids: applications.map((application) => application.id),
+        interview_mode: 'voice' as 'voice' | 'text',
+        scheduled_at: '',
+        duration_minutes: 30,
+        meeting_url: '',
+        voice: 'marin',
+        questions: DEFAULT_AI_QUESTIONS,
+    });
+
+    function updateQuestion(
+        index: number,
+        field: keyof AiQuestion,
+        value: string | number | boolean,
+    ) {
+        form.setData(
+            'questions',
+            form.data.questions.map((question, questionIndex) =>
+                questionIndex === index
+                    ? { ...question, [field]: value }
+                    : question,
+            ),
+        );
+    }
+
+    function addQuestion() {
+        form.setData('questions', [
+            ...form.data.questions,
+            {
+                question: '',
+                category: 'custom',
+                rubric: 'Nilai jawaban berdasarkan relevansi, contoh konkret, dan kejelasan komunikasi.',
+                weight: 10,
+                allow_ai_followup: true,
+            },
+        ]);
+    }
+
+    function removeQuestion(index: number) {
+        if (form.data.questions.length <= 1) return;
+
+        form.setData(
+            'questions',
+            form.data.questions.filter(
+                (_, questionIndex) => questionIndex !== index,
+            ),
+        );
+    }
+
+    function submit(event: React.FormEvent) {
+        event.preventDefault();
+
+        if (!jobId) return;
+
+        form.transform((data) => ({
+            ...data,
+            application_ids: applications.map((application) => application.id),
+        })).post(storeBulkAiInterview(jobId).url, {
+            preserveScroll: true,
+            onSuccess: () => {
+                form.reset();
+                setOpen(false);
+                onScheduled();
+            },
+        });
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button
+                    type="button"
+                    className="bg-violet-600 hover:bg-violet-700"
+                    disabled={disabled}
+                >
+                    <CalendarPlus className="size-4" />
+                    Jadwalkan AI Interview
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="top-4 right-4 bottom-4 left-4 h-auto w-auto max-w-none translate-x-0 translate-y-0 overflow-hidden p-0 sm:max-w-none">
+                <form
+                    onSubmit={submit}
+                    className="flex h-full min-h-0 flex-col"
+                >
+                    <div className="border-b border-slate-200 px-6 py-5">
+                        <DialogHeader>
+                            <DialogTitle>
+                                Jadwalkan AI Interview Serentak
+                            </DialogTitle>
+                            <DialogDescription>
+                                {applications.length} kandidat · {jobTitle}
+                            </DialogDescription>
+                        </DialogHeader>
+                    </div>
+
+                    <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+                        <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+                            <div className="space-y-4">
+                                <div className="rounded-lg border border-violet-200 bg-violet-50 p-4">
+                                    <p className="text-sm font-semibold text-violet-800">
+                                        Kandidat yang diundang
+                                    </p>
+                                    <div className="mt-3 max-h-56 space-y-2 overflow-y-auto">
+                                        {applications.map((application) => (
+                                            <div
+                                                key={application.id}
+                                                className="rounded-md bg-white px-3 py-2 text-sm text-slate-700"
+                                            >
+                                                <p className="font-medium">
+                                                    {application.candidate.name}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {
+                                                        application.candidate
+                                                            .headline
+                                                    }
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <Label>Mode AI</Label>
+                                    <div className="grid gap-2">
+                                        {(['voice', 'text'] as const).map(
+                                            (mode) => (
+                                                <button
+                                                    key={mode}
+                                                    type="button"
+                                                    onClick={() =>
+                                                        form.setData(
+                                                            'interview_mode',
+                                                            mode,
+                                                        )
+                                                    }
+                                                    className={[
+                                                        'rounded-lg border p-3 text-left text-sm transition-all',
+                                                        form.data
+                                                            .interview_mode ===
+                                                        mode
+                                                            ? 'border-violet-500 bg-violet-50 text-violet-700'
+                                                            : 'border-border hover:border-muted-foreground',
+                                                    ].join(' ')}
+                                                >
+                                                    <p className="flex items-center gap-1.5 font-medium">
+                                                        {mode === 'voice' ? (
+                                                            <Mic className="size-3.5" />
+                                                        ) : (
+                                                            <Bot className="size-3.5" />
+                                                        )}
+                                                        {mode === 'voice'
+                                                            ? 'Voice AI'
+                                                            : 'Text AI'}
+                                                    </p>
+                                                    <p className="mt-0.5 text-xs text-muted-foreground">
+                                                        {mode === 'voice'
+                                                            ? 'Interview via suara'
+                                                            : 'Interview via teks'}
+                                                    </p>
+                                                </button>
+                                            ),
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="bulk_ai_sched">
+                                        Tanggal & jam
+                                    </Label>
+                                    <Input
+                                        id="bulk_ai_sched"
+                                        type="datetime-local"
+                                        value={form.data.scheduled_at}
+                                        onChange={(event) =>
+                                            form.setData(
+                                                'scheduled_at',
+                                                event.target.value,
+                                            )
+                                        }
+                                    />
+                                    {form.errors.scheduled_at && (
+                                        <p className="text-xs text-destructive">
+                                            {form.errors.scheduled_at}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="bulk_ai_duration">
+                                        Durasi
+                                    </Label>
+                                    <select
+                                        id="bulk_ai_duration"
+                                        value={form.data.duration_minutes}
+                                        onChange={(event) =>
+                                            form.setData(
+                                                'duration_minutes',
+                                                Number(event.target.value),
+                                            )
+                                        }
+                                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                                    >
+                                        {[15, 30, 45, 60].map((duration) => (
+                                            <option
+                                                key={duration}
+                                                value={duration}
+                                            >
+                                                {duration} menit
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <AiQuestionEditor
+                                questions={form.data.questions}
+                                errors={form.errors}
+                                onAdd={addQuestion}
+                                onRemove={removeQuestion}
+                                onUpdate={updateQuestion}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 border-t border-slate-200 bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs text-muted-foreground">
+                            Semua kandidat terpilih akan menerima pertanyaan dan
+                            jadwal yang sama.
+                        </p>
+                        <Button
+                            type="submit"
+                            disabled={form.processing || !jobId}
+                            className="bg-violet-600 hover:bg-violet-700"
+                        >
+                            {form.processing
+                                ? 'Menjadwalkan...'
+                                : 'Kirim Undangan Serentak'}
+                        </Button>
+                    </div>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function AiQuestionEditor({
+    questions,
+    errors,
+    onAdd,
+    onRemove,
+    onUpdate,
+}: {
+    questions: AiQuestion[];
+    errors: Record<string, string | undefined>;
+    onAdd: () => void;
+    onRemove: (index: number) => void;
+    onUpdate: (
+        index: number,
+        field: keyof AiQuestion,
+        value: string | number | boolean,
+    ) => void;
+}) {
+    return (
+        <div className="space-y-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <Label>{questions.length} pertanyaan</Label>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                        Edit pertanyaan sebelum undangan dikirim.
+                    </p>
+                </div>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onAdd}
+                    disabled={questions.length >= 12}
+                    className="w-full sm:w-auto"
+                >
+                    <Plus className="size-4" />
+                    Tambah pertanyaan
+                </Button>
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-2">
+                {questions.map((question, index) => (
+                    <div
+                        key={index}
+                        className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs"
+                    >
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                            <span className="inline-flex items-center gap-2 text-sm font-semibold text-violet-700">
+                                <span className="flex size-6 items-center justify-center rounded-full bg-violet-100 text-xs">
+                                    {index + 1}
+                                </span>
+                                Pertanyaan {index + 1}
+                            </span>
+                            <button
+                                type="button"
+                                className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-40"
+                                onClick={() => onRemove(index)}
+                                disabled={questions.length <= 1}
+                                aria-label="Hapus pertanyaan"
+                            >
+                                <Trash2 className="size-4" />
+                            </button>
+                        </div>
+
+                        <textarea
+                            rows={3}
+                            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground"
+                            placeholder="Tulis pertanyaan interview..."
+                            value={question.question}
+                            onChange={(event) =>
+                                onUpdate(index, 'question', event.target.value)
+                            }
+                        />
+
+                        <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_110px]">
+                            <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">
+                                    Kategori
+                                </Label>
+                                <Input
+                                    value={question.category}
+                                    placeholder="behavioral"
+                                    onChange={(event) =>
+                                        onUpdate(
+                                            index,
+                                            'category',
+                                            event.target.value,
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">
+                                    Bobot
+                                </Label>
+                                <Input
+                                    type="number"
+                                    min={1}
+                                    max={100}
+                                    value={question.weight}
+                                    onChange={(event) =>
+                                        onUpdate(
+                                            index,
+                                            'weight',
+                                            Number(event.target.value),
+                                        )
+                                    }
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mt-3 space-y-1">
+                            <Label className="text-xs text-muted-foreground">
+                                Rubrik penilaian
+                            </Label>
+                            <textarea
+                                rows={3}
+                                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-xs shadow-sm placeholder:text-muted-foreground"
+                                placeholder="Rubrik penilaian..."
+                                value={question.rubric}
+                                onChange={(event) =>
+                                    onUpdate(
+                                        index,
+                                        'rubric',
+                                        event.target.value,
+                                    )
+                                }
+                            />
+                        </div>
+
+                        <label className="mt-3 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+                            <input
+                                type="checkbox"
+                                checked={question.allow_ai_followup}
+                                onChange={(event) =>
+                                    onUpdate(
+                                        index,
+                                        'allow_ai_followup',
+                                        event.target.checked,
+                                    )
+                                }
+                                className="mt-0.5 size-4 rounded border-input"
+                            />
+                            Izinkan AI bertanya lanjutan berdasarkan jawaban
+                            kandidat
+                        </label>
+                    </div>
+                ))}
+            </div>
+
+            {errors.questions && (
+                <p className="text-xs text-destructive">{errors.questions}</p>
+            )}
+
+            <p className="text-xs text-muted-foreground">
+                Maksimal 12 pertanyaan. Pertanyaan yang dikirim dari halaman ini
+                akan disimpan untuk AI interview kandidat.
+            </p>
+        </div>
+    );
+}
 
 function ScheduleDialog({
     application,
@@ -929,6 +1455,48 @@ function ScheduleDialog({
         },
     ];
 
+    function updateAiQuestion(
+        index: number,
+        field: keyof AiQuestion,
+        value: string | number | boolean,
+    ) {
+        ai.setData(
+            'questions',
+            ai.data.questions.map((question, questionIndex) =>
+                questionIndex === index
+                    ? {
+                          ...question,
+                          [field]: value,
+                      }
+                    : question,
+            ),
+        );
+    }
+
+    function addAiQuestion() {
+        ai.setData('questions', [
+            ...ai.data.questions,
+            {
+                question: '',
+                category: 'custom',
+                rubric: 'Nilai jawaban berdasarkan relevansi, contoh konkret, dan kejelasan komunikasi.',
+                weight: 10,
+                allow_ai_followup: true,
+            },
+        ]);
+    }
+
+    function removeAiQuestion(index: number) {
+        if (ai.data.questions.length <= 1) return;
+
+        ai.setData(
+            'questions',
+            ai.data.questions.filter(
+                (_, questionIndex) => questionIndex !== index,
+            ),
+        );
+    }
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -937,296 +1505,370 @@ function ScheduleDialog({
                     {t('employer.candidates.row_schedule_interview')}
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>
-                        {t('employer.candidates.interview_dialog_title')}
-                    </DialogTitle>
-                    <DialogDescription>
-                        {application.candidate.name} · {application.job.title}
-                    </DialogDescription>
-                </DialogHeader>
-
-                {/* Type picker */}
-                <div className="grid grid-cols-3 gap-2 pt-1">
-                    {MODES.map((m) => (
-                        <button
-                            key={m.key}
-                            type="button"
-                            onClick={() => handleTypeChange(m.key)}
-                            className={[
-                                'rounded-lg border p-2.5 text-left text-sm transition-all',
-                                type === m.key
-                                    ? m.key === 'ai'
-                                        ? 'border-violet-500 bg-violet-50 text-violet-700'
-                                        : 'border-[#01296A] bg-[#01296A]/5 text-[#01296A]'
-                                    : 'border-border hover:border-muted-foreground',
-                            ].join(' ')}
-                        >
-                            <p className="flex items-center gap-1 font-medium">
-                                {m.icon}
-                                {m.label}
-                            </p>
-                            <p className="mt-0.5 text-xs text-muted-foreground">
-                                {m.desc}
-                            </p>
-                        </button>
-                    ))}
-                </div>
-
-                {/* Regular interview form */}
-                {type !== 'ai' && (
-                    <form onSubmit={submitRegular} className="space-y-4 pt-1">
-                        <div className="space-y-1.5">
-                            <Label htmlFor={`r_sched_${application.id}`}>
+            <DialogContent
+                className={
+                    type === 'ai'
+                        ? 'top-4 right-4 bottom-4 left-4 h-auto w-auto max-w-none translate-x-0 translate-y-0 overflow-hidden p-0 sm:max-w-none'
+                        : 'w-full overflow-hidden p-0 sm:max-w-lg'
+                }
+            >
+                <div className="flex h-full min-h-0 flex-col">
+                    <div className="border-b border-slate-100 px-6 pt-5 pb-4">
+                        <DialogHeader>
+                            <DialogTitle className="text-base font-semibold">
                                 {t(
-                                    'employer.candidates.interview_datetime_label',
+                                    'employer.candidates.interview_dialog_title',
                                 )}
-                            </Label>
-                            <Input
-                                id={`r_sched_${application.id}`}
-                                type="datetime-local"
-                                value={regular.data.scheduled_at}
-                                onChange={(e) =>
-                                    regular.setData(
-                                        'scheduled_at',
-                                        e.target.value,
-                                    )
-                                }
-                            />
-                            {regular.errors.scheduled_at && (
-                                <p className="text-xs text-destructive">
-                                    {regular.errors.scheduled_at}
-                                </p>
-                            )}
-                        </div>
+                            </DialogTitle>
+                            <DialogDescription className="mt-0.5 text-sm">
+                                <span className="font-medium text-slate-700">
+                                    {application.candidate.name}
+                                </span>
+                                {' · '}
+                                {application.job.title}
+                            </DialogDescription>
+                        </DialogHeader>
+                    </div>
 
-                        <div className="space-y-1.5">
-                            <Label htmlFor={`r_dur_${application.id}`}>
-                                {t(
-                                    'employer.candidates.interview_duration_label',
-                                )}
-                            </Label>
-                            <select
-                                id={`r_dur_${application.id}`}
-                                value={regular.data.duration_minutes}
-                                onChange={(e) =>
-                                    regular.setData(
-                                        'duration_minutes',
-                                        Number(e.target.value),
-                                    )
-                                }
-                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                    <div className="grid grid-cols-3 gap-2 border-b border-slate-100 px-6 py-4">
+                        {MODES.map((m) => (
+                            <button
+                                key={m.key}
+                                type="button"
+                                onClick={() => handleTypeChange(m.key)}
+                                className={[
+                                    'flex flex-col gap-1 rounded-xl border-2 px-3 py-2.5 text-left transition-all focus:outline-none',
+                                    type === m.key
+                                        ? m.key === 'ai'
+                                            ? 'border-violet-500 bg-violet-50'
+                                            : 'border-[#01296A] bg-[#EEF3FB]'
+                                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+                                ].join(' ')}
                             >
-                                {[15, 30, 45, 60, 90, 120].map((d) => (
-                                    <option key={d} value={d}>
-                                        {d} menit
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {type === 'online' ? (
-                            <div className="space-y-1.5">
-                                <Label htmlFor={`r_url_${application.id}`}>
-                                    {t(
-                                        'employer.candidates.interview_meeting_url_label',
-                                    )}
-                                </Label>
-                                <Input
-                                    id={`r_url_${application.id}`}
-                                    type="url"
-                                    placeholder="https://meet.google.com/..."
-                                    value={regular.data.meeting_url}
-                                    onChange={(e) =>
-                                        regular.setData(
-                                            'meeting_url',
-                                            e.target.value,
-                                        )
-                                    }
-                                />
-                                {regular.errors.meeting_url && (
-                                    <p className="text-xs text-destructive">
-                                        {regular.errors.meeting_url}
-                                    </p>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="space-y-1.5">
-                                <Label htmlFor={`r_addr_${application.id}`}>
-                                    {t(
-                                        'employer.candidates.interview_address_label',
-                                    )}
-                                </Label>
-                                <Input
-                                    id={`r_addr_${application.id}`}
-                                    placeholder="Jl. Sudirman No.1, Ruang Meeting A"
-                                    value={regular.data.address}
-                                    onChange={(e) =>
-                                        regular.setData(
-                                            'address',
-                                            e.target.value,
-                                        )
-                                    }
-                                />
-                                {regular.errors.address && (
-                                    <p className="text-xs text-destructive">
-                                        {regular.errors.address}
-                                    </p>
-                                )}
-                            </div>
-                        )}
-
-                        <div className="space-y-1.5">
-                            <Label htmlFor={`r_notes_${application.id}`}>
-                                {t('employer.candidates.interview_notes_label')}
-                            </Label>
-                            <textarea
-                                id={`r_notes_${application.id}`}
-                                rows={2}
-                                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground"
-                                placeholder="Siapkan portofolio, dress code formal, dll."
-                                value={regular.data.notes}
-                                onChange={(e) =>
-                                    regular.setData('notes', e.target.value)
-                                }
-                            />
-                        </div>
-
-                        <Button
-                            type="submit"
-                            disabled={regular.processing}
-                            className="w-full bg-[#01296A] hover:bg-[#001D4D]"
-                        >
-                            {regular.processing
-                                ? t('employer.candidates.interview_submitting')
-                                : t('employer.candidates.interview_submit')}
-                        </Button>
-                    </form>
-                )}
-
-                {/* AI interview form */}
-                {type === 'ai' && (
-                    <form onSubmit={submitAi} className="space-y-4 pt-1">
-                        <div className="space-y-1.5">
-                            <Label>Mode AI</Label>
-                            <div className="grid grid-cols-2 gap-2">
-                                {(['voice', 'text'] as const).map((m) => (
-                                    <button
-                                        key={m}
-                                        type="button"
-                                        onClick={() =>
-                                            ai.setData('interview_mode', m)
-                                        }
+                                <div
+                                    className={[
+                                        'flex items-center gap-1.5 text-xs font-semibold',
+                                        type === m.key
+                                            ? m.key === 'ai'
+                                                ? 'text-violet-700'
+                                                : 'text-[#01296A]'
+                                            : 'text-slate-600',
+                                    ].join(' ')}
+                                >
+                                    <span
                                         className={[
-                                            'rounded-lg border p-2.5 text-left text-sm transition-all',
-                                            ai.data.interview_mode === m
-                                                ? 'border-violet-500 bg-violet-50 text-violet-700'
-                                                : 'border-border hover:border-muted-foreground',
+                                            'flex size-5 items-center justify-center rounded-md',
+                                            type === m.key
+                                                ? m.key === 'ai'
+                                                    ? 'bg-violet-100'
+                                                    : 'bg-[#01296A]/10'
+                                                : 'bg-slate-100',
                                         ].join(' ')}
                                     >
-                                        <p className="flex items-center gap-1.5 font-medium">
-                                            {m === 'voice' ? (
-                                                <Mic className="size-3.5" />
-                                            ) : (
-                                                <Bot className="size-3.5" />
-                                            )}
-                                            {m === 'voice'
-                                                ? 'Voice AI'
-                                                : 'Text AI'}
-                                        </p>
-                                        <p className="mt-0.5 text-xs text-muted-foreground">
-                                            {m === 'voice'
-                                                ? 'Interview via suara'
-                                                : 'Interview via teks'}
-                                        </p>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label htmlFor={`ai_sched_${application.id}`}>
-                                Tanggal & jam
-                            </Label>
-                            <Input
-                                id={`ai_sched_${application.id}`}
-                                type="datetime-local"
-                                value={ai.data.scheduled_at}
-                                onChange={(e) =>
-                                    ai.setData('scheduled_at', e.target.value)
-                                }
-                            />
-                            {ai.errors.scheduled_at && (
-                                <p className="text-xs text-destructive">
-                                    {ai.errors.scheduled_at}
+                                        {m.icon}
+                                    </span>
+                                    {m.label}
+                                </div>
+                                <p className="line-clamp-1 text-[11px] leading-4 text-muted-foreground">
+                                    {m.desc}
                                 </p>
-                            )}
-                        </div>
+                            </button>
+                        ))}
+                    </div>
 
-                        <div className="space-y-1.5">
-                            <Label htmlFor={`ai_dur_${application.id}`}>
-                                Durasi
-                            </Label>
-                            <select
-                                id={`ai_dur_${application.id}`}
-                                value={ai.data.duration_minutes}
-                                onChange={(e) =>
-                                    ai.setData(
-                                        'duration_minutes',
-                                        Number(e.target.value),
-                                    )
-                                }
-                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                    <div
+                        className={
+                            type === 'ai'
+                                ? 'min-h-0 flex-1 overflow-y-auto px-6 py-5'
+                                : 'px-6 py-5'
+                        }
+                    >
+                        {type !== 'ai' && (
+                            <form
+                                onSubmit={submitRegular}
+                                className="space-y-4"
                             >
-                                {[15, 30, 45, 60].map((d) => (
-                                    <option key={d} value={d}>
-                                        {d} menit
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label>{ai.data.questions.length} pertanyaan</Label>
-                            <div className="space-y-1.5 rounded-lg border bg-muted/30 p-3">
-                                {ai.data.questions.map((q, i) => (
-                                    <div
-                                        key={i}
-                                        className="flex items-start gap-2 text-sm"
-                                    >
-                                        <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-violet-100 text-xs font-semibold text-violet-700">
-                                            {i + 1}
-                                        </span>
-                                        <span className="text-foreground/80">
-                                            {q.question}
-                                        </span>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="space-y-1.5">
+                                        <Label
+                                            htmlFor={`r_sched_${application.id}`}
+                                            className="text-sm font-medium text-slate-700"
+                                        >
+                                            {t(
+                                                'employer.candidates.interview_datetime_label',
+                                            )}
+                                        </Label>
+                                        <Input
+                                            id={`r_sched_${application.id}`}
+                                            type="datetime-local"
+                                            value={regular.data.scheduled_at}
+                                            onChange={(e) =>
+                                                regular.setData(
+                                                    'scheduled_at',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            className="h-9 text-sm"
+                                        />
+                                        {regular.errors.scheduled_at && (
+                                            <p className="text-xs text-destructive">
+                                                {regular.errors.scheduled_at}
+                                            </p>
+                                        )}
                                     </div>
-                                ))}
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                Pertanyaan dapat diubah di halaman detail
-                                kandidat setelah dijadwalkan.
-                            </p>
-                        </div>
 
-                        {ai.errors.questions && (
-                            <p className="text-xs text-destructive">
-                                {ai.errors.questions as unknown as string}
-                            </p>
+                                    <div className="space-y-1.5">
+                                        <Label
+                                            htmlFor={`r_dur_${application.id}`}
+                                            className="text-sm font-medium text-slate-700"
+                                        >
+                                            {t(
+                                                'employer.candidates.interview_duration_label',
+                                            )}
+                                        </Label>
+                                        <select
+                                            id={`r_dur_${application.id}`}
+                                            value={regular.data.duration_minutes}
+                                            onChange={(e) =>
+                                                regular.setData(
+                                                    'duration_minutes',
+                                                    Number(e.target.value),
+                                                )
+                                            }
+                                            className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                        >
+                                            {[15, 30, 45, 60, 90, 120].map(
+                                                (d) => (
+                                                    <option key={d} value={d}>
+                                                        {d} menit
+                                                    </option>
+                                                ),
+                                            )}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {type === 'online' ? (
+                                    <div className="space-y-1.5">
+                                        <Label
+                                            htmlFor={`r_url_${application.id}`}
+                                            className="text-sm font-medium text-slate-700"
+                                        >
+                                            {t(
+                                                'employer.candidates.interview_meeting_url_label',
+                                            )}
+                                        </Label>
+                                        <Input
+                                            id={`r_url_${application.id}`}
+                                            type="url"
+                                            placeholder="https://meet.google.com/..."
+                                            value={regular.data.meeting_url}
+                                            onChange={(e) =>
+                                                regular.setData(
+                                                    'meeting_url',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            className="h-9 text-sm"
+                                        />
+                                        {regular.errors.meeting_url && (
+                                            <p className="text-xs text-destructive">
+                                                {regular.errors.meeting_url}
+                                            </p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-1.5">
+                                        <Label
+                                            htmlFor={`r_addr_${application.id}`}
+                                            className="text-sm font-medium text-slate-700"
+                                        >
+                                            {t(
+                                                'employer.candidates.interview_address_label',
+                                            )}
+                                        </Label>
+                                        <Input
+                                            id={`r_addr_${application.id}`}
+                                            placeholder="Jl. Sudirman No.1, Ruang Meeting A"
+                                            value={regular.data.address}
+                                            onChange={(e) =>
+                                                regular.setData(
+                                                    'address',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            className="h-9 text-sm"
+                                        />
+                                        {regular.errors.address && (
+                                            <p className="text-xs text-destructive">
+                                                {regular.errors.address}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="space-y-1.5">
+                                    <Label
+                                        htmlFor={`r_notes_${application.id}`}
+                                        className="text-sm font-medium text-slate-700"
+                                    >
+                                        {t(
+                                            'employer.candidates.interview_notes_label',
+                                        )}
+                                    </Label>
+                                    <textarea
+                                        id={`r_notes_${application.id}`}
+                                        rows={3}
+                                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                        placeholder="Siapkan portofolio, dress code formal, dll."
+                                        value={regular.data.notes}
+                                        onChange={(e) =>
+                                            regular.setData(
+                                                'notes',
+                                                e.target.value,
+                                            )
+                                        }
+                                    />
+                                </div>
+
+                                <Button
+                                    type="submit"
+                                    disabled={regular.processing}
+                                    className="h-10 w-full bg-[#01296A] text-sm font-semibold hover:bg-[#001D4D]"
+                                >
+                                    {regular.processing
+                                        ? t(
+                                              'employer.candidates.interview_submitting',
+                                          )
+                                        : t(
+                                              'employer.candidates.interview_submit',
+                                          )}
+                                </Button>
+                            </form>
                         )}
 
-                        <Button
-                            type="submit"
-                            disabled={ai.processing}
-                            className="w-full bg-violet-600 hover:bg-violet-700"
-                        >
-                            {ai.processing
-                                ? 'Menjadwalkan...'
-                                : 'Kirim Undangan AI Interview'}
-                        </Button>
-                    </form>
-                )}
+                        {type === 'ai' && (
+                            <form onSubmit={submitAi} className="space-y-5">
+                                <div className="grid gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
+                                    <div className="space-y-4">
+                                        <div className="space-y-1.5">
+                                            <Label>Mode AI</Label>
+                                            <div className="grid gap-2">
+                                                {(
+                                                    ['voice', 'text'] as const
+                                                ).map((m) => (
+                                                    <button
+                                                        key={m}
+                                                        type="button"
+                                                        onClick={() =>
+                                                            ai.setData(
+                                                                'interview_mode',
+                                                                m,
+                                                            )
+                                                        }
+                                                        className={[
+                                                            'rounded-lg border p-3 text-left text-sm transition-all',
+                                                            ai.data
+                                                                .interview_mode ===
+                                                            m
+                                                                ? 'border-violet-500 bg-violet-50 text-violet-700'
+                                                                : 'border-border hover:border-muted-foreground',
+                                                        ].join(' ')}
+                                                    >
+                                                        <p className="flex items-center gap-1.5 font-medium">
+                                                            {m === 'voice' ? (
+                                                                <Mic className="size-3.5" />
+                                                            ) : (
+                                                                <Bot className="size-3.5" />
+                                                            )}
+                                                            {m === 'voice'
+                                                                ? 'Voice AI'
+                                                                : 'Text AI'}
+                                                        </p>
+                                                        <p className="mt-0.5 text-xs text-muted-foreground">
+                                                            {m === 'voice'
+                                                                ? 'Interview via suara'
+                                                                : 'Interview via teks'}
+                                                        </p>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <Label
+                                                htmlFor={`ai_sched_${application.id}`}
+                                            >
+                                                Tanggal & jam
+                                            </Label>
+                                            <Input
+                                                id={`ai_sched_${application.id}`}
+                                                type="datetime-local"
+                                                value={ai.data.scheduled_at}
+                                                onChange={(e) =>
+                                                    ai.setData(
+                                                        'scheduled_at',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                            {ai.errors.scheduled_at && (
+                                                <p className="text-xs text-destructive">
+                                                    {ai.errors.scheduled_at}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <Label
+                                                htmlFor={`ai_dur_${application.id}`}
+                                            >
+                                                Durasi
+                                            </Label>
+                                            <select
+                                                id={`ai_dur_${application.id}`}
+                                                value={ai.data.duration_minutes}
+                                                onChange={(e) =>
+                                                    ai.setData(
+                                                        'duration_minutes',
+                                                        Number(e.target.value),
+                                                    )
+                                                }
+                                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                                            >
+                                                {[15, 30, 45, 60].map((d) => (
+                                                    <option key={d} value={d}>
+                                                        {d} menit
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <AiQuestionEditor
+                                        questions={ai.data.questions}
+                                        errors={ai.errors}
+                                        onAdd={addAiQuestion}
+                                        onRemove={removeAiQuestion}
+                                        onUpdate={updateAiQuestion}
+                                    />
+                                </div>
+
+                                <div className="flex justify-end border-t border-slate-200 pt-4">
+                                    <Button
+                                        type="submit"
+                                        disabled={ai.processing}
+                                        className="w-full bg-violet-600 hover:bg-violet-700 sm:w-auto"
+                                    >
+                                        {ai.processing
+                                            ? 'Menjadwalkan...'
+                                            : 'Kirim Undangan AI Interview'}
+                                    </Button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                </div>
             </DialogContent>
         </Dialog>
     );

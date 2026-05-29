@@ -1,7 +1,19 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-import { Bookmark, BookmarkCheck, BriefcaseBusiness, CheckCircle2, Filter, MapPin, Sparkles } from 'lucide-react';
+import {
+    Banknote,
+    Bookmark,
+    BookmarkCheck,
+    BriefcaseBusiness,
+    Building2,
+    CheckCircle2,
+    Clock3,
+    Eye,
+    Filter,
+    MapPin,
+    Sparkles,
+} from 'lucide-react';
 import {
     Field,
     RupiahInput,
@@ -13,10 +25,7 @@ import {
 } from '@/components/candidate/candidate-ui';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useTranslate } from '@/hooks/use-translate';
 import { cn } from '@/lib/utils';
@@ -101,6 +110,12 @@ function matchScoreClass(score: number): string {
     return 'bg-slate-50 text-slate-600 border-slate-200';
 }
 
+function matchScoreBarClass(score: number): string {
+    if (score >= 70) return 'bg-emerald-500';
+    if (score >= 40) return 'bg-amber-500';
+    return 'bg-slate-400';
+}
+
 export default function CandidateJobsIndex({
     filters,
     has_intent_data,
@@ -127,8 +142,12 @@ export default function CandidateJobsIndex({
                         <BriefcaseBusiness className="size-5 text-[#01296A]" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-foreground">{t('candidate.jobs.page_title')}</h1>
-                        <p className="text-sm text-muted-foreground">{t('candidate.jobs.page_description')}</p>
+                        <h1 className="text-xl font-bold text-foreground">
+                            {t('candidate.jobs.page_title')}
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            {t('candidate.jobs.page_description')}
+                        </p>
                     </div>
                 </div>
 
@@ -164,80 +183,201 @@ export default function CandidateJobsIndex({
                             className="space-y-4"
                             onSubmit={(event) => {
                                 event.preventDefault();
-                                const formData = new FormData(event.currentTarget);
-                                router.get(index(), Object.fromEntries(formData.entries()), {
-                                    preserveScroll: true,
-                                    preserveState: true,
-                                });
+                                const formData = new FormData(
+                                    event.currentTarget,
+                                );
+                                router.get(
+                                    index(),
+                                    Object.fromEntries(formData.entries()),
+                                    {
+                                        preserveScroll: true,
+                                        preserveState: true,
+                                    },
+                                );
                             }}
                         >
-                            <input type="hidden" name="tab" value={filters.tab} />
+                            <input
+                                type="hidden"
+                                name="tab"
+                                value={filters.tab}
+                            />
 
                             {/* Row 1: keyword + location + mode + type */}
                             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                                <Field label={t('candidate.jobs.keyword')} name="search">
-                                    <Input name="search" defaultValue={filters.search ?? ''} placeholder={t('candidate.jobs.keyword_placeholder')} />
+                                <Field
+                                    label={t('candidate.jobs.keyword')}
+                                    name="search"
+                                >
+                                    <Input
+                                        name="search"
+                                        defaultValue={filters.search ?? ''}
+                                        placeholder={t(
+                                            'candidate.jobs.keyword_placeholder',
+                                        )}
+                                    />
                                 </Field>
-                                <Field label={t('candidate.jobs.location')} name="location">
-                                    <Input name="location" defaultValue={filters.location ?? ''} placeholder={t('candidate.jobs.location_placeholder')} />
+                                <Field
+                                    label={t('candidate.jobs.location')}
+                                    name="location"
+                                >
+                                    <Input
+                                        name="location"
+                                        defaultValue={filters.location ?? ''}
+                                        placeholder={t(
+                                            'candidate.jobs.location_placeholder',
+                                        )}
+                                    />
                                 </Field>
-                                <Field label={t('candidate.jobs.work_mode')} name="work_mode">
-                                    <Select name="work_mode" defaultValue={filters.work_mode ?? ''}>
-                                        <option value="">{t('candidate.jobs.all_modes')}</option>
-                                        <option value="remote">{t('candidate.jobs.mode_remote')}</option>
-                                        <option value="hybrid">{t('candidate.jobs.mode_hybrid')}</option>
-                                        <option value="onsite">{t('candidate.jobs.mode_onsite')}</option>
+                                <Field
+                                    label={t('candidate.jobs.work_mode')}
+                                    name="work_mode"
+                                >
+                                    <Select
+                                        name="work_mode"
+                                        defaultValue={filters.work_mode ?? ''}
+                                    >
+                                        <option value="">
+                                            {t('candidate.jobs.all_modes')}
+                                        </option>
+                                        <option value="remote">
+                                            {t('candidate.jobs.mode_remote')}
+                                        </option>
+                                        <option value="hybrid">
+                                            {t('candidate.jobs.mode_hybrid')}
+                                        </option>
+                                        <option value="onsite">
+                                            {t('candidate.jobs.mode_onsite')}
+                                        </option>
                                     </Select>
                                 </Field>
-                                <Field label={t('candidate.jobs.job_type')} name="job_type">
-                                    <Select name="job_type" defaultValue={filters.job_type ?? ''}>
-                                        <option value="">{t('candidate.jobs.all_types')}</option>
-                                        <option value="full_time">{t('candidate.jobs.type_full_time')}</option>
-                                        <option value="part_time">{t('candidate.jobs.type_part_time')}</option>
-                                        <option value="contract">{t('candidate.jobs.type_contract')}</option>
-                                        <option value="internship">{t('candidate.jobs.type_internship')}</option>
-                                        <option value="freelance">{t('candidate.jobs.type_freelance')}</option>
+                                <Field
+                                    label={t('candidate.jobs.job_type')}
+                                    name="job_type"
+                                >
+                                    <Select
+                                        name="job_type"
+                                        defaultValue={filters.job_type ?? ''}
+                                    >
+                                        <option value="">
+                                            {t('candidate.jobs.all_types')}
+                                        </option>
+                                        <option value="full_time">
+                                            {t('candidate.jobs.type_full_time')}
+                                        </option>
+                                        <option value="part_time">
+                                            {t('candidate.jobs.type_part_time')}
+                                        </option>
+                                        <option value="contract">
+                                            {t('candidate.jobs.type_contract')}
+                                        </option>
+                                        <option value="internship">
+                                            {t(
+                                                'candidate.jobs.type_internship',
+                                            )}
+                                        </option>
+                                        <option value="freelance">
+                                            {t('candidate.jobs.type_freelance')}
+                                        </option>
                                     </Select>
                                 </Field>
                             </div>
 
                             {/* Row 2: experience + industry + salary + toggles + submit */}
                             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                                <Field label={t('candidate.jobs.experience')} name="experience_level">
-                                    <Select name="experience_level" defaultValue={filters.experience_level ?? ''}>
-                                        <option value="">{t('candidate.jobs.all_levels')}</option>
-                                        <option value="entry">{t('candidate.jobs.level_entry')}</option>
-                                        <option value="mid">{t('candidate.jobs.level_mid')}</option>
-                                        <option value="senior">{t('candidate.jobs.level_senior')}</option>
-                                        <option value="lead">{t('candidate.jobs.level_lead')}</option>
-                                        <option value="manager">{t('candidate.jobs.level_manager')}</option>
+                                <Field
+                                    label={t('candidate.jobs.experience')}
+                                    name="experience_level"
+                                >
+                                    <Select
+                                        name="experience_level"
+                                        defaultValue={
+                                            filters.experience_level ?? ''
+                                        }
+                                    >
+                                        <option value="">
+                                            {t('candidate.jobs.all_levels')}
+                                        </option>
+                                        <option value="entry">
+                                            {t('candidate.jobs.level_entry')}
+                                        </option>
+                                        <option value="mid">
+                                            {t('candidate.jobs.level_mid')}
+                                        </option>
+                                        <option value="senior">
+                                            {t('candidate.jobs.level_senior')}
+                                        </option>
+                                        <option value="lead">
+                                            {t('candidate.jobs.level_lead')}
+                                        </option>
+                                        <option value="manager">
+                                            {t('candidate.jobs.level_manager')}
+                                        </option>
                                     </Select>
                                 </Field>
-                                <Field label={t('candidate.jobs.industry')} name="industry_id">
-                                    <Select name="industry_id" defaultValue={filters.industry_id ?? ''}>
-                                        <option value="">{t('candidate.jobs.all_industries')}</option>
+                                <Field
+                                    label={t('candidate.jobs.industry')}
+                                    name="industry_id"
+                                >
+                                    <Select
+                                        name="industry_id"
+                                        defaultValue={filters.industry_id ?? ''}
+                                    >
+                                        <option value="">
+                                            {t('candidate.jobs.all_industries')}
+                                        </option>
                                         {industries.map((industry) => (
-                                            <option key={industry.value} value={industry.value}>{industry.label}</option>
+                                            <option
+                                                key={industry.value}
+                                                value={industry.value}
+                                            >
+                                                {industry.label}
+                                            </option>
                                         ))}
                                     </Select>
                                 </Field>
-                                <Field label={t('candidate.jobs.salary_min')} name="salary_min">
-                                    <RupiahInput name="salary_min" defaultValue={filters.salary_min} placeholder={t('candidate.jobs.salary_min_placeholder')} />
+                                <Field
+                                    label={t('candidate.jobs.salary_min')}
+                                    name="salary_min"
+                                >
+                                    <RupiahInput
+                                        name="salary_min"
+                                        defaultValue={filters.salary_min}
+                                        placeholder={t(
+                                            'candidate.jobs.salary_min_placeholder',
+                                        )}
+                                    />
                                 </Field>
                                 <div className="flex flex-col justify-end gap-2.5">
                                     <label className="flex cursor-pointer items-center gap-2 text-sm">
-                                        <input className="size-4 rounded border-input" type="checkbox" name="verified_company" value="1" defaultChecked={filters.verified_company} />
+                                        <input
+                                            className="size-4 rounded border-input"
+                                            type="checkbox"
+                                            name="verified_company"
+                                            value="1"
+                                            defaultChecked={
+                                                filters.verified_company
+                                            }
+                                        />
                                         {t('candidate.jobs.verified_company')}
                                     </label>
                                     <label className="flex cursor-pointer items-center gap-2 text-sm">
-                                        <input className="size-4 rounded border-input" type="checkbox" name="skill_match" value="1" defaultChecked={filters.skill_match} />
+                                        <input
+                                            className="size-4 rounded border-input"
+                                            type="checkbox"
+                                            name="skill_match"
+                                            value="1"
+                                            defaultChecked={filters.skill_match}
+                                        />
                                         {t('candidate.jobs.skill_match')}
                                     </label>
                                 </div>
                             </div>
 
                             <div className="flex items-center gap-3 pt-1">
-                                <Button type="submit" className="bg-[#01296A] hover:bg-[#001D4D]">
+                                <Button
+                                    type="submit"
+                                    className="bg-[#01296A] hover:bg-[#001D4D]"
+                                >
                                     <Filter className="size-4" />
                                     {t('candidate.jobs.apply_filter')}
                                 </Button>
@@ -278,146 +418,303 @@ function JobCard({
     job: Job;
     t: (key: string, replacements?: Record<string, string | number>) => string;
 }) {
-    const companyName = job.is_anonymous ? 'Anonim' : (job.company ?? 'Perusahaan');
+    const companyName = job.is_anonymous
+        ? 'Anonim'
+        : (job.company ?? 'Perusahaan');
     const initial = companyName[0]?.toUpperCase() ?? '?';
     const avatarColor = companyAvatarColor(companyName);
 
     const postedDate = job.published_at
-        ? formatDistanceToNow(new Date(job.published_at), { addSuffix: true, locale: idLocale })
+        ? formatDistanceToNow(new Date(job.published_at), {
+              addSuffix: true,
+              locale: idLocale,
+          })
         : null;
+    const score = job.ai_match_score ?? 0;
+    const visibleSkills = job.skills.slice(0, 4);
 
     return (
-        <Card className={cn(
-            'transition-all duration-200 hover:shadow-md hover:-translate-y-0.5',
-            job.has_applied && 'border-l-[3px] border-l-emerald-500',
-        )}>
-            <CardContent className="p-5">
-                {/* Header: Avatar + Title/Meta + Bookmark */}
-                <div className="flex items-start gap-3.5">
-                    {/* Company avatar */}
-                    <div className={cn(
-                        'flex size-11 shrink-0 items-center justify-center rounded-xl text-[15px] font-bold',
-                        avatarColor,
-                    )}>
-                        {initial}
-                    </div>
-
-                    {/* Title + company + location + date */}
-                    <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                            <Link
-                                href={show(job.slug)}
-                                className="text-[15px] font-semibold leading-snug text-foreground transition-colors hover:text-[#01296A]"
+        <Card
+            className={cn(
+                'overflow-hidden border-border/70 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#01296A]/25 hover:shadow-md',
+                job.has_applied && 'border-l-[3px] border-l-emerald-500',
+            )}
+        >
+            <CardContent className="p-0">
+                <div className="grid lg:grid-cols-[minmax(0,1fr)_230px]">
+                    <div className="min-w-0 p-5">
+                        <div className="flex items-start gap-3.5">
+                            <div
+                                className={cn(
+                                    'flex size-12 shrink-0 items-center justify-center rounded-xl text-base font-bold shadow-sm ring-1 ring-black/5',
+                                    avatarColor,
+                                )}
                             >
-                                {job.title}
-                            </Link>
-                            {job.is_saved ? (
-                                <Link
-                                    href={unsave(job.id)}
-                                    method="delete"
-                                    as="button"
-                                    className="mt-0.5 shrink-0 text-[#01296A] transition-colors hover:text-[#001D4D]"
-                                    aria-label="Hapus simpanan"
-                                >
-                                    <BookmarkCheck className="size-5" />
-                                </Link>
-                            ) : (
-                                <Link
-                                    href={save(job.id)}
-                                    method="post"
-                                    as="button"
-                                    className="mt-0.5 shrink-0 text-muted-foreground transition-colors hover:text-foreground"
-                                    aria-label="Simpan"
-                                >
-                                    <Bookmark className="size-5" />
-                                </Link>
-                            )}
+                                {initial}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <Link
+                                            href={show(job.slug)}
+                                            className="line-clamp-2 text-lg leading-tight font-bold text-foreground transition-colors hover:text-[#01296A]"
+                                        >
+                                            {job.title}
+                                        </Link>
+                                        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                                            <span className="inline-flex min-w-0 items-center gap-1">
+                                                <Building2 className="size-3.5 shrink-0" />
+                                                <span className="truncate">
+                                                    {job.is_anonymous ? (
+                                                        <span className="italic">
+                                                            {t(
+                                                                'candidate.jobs.anonymous_company',
+                                                            )}
+                                                        </span>
+                                                    ) : (
+                                                        job.company
+                                                    )}
+                                                </span>
+                                            </span>
+                                            {postedDate ? (
+                                                <>
+                                                    <span className="text-muted-foreground/40">
+                                                        ·
+                                                    </span>
+                                                    <span>{postedDate}</span>
+                                                </>
+                                            ) : null}
+                                        </div>
+                                    </div>
+
+                                    <SaveJobButton job={job} />
+                                </div>
+
+                                <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                                    <JobMeta
+                                        icon={MapPin}
+                                        label="Lokasi"
+                                        value={
+                                            job.location || 'Tidak disebutkan'
+                                        }
+                                    />
+                                    <JobMeta
+                                        icon={Banknote}
+                                        label="Gaji"
+                                        value={job.salary_range}
+                                    />
+                                    <JobMeta
+                                        icon={BriefcaseBusiness}
+                                        label="Industri"
+                                        value={job.industry || 'Umum'}
+                                    />
+                                </div>
+
+                                <div className="mt-4 flex flex-wrap items-center gap-2">
+                                    {job.has_applied ? (
+                                        <Badge className="gap-1 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+                                            <CheckCircle2 className="size-3" />
+                                            Sudah Melamar
+                                        </Badge>
+                                    ) : null}
+                                    {job.is_anonymous ? (
+                                        <Badge className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
+                                            {t(
+                                                'candidate.jobs.anonymous_badge',
+                                            )}
+                                        </Badge>
+                                    ) : job.company_verified ? (
+                                        <Badge className="border-transparent bg-[#01296A]/10 text-[#01296A] hover:bg-[#01296A]/10">
+                                            {t('candidate.jobs.verified_badge')}
+                                        </Badge>
+                                    ) : null}
+                                    <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-100">
+                                        {job.work_mode_label}
+                                    </Badge>
+                                    <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-100">
+                                        {job.job_type_label}
+                                    </Badge>
+                                </div>
+
+                                {job.skills.length > 0 ? (
+                                    <div className="mt-4 border-t border-border/50 pt-4">
+                                        <div className="mb-2 flex items-center justify-between gap-3">
+                                            <p className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+                                                Skill lowongan
+                                            </p>
+                                            {job.matched_skills_count !==
+                                                null &&
+                                            job.matched_skills_count !==
+                                                undefined ? (
+                                                <span className="text-xs font-medium text-[#01296A]">
+                                                    {job.matched_skills_count}/
+                                                    {job.skills.length} cocok
+                                                </span>
+                                            ) : null}
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {visibleSkills.map((skill) => (
+                                                <Badge
+                                                    key={skill.id}
+                                                    variant="outline"
+                                                    className="rounded-md border-slate-200 bg-white text-xs font-medium text-muted-foreground"
+                                                >
+                                                    {skill.name}
+                                                </Badge>
+                                            ))}
+                                            {job.skills.length >
+                                            visibleSkills.length ? (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="rounded-md border-slate-200 bg-slate-50 text-xs font-medium text-muted-foreground"
+                                                >
+                                                    +
+                                                    {job.skills.length -
+                                                        visibleSkills.length}
+                                                </Badge>
+                                            ) : null}
+                                        </div>
+                                    </div>
+                                ) : null}
+                            </div>
                         </div>
-                        <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm text-muted-foreground">
-                            <span>
-                                {job.is_anonymous
-                                    ? <span className="italic">{t('candidate.jobs.anonymous_company')}</span>
-                                    : job.company
-                                }
-                            </span>
-                            {job.location && (
-                                <>
-                                    <span className="text-muted-foreground/40">·</span>
-                                    <span className="flex items-center gap-0.5">
-                                        <MapPin className="size-3 shrink-0" />
-                                        {job.location}
+                    </div>
+
+                    <aside className="border-t border-border/60 bg-slate-50/80 p-5 lg:border-t-0 lg:border-l">
+                        {score > 0 ? (
+                            <div>
+                                <div
+                                    className={cn(
+                                        'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold',
+                                        matchScoreClass(score),
+                                    )}
+                                >
+                                    <Sparkles className="size-3.5" />
+                                    Match
+                                </div>
+                                <div className="mt-3 flex items-end gap-1.5">
+                                    <span className="text-4xl leading-none font-bold tracking-tight text-[#07112f]">
+                                        {score}
                                     </span>
-                                </>
-                            )}
-                            {postedDate && (
-                                <>
-                                    <span className="text-muted-foreground/40">·</span>
-                                    <span>{postedDate}</span>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Status + type badges */}
-                <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                    {job.has_applied && (
-                        <Badge className="gap-1 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
-                            <CheckCircle2 className="size-3" />
-                            Sudah Melamar
-                        </Badge>
-                    )}
-                    {job.is_anonymous ? (
-                        <Badge className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
-                            {t('candidate.jobs.anonymous_badge')}
-                        </Badge>
-                    ) : job.company_verified ? (
-                        <Badge className="border-transparent bg-[#01296A]/10 text-[#01296A] hover:bg-[#01296A]/10">
-                            {t('candidate.jobs.verified_badge')}
-                        </Badge>
-                    ) : null}
-                    <Badge variant="secondary">{job.work_mode_label}</Badge>
-                    <Badge variant="secondary">{job.job_type_label}</Badge>
-                </div>
-
-                {/* Skills */}
-                {job.skills.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                        {job.skills.slice(0, 5).map((skill) => (
-                            <Badge key={skill.id} variant="outline" className="text-xs font-normal text-muted-foreground">
-                                {skill.name}
-                            </Badge>
-                        ))}
-                        {job.skills.length > 5 && (
-                            <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
-                                +{job.skills.length - 5}
-                            </Badge>
+                                    <span className="pb-1 text-sm font-semibold text-muted-foreground">
+                                        %
+                                    </span>
+                                </div>
+                                <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                                    <div
+                                        className={cn(
+                                            'h-full rounded-full',
+                                            matchScoreBarClass(score),
+                                        )}
+                                        style={{
+                                            width: `${Math.min(score, 100)}%`,
+                                        }}
+                                    />
+                                </div>
+                                <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                                    Skor kecocokan profil Anda dengan lowongan
+                                    ini.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="rounded-lg border border-dashed border-slate-200 bg-white p-3">
+                                <p className="text-sm font-semibold text-slate-700">
+                                    Skor belum tersedia
+                                </p>
+                                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                    Lengkapi profil agar rekomendasi lebih
+                                    akurat.
+                                </p>
+                            </div>
                         )}
-                    </div>
-                )}
 
-                {/* Footer: salary + match score + action */}
-                <div className="mt-4 flex items-center justify-between gap-4 border-t border-border/50 pt-3.5">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium text-foreground/80">{job.salary_range}</span>
-                        {job.ai_match_score ? (
-                            <span className={cn(
-                                'flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium',
-                                matchScoreClass(job.ai_match_score),
-                            )}>
-                                <Sparkles className="size-3" />
-                                {job.ai_match_score}% cocok
-                            </span>
-                        ) : null}
-                    </div>
-                    <Button asChild size="sm" className="shrink-0 bg-[#01296A] hover:bg-[#001D4D]">
-                        <Link href={show(job.slug)}>
-                            {job.has_applied ? t('candidate.jobs.view_application') : t('candidate.jobs.detail')}
-                        </Link>
-                    </Button>
+                        <div className="mt-5 grid gap-2">
+                            <Button
+                                asChild
+                                className="h-10 bg-[#01296A] hover:bg-[#001D4D]"
+                            >
+                                <Link href={show(job.slug)}>
+                                    <Eye className="size-4" />
+                                    {job.has_applied
+                                        ? t('candidate.jobs.view_application')
+                                        : t('candidate.jobs.detail')}
+                                </Link>
+                            </Button>
+                            <SaveJobButton
+                                job={job}
+                                className="h-10 justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                                withLabel
+                            />
+                        </div>
+                    </aside>
                 </div>
             </CardContent>
         </Card>
+    );
+}
+
+function SaveJobButton({
+    job,
+    className,
+    withLabel = false,
+}: {
+    job: Job;
+    className?: string;
+    withLabel?: boolean;
+}) {
+    return job.is_saved ? (
+        <Link
+            href={unsave(job.id)}
+            method="delete"
+            as="button"
+            className={cn(
+                'inline-flex shrink-0 items-center gap-2 text-[#01296A] transition-colors hover:text-[#001D4D]',
+                className,
+            )}
+            aria-label="Hapus simpanan"
+        >
+            <BookmarkCheck className="size-5" />
+            {withLabel ? 'Tersimpan' : null}
+        </Link>
+    ) : (
+        <Link
+            href={save(job.id)}
+            method="post"
+            as="button"
+            className={cn(
+                'inline-flex shrink-0 items-center gap-2 text-muted-foreground transition-colors hover:text-foreground',
+                className,
+            )}
+            aria-label="Simpan"
+        >
+            <Bookmark className="size-5" />
+            {withLabel ? 'Simpan' : null}
+        </Link>
+    );
+}
+
+function JobMeta({
+    icon: Icon,
+    label,
+    value,
+}: {
+    icon: typeof MapPin;
+    label: string;
+    value: string;
+}) {
+    return (
+        <div className="flex min-w-0 items-start gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5">
+            <Icon className="mt-0.5 size-4 shrink-0 text-slate-500" />
+            <div className="min-w-0">
+                <p className="text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+                    {label}
+                </p>
+                <p className="truncate text-sm font-semibold text-slate-800">
+                    {value}
+                </p>
+            </div>
+        </div>
     );
 }
 
