@@ -311,6 +311,7 @@ class EmployerAiInterviewController extends Controller
             ->with([
                 'candidate.user:id,name,email',
                 'aiInterviewSessions' => fn ($query) => $query
+                    ->whereNotNull('scheduled_at')
                     ->with(['analysis', 'responses.question'])
                     ->latest(),
             ])

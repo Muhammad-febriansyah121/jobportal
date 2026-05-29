@@ -77,7 +77,7 @@ class EmployerWorkspaceController extends Controller
             ->when($jobId !== null, fn ($query) => $query->where('job_listing_id', $jobId))
             ->when($aiInterviewStatus !== '', function ($query) use ($aiInterviewStatus): void {
                 if ($aiInterviewStatus === 'none') {
-                    $query->whereDoesntHave('aiInterviewSessions');
+                    $query->whereDoesntHave('latestAiInterviewSession');
 
                     return;
                 }
@@ -122,7 +122,7 @@ class EmployerWorkspaceController extends Controller
             ->when($jobId !== null, fn ($query) => $query->where('job_listing_id', $jobId))
             ->when($aiInterviewStatus !== '', function ($query) use ($aiInterviewStatus): void {
                 if ($aiInterviewStatus === 'none') {
-                    $query->whereDoesntHave('aiInterviewSessions');
+                    $query->whereDoesntHave('latestAiInterviewSession');
 
                     return;
                 }
