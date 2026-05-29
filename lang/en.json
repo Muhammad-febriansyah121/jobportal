@@ -3122,6 +3122,7 @@
     "employer.candidates.row_interview_count": ":count scheduled",
     "employer.candidates.row_last_update": "Last update",
     "employer.candidates.row_view_profile": "View profile",
+    "employer.candidates.row_email": "Email",
     "employer.candidates.row_whatsapp_no_number": "Candidate has not filled in WhatsApp number",
     "employer.candidates.row_ai_interview_result": "AI Interview Result",
     "employer.candidates.row_view_cv": "View CV",

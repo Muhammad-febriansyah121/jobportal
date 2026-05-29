@@ -20,7 +20,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { index } from '@/routes/employer/candidates';
+import { index, show } from '@/routes/employer/candidates';
 
 type Option = {
     value: string;
@@ -411,11 +411,16 @@ function CandidateRow({
 
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href={show(application.id)}>
+                            {t('employer.candidates.row_view_profile')}
+                        </Link>
+                    </Button>
                     {application.candidate.email ? (
                         <Button variant="outline" size="sm" asChild>
                             <a href={`mailto:${application.candidate.email}`}>
                                 <Mail className="size-4" />
-                                {t('employer.candidates.row_view_profile')}
+                                {t('employer.candidates.row_email')}
                             </a>
                         </Button>
                     ) : null}

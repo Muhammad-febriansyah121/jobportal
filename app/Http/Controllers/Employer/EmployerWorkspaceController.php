@@ -920,7 +920,7 @@ class EmployerWorkspaceController extends Controller
                 'matched' => $application->ai_skill_match['matched'] ?? [],
                 'missing' => $application->ai_skill_match['missing'] ?? [],
             ],
-            'cover_letter' => str((string) $application->cover_letter)->limit(180)->toString(),
+            'cover_letter' => str(strip_tags((string) $application->cover_letter))->limit(180)->toString(),
             'candidate' => [
                 'id' => $candidate?->id,
                 'name' => $candidate?->full_name ?? $candidate?->user?->name ?? 'Kandidat',
