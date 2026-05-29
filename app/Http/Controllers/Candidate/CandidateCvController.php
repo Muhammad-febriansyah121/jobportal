@@ -312,33 +312,35 @@ class CandidateCvController extends Controller
             $aiText = $response->text;
 
             if (! is_string($aiText) || trim($aiText) === '') {
-                return;
-            }
+                $errorEvents = $response->events->filter(fn ($e): bool => $e->type() === 'error');
 
-            $decoded = $this->decodeJsonObject($aiText);
-
-            if (! is_array($decoded)) {
-                Log::warning('CvReviewer stream produced invalid JSON', [
+                Log::warning('CvReviewer stream produced empty text', [
                     'user_id' => $candidate->user_id,
-                    'preview' => mb_substr($aiText, 0, 200),
+                    'has_error_events' => $errorEvents->isNotEmpty(),
+                    'error_messages' => $errorEvents->map(fn ($e): mixed => $e->toArray())->values()->all(),
+                    'event_count' => $response->events->count(),
+                ]);
+
+                AiAuditLog::create([
+                    'user_id' => $userId,
+                    'feature' => 'candidate.cv.reviewer_stream',
+                    'input_hash' => $inputHash,
+                    'input_json' => $inputJson,
+                    'output_json' => ['error' => 'empty_stream_text'],
+                    'model_name' => 'gpt-5',
+                    'status' => 'failed',
                 ]);
 
                 return;
             }
 
-            $merged = $this->normalizeReviewData($decoded);
-
-            if ($merged === null) {
-                return;
-            }
-
-            $builderData['ai_review'] = $merged;
+            $builderData['ai_review'] = ['text' => $aiText];
             $builderData = $this->mergeWithBuilderDefaults($builderData, $candidate);
 
             $candidate->forceFill([
                 'cv_builder_json' => $builderData,
                 'cv_builder_updated_at' => now(),
-                'ai_cv_summary' => $merged['improved_summary'] ?: $merged['summary'],
+                'ai_cv_summary' => mb_substr(strip_tags(str_replace('#', '', $aiText)), 0, 500),
             ])->save();
 
             $usage = property_exists($response, 'usage') ? $response->usage : null;
@@ -347,7 +349,7 @@ class CandidateCvController extends Controller
                 'feature' => 'candidate.cv.reviewer_stream',
                 'input_hash' => $inputHash,
                 'input_json' => $inputJson,
-                'output_json' => $merged,
+                'output_json' => ['text_length' => mb_strlen($aiText)],
                 'model_name' => 'gpt-5',
                 'prompt_tokens' => (int) ($usage?->inputTokens ?? 0),
                 'completion_tokens' => (int) ($usage?->outputTokens ?? 0),
@@ -831,7 +833,7 @@ class CandidateCvController extends Controller
             'educations' => $educations,
             'projects' => $projects,
             'certifications' => $certifications,
-            'ai_review' => $this->normalizeReviewData($data['ai_review'] ?? null),
+            'ai_review' => is_array($data['ai_review'] ?? null) ? $data['ai_review'] : null,
         ];
     }
 

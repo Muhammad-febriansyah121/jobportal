@@ -57,11 +57,7 @@ class SaveCandidateCvBuilderRequest extends FormRequest
             'certifications.*.issuer' => ['nullable', 'string', 'max:120'],
             'certifications.*.year' => ['nullable', 'string', 'max:20'],
             'ai_review' => ['nullable', 'array'],
-            'ai_review.score' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'ai_review.summary' => ['nullable', 'string', 'max:2000'],
-            'ai_review.improved_summary' => ['nullable', 'string', 'max:2000'],
-            'ai_review.suggestions' => ['nullable', 'array', 'max:10'],
-            'ai_review.suggestions.*' => ['nullable', 'string', 'max:300'],
+            'ai_review.text' => ['nullable', 'string', 'max:20000'],
         ];
     }
 

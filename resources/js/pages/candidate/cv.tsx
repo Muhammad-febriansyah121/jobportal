@@ -1,8 +1,5 @@
 import { Form, Head, Link, router, useForm } from '@inertiajs/react';
 import {
-    AlertCircle,
-    AlertTriangle,
-    ArrowRight,
     CheckCircle2,
     ChevronDown,
     Download,
@@ -103,29 +100,8 @@ type CvCertificationItem = {
     year?: string;
 };
 
-type CvAiReviewSection = {
-    id: string;
-    title: string;
-    score: number;
-    status: 'good' | 'warning' | 'missing';
-    analysis: string;
-    why_important: string;
-    action_points: string[];
-    examples: Array<{ before: string; after: string }>;
-};
-
 type CvAiReview = {
-    score: number;
-    label?: string;
-    summary: string;
-    improved_summary: string;
-    sections?: CvAiReviewSection[];
-    keyword_match?: {
-        score: number;
-        matched: string[];
-        missing: string[];
-    } | null;
-    suggestions: string[];
+    text: string;
 };
 
 type CvBuilderData = {
@@ -226,11 +202,9 @@ export default function CandidateCv({
         achievements: '',
         language: 'id',
     });
-    const reviewForm = useForm<{ cv_file: File | null }>({
-        cv_file: null,
-    });
     const [reviewStreaming, setReviewStreaming] = useState(false);
     const [reviewStreamChars, setReviewStreamChars] = useState(0);
+    const [reviewStreamText, setReviewStreamText] = useState('');
     const reviewAbortRef = useRef<AbortController | null>(null);
     const canGenerateDraft =
         wallet.has_free_draft_available ||
@@ -307,48 +281,6 @@ export default function CandidateCv({
     };
 
     const generateReview = async () => {
-        const cvFile = reviewForm.data.cv_file;
-
-        if (!cvFile) {
-            toast.error('Upload file CV dulu untuk direview.');
-
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('cv_file', cvFile);
-        formData.append('target_job', form.data.personal.headline || '');
-
-        const builderJson = { ...form.data, cv_file: undefined };
-        const flatten = (obj: Record<string, unknown>, prefix = '') => {
-            for (const [key, value] of Object.entries(obj)) {
-                const path = prefix ? `${prefix}[${key}]` : key;
-
-                if (value === null || value === undefined) {
-                    continue;
-                }
-
-                if (Array.isArray(value)) {
-                    value.forEach((item, idx) => {
-                        const arrPath = `${path}[${idx}]`;
-                        if (item && typeof item === 'object') {
-                            flatten(
-                                item as Record<string, unknown>,
-                                arrPath,
-                            );
-                        } else if (item !== null && item !== undefined) {
-                            formData.append(arrPath, String(item));
-                        }
-                    });
-                } else if (typeof value === 'object') {
-                    flatten(value as Record<string, unknown>, path);
-                } else {
-                    formData.append(path, String(value));
-                }
-            }
-        };
-        flatten(builderJson as Record<string, unknown>);
-
         const xsrf = decodeURIComponent(
             document.cookie
                 .split('; ')
@@ -362,6 +294,7 @@ export default function CandidateCv({
 
         setReviewStreaming(true);
         setReviewStreamChars(0);
+        setReviewStreamText('');
 
         try {
             const response = await fetch(builderReviewStream().url, {
@@ -369,10 +302,15 @@ export default function CandidateCv({
                 credentials: 'same-origin',
                 headers: {
                     Accept: 'text/event-stream',
+                    'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-XSRF-TOKEN': xsrf,
                 },
-                body: formData,
+                body: JSON.stringify({
+                    ...form.data,
+                    target_job: form.data.personal.headline || '',
+                    ai_review: undefined,
+                }),
                 signal: controller.signal,
             });
 
@@ -391,49 +329,43 @@ export default function CandidateCv({
 
             while (true) {
                 const { value, done } = await reader.read();
-                if (done) {
-                    break;
-                }
+                if (done) break;
 
                 buffer += decoder.decode(value, { stream: true });
                 const lines = buffer.split('\n');
                 buffer = lines.pop() ?? '';
 
                 for (const line of lines) {
-                    if (!line.startsWith('data: ')) {
-                        continue;
-                    }
+                    if (!line.startsWith('data: ')) continue;
 
                     const payload = line.slice(6).trim();
-
-                    if (payload === '[DONE]' || payload === '') {
-                        continue;
-                    }
+                    if (payload === '[DONE]' || payload === '') continue;
 
                     try {
                         const event = JSON.parse(payload);
                         if (event.type === 'text_delta' && event.delta) {
                             fullText += event.delta;
+                            setReviewStreamText(fullText);
                             setReviewStreamChars(fullText.length);
+                        } else if (event.type === 'error') {
+                            throw new Error(
+                                event.message ||
+                                    'AI mengalami error. Coba review lagi.',
+                            );
                         }
-                    } catch {
-                        // Ignore non-JSON SSE lines.
+                    } catch (parseErr) {
+                        if ((parseErr as Error).message?.includes('AI')) {
+                            throw parseErr;
+                        }
                     }
                 }
             }
 
-            const jsonStart = fullText.indexOf('{');
-            const jsonEnd = fullText.lastIndexOf('}');
-            if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
-                throw new Error('AI tidak mengembalikan JSON valid. Coba review lagi.');
+            if (fullText.trim() === '') {
+                throw new Error('AI tidak merespons. Coba beberapa saat lagi.');
             }
 
-            let parsed: ReturnType<typeof JSON.parse>;
-            try {
-                parsed = JSON.parse(fullText.slice(jsonStart, jsonEnd + 1));
-            } catch {
-                throw new Error('Respons AI terpotong. Coba review lagi.');
-            }
+            form.setData('ai_review', { text: fullText });
 
             router.reload({
                 only: ['builderData', 'builderUpdatedAt'],
@@ -441,16 +373,8 @@ export default function CandidateCv({
                     toast.success('Review CV dari AI berhasil diperbarui.');
                 },
             });
-
-            // Update lokal langsung biar gak nunggu reload server.
-            form.setData(
-                'ai_review',
-                parsed as typeof form.data.ai_review,
-            );
         } catch (error) {
-            if ((error as Error).name === 'AbortError') {
-                return;
-            }
+            if ((error as Error).name === 'AbortError') return;
 
             toast.error(
                 error instanceof Error
@@ -469,18 +393,6 @@ export default function CandidateCv({
         reviewAbortRef.current = null;
         setReviewStreaming(false);
         setReviewStreamChars(0);
-    };
-
-    const reviewScoreLabel = (score: number): string => {
-        if (score >= 80) {
-            return 'Sudah kuat';
-        }
-
-        if (score >= 60) {
-            return 'Cukup baik';
-        }
-
-        return 'Perlu ditingkatkan';
     };
 
     const isDataDasarFilled = Boolean(
@@ -554,9 +466,9 @@ export default function CandidateCv({
                         >
                             <FileSearch className="size-4" />
                             {t('candidate.cv_builder.ai_review')}
-                            {form.data.ai_review ? (
+                            {form.data.ai_review?.text ? (
                                 <Badge className="ml-1" variant="secondary">
-                                    {form.data.ai_review.score}%
+                                    <CheckCircle2 className="size-3" />
                                 </Badge>
                             ) : null}
                         </Button>
@@ -2418,16 +2330,12 @@ export default function CandidateCv({
                                                 {t(
                                                     'candidate.cv_builder.ai_review',
                                                 )}
-                                                {form.data.ai_review ? (
+                                                {form.data.ai_review?.text ? (
                                                     <Badge
                                                         className="ml-1"
                                                         variant="secondary"
                                                     >
-                                                        {
-                                                            form.data.ai_review
-                                                                .score
-                                                        }
-                                                        %
+                                                        <CheckCircle2 className="size-3" />
                                                     </Badge>
                                                 ) : null}
                                             </TabsTrigger>
@@ -2443,28 +2351,6 @@ export default function CandidateCv({
                                     </TabsContent>
                                     <TabsContent value="review" className="mt-3">
                                         <CardContent className="max-h-[65vh] space-y-4 overflow-y-auto xl:max-h-[82vh]">
-                                            <Field
-                                                label={t(
-                                                    'candidate.cv_builder.upload_for_review',
-                                                )}
-                                                name="cv_file"
-                                                error={
-                                                    reviewForm.errors.cv_file
-                                                }
-                                            >
-                                                <Input
-                                                    type="file"
-                                                    accept=".pdf,.doc,.docx,.txt"
-                                                    onChange={(event) =>
-                                                        reviewForm.setData(
-                                                            'cv_file',
-                                                            event.target
-                                                                .files?.[0] ??
-                                                                null,
-                                                        )
-                                                    }
-                                                />
-                                            </Field>
                                             <Button
                                                 type="button"
                                                 onClick={generateReview}
@@ -2506,27 +2392,33 @@ export default function CandidateCv({
                                                         <div
                                                             className="h-full rounded-full bg-primary-500 transition-all duration-300"
                                                             style={{
-                                                                width: `${Math.min(100, Math.round((reviewStreamChars / 11000) * 100))}%`,
+                                                                width: `${Math.min(100, Math.round((reviewStreamChars / 4000) * 100))}%`,
                                                             }}
                                                         />
                                                     </div>
                                                 </div>
                                             )}
 
-                                            {form.data.ai_review ? (
-                                                <AiReviewBreakdown
-                                                    review={form.data.ai_review}
-                                                    scoreLabel={reviewScoreLabel}
-                                                />
+                                            {(reviewStreaming ? reviewStreamText : form.data.ai_review?.text) ? (
+                                                <div className="rounded-lg border p-4">
+                                                    <MarkdownText
+                                                        text={reviewStreaming ? reviewStreamText : form.data.ai_review!.text}
+                                                    />
+                                                    {reviewStreaming && (
+                                                        <span className="inline-block size-2 animate-pulse rounded-full bg-primary-500" />
+                                                    )}
+                                                </div>
                                             ) : (
-                                                <EmptyState
-                                                    title={t(
-                                                        'candidate.cv_builder.no_review',
-                                                    )}
-                                                    description={t(
-                                                        'candidate.cv_builder.no_review_description',
-                                                    )}
-                                                />
+                                                !reviewStreaming && (
+                                                    <EmptyState
+                                                        title={t(
+                                                            'candidate.cv_builder.no_review',
+                                                        )}
+                                                        description={t(
+                                                            'candidate.cv_builder.no_review_description',
+                                                        )}
+                                                    />
+                                                )
                                             )}
                                         </CardContent>
                                     </TabsContent>
@@ -3233,249 +3125,84 @@ function SkillChipInput({
     );
 }
 
-function AiReviewBreakdown({
-    review,
-    scoreLabel,
-}: {
-    review: CvAiReview;
-    scoreLabel: (score: number) => string;
-}) {
-    const overallLabel = review.label ?? scoreLabel(review.score);
-    const sections = review.sections ?? [];
-    const keywordMatch = review.keyword_match ?? null;
+function MarkdownText({ text }: { text: string }) {
+    const renderInline = (content: string, key: number) => {
+        const parts = content.split(/(\*\*[^*]+\*\*)/g);
+        return (
+            <span key={key}>
+                {parts.map((part, idx) =>
+                    part.startsWith('**') && part.endsWith('**') ? (
+                        <strong key={idx}>{part.slice(2, -2)}</strong>
+                    ) : (
+                        part
+                    ),
+                )}
+            </span>
+        );
+    };
 
     return (
-        <div className="space-y-5">
-            <div className="rounded-lg border bg-linear-to-br from-[#01296A] to-[#0a4ba5] p-5 text-white">
-                <p className="text-xs font-semibold tracking-[0.18em] text-white/70 uppercase">
-                    Skor CV ATS Keseluruhan
-                </p>
-                <div className="mt-2 flex items-baseline gap-3">
-                    <span className="text-5xl font-bold">{review.score}</span>
-                    <span className="text-sm text-white/80">/ 100</span>
-                    <Badge className="ml-auto bg-white/15 text-white">
-                        {overallLabel}
-                    </Badge>
-                </div>
-                <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/15">
-                    <div
-                        className="h-full rounded-full bg-white transition-all"
-                        style={{ width: `${review.score}%` }}
-                    />
-                </div>
-                {review.summary ? (
-                    <p className="mt-3 text-sm leading-6 text-white/90">
-                        {review.summary}
-                    </p>
-                ) : null}
-            </div>
-
-            {review.improved_summary ? (
-                <div className="rounded-lg border bg-[#eff4ff] p-4">
-                    <p className="text-xs font-semibold tracking-wide text-[#01296A] uppercase">
-                        Saran Ringkasan Profil
-                    </p>
-                    <p className="mt-1 text-sm leading-6 font-medium text-[#001D4D]">
-                        {review.improved_summary}
-                    </p>
-                </div>
-            ) : null}
-
-            {keywordMatch ? <KeywordMatchCard data={keywordMatch} /> : null}
-
-            {sections.length > 0 ? (
-                <div className="space-y-3">
-                    <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                        Breakdown Per Section
-                    </p>
-                    {sections.map((section) => (
-                        <SectionCard
-                            key={section.id || section.title}
-                            section={section}
-                        />
-                    ))}
-                </div>
-            ) : null}
-
-            {review.suggestions.length > 0 ? (
-                <div className="rounded-lg border bg-emerald-50 p-4">
-                    <p className="text-xs font-semibold tracking-wide text-emerald-700 uppercase">
-                        Prioritas Top
-                    </p>
-                    <ol className="mt-2 space-y-1.5 text-sm text-emerald-900">
-                        {review.suggestions.map((item, index) => (
-                            <li key={index} className="flex gap-2">
-                                <span className="font-semibold">
-                                    {index + 1}.
-                                </span>
-                                <span>{item}</span>
-                            </li>
-                        ))}
-                    </ol>
-                </div>
-            ) : null}
-        </div>
-    );
-}
-
-function SectionCard({ section }: { section: CvAiReviewSection }) {
-    const statusStyle = {
-        good: {
-            bg: 'bg-emerald-50',
-            border: 'border-emerald-200',
-            badge: 'bg-emerald-100 text-emerald-800',
-            icon: <CheckCircle2 className="size-4 text-emerald-600" />,
-        },
-        warning: {
-            bg: 'bg-amber-50',
-            border: 'border-amber-200',
-            badge: 'bg-amber-100 text-amber-800',
-            icon: <AlertTriangle className="size-4 text-amber-600" />,
-        },
-        missing: {
-            bg: 'bg-rose-50',
-            border: 'border-rose-200',
-            badge: 'bg-rose-100 text-rose-800',
-            icon: <AlertCircle className="size-4 text-rose-600" />,
-        },
-    }[section.status];
-
-    return (
-        <div
-            className={`space-y-3 rounded-lg border p-4 ${statusStyle.border} ${statusStyle.bg}`}
-        >
-            <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2">
-                    {statusStyle.icon}
-                    <p className="font-semibold">{section.title}</p>
-                </div>
-                <Badge className={statusStyle.badge}>{section.score}%</Badge>
-            </div>
-
-            {section.analysis ? (
-                <p className="text-sm leading-6 text-foreground/80">
-                    {section.analysis}
-                </p>
-            ) : null}
-
-            {section.why_important ? (
-                <p className="border-l-2 border-foreground/20 pl-3 text-xs leading-5 text-muted-foreground italic">
-                    {section.why_important}
-                </p>
-            ) : null}
-
-            {section.action_points.length > 0 ? (
-                <div className="space-y-1.5">
-                    <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                        Action points
-                    </p>
-                    <ul className="space-y-1 text-sm">
-                        {section.action_points.map((point, index) => (
-                            <li key={index} className="flex gap-2 leading-6">
-                                <ArrowRight className="mt-1 size-3.5 shrink-0 text-foreground/50" />
-                                <span>{point}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            ) : null}
-
-            {section.examples.length > 0 ? (
-                <div className="space-y-2">
-                    <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                        Contoh perbaikan
-                    </p>
-                    {section.examples.map((example, index) => (
-                        <div
-                            key={index}
-                            className="overflow-hidden rounded-md border bg-background"
+        <div className="space-y-1">
+            {text.split('\n').map((line, i) => {
+                if (line.startsWith('## ')) {
+                    return (
+                        <h2
+                            key={i}
+                            className="mt-4 mb-1 text-sm font-bold text-foreground first:mt-0"
                         >
-                            {example.before ? (
-                                <div className="border-b px-3 py-2">
-                                    <p className="text-[10px] font-semibold tracking-wide text-rose-600 uppercase">
-                                        Sebelum
-                                    </p>
-                                    <p className="text-sm leading-6 text-foreground/70 line-through decoration-rose-300/60">
-                                        {example.before}
-                                    </p>
-                                </div>
-                            ) : null}
-                            {example.after ? (
-                                <div className="px-3 py-2">
-                                    <p className="text-[10px] font-semibold tracking-wide text-emerald-600 uppercase">
-                                        Sesudah
-                                    </p>
-                                    <p className="text-sm leading-6 font-medium">
-                                        {example.after}
-                                    </p>
-                                </div>
-                            ) : null}
+                            {renderInline(line.slice(3), i)}
+                        </h2>
+                    );
+                }
+                if (line.startsWith('### ')) {
+                    return (
+                        <h3
+                            key={i}
+                            className="mt-3 mb-0.5 text-xs font-semibold text-foreground uppercase tracking-wide"
+                        >
+                            {renderInline(line.slice(4), i)}
+                        </h3>
+                    );
+                }
+                if (line.startsWith('- ') || line.startsWith('* ')) {
+                    return (
+                        <div
+                            key={i}
+                            className="flex gap-2 text-sm leading-6 text-foreground/80"
+                        >
+                            <span className="mt-2.5 size-1.5 shrink-0 rounded-full bg-foreground/30" />
+                            <span>{renderInline(line.slice(2), i)}</span>
                         </div>
-                    ))}
-                </div>
-            ) : null}
-        </div>
-    );
-}
-
-function KeywordMatchCard({
-    data,
-}: {
-    data: { score: number; matched: string[]; missing: string[] };
-}) {
-    const { t } = useTranslate();
-
-    return (
-        <div className="space-y-3 rounded-lg border p-4">
-            <div className="flex items-center justify-between gap-3">
-                <div>
-                    <p className="font-semibold">
-                        {t('candidate.cv_builder.ats_keywords_title')}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                        {t('candidate.cv_builder.ats_keywords_description')}
-                    </p>
-                </div>
-                <Badge>{data.score}%</Badge>
-            </div>
-
-            {data.matched.length > 0 ? (
-                <div className="space-y-1.5">
-                    <p className="text-xs font-semibold tracking-wide text-emerald-700 uppercase">
-                        {t('candidate.cv_builder.already_in_cv')}
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                        {data.matched.map((keyword) => (
-                            <span
-                                key={keyword}
-                                className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-800"
-                            >
-                                <CheckCircle2 className="size-3" />
-                                {keyword}
+                    );
+                }
+                const numberedMatch = line.match(/^(\d+)\. (.*)/);
+                if (numberedMatch) {
+                    return (
+                        <div
+                            key={i}
+                            className="flex gap-2 text-sm leading-6 text-foreground/80"
+                        >
+                            <span className="shrink-0 font-semibold text-foreground/50">
+                                {numberedMatch[1]}.
                             </span>
-                        ))}
-                    </div>
-                </div>
-            ) : null}
-
-            {data.missing.length > 0 ? (
-                <div className="space-y-1.5">
-                    <p className="text-xs font-semibold tracking-wide text-rose-700 uppercase">
-                        Belum ada — pertimbangkan tambahkan
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                        {data.missing.map((keyword) => (
-                            <span
-                                key={keyword}
-                                className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs text-rose-800"
-                            >
-                                <Plus className="size-3" />
-                                {keyword}
+                            <span>
+                                {renderInline(numberedMatch[2], i)}
                             </span>
-                        ))}
-                    </div>
-                </div>
-            ) : null}
+                        </div>
+                    );
+                }
+                if (line.trim() === '') {
+                    return <div key={i} className="h-1" />;
+                }
+                return (
+                    <p
+                        key={i}
+                        className="text-sm leading-6 text-foreground/80"
+                    >
+                        {renderInline(line, i)}
+                    </p>
+                );
+            })}
         </div>
     );
 }
