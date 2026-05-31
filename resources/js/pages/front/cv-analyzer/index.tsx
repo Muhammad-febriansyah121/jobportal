@@ -15,8 +15,7 @@ import {
     Upload,
     Zap,
 } from 'lucide-react';
-import { motion } from 'motion/react';
-import { useRef, useState } from 'react';
+import { forwardRef, useRef, useState } from 'react';
 import HomeLayout from '@/layouts/front/home-layout';
 import { Marquee } from '@/components/ui/marquee';
 import { useTranslate } from '@/hooks/use-translate';
@@ -30,6 +29,55 @@ const fadeUp = (delay = 0) => ({
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.6, delay, ease },
 });
+
+type MotionLikeProps<T extends HTMLElement> = React.HTMLAttributes<T> & {
+    animate?: unknown;
+    exit?: unknown;
+    initial?: unknown;
+    layoutId?: unknown;
+    transition?: unknown;
+    variants?: unknown;
+    viewport?: unknown;
+    whileInView?: unknown;
+};
+
+function stripMotionProps<T extends HTMLElement>({
+    animate: _animate,
+    exit: _exit,
+    initial: _initial,
+    layoutId: _layoutId,
+    transition: _transition,
+    variants: _variants,
+    viewport: _viewport,
+    whileInView: _whileInView,
+    ...props
+}: MotionLikeProps<T>): React.HTMLAttributes<T> {
+    return props;
+}
+
+const MotionDiv = forwardRef<HTMLDivElement, MotionLikeProps<HTMLDivElement>>(
+    function MotionDiv(props, ref) {
+        return <div ref={ref} {...stripMotionProps(props)} />;
+    },
+);
+
+const MotionH1 = forwardRef<HTMLHeadingElement, MotionLikeProps<HTMLHeadingElement>>(
+    function MotionH1(props, ref) {
+        return <h1 ref={ref} {...stripMotionProps(props)} />;
+    },
+);
+
+const MotionP = forwardRef<HTMLParagraphElement, MotionLikeProps<HTMLParagraphElement>>(
+    function MotionP(props, ref) {
+        return <p ref={ref} {...stripMotionProps(props)} />;
+    },
+);
+
+const motion = {
+    div: MotionDiv,
+    h1: MotionH1,
+    p: MotionP,
+};
 
 const ANALYSIS_FEATURE_ICONS = [
     { icon: BarChart3, color: 'bg-blue-50 text-blue-600', labelKey: 'front.cv_analyzer.feature_ats_label', descKey: 'front.cv_analyzer.feature_ats_desc' },

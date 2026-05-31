@@ -172,10 +172,10 @@ class AdminSalaryInsightController extends Controller
     private function insightActions(SalaryInsight $insight): array
     {
         return [
-            $this->action('Edit', route('admin.salary-insights.update', $insight), 'Pencil', 'patch', 'outline', null, null, $this->insightFields($insight)),
+            $this->action('Edit', route('admin.salary-insights.update', $insight), 'Pencil', 'patch', 'warning', null, null, $this->insightFields($insight)),
             $insight->published_at
-                ? $this->action('Sembunyikan', route('admin.salary-insights.unpublish', $insight), 'X', 'patch', 'outline', 'Sembunyikan insight?', 'Insight tidak akan tampil sebagai data publik.')
-                : $this->action('Terbitkan', route('admin.salary-insights.publish', $insight), 'Check', 'patch', 'default', 'Terbitkan insight?', 'Insight akan ditandai sebagai data terbit.'),
+                ? $this->action('Sembunyikan', route('admin.salary-insights.unpublish', $insight), 'X', 'patch', 'warning', 'Sembunyikan insight?', 'Insight tidak akan tampil sebagai data publik.')
+                : $this->action('Terbitkan', route('admin.salary-insights.publish', $insight), 'Check', 'patch', 'success', 'Terbitkan insight?', 'Insight akan ditandai sebagai data terbit.'),
             $this->action('Hapus', route('admin.salary-insights.destroy', $insight), 'Trash', 'delete', 'destructive', 'Hapus salary insight?', 'Data salary insight akan dihapus.'),
         ];
     }

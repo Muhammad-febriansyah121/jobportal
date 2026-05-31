@@ -3,11 +3,16 @@ import {
     Ban,
     CalendarIcon,
     Check,
+    CheckCheck,
     Eye,
+    FileText,
     Pencil,
     Plus,
+    RefreshCw,
     Search,
+    ShieldAlert,
     ShieldCheck,
+    Sparkles,
     Trash2,
     X,
 } from 'lucide-react';
@@ -49,11 +54,17 @@ import type { AdminAction, AdminField } from '@/types';
 const icons: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
     Ban,
     Check,
+    CheckCheck,
     Eye,
+    FileText,
     Pencil,
     Plus,
+    RefreshCw,
+    Retry: RefreshCw,
     Search,
+    ShieldAlert,
     ShieldCheck,
+    Sparkles,
     Trash: Trash2,
     X,
 };
@@ -68,6 +79,17 @@ export function AdminActionButton({ action }: AdminActionButtonProps) {
     const method = action.method ?? 'get';
 
     if (method === 'get') {
+        if (action.external) {
+            return (
+                <Button asChild variant={variant} size="sm">
+                    <a href={action.href} target="_blank" rel="noopener noreferrer">
+                        <Icon />
+                        {action.label}
+                    </a>
+                </Button>
+            );
+        }
+
         return (
             <Button asChild variant={variant} size="sm">
                 <Link href={action.href} prefetch>

@@ -116,7 +116,7 @@ class AdminContactMessageController extends Controller
     private function messageActions(ContactMessage $msg): array
     {
         $actions = [
-            $this->action('Lihat Detail', route('admin.contact-messages.show', $msg), 'Eye'),
+            $this->action('Lihat Detail', route('admin.contact-messages.show', $msg), 'Eye', 'get', 'default'),
         ];
 
         if ($msg->status !== 'replied') {
@@ -125,7 +125,7 @@ class AdminContactMessageController extends Controller
                 route('admin.contact-messages.mark-replied', $msg),
                 'CheckCheck',
                 'patch',
-                'outline',
+                'success',
                 'Tandai sebagai sudah dibalas?',
                 'Status pesan akan diubah menjadi "Sudah Dibalas".',
             );

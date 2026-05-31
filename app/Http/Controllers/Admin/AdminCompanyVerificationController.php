@@ -260,12 +260,12 @@ class AdminCompanyVerificationController extends Controller
     private function verificationActions(CompanyVerification $verification): array
     {
         return [
-            $this->action('Lihat Detail', route('admin.company-verifications.show', $verification), 'Eye'),
-            $this->action('Setujui', route('admin.company-verifications.approve', $verification), 'Check', 'patch', 'default', 'Setujui verifikasi?', 'Perusahaan akan ditandai terverifikasi.'),
+            $this->action('Lihat Detail', route('admin.company-verifications.show', $verification), 'Eye', 'get', 'default'),
+            $this->action('Setujui', route('admin.company-verifications.approve', $verification), 'Check', 'patch', 'success', 'Setujui verifikasi?', 'Perusahaan akan ditandai terverifikasi.'),
             $this->action('Tolak', route('admin.company-verifications.reject', $verification), 'X', 'patch', 'destructive', 'Tolak verifikasi?', 'Catatan reviewer akan dikirim ke perusahaan.', [
                 $this->field('note', 'Catatan reviewer', 'textarea'),
             ]),
-            $this->action('Minta Revisi', route('admin.company-verifications.need-revision', $verification), 'Pencil', 'patch', 'outline', 'Minta revisi dokumen?', 'Perusahaan dapat mengirim ulang dokumen.', [
+            $this->action('Minta Revisi', route('admin.company-verifications.need-revision', $verification), 'Pencil', 'patch', 'warning', 'Minta revisi dokumen?', 'Perusahaan dapat mengirim ulang dokumen.', [
                 $this->field('note', 'Catatan revisi', 'textarea'),
             ]),
         ];

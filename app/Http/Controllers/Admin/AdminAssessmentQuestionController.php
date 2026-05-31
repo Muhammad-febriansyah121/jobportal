@@ -259,7 +259,7 @@ class AdminAssessmentQuestionController extends Controller
                 route('admin.assessment-questions.edit', $question),
                 'Pencil',
                 'get',
-                'outline',
+                'warning',
             ),
             $this->action(
                 'Hapus',

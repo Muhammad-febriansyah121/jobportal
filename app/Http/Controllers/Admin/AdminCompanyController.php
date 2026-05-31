@@ -357,13 +357,13 @@ class AdminCompanyController extends Controller
     private function companyActions(Company $company): array
     {
         return [
-            $this->action('Lihat Detail', route('admin.companies.show', $company), 'Eye'),
-            $this->action('Analisis AI', route('admin.companies.generate-ai-insight', $company), 'Sparkles', 'post', 'outline'),
+            $this->action('Lihat Detail', route('admin.companies.show', $company), 'Eye', 'get', 'default'),
+            $this->action('Analisis AI', route('admin.companies.generate-ai-insight', $company), 'Sparkles', 'post', 'secondary'),
             $company->is_active
                 ? $this->action('Nonaktifkan', route('admin.companies.suspend', $company), 'Ban', 'patch', 'destructive', 'Nonaktifkan perusahaan?', 'Perusahaan dan tim recruiter akan ditandai tidak aktif.', [
                     $this->field('note', 'Catatan admin', 'textarea'),
                 ])
-                : $this->action('Aktifkan', route('admin.companies.activate', $company), 'Check', 'patch'),
+                : $this->action('Aktifkan', route('admin.companies.activate', $company), 'Check', 'patch', 'success'),
         ];
     }
 

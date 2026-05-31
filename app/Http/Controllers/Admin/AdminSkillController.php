@@ -104,7 +104,7 @@ class AdminSkillController extends Controller
     private function skillActions(Skill $skill): array
     {
         return [
-            $this->action('Edit', route('admin.skills.update', $skill), 'Pencil', 'patch', 'outline', null, null, $this->skillFields($skill)),
+            $this->action('Edit', route('admin.skills.update', $skill), 'Pencil', 'patch', 'warning', null, null, $this->skillFields($skill)),
             $this->action('Hapus', route('admin.skills.destroy', $skill), 'Trash', 'delete', 'destructive', 'Hapus skill?', 'Skill akan hilang dari daftar master data.'),
         ];
     }

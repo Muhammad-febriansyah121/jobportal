@@ -30,7 +30,7 @@ class AdminActivityLogController extends Controller
                 'subject' => $this->subjectLabel($log),
                 'created_at' => $log->created_at?->format('d M Y H:i'),
                 'actions' => [
-                    $this->action('Lihat Detail', route('admin.activity-logs.show', $log), 'Eye'),
+                    $this->action('Lihat Detail', route('admin.activity-logs.show', $log), 'Eye', 'get', 'default'),
                 ],
             ]);
 

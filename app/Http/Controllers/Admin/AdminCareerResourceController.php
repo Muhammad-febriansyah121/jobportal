@@ -98,10 +98,10 @@ class AdminCareerResourceController extends Controller
             'backHref' => route('admin.career-resources.index'),
             'resource' => $this->resourceDetail($careerResource),
             'actions' => [
-                $this->action('Edit', route('admin.career-resources.edit', $careerResource), 'Pencil'),
+                $this->action('Edit', route('admin.career-resources.edit', $careerResource), 'Pencil', 'get', 'warning'),
                 $careerResource->published_at
-                    ? $this->action('Sembunyikan', route('admin.career-resources.unpublish', $careerResource), 'X', 'patch', 'outline', 'Sembunyikan artikel?', 'Artikel tidak akan tampil sebagai konten terbit.')
-                    : $this->action('Terbitkan', route('admin.career-resources.publish', $careerResource), 'Check', 'patch', 'default', 'Terbitkan artikel?', 'Artikel akan ditandai sebagai konten terbit.'),
+                    ? $this->action('Sembunyikan', route('admin.career-resources.unpublish', $careerResource), 'X', 'patch', 'warning', 'Sembunyikan artikel?', 'Artikel tidak akan tampil sebagai konten terbit.')
+                    : $this->action('Terbitkan', route('admin.career-resources.publish', $careerResource), 'Check', 'patch', 'success', 'Terbitkan artikel?', 'Artikel akan ditandai sebagai konten terbit.'),
             ],
         ]);
     }
@@ -195,11 +195,11 @@ class AdminCareerResourceController extends Controller
     private function resourceActions(CareerResource $resource): array
     {
         return [
-            $this->action('Lihat Detail', route('admin.career-resources.show', $resource), 'Eye'),
-            $this->action('Edit', route('admin.career-resources.edit', $resource), 'Pencil'),
+            $this->action('Lihat Detail', route('admin.career-resources.show', $resource), 'Eye', 'get', 'default'),
+            $this->action('Edit', route('admin.career-resources.edit', $resource), 'Pencil', 'get', 'warning'),
             $resource->published_at
-                ? $this->action('Sembunyikan', route('admin.career-resources.unpublish', $resource), 'X', 'patch', 'outline', 'Sembunyikan artikel?', 'Artikel tidak akan tampil sebagai konten terbit.')
-                : $this->action('Terbitkan', route('admin.career-resources.publish', $resource), 'Check', 'patch', 'default', 'Terbitkan artikel?', 'Artikel akan ditandai sebagai konten terbit.'),
+                ? $this->action('Sembunyikan', route('admin.career-resources.unpublish', $resource), 'X', 'patch', 'warning', 'Sembunyikan artikel?', 'Artikel tidak akan tampil sebagai konten terbit.')
+                : $this->action('Terbitkan', route('admin.career-resources.publish', $resource), 'Check', 'patch', 'success', 'Terbitkan artikel?', 'Artikel akan ditandai sebagai konten terbit.'),
             $this->action('Hapus', route('admin.career-resources.destroy', $resource), 'Trash', 'delete', 'destructive', 'Hapus artikel?', 'Artikel akan dihapus permanen.'),
         ];
     }

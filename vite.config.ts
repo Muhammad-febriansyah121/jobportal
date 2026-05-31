@@ -51,9 +51,6 @@ export default defineConfig({
                     if (id.includes('firebase')) {
                         return 'firebase';
                     }
-                    if (id.includes('apexcharts') || id.includes('react-apexcharts')) {
-                        return 'charts';
-                    }
                     if (id.includes('@inertiajs')) {
                         return 'inertia';
                     }

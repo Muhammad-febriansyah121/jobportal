@@ -164,11 +164,11 @@ class AdminMentorController extends Controller
     private function mentorActions(MentorProfile $mentor): array
     {
         return [
-            $this->action('Lihat Detail', route('admin.mentors.show', $mentor), 'Eye'),
-            $this->action('Verifikasi', route('admin.mentors.verify', $mentor), 'ShieldCheck', 'patch', 'default', 'Verifikasi mentor?', 'Profil mentor akan ditandai verified.'),
+            $this->action('Lihat Detail', route('admin.mentors.show', $mentor), 'Eye', 'get', 'default'),
+            $this->action('Verifikasi', route('admin.mentors.verify', $mentor), 'ShieldCheck', 'patch', 'violet', 'Verifikasi mentor?', 'Profil mentor akan ditandai verified.'),
             $mentor->user?->is_active
                 ? $this->action('Nonaktifkan', route('admin.mentors.deactivate', $mentor), 'Ban', 'patch', 'destructive', 'Nonaktifkan mentor?', 'Mentor tidak bisa memakai platform sampai diaktifkan kembali.')
-                : $this->action('Aktifkan', route('admin.mentors.activate', $mentor), 'Check', 'patch'),
+                : $this->action('Aktifkan', route('admin.mentors.activate', $mentor), 'Check', 'patch', 'success'),
         ];
     }
 }

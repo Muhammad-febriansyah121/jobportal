@@ -32,10 +32,11 @@ export type AdminAction = {
     href: string;
     icon: string;
     method?: 'delete' | 'get' | 'patch' | 'post' | 'put';
-    variant?: 'default' | 'destructive' | 'outline';
+    variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'success' | 'violet' | 'warning';
     confirmTitle?: string;
     confirmDescription?: string;
     fields?: AdminField[];
+    external?: boolean;
 };
 
 export type AdminColumn = {

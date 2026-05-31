@@ -123,8 +123,8 @@ class AdminAiAuditLogController extends Controller
     private function aiLogActions(AiAuditLog $log): array
     {
         return [
-            $this->action('Lihat Detail', route('admin.ai-audit-logs.show', $log), 'Eye'),
-            $this->action('Retry', route('admin.ai-audit-logs.retry', $log), 'ShieldCheck', 'patch', 'outline', 'Retry AI job?', 'Status log failed akan ditandai retry_requested.'),
+            $this->action('Lihat Detail', route('admin.ai-audit-logs.show', $log), 'Eye', 'get', 'default'),
+            $this->action('Retry', route('admin.ai-audit-logs.retry', $log), 'ShieldCheck', 'patch', 'violet', 'Retry AI job?', 'Status log failed akan ditandai retry_requested.'),
         ];
     }
 

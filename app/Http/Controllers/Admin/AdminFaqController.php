@@ -94,7 +94,7 @@ class AdminFaqController extends Controller
     private function faqActions(Faq $faq): array
     {
         return [
-            $this->action('Edit', route('admin.faqs.update', $faq), 'Pencil', 'patch', 'outline', null, null, $this->faqFields($faq)),
+            $this->action('Edit', route('admin.faqs.update', $faq), 'Pencil', 'patch', 'warning', null, null, $this->faqFields($faq)),
             $this->action('Hapus', route('admin.faqs.destroy', $faq), 'Trash', 'delete', 'destructive', 'Hapus FAQ?', 'FAQ yang dihapus tidak bisa dikembalikan.'),
         ];
     }

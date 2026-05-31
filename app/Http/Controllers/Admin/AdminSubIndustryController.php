@@ -104,7 +104,7 @@ class AdminSubIndustryController extends Controller
     private function subIndustryActions(SubIndustry $subIndustry): array
     {
         return [
-            $this->action('Edit', route('admin.sub-industries.update', $subIndustry), 'Pencil', 'patch', 'outline', null, null, $this->subIndustryFields($subIndustry)),
+            $this->action('Edit', route('admin.sub-industries.update', $subIndustry), 'Pencil', 'patch', 'warning', null, null, $this->subIndustryFields($subIndustry)),
             $this->action('Hapus', route('admin.sub-industries.destroy', $subIndustry), 'Trash', 'delete', 'destructive', 'Hapus sub industri?', 'Sub industri akan dihapus dari master data.'),
         ];
     }

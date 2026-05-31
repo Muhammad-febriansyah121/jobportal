@@ -102,8 +102,8 @@ class AdminPricingPlanController extends Controller
             'backHref' => route('admin.pricing-plans.index'),
             'plan' => $this->planDetail($pricingPlan),
             'actions' => [
-                $this->action('Edit', route('admin.pricing-plans.edit', $pricingPlan), 'Pencil'),
-                $this->action($pricingPlan->is_active ? 'Nonaktifkan' : 'Aktifkan', route('admin.pricing-plans.toggle', $pricingPlan), $pricingPlan->is_active ? 'Ban' : 'Check', 'patch', $pricingPlan->is_active ? 'destructive' : 'default', 'Ubah status paket?', 'Status paket akan diperbarui.'),
+                $this->action('Edit', route('admin.pricing-plans.edit', $pricingPlan), 'Pencil', 'get', 'warning'),
+                $this->action($pricingPlan->is_active ? 'Nonaktifkan' : 'Aktifkan', route('admin.pricing-plans.toggle', $pricingPlan), $pricingPlan->is_active ? 'Ban' : 'Check', 'patch', $pricingPlan->is_active ? 'destructive' : 'success', 'Ubah status paket?', 'Status paket akan diperbarui.'),
             ],
         ]);
     }
@@ -181,9 +181,9 @@ class AdminPricingPlanController extends Controller
     private function planActions(PricingPlan $plan): array
     {
         return [
-            $this->action('Lihat Detail', route('admin.pricing-plans.show', $plan), 'Eye'),
-            $this->action('Edit', route('admin.pricing-plans.edit', $plan), 'Pencil'),
-            $this->action($plan->is_active ? 'Nonaktifkan' : 'Aktifkan', route('admin.pricing-plans.toggle', $plan), $plan->is_active ? 'Ban' : 'Check', 'patch', $plan->is_active ? 'destructive' : 'default', 'Ubah status paket?', 'Status paket akan diperbarui.'),
+            $this->action('Lihat Detail', route('admin.pricing-plans.show', $plan), 'Eye', 'get', 'default'),
+            $this->action('Edit', route('admin.pricing-plans.edit', $plan), 'Pencil', 'get', 'warning'),
+            $this->action($plan->is_active ? 'Nonaktifkan' : 'Aktifkan', route('admin.pricing-plans.toggle', $plan), $plan->is_active ? 'Ban' : 'Check', 'patch', $plan->is_active ? 'destructive' : 'success', 'Ubah status paket?', 'Status paket akan diperbarui.'),
         ];
     }
 

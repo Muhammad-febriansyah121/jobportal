@@ -24,6 +24,7 @@ class AdminUserController extends Controller
         $users = User::query()
             ->select(['id', 'name', 'email', 'role', 'is_active', 'email_verified_at', 'created_at'])
             ->withCount('activityLogs')
+            ->with('candidateProfile.primaryCv')
             ->when($request->filled('search'), function ($query) use ($request): void {
                 $search = $request->string('search')->toString();
 
@@ -91,6 +92,7 @@ class AdminUserController extends Controller
     public function show(User $user): Response
     {
         $user->loadCount('activityLogs');
+        $user->load('candidateProfile.cvs');
 
         $activities = ActivityLog::query()
             ->select(['id', 'actor_id', 'action', 'subject_type', 'subject_id', 'created_at'])
@@ -148,6 +150,7 @@ class AdminUserController extends Controller
                 ],
             ],
             'tables' => [
+                ...($user->role === 'candidate' ? [$this->candidateCvTable($user)] : []),
                 [
                     'title' => 'Activity user',
                     'columns' => [
@@ -229,14 +232,53 @@ class AdminUserController extends Controller
      */
     private function userActions(User $user): array
     {
-        return [
-            $this->action('Lihat Detail', route('admin.users.show', $user), 'Eye'),
-            $this->action('Ringkasan AI', route('admin.users.generate-ai-summary', $user), 'Sparkles', 'post', 'outline'),
+        $cvUrl = $user->role === 'candidate'
+            ? $user->candidateProfile?->primaryCv?->file_url
+            : null;
+
+        return array_values(array_filter([
+            $this->action('Lihat Detail', route('admin.users.show', $user), 'Eye', 'get', 'default'),
+            $this->action('Ringkasan AI', route('admin.users.generate-ai-summary', $user), 'Sparkles', 'post', 'secondary'),
+            $cvUrl ? [
+                'label' => 'Lihat CV',
+                'href' => $cvUrl,
+                'icon' => 'FileText',
+                'method' => 'get',
+                'variant' => 'success',
+                'external' => true,
+            ] : null,
             $user->is_active
                 ? $this->action('Nonaktifkan', route('admin.users.deactivate', $user), 'Ban', 'patch', 'destructive', 'Nonaktifkan user?', 'User tidak bisa memakai platform sampai diaktifkan kembali.')
-                : $this->action('Aktifkan', route('admin.users.activate', $user), 'Check', 'patch', 'default'),
-            $this->action('Reset Email', route('admin.users.reset-email-verification', $user), 'ShieldCheck', 'patch', 'outline', 'Reset verifikasi email?', 'User perlu melakukan verifikasi email ulang.'),
-            $this->action('Deteksi Risiko', route('admin.users.detect-risk', $user), 'ShieldAlert', 'post', 'outline', 'Jalankan deteksi risiko?', 'AI akan menilai pola apply, login gagal, dan aksi destruktif user.'),
+                : $this->action('Aktifkan', route('admin.users.activate', $user), 'Check', 'patch', 'success'),
+            $this->action('Reset Email', route('admin.users.reset-email-verification', $user), 'ShieldCheck', 'patch', 'warning', 'Reset verifikasi email?', 'User perlu melakukan verifikasi email ulang.'),
+            $this->action('Deteksi Risiko', route('admin.users.detect-risk', $user), 'ShieldAlert', 'post', 'violet', 'Jalankan deteksi risiko?', 'AI akan menilai pola apply, login gagal, dan aksi destruktif user.'),
+        ]));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function candidateCvTable(User $user): array
+    {
+        $cvs = $user->candidateProfile?->cvs ?? collect();
+
+        return [
+            'title' => 'CV Kandidat',
+            'columns' => [
+                ['key' => 'source', 'label' => 'Sumber'],
+                ['key' => 'is_primary', 'label' => 'Utama'],
+                ['key' => 'uploaded_at', 'label' => 'Diunggah'],
+                ['key' => 'view_url', 'label' => 'File'],
+            ],
+            'rows' => $cvs->map(fn ($cv): array => [
+                'id' => $cv->id,
+                'source' => str($cv->source ?? 'upload')->headline()->toString(),
+                'is_primary' => $cv->is_primary ? 'Ya' : 'Tidak',
+                'uploaded_at' => $cv->uploaded_at?->format('d M Y H:i') ?? '-',
+                'view_url' => $cv->file_url
+                    ? ['type' => 'link', 'label' => 'Buka PDF', 'href' => $cv->file_url]
+                    : '-',
+            ])->all(),
         ];
     }
 

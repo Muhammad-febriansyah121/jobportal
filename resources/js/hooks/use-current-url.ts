@@ -28,32 +28,40 @@ export type UseCurrentUrlReturn = {
 
 export function useCurrentUrl(): UseCurrentUrlReturn {
     const page = usePage();
-    const currentUrlPath = new URL(
-        page.url,
-        typeof window !== 'undefined'
-            ? window.location.origin
-            : 'http://localhost',
-    ).pathname;
+    const base = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+    const parsedCurrentUrl = new URL(page.url, base);
+    const currentUrlPath = parsedCurrentUrl.pathname;
+    const currentFullUrl = parsedCurrentUrl.pathname + parsedCurrentUrl.search;
 
     const isCurrentUrl: IsCurrentUrlFn = (
         urlToCheck: NonNullable<InertiaLinkProps['href']>,
         currentUrl?: string,
         startsWith: boolean = false,
     ) => {
-        const urlToCompare = currentUrl ?? currentUrlPath;
         const urlString = toUrl(urlToCheck);
 
-        const comparePath = (path: string): boolean =>
-            startsWith ? urlToCompare.startsWith(path) : path === urlToCompare;
+        const resolve = (candidate: string): { path: string; compareTo: string } => {
+            const hasQuery = candidate.includes('?');
+            const compareTo = currentUrl ?? (hasQuery ? currentFullUrl : currentUrlPath);
+            return { path: candidate, compareTo };
+        };
+
+        const compare = (path: string, compareTo: string): boolean =>
+            startsWith ? compareTo.startsWith(path) : path === compareTo;
 
         if (!urlString.startsWith('http')) {
-            return comparePath(urlString);
+            const { path, compareTo } = resolve(urlString);
+            return compare(path, compareTo);
         }
 
         try {
             const absoluteUrl = new URL(urlString);
-
-            return comparePath(absoluteUrl.pathname);
+            const hasQuery = Boolean(absoluteUrl.search);
+            const candidate = hasQuery
+                ? absoluteUrl.pathname + absoluteUrl.search
+                : absoluteUrl.pathname;
+            const { path, compareTo } = resolve(candidate);
+            return compare(path, compareTo);
         } catch {
             return false;
         }

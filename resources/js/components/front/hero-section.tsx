@@ -1,9 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { motion } from 'motion/react';
-import { useMemo, useRef, useState } from 'react';
+import { forwardRef, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Marquee } from '@/components/ui/marquee';
-import { NumberTicker } from '@/components/ui/number-ticker';
 import { useTranslate } from '@/hooks/use-translate';
 import { login } from '@/routes';
 import { save, unsave } from '@/routes/candidate/jobs';
@@ -69,6 +67,55 @@ type HeroSectionProps = {
 
 type PageProps = {
     auth?: { user?: { role?: string } | null };
+};
+
+type MotionLikeProps<T extends HTMLElement> = React.HTMLAttributes<T> & {
+    animate?: unknown;
+    exit?: unknown;
+    initial?: unknown;
+    layoutId?: unknown;
+    transition?: unknown;
+    variants?: unknown;
+    viewport?: unknown;
+    whileInView?: unknown;
+};
+
+function stripMotionProps<T extends HTMLElement>({
+    animate: _animate,
+    exit: _exit,
+    initial: _initial,
+    layoutId: _layoutId,
+    transition: _transition,
+    variants: _variants,
+    viewport: _viewport,
+    whileInView: _whileInView,
+    ...props
+}: MotionLikeProps<T>): React.HTMLAttributes<T> {
+    return props;
+}
+
+const MotionDiv = forwardRef<HTMLDivElement, MotionLikeProps<HTMLDivElement>>(
+    function MotionDiv(props, ref) {
+        return <div ref={ref} {...stripMotionProps(props)} />;
+    },
+);
+
+const MotionH1 = forwardRef<HTMLHeadingElement, MotionLikeProps<HTMLHeadingElement>>(
+    function MotionH1(props, ref) {
+        return <h1 ref={ref} {...stripMotionProps(props)} />;
+    },
+);
+
+const MotionP = forwardRef<HTMLParagraphElement, MotionLikeProps<HTMLParagraphElement>>(
+    function MotionP(props, ref) {
+        return <p ref={ref} {...stripMotionProps(props)} />;
+    },
+);
+
+const motion = {
+    div: MotionDiv,
+    h1: MotionH1,
+    p: MotionP,
 };
 
 const ease = [0.22, 1, 0.36, 1] as const;

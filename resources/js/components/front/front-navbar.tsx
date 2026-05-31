@@ -5,8 +5,7 @@ import {
     ScanSearch,
     Sparkles,
 } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
-import { useMemo, useRef, useState } from 'react';
+import { forwardRef, useMemo, useRef, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import {
@@ -23,6 +22,48 @@ import { home, login, register } from '@/routes';
 import { index as companiesIndex } from '@/routes/companies';
 import { index as jobsIndex } from '@/routes/jobs';
 import type { Auth } from '@/types';
+
+type MotionLikeProps<T extends HTMLElement> = React.HTMLAttributes<T> & {
+    animate?: unknown;
+    exit?: unknown;
+    initial?: unknown;
+    layoutId?: unknown;
+    transition?: unknown;
+    variants?: unknown;
+    viewport?: unknown;
+    whileInView?: unknown;
+};
+
+function stripMotionProps<T extends HTMLElement>({
+    animate: _animate,
+    exit: _exit,
+    initial: _initial,
+    layoutId: _layoutId,
+    transition: _transition,
+    variants: _variants,
+    viewport: _viewport,
+    whileInView: _whileInView,
+    ...props
+}: MotionLikeProps<T>): React.HTMLAttributes<T> {
+    return props;
+}
+
+const MotionDiv = forwardRef<HTMLDivElement, MotionLikeProps<HTMLDivElement>>(
+    function MotionDiv(props, ref) {
+        return <div ref={ref} {...stripMotionProps(props)} />;
+    },
+);
+
+const AnimatePresence = ({
+    children,
+}: {
+    children: React.ReactNode;
+    initial?: boolean;
+}) => <>{children}</>;
+
+const motion = {
+    div: MotionDiv,
+};
 
 type DropdownItem = {
     name: string;

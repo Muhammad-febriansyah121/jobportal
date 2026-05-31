@@ -121,14 +121,16 @@ class AdminCandidatePricingMenuController extends Controller
                 $this->action(
                     'Edit',
                     route('admin.candidate-pricing-menus.edit', $candidatePricingMenu),
-                    'Pencil'
+                    'Pencil',
+                    'get',
+                    'warning'
                 ),
                 $this->action(
                     $candidatePricingMenu->is_active ? 'Nonaktifkan' : 'Aktifkan',
                     route('admin.candidate-pricing-menus.toggle', $candidatePricingMenu),
                     $candidatePricingMenu->is_active ? 'Ban' : 'Check',
                     'patch',
-                    $candidatePricingMenu->is_active ? 'destructive' : 'default',
+                    $candidatePricingMenu->is_active ? 'destructive' : 'success',
                     'Ubah status paket kandidat?',
                     'Status paket kandidat akan diperbarui.'
                 ),
@@ -227,14 +229,14 @@ class AdminCandidatePricingMenuController extends Controller
     private function menuActions(CandidatePricingMenu $menu): array
     {
         return [
-            $this->action('Lihat Detail', route('admin.candidate-pricing-menus.show', $menu), 'Eye'),
-            $this->action('Edit', route('admin.candidate-pricing-menus.edit', $menu), 'Pencil'),
+            $this->action('Lihat Detail', route('admin.candidate-pricing-menus.show', $menu), 'Eye', 'get', 'default'),
+            $this->action('Edit', route('admin.candidate-pricing-menus.edit', $menu), 'Pencil', 'get', 'warning'),
             $this->action(
                 $menu->is_active ? 'Nonaktifkan' : 'Aktifkan',
                 route('admin.candidate-pricing-menus.toggle', $menu),
                 $menu->is_active ? 'Ban' : 'Check',
                 'patch',
-                $menu->is_active ? 'destructive' : 'default',
+                $menu->is_active ? 'destructive' : 'success',
                 'Ubah status paket kandidat?',
                 'Status paket kandidat akan diperbarui.'
             ),

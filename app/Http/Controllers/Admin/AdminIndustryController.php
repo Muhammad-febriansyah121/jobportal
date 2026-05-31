@@ -100,7 +100,7 @@ class AdminIndustryController extends Controller
     private function industryActions(Industry $industry): array
     {
         return [
-            $this->action('Edit', route('admin.industries.update', $industry), 'Pencil', 'patch', 'outline', null, null, $this->industryFields($industry)),
+            $this->action('Edit', route('admin.industries.update', $industry), 'Pencil', 'patch', 'warning', null, null, $this->industryFields($industry)),
             $this->action('Hapus', route('admin.industries.destroy', $industry), 'Trash', 'delete', 'destructive', 'Hapus industri?', 'Industri akan dihapus dari master data.'),
         ];
     }

@@ -88,7 +88,7 @@ class AdminCompanySizeController extends Controller
     private function sizeActions(CompanySize $size): array
     {
         return [
-            $this->action('Edit', route('admin.company-sizes.update', $size), 'Pencil', 'patch', 'outline', null, null, $this->sizeFields($size)),
+            $this->action('Edit', route('admin.company-sizes.update', $size), 'Pencil', 'patch', 'warning', null, null, $this->sizeFields($size)),
             $this->action('Hapus', route('admin.company-sizes.destroy', $size), 'Trash', 'delete', 'destructive', 'Hapus ukuran perusahaan?', 'Data ini akan dihapus dari master data.'),
         ];
     }

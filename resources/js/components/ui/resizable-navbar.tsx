@@ -1,13 +1,6 @@
 import { cn } from "@/lib/utils";
 import { IconMenu2, IconX } from "@tabler/icons-react";
-import {
-  motion,
-  AnimatePresence,
-  useScroll,
-  useMotionValueEvent,
-} from "motion/react";
-
-import React, { useRef, useState } from "react";
+import React, { forwardRef, useEffect, useRef, useState } from "react";
 
 
 interface NavbarProps {
@@ -49,18 +42,64 @@ interface MobileNavMenuProps {
   onClose: () => void;
 }
 
+type MotionLikeProps<T extends HTMLElement> = React.HTMLAttributes<T> & {
+  animate?: unknown;
+  exit?: unknown;
+  initial?: unknown;
+  layoutId?: unknown;
+  transition?: unknown;
+  variants?: unknown;
+  viewport?: unknown;
+  whileInView?: unknown;
+};
+
+function stripMotionProps<T extends HTMLElement>({
+  animate: _animate,
+  exit: _exit,
+  initial: _initial,
+  layoutId: _layoutId,
+  transition: _transition,
+  variants: _variants,
+  viewport: _viewport,
+  whileInView: _whileInView,
+  ...props
+}: MotionLikeProps<T>): React.HTMLAttributes<T> {
+  return props;
+}
+
+const MotionDiv = forwardRef<HTMLDivElement, MotionLikeProps<HTMLDivElement>>(
+  function MotionDiv(props, ref) {
+    return <div ref={ref} {...stripMotionProps(props)} />;
+  },
+);
+
+const AnimatePresence = ({
+  children,
+}: {
+  children: React.ReactNode;
+  initial?: boolean;
+}) => <>{children}</>;
+
+const motion = {
+  div: MotionDiv,
+};
+
 export const Navbar = ({ children, className }: NavbarProps) => {
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollY } = useScroll();
   const [visible, setVisible] = useState<boolean>(false);
 
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    if (latest > 100) {
-      setVisible(true);
-    } else {
-      setVisible(false);
-    }
-  });
+  useEffect(() => {
+    const updateVisible = () => {
+      setVisible(window.scrollY > 100);
+    };
+
+    updateVisible();
+    window.addEventListener("scroll", updateVisible, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", updateVisible);
+    };
+  }, []);
 
   return (
     <motion.div

@@ -153,8 +153,8 @@ class AdminSubscriptionController extends Controller
     private function subscriptionActions(Subscription $subscription): array
     {
         return [
-            $this->action('Lihat Detail', route('admin.subscriptions.show', $subscription), 'Eye'),
-            $this->action('Perpanjang', route('admin.subscriptions.extend', $subscription), 'Check', 'patch', 'default', null, null, [
+            $this->action('Lihat Detail', route('admin.subscriptions.show', $subscription), 'Eye', 'get', 'default'),
+            $this->action('Perpanjang', route('admin.subscriptions.extend', $subscription), 'Check', 'patch', 'success', null, null, [
                 $this->field('ends_at', 'Tanggal berakhir', 'date', $subscription->ends_at?->format('Y-m-d')),
                 $this->field('renews_at', 'Tanggal perpanjangan', 'date', $subscription->renews_at?->format('Y-m-d')),
                 $this->field('note', 'Catatan admin', 'textarea'),
