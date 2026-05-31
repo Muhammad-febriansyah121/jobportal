@@ -209,7 +209,15 @@ function FrontBrandLogo({ siteLogoUrl, siteName }: { siteLogoUrl: string | null;
     return (
         <div className="flex h-20 w-auto shrink-0 items-center">
             {siteLogoUrl ? (
-                <img src={siteLogoUrl} alt={siteName} className="h-full w-auto max-w-[300px] object-contain" />
+                <img
+                    src={siteLogoUrl}
+                    alt={siteName}
+                    width={300}
+                    height={80}
+                    fetchPriority="high"
+                    decoding="async"
+                    className="h-full w-auto max-w-[300px] object-contain"
+                />
             ) : (
                 <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary">
                     <AppLogoIcon className="size-9 fill-white" />

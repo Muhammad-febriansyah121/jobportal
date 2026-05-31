@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\Concerns\BuildsAdminPages;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SaveCareerResourceRequest;
 use App\Models\CareerResource;
+use App\Support\OptimizedImageStorage;
 use App\Support\UniqueSlug;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -183,7 +184,12 @@ class AdminCareerResourceController extends Controller
                 $this->deleteThumbnail($careerResource);
             }
 
-            $payload['thumbnail_path'] = $request->file('thumbnail')->store('career-resources', 'public');
+            $payload['thumbnail_path'] = OptimizedImageStorage::store(
+                $request->file('thumbnail'),
+                'career-resources',
+                1200,
+                675,
+            );
         }
 
         return $payload;

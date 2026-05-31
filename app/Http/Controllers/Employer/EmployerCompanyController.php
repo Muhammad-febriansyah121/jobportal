@@ -8,6 +8,7 @@ use App\Http\Requests\Employer\SaveEmployerCompanyRequest;
 use App\Models\Company;
 use App\Models\CompanySize;
 use App\Models\Industry;
+use App\Support\OptimizedImageStorage;
 use App\Support\UniqueSlug;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -76,20 +77,26 @@ class EmployerCompanyController extends Controller
         $data['slug'] = UniqueSlug::make(Company::class, $data['name'], 'perusahaan', $company);
 
         if ($request->hasFile('logo')) {
-            if ($company?->logo_url && str_starts_with($company->logo_url, '/storage/')) {
-                Storage::disk('public')->delete(str_replace('/storage/', '', $company->logo_url));
+            $existingLogoPath = OptimizedImageStorage::publicPathFromUrl($company?->logo_url);
+
+            if ($existingLogoPath !== null) {
+                Storage::disk('public')->delete($existingLogoPath);
             }
+
             $data['logo_url'] = Storage::disk('public')->url(
-                $request->file('logo')->store('companies/logos', 'public'),
+                OptimizedImageStorage::store($request->file('logo'), 'companies/logos', 320, 320, 84),
             );
         }
 
         if ($request->hasFile('cover')) {
-            if ($company?->cover_url && str_starts_with($company->cover_url, '/storage/')) {
-                Storage::disk('public')->delete(str_replace('/storage/', '', $company->cover_url));
+            $existingCoverPath = OptimizedImageStorage::publicPathFromUrl($company?->cover_url);
+
+            if ($existingCoverPath !== null) {
+                Storage::disk('public')->delete($existingCoverPath);
             }
+
             $data['cover_url'] = Storage::disk('public')->url(
-                $request->file('cover')->store('companies/covers', 'public'),
+                OptimizedImageStorage::store($request->file('cover'), 'companies/covers', 1600, 900, 82),
             );
         }
 

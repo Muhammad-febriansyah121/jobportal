@@ -125,16 +125,16 @@ const heroContainer = {
     visible: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
 };
 const heroItem = {
-    hidden: { opacity: 0, y: 22 },
+    hidden: { opacity: 1, y: 0 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.65, ease } },
 };
 const heroRight = {
-    hidden: { opacity: 0, x: 48 },
+    hidden: { opacity: 1, x: 0 },
     visible: { opacity: 1, x: 0, transition: { duration: 0.75, delay: 0.35, ease } },
 };
 
 const fadeUp = {
-    hidden: { opacity: 0, y: 32 },
+    hidden: { opacity: 1, y: 0 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease } },
 };
 const staggerWrap = {
@@ -142,15 +142,15 @@ const staggerWrap = {
     visible: { transition: { staggerChildren: 0.08, delayChildren: 0.06 } },
 };
 const staggerChild = {
-    hidden: { opacity: 0, y: 24 },
+    hidden: { opacity: 1, y: 0 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease } },
 };
 const slideInLeft = {
-    hidden: { opacity: 0, x: -44 },
+    hidden: { opacity: 1, x: 0 },
     visible: { opacity: 1, x: 0, transition: { duration: 0.65, ease } },
 };
 const slideInRight = {
-    hidden: { opacity: 0, x: 44 },
+    hidden: { opacity: 1, x: 0 },
     visible: { opacity: 1, x: 0, transition: { duration: 0.65, ease } },
 };
 const vp = { once: true, amount: 0.15 } as const;
@@ -582,6 +582,10 @@ function CompanyCard({ company }: { company: RegisteredCompany }) {
                 <img
                     src={company.logo_url}
                     alt={company.name}
+                    width={36}
+                    height={36}
+                    loading="lazy"
+                    decoding="async"
                     className="size-9 rounded-xl object-cover"
                 />
             ) : (
@@ -760,6 +764,10 @@ function HeroIllustration({ job, stats, companies }: HeroIllustrationProps) {
                                         key={c.id}
                                         src={c.logo_url}
                                         alt={c.name}
+                                        width={24}
+                                        height={24}
+                                        loading="lazy"
+                                        decoding="async"
                                         className="size-6 rounded-full border-2 border-white object-cover"
                                         style={{ zIndex: topCompanies.length - i }}
                                     />
@@ -1338,6 +1346,10 @@ export default function HeroSection({
                                                     <img
                                                         src={job.company_logo}
                                                         alt={job.company ?? ''}
+                                                        width={44}
+                                                        height={44}
+                                                        loading="lazy"
+                                                        decoding="async"
                                                         className="size-full object-cover"
                                                         onError={(e) => {
                                                             e.currentTarget.style.display = 'none';
@@ -1733,7 +1745,15 @@ export default function HeroSection({
                                     return (
                                         <div key={company.id} className="flex size-9 items-center justify-center overflow-hidden rounded-xl bg-gray-100">
                                             {company.logo_url ? (
-                                                <img src={company.logo_url} alt={company.name} className="size-full object-cover" />
+                                                <img
+                                                    src={company.logo_url}
+                                                    alt={company.name}
+                                                    width={36}
+                                                    height={36}
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                    className="size-full object-cover"
+                                                />
                                             ) : (
                                                 <span className="text-[10px] font-bold text-gray-500">{initials}</span>
                                             )}

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Mail\AdminSmtpTestMail;
 use App\Models\Setting;
+use App\Support\OptimizedImageStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -102,7 +103,11 @@ class AdminWebSettingController extends Controller
                     Storage::disk('public')->delete($existing->value);
                 }
 
-                $path = $request->file($key)->store('settings', 'public');
+                $path = OptimizedImageStorage::store(
+                    $request->file($key),
+                    'settings',
+                    ...$this->imageDimensionsFor($key),
+                );
 
                 Setting::updateOrCreate(['key' => $key], ['value' => $path]);
 
@@ -133,6 +138,18 @@ class AdminWebSettingController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Pengaturan berhasil disimpan.']);
 
         return back();
+    }
+
+    /**
+     * @return array{0: int, 1: int, 2: int}
+     */
+    private function imageDimensionsFor(string $key): array
+    {
+        return match ($key) {
+            'site_logo_url' => [480, 240, 86],
+            'site_favicon_url' => [180, 180, 90],
+            default => [1600, 1000, 82],
+        };
     }
 
     public function sendSmtpTest(Request $request): RedirectResponse
