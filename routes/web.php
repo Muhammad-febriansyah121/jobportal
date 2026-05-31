@@ -106,7 +106,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::prefix('admin')
     ->name('admin.')
-    ->middleware(['auth', 'verified', 'admin'])
+    ->middleware(['auth', 'verified', 'admin', 'inertia.ssr.disable'])
     ->group(function () {
         Route::get('/', AdminDashboardController::class)->name('dashboard');
 

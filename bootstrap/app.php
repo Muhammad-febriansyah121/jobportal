@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\DisableInertiaSSR;
 use App\Http\Middleware\EnsureCandidateOnboardingIsComplete;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsCandidate;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'candidate' => EnsureUserIsCandidate::class,
             'candidate.onboarded' => EnsureCandidateOnboardingIsComplete::class,
             'employer' => EnsureUserIsEmployer::class,
+            'inertia.ssr.disable' => DisableInertiaSSR::class,
         ]);
 
         $middleware->web(append: [

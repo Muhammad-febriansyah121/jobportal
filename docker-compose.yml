@@ -47,6 +47,22 @@ services:
     networks:
       - karivia
 
+  ssr:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: karivia-ssr
+    restart: unless-stopped
+    working_dir: /var/www
+    command: php artisan inertia:start-ssr
+    volumes:
+      - ./:/var/www
+    depends_on:
+      - mariadb
+      - redis
+    networks:
+      - karivia
+
   scheduler:
     build:
       context: .
