@@ -51,9 +51,6 @@ export default defineConfig({
                     if (id.includes('firebase')) {
                         return 'firebase';
                     }
-                    if (id.includes('@inertiajs')) {
-                        return 'inertia';
-                    }
                     if (
                         id.includes('/react-dom/') ||
                         id.includes('/scheduler/') ||
