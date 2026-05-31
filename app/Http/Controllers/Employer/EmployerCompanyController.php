@@ -96,11 +96,18 @@ class EmployerCompanyController extends Controller
         unset($data['logo'], $data['cover']);
 
         if ($company === null) {
-            Company::create([
+            $newCompany = Company::create([
                 ...$data,
                 'owner_id' => $request->user()->id,
                 'verification_status' => 'unverified',
                 'is_verified' => false,
+            ]);
+
+            $newCompany->members()->create([
+                'user_id' => $request->user()->id,
+                'role' => 'owner',
+                'is_active' => true,
+                'joined_at' => now(),
             ]);
 
             Inertia::flash('toast', ['type' => 'success', 'message' => 'Profil perusahaan berhasil dibuat.']);
