@@ -13,6 +13,7 @@ use App\Models\JobListing;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -141,7 +142,7 @@ class CandidateDashboardController extends Controller
                     'title' => $resource->title,
                     'type' => $resource->type,
                     'category' => $resource->category,
-                    'thumbnail_path' => $resource->thumbnail_path,
+                    'thumbnail_url' => $resource->thumbnail_path ? Storage::disk('public')->url($resource->thumbnail_path) : null,
                     'published_at' => $resource->published_at?->format('d M Y'),
                 ]),
         ]);

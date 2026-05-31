@@ -123,7 +123,7 @@ type DashboardProps = {
         title: string;
         type: string;
         category?: string | null;
-        thumbnail_path?: string | null;
+        thumbnail_url?: string | null;
         published_at?: string | null;
     }>;
 };
@@ -920,7 +920,10 @@ function CareerTip({
     if (featured) {
         return (
             <div className="overflow-hidden rounded-lg border border-zinc-200">
-                <div className="flex h-28 items-start bg-teal-800 p-3 text-white">
+                <div
+                    className={`flex h-28 items-start p-3 text-white${tip.thumbnail_url ? '' : ' bg-teal-800'}`}
+                    style={tip.thumbnail_url ? { backgroundImage: `url(${tip.thumbnail_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+                >
                     <Badge className="rounded-lg bg-primary-600 text-white hover:bg-primary-600">
                         {tip.category ?? tip.type}
                     </Badge>
