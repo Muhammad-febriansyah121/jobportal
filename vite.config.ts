@@ -42,23 +42,29 @@ export default defineConfig({
                     if (id.includes('lucide-react')) {
                         return 'lucide';
                     }
-                    if (id.includes('@radix-ui')) {
+                    if (id.includes('@radix-ui') || id.includes('radix-ui')) {
                         return 'radix';
                     }
                     if (id.includes('@tiptap') || id.includes('prosemirror')) {
                         return 'tiptap';
                     }
+                    if (id.includes('firebase')) {
+                        return 'firebase';
+                    }
+                    if (id.includes('apexcharts') || id.includes('react-apexcharts')) {
+                        return 'charts';
+                    }
                     if (id.includes('@inertiajs')) {
                         return 'inertia';
                     }
                     if (
-                        id.includes('react-dom') ||
-                        id.includes('scheduler') ||
-                        id.match(/[/\\]react[/\\]/)
+                        id.includes('/react-dom/') ||
+                        id.includes('/scheduler/') ||
+                        id.includes('/node_modules/react/')
                     ) {
                         return 'react';
                     }
-                    if (id.includes('framer-motion')) {
+                    if (id.includes('framer-motion') || id.includes('/motion/')) {
                         return 'motion';
                     }
                     if (id.includes('date-fns') || id.includes('dayjs')) {
