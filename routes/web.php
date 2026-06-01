@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\AdminCompanySizeController;
 use App\Http\Controllers\Admin\AdminCompanyVerificationController;
 use App\Http\Controllers\Admin\AdminContactMessageController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminDatabaseBackupController;
 use App\Http\Controllers\Admin\AdminFaqController;
 use App\Http\Controllers\Admin\AdminIndustryController;
 use App\Http\Controllers\Admin\AdminJobListingController;
@@ -228,6 +229,9 @@ Route::prefix('admin')
         Route::post('whatsapp/reconnect', [AdminWhatsAppController::class, 'reconnect'])->name('whatsapp.reconnect');
         Route::delete('whatsapp/disconnect', [AdminWhatsAppController::class, 'disconnect'])->name('whatsapp.disconnect');
         Route::post('whatsapp/send-test', [AdminWhatsAppController::class, 'sendTest'])->name('whatsapp.send-test');
+
+        Route::get('database-backup', [AdminDatabaseBackupController::class, 'index'])->name('database-backup.index');
+        Route::get('database-backup/download', [AdminDatabaseBackupController::class, 'download'])->name('database-backup.download');
 
         Route::get('legal/terms', [AdminLegalPageController::class, 'editTerms'])->name('legal.terms.edit');
         Route::post('legal/terms', [AdminLegalPageController::class, 'updateTerms'])->name('legal.terms.update');

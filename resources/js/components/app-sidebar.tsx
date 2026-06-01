@@ -5,6 +5,7 @@ import {
     BarChart3,
     Bot,
     Bookmark,
+    Database,
     BriefcaseBusiness,
     Building2,
     CalendarCheck,
@@ -102,6 +103,7 @@ import { edit as adminLegalTerms } from '@/routes/admin/legal/terms';
 import { index as adminPricingPlans } from '@/routes/admin/pricing-plans';
 import { index as adminReports } from '@/routes/admin/reports';
 import { index as adminSalaryInsights } from '@/routes/admin/salary-insights';
+import { index as adminDatabaseBackup } from '@/routes/admin/database-backup';
 import { edit as adminSettings } from '@/routes/admin/settings';
 import { index as adminSkills } from '@/routes/admin/skills';
 import { index as adminSubscriptions } from '@/routes/admin/subscriptions';
@@ -380,6 +382,11 @@ function AdminSidebar() {
                         title: t('nav.admin.activity_log'),
                         href: adminActivityLogs(),
                         icon: Activity,
+                    },
+                    {
+                        title: t('nav.admin.database_backup'),
+                        href: adminDatabaseBackup(),
+                        icon: Database,
                     },
                     {
                         title: t('nav.admin.whatsapp'),
