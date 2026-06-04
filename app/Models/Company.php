@@ -16,6 +16,18 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 ])]
 class Company extends Model
 {
+    /**
+     * Jobs allowed when the company has no active subscription.
+     */
+    public const FREE_ACTIVE_JOBS_LIMIT = 3;
+
+    /**
+     * Statuses that no longer occupy a job slot.
+     *
+     * @var list<string>
+     */
+    public const RELEASED_JOB_STATUSES = ['closed', 'rejected'];
+
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
@@ -84,6 +96,35 @@ class Company extends Model
     public function isApproved(): bool
     {
         return $this->verification_status === 'approved';
+    }
+
+    /**
+     * Max jobs (draft + published) for the current plan. 0 means unlimited.
+     */
+    public function activeJobsLimit(): int
+    {
+        return (int) ($this->activeSubscription?->plan?->active_jobs_limit ?? self::FREE_ACTIVE_JOBS_LIMIT);
+    }
+
+    /**
+     * Jobs currently occupying a slot (everything except closed/rejected).
+     */
+    public function usedJobsCount(): int
+    {
+        return $this->jobListings()
+            ->whereNotIn('status', self::RELEASED_JOB_STATUSES)
+            ->count();
+    }
+
+    public function canCreateMoreJobs(): bool
+    {
+        $limit = $this->activeJobsLimit();
+
+        if ($limit === 0) {
+            return true;
+        }
+
+        return $this->usedJobsCount() < $limit;
     }
 
     protected function casts(): array

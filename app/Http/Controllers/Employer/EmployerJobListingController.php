@@ -6,6 +6,7 @@ use App\Actions\Employer\ResolveEmployerCompany;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employer\SaveEmployerJobRequest;
 use App\Models\Application;
+use App\Models\Company;
 use App\Models\Industry;
 use App\Models\JobListing;
 use App\Support\UniqueSlug;
@@ -265,6 +266,12 @@ class EmployerJobListingController extends Controller
             return to_route('employer.jobs.index');
         }
 
+        if (! $company->canCreateMoreJobs()) {
+            Inertia::flash('toast', ['type' => 'warning', 'message' => $this->jobLimitMessage($company)]);
+
+            return to_route('employer.billing.index');
+        }
+
         $data = $this->normalizeJobData($request->validated());
         $data['slug'] = UniqueSlug::make(JobListing::class, $data['title'], 'lowongan');
 
@@ -426,6 +433,13 @@ class EmployerJobListingController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Draft lowongan berhasil dihapus.']);
 
         return to_route('employer.jobs.index');
+    }
+
+    private function jobLimitMessage(Company $company): string
+    {
+        $limit = $company->activeJobsLimit();
+
+        return 'Batas lowongan paket Anda ('.$limit.') sudah tercapai. Tutup lowongan lama atau upgrade paket untuk menambah kuota.';
     }
 
     /**

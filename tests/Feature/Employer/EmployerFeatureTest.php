@@ -1964,3 +1964,179 @@ test('employer cannot resubmit while verification is pending', function () {
         ])
         ->assertForbidden();
 });
+
+test('employer without subscription cannot create job beyond free limit', function () {
+    $employer = User::factory()->employer()->create();
+    $industry = Industry::create([
+        'name' => 'Teknologi Free Limit',
+        'slug' => 'teknologi-free-limit',
+    ]);
+    $company = Company::create([
+        'owner_id' => $employer->id,
+        'industry_id' => $industry->id,
+        'name' => 'Karivia Free Limit',
+        'slug' => 'karivia-free-limit',
+        'verification_status' => 'approved',
+        'is_verified' => true,
+    ]);
+
+    foreach (range(1, Company::FREE_ACTIVE_JOBS_LIMIT) as $index) {
+        JobListing::create([
+            'company_id' => $company->id,
+            'created_by' => $employer->id,
+            'industry_id' => $industry->id,
+            'title' => 'Existing Job '.$index,
+            'slug' => 'existing-job-'.$index,
+            'description' => 'Role.',
+            'required_qualifications' => 'Laravel.',
+            'work_mode' => 'remote',
+            'job_type' => 'full_time',
+            'experience_level' => 'mid',
+            'salary_currency' => 'IDR',
+            'is_salary_visible' => true,
+            'status' => $index === 1 ? 'draft' : 'published',
+            'published_at' => $index === 1 ? null : now(),
+        ]);
+    }
+
+    actingAs($employer)
+        ->post(route('employer.jobs.store'), [
+            'title' => 'Over Limit Draft',
+            'industry_id' => $industry->id,
+            'work_mode' => 'remote',
+            'job_type' => 'full_time',
+            'experience_level' => 'mid',
+            'salary_currency' => 'IDR',
+            'is_salary_visible' => true,
+        ])
+        ->assertRedirect(route('employer.billing.index'));
+
+    expect(JobListing::query()->where('title', 'Over Limit Draft')->exists())->toBeFalse();
+    expect($company->usedJobsCount())->toBe(Company::FREE_ACTIVE_JOBS_LIMIT);
+});
+
+test('closed and rejected jobs do not consume the job limit', function () {
+    $employer = User::factory()->employer()->create();
+    $industry = Industry::create([
+        'name' => 'Teknologi Released',
+        'slug' => 'teknologi-released',
+    ]);
+    $company = Company::create([
+        'owner_id' => $employer->id,
+        'industry_id' => $industry->id,
+        'name' => 'Karivia Released',
+        'slug' => 'karivia-released',
+        'verification_status' => 'approved',
+        'is_verified' => true,
+    ]);
+
+    foreach (['closed', 'rejected', 'closed'] as $index => $status) {
+        JobListing::create([
+            'company_id' => $company->id,
+            'created_by' => $employer->id,
+            'industry_id' => $industry->id,
+            'title' => 'Released Job '.$index,
+            'slug' => 'released-job-'.$index,
+            'description' => 'Role.',
+            'required_qualifications' => 'Laravel.',
+            'work_mode' => 'remote',
+            'job_type' => 'full_time',
+            'experience_level' => 'mid',
+            'salary_currency' => 'IDR',
+            'is_salary_visible' => true,
+            'status' => $status,
+        ]);
+    }
+
+    expect($company->usedJobsCount())->toBe(0);
+
+    actingAs($employer)
+        ->post(route('employer.jobs.store'), [
+            'title' => 'Fresh Slot Engineer',
+            'industry_id' => $industry->id,
+            'description' => 'Bangun API.',
+            'required_qualifications' => 'Laravel 3 tahun.',
+            'work_mode' => 'remote',
+            'job_type' => 'full_time',
+            'experience_level' => 'mid',
+            'salary_currency' => 'IDR',
+            'is_salary_visible' => true,
+            'publish' => true,
+        ])
+        ->assertRedirect(route('employer.jobs.index'));
+
+    expect(JobListing::query()->where('title', 'Fresh Slot Engineer')->where('status', 'published')->exists())->toBeTrue();
+});
+
+test('employer with paid plan can create jobs beyond free limit', function () {
+    $employer = User::factory()->employer()->create();
+    $industry = Industry::create([
+        'name' => 'Teknologi Paid Limit',
+        'slug' => 'teknologi-paid-limit',
+    ]);
+    $company = Company::create([
+        'owner_id' => $employer->id,
+        'industry_id' => $industry->id,
+        'name' => 'Karivia Paid Limit',
+        'slug' => 'karivia-paid-limit',
+        'verification_status' => 'approved',
+        'is_verified' => true,
+    ]);
+
+    $plan = PricingPlan::create([
+        'name' => 'Basic Limit',
+        'slug' => 'basic-limit',
+        'price' => 250000,
+        'duration_days' => 30,
+        'active_jobs_limit' => 9,
+        'recruiter_seat_limit' => 5,
+        'ai_screening_quota' => 10,
+        'talent_search_quota' => 10,
+        'features_json' => ['9 lowongan aktif'],
+        'is_active' => true,
+    ]);
+
+    Subscription::create([
+        'company_id' => $company->id,
+        'pricing_plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->addDays(29),
+    ]);
+
+    foreach (range(1, Company::FREE_ACTIVE_JOBS_LIMIT) as $index) {
+        JobListing::create([
+            'company_id' => $company->id,
+            'created_by' => $employer->id,
+            'industry_id' => $industry->id,
+            'title' => 'Paid Job '.$index,
+            'slug' => 'paid-job-'.$index,
+            'description' => 'Role.',
+            'required_qualifications' => 'Laravel.',
+            'work_mode' => 'remote',
+            'job_type' => 'full_time',
+            'experience_level' => 'mid',
+            'salary_currency' => 'IDR',
+            'is_salary_visible' => true,
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+    }
+
+    actingAs($employer)
+        ->post(route('employer.jobs.store'), [
+            'title' => 'Within Paid Limit Engineer',
+            'industry_id' => $industry->id,
+            'description' => 'Bangun API.',
+            'required_qualifications' => 'Laravel 3 tahun.',
+            'work_mode' => 'remote',
+            'job_type' => 'full_time',
+            'experience_level' => 'mid',
+            'salary_currency' => 'IDR',
+            'is_salary_visible' => true,
+            'publish' => true,
+        ])
+        ->assertRedirect(route('employer.jobs.index'));
+
+    expect(JobListing::query()->where('title', 'Within Paid Limit Engineer')->where('status', 'published')->exists())->toBeTrue();
+});
