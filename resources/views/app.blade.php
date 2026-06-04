@@ -21,6 +21,16 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="site-name" content="{{ $siteName }}">
 
+        {{-- Google tag (gtag.js) --}}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-HBDC1R1MD4"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'G-HBDC1R1MD4');
+        </script>
+
         @if ($metaDescription)
             <meta name="description" content="{{ $metaDescription }}">
         @endif
