@@ -32,6 +32,16 @@ trait ProfileValidationRules
     }
 
     /**
+     * Get the validation rules used to validate user phone numbers.
+     *
+     * @return array<int, ValidationRule|array<mixed>|string>
+     */
+    protected function phoneRules(): array
+    {
+        return ['required', 'string', 'max:20', 'regex:/^\+?[0-9\s-]{8,20}$/'];
+    }
+
+    /**
      * Get the validation rules used to validate user emails.
      *
      * @return array<int, ValidationRule|array<mixed>|string>

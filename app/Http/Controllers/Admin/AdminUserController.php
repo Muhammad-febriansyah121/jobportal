@@ -95,7 +95,7 @@ class AdminUserController extends Controller
         $user->load('candidateProfile.cvs');
 
         $activities = ActivityLog::query()
-            ->select(['id', 'actor_id', 'action', 'subject_type', 'subject_id', 'created_at'])
+            ->select(['id', 'actor_id', 'action', 'subject_type', 'subject_id', 'properties_json', 'created_at'])
             ->where('actor_id', $user->id)
             ->latest()
             ->limit(20)
@@ -103,7 +103,7 @@ class AdminUserController extends Controller
             ->map(fn (ActivityLog $activity): array => [
                 'id' => $activity->id,
                 'action' => str($activity->action)->headline()->toString(),
-                'subject' => $activity->subject_type === null ? '-' : class_basename((string) $activity->subject_type).' #'.$activity->subject_id,
+                'subject' => $this->activitySubject($activity),
                 'created_at' => $activity->created_at?->format('d M Y H:i'),
             ]);
 
@@ -226,6 +226,39 @@ class AdminUserController extends Controller
         $this->flash('Status verifikasi email berhasil direset.');
 
         return back();
+    }
+
+    /**
+     * Build a human-readable subject label for an activity row.
+     *
+     * Falls back to request context stored in properties_json when the
+     * activity has no bound subject model (e.g. login, logout, route hits).
+     */
+    private function activitySubject(ActivityLog $activity): string
+    {
+        if ($activity->subject_type !== null) {
+            return str(class_basename((string) $activity->subject_type))->headline()->toString().' #'.$activity->subject_id;
+        }
+
+        $properties = $activity->properties_json ?? [];
+
+        if (! empty($properties['path'])) {
+            return '/'.ltrim((string) $properties['path'], '/');
+        }
+
+        if (! empty($properties['route'])) {
+            return (string) $properties['route'];
+        }
+
+        if (! empty($properties['email'])) {
+            return (string) $properties['email'];
+        }
+
+        if (! empty($properties['ip'])) {
+            return 'IP '.$properties['ip'];
+        }
+
+        return '-';
     }
 
     /**

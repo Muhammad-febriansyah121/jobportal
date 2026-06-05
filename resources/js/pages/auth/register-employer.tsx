@@ -312,6 +312,26 @@ export default function RegisterEmployer({
 
                                     <div className="space-y-2">
                                         <Label
+                                            htmlFor="phone"
+                                            className="text-sm font-medium"
+                                        >
+                                            {t('auth.register_employer.phone_label')}
+                                        </Label>
+                                        <Input
+                                            id="phone"
+                                            type="tel"
+                                            required
+                                            tabIndex={3}
+                                            autoComplete="tel"
+                                            name="phone"
+                                            placeholder={t('auth.register_employer.phone_placeholder')}
+                                            className="h-11 rounded-lg bg-muted/50 transition-shadow focus:ring-2 focus:ring-primary/20"
+                                        />
+                                        <InputError message={errors.phone} />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label
                                             htmlFor="password"
                                             className="text-sm font-medium"
                                         >
@@ -320,7 +340,7 @@ export default function RegisterEmployer({
                                         <PasswordInput
                                             id="password"
                                             required
-                                            tabIndex={3}
+                                            tabIndex={4}
                                             autoComplete="new-password"
                                             name="password"
                                             placeholder={t('auth.register_employer.password_placeholder')}
@@ -339,7 +359,7 @@ export default function RegisterEmployer({
                                         <PasswordInput
                                             id="password_confirmation"
                                             required
-                                            tabIndex={4}
+                                            tabIndex={5}
                                             autoComplete="new-password"
                                             name="password_confirmation"
                                             placeholder={t('auth.register_employer.confirm_password_placeholder')}
@@ -361,7 +381,7 @@ export default function RegisterEmployer({
                                     <Button
                                         type="submit"
                                         className="h-11 w-full rounded-lg bg-primary text-sm font-semibold shadow-md shadow-primary/30 transition-all hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/40 active:scale-[0.98]"
-                                        tabIndex={5}
+                                        tabIndex={6}
                                         onClick={handleSubmitClick}
                                         data-test="register-employer-button"
                                     >
@@ -406,7 +426,7 @@ export default function RegisterEmployer({
                             {t('auth.register_employer.switch_to_candidate')}{' '}
                             <TextLink
                                 href={register({ query: { type: 'candidate' } })}
-                                tabIndex={6}
+                                tabIndex={7}
                                 className="font-semibold text-primary hover:underline"
                             >
                                 {t('auth.register_employer.switch_link')}
@@ -417,7 +437,7 @@ export default function RegisterEmployer({
                             {t('auth.register_employer.have_account')}{' '}
                             <TextLink
                                 href={login()}
-                                tabIndex={7}
+                                tabIndex={8}
                                 className="font-semibold text-primary hover:underline"
                             >
                                 {t('auth.register_employer.sign_in')}
