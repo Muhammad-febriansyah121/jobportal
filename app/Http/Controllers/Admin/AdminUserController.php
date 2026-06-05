@@ -138,6 +138,7 @@ class AdminUserController extends Controller
                     'items' => [
                         ['label' => 'Nama', 'value' => $user->name],
                         ['label' => 'Email', 'value' => $user->email],
+                        ['label' => 'No. HP', 'value' => $user->phone ?: '-'],
                         ['label' => 'Role', 'value' => str($user->role)->headline()->toString()],
                         ['label' => 'Status', 'value' => $user->is_active ? 'Aktif' : 'Nonaktif'],
                         ['label' => 'Email verification', 'value' => $user->email_verified_at?->format('d M Y H:i') ?? 'Belum terverifikasi'],
