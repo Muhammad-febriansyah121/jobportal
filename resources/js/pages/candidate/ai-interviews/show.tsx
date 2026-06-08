@@ -6,6 +6,7 @@ import {
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
+    Chrome,
     Clock3,
     Hand,
     Headphones,
@@ -390,6 +391,7 @@ export default function CandidateAiInterviewShow({
         number | null
     >(null);
     const userMutedRef = useRef(false);
+    const isPausedRef = useRef(false);
     const silenceTimerRef = useRef<number | null>(null);
     const countdownIntervalRef = useRef<number | null>(null);
     const lastValidQuestionIndexRef = useRef<number>(0);
@@ -991,7 +993,7 @@ export default function CandidateAiInterviewShow({
     }, [refreshDevices, startCameraPreview, startMicPreview, isPractice]);
 
     useEffect(() => {
-        if (!connected) {
+        if (!connected || isPaused) {
             return;
         }
 
@@ -1000,7 +1002,7 @@ export default function CandidateAiInterviewShow({
         }, 1000);
 
         return () => window.clearInterval(interval);
-    }, [connected]);
+    }, [connected, isPaused]);
 
     // Auto-save session state to localStorage for recovery
     useEffect(() => {
@@ -1843,6 +1845,8 @@ export default function CandidateAiInterviewShow({
         setSignalQuality(networkOnline ? 'good' : 'offline');
         setMuted(false);
         userMutedRef.current = false;
+        setIsPaused(false);
+        isPausedRef.current = false;
         setHasQuestionStarted(false);
         setActiveAiQuestionText(null);
         clearAutoAdvanceTimers();
@@ -1867,14 +1871,35 @@ export default function CandidateAiInterviewShow({
     };
 
     const togglePause = () => {
+        const audioTrack = localStreamRef.current?.getAudioTracks()[0];
+
         if (isPaused) {
-            // Resume
+            // Resume: timer restarts (effect), restore mic per mute state, resume AI audio.
             setIsPaused(false);
+            isPausedRef.current = false;
+
+            if (audioTrack) {
+                audioTrack.enabled = !userMutedRef.current;
+            }
+
+            if (remoteAudioRef.current) {
+                void remoteAudioRef.current.play().catch(() => {});
+            }
+
             toast.info('Interview dilanjutkan.');
         } else {
-            // Pause
+            // Pause: stop the countdown (effect), cut the mic so the AI hears
+            // nothing, and pause AI audio playback.
             setIsPaused(true);
+            isPausedRef.current = true;
             clearAutoAdvanceTimers();
+
+            if (audioTrack) {
+                audioTrack.enabled = false;
+            }
+
+            remoteAudioRef.current?.pause();
+
             toast.info('Interview dijeda. Klik lanjutkan saat siap.');
         }
     };
@@ -2011,7 +2036,8 @@ export default function CandidateAiInterviewShow({
             return;
         }
 
-        audioTrack.enabled = !userMutedRef.current && !aiSpeaking;
+        audioTrack.enabled =
+            !userMutedRef.current && !aiSpeaking && !isPausedRef.current;
     };
 
     const requestAiResponse = () => {
@@ -2787,6 +2813,15 @@ export default function CandidateAiInterviewShow({
 
                                             {/* Instructions */}
                                             <div className="divide-y divide-gray-100">
+                                                <InstructionRow
+                                                    icon={Chrome}
+                                                    title={t(
+                                                        'candidate.ai_interview_show.use_chrome',
+                                                    )}
+                                                    description={t(
+                                                        'candidate.ai_interview_show.use_chrome_desc',
+                                                    )}
+                                                />
                                                 <InstructionRow
                                                     icon={Mic}
                                                     title={t(

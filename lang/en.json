@@ -941,6 +941,8 @@
     "candidate.ai_interview_show.interview_guide": "Interview Guide",
     "candidate.ai_interview_show.read_before_start": "Read before starting the session",
     "candidate.ai_interview_show.ai_opening": "AI Opening",
+    "candidate.ai_interview_show.use_chrome": "Use Google Chrome",
+    "candidate.ai_interview_show.use_chrome_desc": "The voice interview is most stable on Google Chrome, Edge, or Brave. On Firefox/Safari the voice connection may fail — Chrome is recommended.",
     "candidate.ai_interview_show.speak_clearly": "Speak clearly",
     "candidate.ai_interview_show.speak_clearly_desc": "Use a good microphone and make sure there is no surrounding noise.",
     "candidate.ai_interview_show.duration_desc": "The session ends automatically when time runs out. Make sure you answer all questions.",

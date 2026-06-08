@@ -941,6 +941,8 @@
     "candidate.ai_interview_show.interview_guide": "Panduan Wawancara",
     "candidate.ai_interview_show.read_before_start": "Baca sebelum memulai sesi",
     "candidate.ai_interview_show.ai_opening": "Pembuka AI",
+    "candidate.ai_interview_show.use_chrome": "Gunakan Google Chrome",
+    "candidate.ai_interview_show.use_chrome_desc": "Wawancara suara paling stabil di Google Chrome, Edge, atau Brave. Di Firefox/Safari koneksi suara bisa gagal — disarankan pakai Chrome.",
     "candidate.ai_interview_show.speak_clearly": "Bicara dengan jelas",
     "candidate.ai_interview_show.speak_clearly_desc": "Gunakan mikrofon yang baik dan pastikan tidak ada kebisingan di sekitar kamu.",
     "candidate.ai_interview_show.duration_desc": "Sesi akan otomatis berakhir setelah waktu habis. Pastikan kamu menjawab semua pertanyaan.",
