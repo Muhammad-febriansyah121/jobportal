@@ -447,6 +447,33 @@ export default function CandidateAiInterviewShow({
         !session.declined_at;
     const questionsPreparing = Boolean(session.questions_preparing);
 
+    // Voice AI uses OpenAI realtime over WebRTC. Only Chromium browsers
+    // (Chrome/Edge/Brave) are verified to open the data channel reliably; Firefox
+    // is confirmed broken and Safari/others are untested. Warn on any non-Chromium
+    // browser so the candidate can switch or pick text mode before wasting time.
+    useEffect(() => {
+        if (!isVoiceInterview) {
+            return;
+        }
+
+        const isChromium =
+            browser === 'chrome' ||
+            browser === 'edge' ||
+            browser === 'brave';
+
+        if (browser === 'firefox') {
+            toast.warning(
+                'Voice AI belum stabil di Firefox — sesi suara sering gagal terhubung. Buka di Google Chrome/Edge, atau gunakan mode teks.',
+                { duration: 10000 },
+            );
+        } else if (!isChromium) {
+            toast.warning(
+                'Voice AI paling stabil di Google Chrome, Edge, atau Brave. Kalau sesi suara gagal terhubung, ganti ke salah satu browser itu atau gunakan mode teks.',
+                { duration: 10000 },
+            );
+        }
+    }, [isVoiceInterview, browser]);
+
     // Poll for AI question generation progress while preparing flag is on.
     useEffect(() => {
         if (!questionsPreparing) {
@@ -1680,6 +1707,7 @@ export default function CandidateAiInterviewShow({
                     window.clearInterval(poll);
                     greetingPendingRef.current = false;
                     logVoiceEvent('greeting_timeout', {
+                        browser,
                         dataChannel: liveChannel?.readyState ?? null,
                         connection:
                             peerConnectionRef.current?.connectionState ?? null,
@@ -1688,7 +1716,14 @@ export default function CandidateAiInterviewShow({
                             null,
                     });
                     toast.error(
-                        'Koneksi data AI gagal terbuka. Klik "Akhiri Sesi" lalu mulai ulang, atau coba jaringan lain.',
+                        browser === 'firefox' ||
+                            !(
+                                browser === 'chrome' ||
+                                browser === 'edge' ||
+                                browser === 'brave'
+                            )
+                            ? 'Voice AI gagal terhubung di browser ini. Buka sesi di Google Chrome/Edge/Brave, atau gunakan mode teks.'
+                            : 'Koneksi data AI gagal terbuka. Klik "Akhiri Sesi" lalu mulai ulang, atau coba jaringan lain.',
                     );
                 }
             }, 300);
