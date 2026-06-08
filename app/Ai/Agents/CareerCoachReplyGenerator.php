@@ -10,6 +10,7 @@ use Laravel\Ai\Attributes\Provider;
 use Laravel\Ai\Attributes\Timeout;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
+use Laravel\Ai\Contracts\HasProviderOptions;
 use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Enums\Lab;
 use Laravel\Ai\Messages\Message;
@@ -18,9 +19,23 @@ use Laravel\Ai\Promptable;
 #[Provider(Lab::OpenAI)]
 #[Timeout(120)]
 #[MaxTokens(1800)]
-class CareerCoachReplyGenerator implements Agent, Conversational, HasStructuredOutput
+class CareerCoachReplyGenerator implements Agent, Conversational, HasProviderOptions, HasStructuredOutput
 {
     use Promptable;
+
+    /**
+     * Minimal reasoning effort keeps gpt-5 fast for this lightweight reply +
+     * quick-prompt generation.
+     *
+     * @return array<string, mixed>
+     */
+    public function providerOptions(Lab|string $provider): array
+    {
+        return match ($provider) {
+            Lab::OpenAI => ['reasoning' => ['effort' => 'minimal']],
+            default => [],
+        };
+    }
 
     private const HISTORY_LIMIT = 12;
 

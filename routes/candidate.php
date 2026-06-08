@@ -97,6 +97,7 @@ Route::prefix('candidate')
             Route::patch('ai-interviews/{aiInterviewSession}/reschedule', [CandidateAiInterviewController::class, 'reschedule'])->name('ai-interviews.reschedule');
             Route::patch('ai-interviews/{aiInterviewSession}/start', [CandidateAiInterviewController::class, 'start'])->name('ai-interviews.start');
             Route::post('ai-interviews/{aiInterviewSession}/client-secret', [CandidateAiInterviewController::class, 'clientSecret'])->name('ai-interviews.client-secret');
+            Route::post('ai-interviews/{aiInterviewSession}/voice-log', [CandidateAiInterviewController::class, 'voiceLog'])->name('ai-interviews.voice-log');
             Route::post('ai-interviews/{aiInterviewSession}/recording', [CandidateAiInterviewController::class, 'uploadRecording'])->name('ai-interviews.upload-recording');
             Route::patch('ai-interviews/{aiInterviewSession}/answer', [CandidateAiInterviewController::class, 'answer'])->name('ai-interviews.answer');
             Route::get('ai-interviews/{aiInterviewSession}/feedback', [CandidateAiInterviewController::class, 'feedback'])->name('ai-interviews.feedback');

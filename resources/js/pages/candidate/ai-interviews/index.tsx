@@ -44,6 +44,7 @@ type DescribedOption = Option & { description?: string };
 
 type QuickStartConfig = {
     practice_mode: 'interview';
+    interview_mode?: string;
     interview_focus: string;
     candidate_level: string;
     question_count: number;
@@ -657,6 +658,7 @@ function ApplicationStartCard({
     storeUrl: string;
 }) {
     const { t } = useTranslate();
+    const [mode, setMode] = useState<'voice' | 'text'>('voice');
 
     return (
         <Form
@@ -678,6 +680,7 @@ function ApplicationStartCard({
                     />
                     <input type="hidden" name="interview_focus" value="mixed" />
                     <input type="hidden" name="question_count" value="5" />
+                    <input type="hidden" name="interview_mode" value={mode} />
 
                     <div className="space-y-1">
                         <p className="leading-tight font-semibold">
@@ -694,17 +697,47 @@ function ApplicationStartCard({
                             {application.status}
                         </Badge>
                     </div>
-                    <Button
-                        type="submit"
-                        size="sm"
-                        variant="outline"
-                        disabled={processing}
-                        className="mt-auto self-start"
-                    >
-                        {processing
-                            ? t('candidate.ai_interviews.btn_starting')
-                            : t('candidate.ai_interviews.btn_practice_role')}
-                    </Button>
+                    <div className="mt-auto space-y-2">
+                        <div className="inline-flex rounded-md border p-0.5">
+                            {(['voice', 'text'] as const).map((option) => (
+                                <button
+                                    key={option}
+                                    type="button"
+                                    onClick={() => setMode(option)}
+                                    className={cn(
+                                        'flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition',
+                                        mode === option
+                                            ? 'bg-[#01296A] text-white'
+                                            : 'text-muted-foreground hover:text-foreground',
+                                    )}
+                                >
+                                    {option === 'voice' ? (
+                                        <Mic className="size-3" />
+                                    ) : (
+                                        <Type className="size-3" />
+                                    )}
+                                    {option === 'voice'
+                                        ? t(
+                                              'candidate.ai_interviews.mode_voice_short',
+                                          )
+                                        : t(
+                                              'candidate.ai_interviews.mode_text_short',
+                                          )}
+                                </button>
+                            ))}
+                        </div>
+                        <Button
+                            type="submit"
+                            size="sm"
+                            variant="outline"
+                            disabled={processing}
+                            className="self-start"
+                        >
+                            {processing
+                                ? t('candidate.ai_interviews.btn_starting')
+                                : t('candidate.ai_interviews.btn_practice_role')}
+                        </Button>
+                    </div>
                 </>
             )}
         </Form>

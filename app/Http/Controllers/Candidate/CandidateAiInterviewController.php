@@ -34,6 +34,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class CandidateAiInterviewController extends Controller
 {
@@ -191,6 +192,7 @@ class CandidateAiInterviewController extends Controller
                             'icon' => 'flame',
                             'config' => [
                                 'practice_mode' => 'interview',
+                                'interview_mode' => 'voice',
                                 'interview_focus' => 'mixed',
                                 'candidate_level' => 'junior',
                                 'question_count' => 3,
@@ -204,6 +206,7 @@ class CandidateAiInterviewController extends Controller
                             'icon' => 'users',
                             'config' => [
                                 'practice_mode' => 'interview',
+                                'interview_mode' => 'voice',
                                 'interview_focus' => 'behavioral',
                                 'candidate_level' => 'mid',
                                 'question_count' => 5,
@@ -217,6 +220,7 @@ class CandidateAiInterviewController extends Controller
                             'icon' => 'cpu',
                             'config' => [
                                 'practice_mode' => 'interview',
+                                'interview_mode' => 'voice',
                                 'interview_focus' => 'technical',
                                 'candidate_level' => 'mid',
                                 'question_count' => 7,
@@ -230,6 +234,7 @@ class CandidateAiInterviewController extends Controller
                             'icon' => 'puzzle',
                             'config' => [
                                 'practice_mode' => 'interview',
+                                'interview_mode' => 'voice',
                                 'interview_focus' => 'case',
                                 'candidate_level' => 'mid',
                                 'question_count' => 5,
@@ -650,6 +655,12 @@ class CandidateAiInterviewController extends Controller
             'questions:id,session_id,question,category,rubric,weight,allow_ai_followup,order_number',
         ]);
 
+        if ($aiInterviewSession->questions->isEmpty()) {
+            return response()->json([
+                'message' => 'Pertanyaan wawancara masih disiapkan. Tunggu beberapa saat lalu coba lagi.',
+            ], 422);
+        }
+
         $languageConfig = $this->interviewLanguageConfig($interviewLanguage);
 
         // Try with new models first
@@ -736,6 +747,31 @@ class CandidateAiInterviewController extends Controller
             'client_secret' => $response->json('value') ?? $response->json('client_secret.value'),
             'model' => $response->json('model') ?? self::REALTIME_MODEL,
         ]);
+    }
+
+    /**
+     * Receive client-side voice/WebRTC diagnostic events and write them to the
+     * server log so connection issues can be debugged without browser console
+     * access (e.g. when a candidate reports a problem remotely).
+     */
+    public function voiceLog(Request $request, AiInterviewSession $aiInterviewSession, ResolveCandidateProfile $resolveCandidateProfile): JsonResponse
+    {
+        $candidate = $resolveCandidateProfile->handle($request->user());
+        $this->ensureOwnsSession($aiInterviewSession, $candidate->id);
+
+        $data = $request->validate([
+            'event' => ['required', 'string', 'max:100'],
+            'detail' => ['nullable', 'array'],
+        ]);
+
+        Log::channel('stack')->info('Voice AI client event', [
+            'session_id' => $aiInterviewSession->id,
+            'candidate_id' => $candidate->id,
+            'event' => $data['event'],
+            'detail' => $data['detail'] ?? [],
+        ]);
+
+        return response()->json(['ok' => true]);
     }
 
     public function uploadRecording(
@@ -943,6 +979,8 @@ class CandidateAiInterviewController extends Controller
                 'summary' => $analysis?->summary,
                 'strengths' => $analysis?->strengths ?? [],
                 'weaknesses' => $analysis?->weaknesses ?? [],
+                'competency_scores' => $analysis?->competency_scores ?? null,
+                'improvement_tips' => $analysis?->improvement_tips ?? [],
                 'category_scores' => $categoryScores,
                 'question_feedbacks' => $aiInterviewSession->responses
                     ->sortBy(fn (AiInterviewResponse $response): int => (int) ($response->question?->order_number ?? 999))
@@ -1273,14 +1311,25 @@ class CandidateAiInterviewController extends Controller
             ? $targetRole
             : ($language === 'en' ? 'your target role' : 'role yang kamu tuju');
 
-        // Try AI-generated CV-aware questions first.
-        $aiQuestions = app(GenerateCustomInterviewQuestions::class)->handle($candidate, [
-            'interview_focus' => $focus,
-            'candidate_level' => $level,
-            'interview_language' => $language,
-            'question_count' => $questionCount,
-            'target_role' => $targetRole,
-        ]);
+        // Try AI-generated CV-aware questions first. A thrown exception here must
+        // NOT bubble up — otherwise the hardcoded fallback below is skipped and the
+        // session ends up with zero questions, which breaks the interview prompt.
+        try {
+            $aiQuestions = app(GenerateCustomInterviewQuestions::class)->handle($candidate, [
+                'interview_focus' => $focus,
+                'candidate_level' => $level,
+                'interview_language' => $language,
+                'question_count' => $questionCount,
+                'target_role' => $targetRole,
+            ]);
+        } catch (Throwable $exception) {
+            Log::warning('AI interview: custom question generation failed, using fallback bank.', [
+                'session_id' => $session->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            $aiQuestions = null;
+        }
 
         if ($aiQuestions !== null && $aiQuestions->isNotEmpty()) {
             $session->questions()->delete();
@@ -2020,6 +2069,8 @@ PROMPT;
                 'strengths' => $this->stringList([], $fallbackAnalysis['strengths']),
                 'weaknesses' => $this->stringList([], $fallbackAnalysis['weaknesses']),
                 'technical_scorecard' => $this->scorecard([], $fallbackAnalysis['technical_scorecard']),
+                'competency_scores' => $this->competencyScores([], $fallbackAnalysis['competency_scores']),
+                'improvement_tips' => $this->stringList([], $fallbackAnalysis['improvement_tips']),
             ]
         );
     }
@@ -2064,6 +2115,8 @@ PROMPT;
                 'strengths' => $this->stringList($aiAnalysis['strengths'] ?? [], $fallbackAnalysis['strengths']),
                 'weaknesses' => $this->stringList($aiAnalysis['weaknesses'] ?? [], $fallbackAnalysis['weaknesses']),
                 'technical_scorecard' => $this->scorecard($aiAnalysis['technical_scorecard'] ?? [], $fallbackAnalysis['technical_scorecard']),
+                'competency_scores' => $this->competencyScores($aiAnalysis['competency_scores'] ?? [], $fallbackAnalysis['competency_scores']),
+                'improvement_tips' => $this->stringList($aiAnalysis['improvement_tips'] ?? [], $fallbackAnalysis['improvement_tips']),
             ]
         );
     }
@@ -2086,7 +2139,7 @@ PROMPT;
                 if (isset($response->structured) && is_array($response->structured)) {
                     $result = $response->structured;
                 }
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 $result = null;
             }
         }
@@ -2204,6 +2257,17 @@ PROMPT;
                 : 'Kandidat menyelesaikan interview, namun beberapa jawaban perlu ditinjau manual oleh recruiter.',
             'strengths' => ['Menyelesaikan sesi interview AI', 'Jawaban tersimpan per pertanyaan'],
             'weaknesses' => $fitScore >= 75 ? ['Validasi akhir tetap perlu dilakukan recruiter'] : ['Beberapa jawaban masih perlu pendalaman'],
+            'competency_scores' => $this->fallbackCompetencyScores($responses, $fitScore),
+            'improvement_tips' => $fitScore >= 75
+                ? [
+                    'Pertahankan struktur jawaban yang runtut dengan metode STAR.',
+                    'Tambahkan angka/hasil konkret untuk memperkuat setiap contoh.',
+                ]
+                : [
+                    'Jawab dengan struktur STAR (Situasi, Tugas, Aksi, Hasil) agar lebih runtut.',
+                    'Sertakan contoh nyata dan hasil terukur pada setiap jawaban.',
+                    'Latih kejelasan dan kepercayaan diri dengan berbicara lebih terstruktur.',
+                ],
             'technical_scorecard' => $responses
                 ->mapWithKeys(fn (AiInterviewResponse $response): array => [
                     (string) ($response->question?->category ?? 'general') => $response->ai_score ?? 0,
@@ -2304,5 +2368,70 @@ PROMPT;
             ->all();
 
         return $scorecard !== [] ? $scorecard : $fallback;
+    }
+
+    /**
+     * Fixed set of competency dimensions surfaced in the interview result.
+     *
+     * @var array<int, string>
+     */
+    private const COMPETENCY_DIMENSIONS = [
+        'communication',
+        'technical_depth',
+        'problem_solving',
+        'cultural_fit',
+        'confidence',
+    ];
+
+    /**
+     * Derive heuristic competency scores from per-response scores when the AI
+     * analysis is unavailable, so the result UI always has a full breakdown.
+     *
+     * @param  Collection<int, AiInterviewResponse>  $responses
+     * @return array<string, int>
+     */
+    private function fallbackCompetencyScores(Collection $responses, int $fitScore): array
+    {
+        $byCategory = $responses
+            ->filter(fn (AiInterviewResponse $response): bool => $response->ai_score !== null)
+            ->groupBy(fn (AiInterviewResponse $response): string => (string) ($response->question?->category ?: 'general'))
+            ->map(fn (Collection $group): int => (int) round((float) $group->pluck('ai_score')->avg()));
+
+        $average = fn (array $categories): int => collect($categories)
+            ->map(fn (string $category): ?int => $byCategory->get($category))
+            ->filter(fn (?int $score): bool => $score !== null)
+            ->whenEmpty(fn () => collect([$fitScore]))
+            ->avg();
+
+        return [
+            'communication' => $this->clampScore($average(['behavioral', 'communication'])),
+            'technical_depth' => $this->clampScore($average(['technical'])),
+            'problem_solving' => $this->clampScore($average(['problem_solving', 'case_study'])),
+            'cultural_fit' => $this->clampScore($average(['behavioral', 'motivation'])),
+            'confidence' => $this->clampScore($fitScore),
+        ];
+    }
+
+    /**
+     * Normalize AI-provided competency scores to the fixed dimension set.
+     *
+     * @param  array<string, int>  $fallback
+     * @return array<string, int>
+     */
+    private function competencyScores(mixed $items, array $fallback): array
+    {
+        if (! is_array($items)) {
+            return $fallback;
+        }
+
+        $scores = [];
+
+        foreach (self::COMPETENCY_DIMENSIONS as $dimension) {
+            $scores[$dimension] = array_key_exists($dimension, $items)
+                ? $this->clampScore($items[$dimension])
+                : ($fallback[$dimension] ?? 0);
+        }
+
+        return $scores;
     }
 }

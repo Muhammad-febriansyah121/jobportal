@@ -50,6 +50,14 @@ type FeedbackPageProps = {
         summary?: string | null;
         strengths: string[];
         weaknesses: string[];
+        competency_scores?: {
+            communication: number;
+            technical_depth: number;
+            problem_solving: number;
+            cultural_fit: number;
+            confidence: number;
+        } | null;
+        improvement_tips: string[];
         category_scores: Array<{
             category: string;
             average_score?: number | null;
@@ -354,6 +362,48 @@ export default function CandidateAiInterviewFeedback({
                         </Card>
                     </div>
 
+                    {session.competency_scores ? (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-base">
+                                    <Brain className="size-4 text-[#01296A]" />
+                                    {t('candidate.ai_interview_feedback.competency_title')}
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <CompetencyBreakdown
+                                    scores={session.competency_scores}
+                                />
+                            </CardContent>
+                        </Card>
+                    ) : null}
+
+                    {session.improvement_tips.length > 0 ? (
+                        <Card className="border-[#01296A]/15 bg-[#eff4ff]/50">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="flex items-center gap-2 text-base">
+                                    <Lightbulb className="size-4 text-[#01296A]" />
+                                    {t('candidate.ai_interview_feedback.improvement_tips_title')}
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <ol className="space-y-2.5">
+                                    {session.improvement_tips.map((tip, index) => (
+                                        <li
+                                            key={`tip-${index}`}
+                                            className="flex items-start gap-3 text-sm leading-6"
+                                        >
+                                            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#01296A] text-xs font-bold text-white">
+                                                {index + 1}
+                                            </span>
+                                            <span className="pt-0.5">{tip}</span>
+                                        </li>
+                                    ))}
+                                </ol>
+                            </CardContent>
+                        </Card>
+                    ) : null}
+
                     {session.category_scores.length > 0 ? (
                         <Card>
                             <CardHeader>
@@ -558,6 +608,82 @@ function ScoreRow({
                     style={{ width: `${Math.max(0, Math.min(100, score))}%` }}
                 />
             </div>
+        </div>
+    );
+}
+
+function CompetencyBreakdown({
+    scores,
+}: {
+    scores: NonNullable<FeedbackPageProps['session']['competency_scores']>;
+}) {
+    const { t } = useTranslate();
+    const dimensions: Array<{ key: keyof typeof scores; label: string }> = [
+        {
+            key: 'communication',
+            label: t('candidate.ai_interview_feedback.competency_communication'),
+        },
+        {
+            key: 'technical_depth',
+            label: t('candidate.ai_interview_feedback.competency_technical_depth'),
+        },
+        {
+            key: 'problem_solving',
+            label: t('candidate.ai_interview_feedback.competency_problem_solving'),
+        },
+        {
+            key: 'cultural_fit',
+            label: t('candidate.ai_interview_feedback.competency_cultural_fit'),
+        },
+        {
+            key: 'confidence',
+            label: t('candidate.ai_interview_feedback.competency_confidence'),
+        },
+    ];
+
+    return (
+        <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+            {dimensions.map((dimension) => {
+                const score = Math.max(
+                    0,
+                    Math.min(100, scores[dimension.key] ?? 0),
+                );
+                const fillClass =
+                    score >= 80
+                        ? 'bg-emerald-500'
+                        : score >= 60
+                          ? 'bg-amber-500'
+                          : 'bg-rose-500';
+                const scoreClass =
+                    score >= 80
+                        ? 'text-emerald-700'
+                        : score >= 60
+                          ? 'text-amber-700'
+                          : 'text-rose-700';
+
+                return (
+                    <div key={dimension.key} className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-2 text-sm">
+                            <span className="font-medium">{dimension.label}</span>
+                            <span className={cn('font-bold', scoreClass)}>
+                                {score}
+                                <span className="ml-0.5 text-xs font-normal text-muted-foreground">
+                                    /100
+                                </span>
+                            </span>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-slate-100">
+                            <div
+                                className={cn(
+                                    'h-full rounded-full transition-all',
+                                    fillClass,
+                                )}
+                                style={{ width: `${score}%` }}
+                            />
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     );
 }

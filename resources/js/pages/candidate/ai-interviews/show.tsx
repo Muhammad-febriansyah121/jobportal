@@ -260,20 +260,16 @@ function scoreFromJitter(jitterMs: number | null): SignalQuality | null {
     return 'poor';
 }
 
+// Keep this list small. Browsers warn (and slow ICE discovery) when 5+ STUN/TURN
+// servers are configured. Two entries cover redundancy without the penalty.
 const ICE_SERVERS: RTCIceServer[] = [
-    // Google STUN servers
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' },
-    // Cloudflare STUN
+    {
+        urls: [
+            'stun:stun.l.google.com:19302',
+            'stun:stun1.l.google.com:19302',
+        ],
+    },
     { urls: 'stun:stun.cloudflare.com:3478' },
-    // Twilio STUN
-    { urls: 'stun:global.stun.twilio.com:3478' },
-    // Microsoft STUN
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
 ];
 
 export default function CandidateAiInterviewShow({
@@ -1267,6 +1263,26 @@ export default function CandidateAiInterviewShow({
         );
     };
 
+    // Fire-and-forget diagnostic logging to the server so voice/WebRTC issues can
+    // be debugged from the Laravel log without needing the user's browser console.
+    const logVoiceEvent = (event: string, detail?: Record<string, unknown>) => {
+        try {
+            void fetch(CandidateAiInterviewController.voiceLog.url(session.id), {
+                method: 'POST',
+                body: JSON.stringify({ event, detail: detail ?? {} }),
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-XSRF-TOKEN': csrfToken(),
+                },
+                credentials: 'same-origin',
+                keepalive: true,
+            }).catch(() => {});
+        } catch {
+            // Never let logging break the interview flow.
+        }
+    };
+
     const connectRealtime = async () => {
         if (!isVoiceInterview) {
             toast.warning('Sesi ini menggunakan mode teks.');
@@ -1292,6 +1308,7 @@ export default function CandidateAiInterviewShow({
         setHasQuestionStarted(false);
         setActiveAiQuestionText(null);
         startBackendSession();
+        logVoiceEvent('connect_start', { language: interviewLanguage });
 
         try {
             const cachedSecret = prewarmedSecretRef.current;
@@ -1396,6 +1413,10 @@ export default function CandidateAiInterviewShow({
             peerConnection.onconnectionstatechange = () => {
                 const state = peerConnection.connectionState;
                 console.debug('[Voice AI] Connection state:', state);
+                logVoiceEvent('connection_state', {
+                    state,
+                    dataChannel: dataChannelRef.current?.readyState ?? null,
+                });
 
                 if (state === 'failed' || state === 'disconnected') {
                     console.error('[Voice AI] Connection failed/disconnected:', state);
@@ -1512,6 +1533,9 @@ export default function CandidateAiInterviewShow({
                 peerConnection.createDataChannel('karivia-events');
             dataChannelRef.current = dataChannel;
             dataChannel.onopen = () => {
+                console.debug('[Voice AI] Data channel open');
+                logVoiceEvent('datachannel_open');
+
                 if (greetingPendingRef.current) {
                     greetingPendingRef.current = false;
                     sendGreeting();
@@ -1535,6 +1559,7 @@ export default function CandidateAiInterviewShow({
             };
             dataChannel.onerror = (error) => {
                 console.error('[Voice AI] Data channel error', error);
+                logVoiceEvent('datachannel_error');
             };
 
             const offer = await peerConnection.createOffer();
@@ -1567,7 +1592,11 @@ export default function CandidateAiInterviewShow({
             toast.success('Voice AI terhubung.');
             setVoiceFailureCount(0);
             setShowFallbackOption(false);
+            logVoiceEvent('sdp_connected');
         } catch (error) {
+            logVoiceEvent('connect_error', {
+                message: error instanceof Error ? error.message : String(error),
+            });
             setVoiceFailureCount((prev) => prev + 1);
 
             if (voiceFailureCount >= 2) {
@@ -1620,10 +1649,49 @@ export default function CandidateAiInterviewShow({
         const channel = dataChannelRef.current;
 
         if (!channel || channel.readyState !== 'open') {
-            // Reset guard supaya saat onopen fire nanti, sendGreeting bisa run.
+            // Reset guard supaya saat channel open nanti, sendGreeting bisa run.
             hasSentGreetingRef.current = false;
             greetingPendingRef.current = true;
             toast.info('Menyiapkan koneksi AI, sapaan akan dimulai...');
+
+            // Jangan cuma andalkan event onopen — ada kasus event itu kelewat
+            // (race) padahal channel sudah/akan terbuka. Poll readyState langsung
+            // supaya sapaan tetap jalan begitu channel siap, dan gagal jelas
+            // (bukan diam) kalau channel tak kunjung terbuka.
+            const startedAt = Date.now();
+            const poll = window.setInterval(() => {
+                const liveChannel = dataChannelRef.current;
+
+                if (!greetingPendingRef.current) {
+                    window.clearInterval(poll);
+
+                    return;
+                }
+
+                if (liveChannel && liveChannel.readyState === 'open') {
+                    window.clearInterval(poll);
+                    greetingPendingRef.current = false;
+                    sendGreeting();
+
+                    return;
+                }
+
+                if (Date.now() - startedAt >= 10000) {
+                    window.clearInterval(poll);
+                    greetingPendingRef.current = false;
+                    logVoiceEvent('greeting_timeout', {
+                        dataChannel: liveChannel?.readyState ?? null,
+                        connection:
+                            peerConnectionRef.current?.connectionState ?? null,
+                        ice:
+                            peerConnectionRef.current?.iceConnectionState ??
+                            null,
+                    });
+                    toast.error(
+                        'Koneksi data AI gagal terbuka. Klik "Akhiri Sesi" lalu mulai ulang, atau coba jaringan lain.',
+                    );
+                }
+            }, 300);
 
             return;
         }
@@ -1661,6 +1729,7 @@ export default function CandidateAiInterviewShow({
         setHasSentGreeting(true);
         setTurnState('ai-thinking');
         applyMicGate(true);
+        logVoiceEvent('greeting_sent');
     };
 
     const advanceToNextQuestion = () => {

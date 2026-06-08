@@ -10,6 +10,7 @@ use Laravel\Ai\Attributes\Provider;
 use Laravel\Ai\Attributes\Timeout;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
+use Laravel\Ai\Contracts\HasProviderOptions;
 use Laravel\Ai\Enums\Lab;
 use Laravel\Ai\Messages\Message;
 use Laravel\Ai\Promptable;
@@ -17,11 +18,26 @@ use Laravel\Ai\Promptable;
 #[Provider(Lab::OpenAI)]
 #[Timeout(120)]
 #[MaxTokens(1800)]
-class CareerCoach implements Agent, Conversational
+class CareerCoach implements Agent, Conversational, HasProviderOptions
 {
     use Promptable;
 
     private const HISTORY_LIMIT = 12;
+
+    /**
+     * Keep gpt-5 fast for conversational replies: minimal reasoning effort cuts
+     * latency dramatically while staying coherent for chat. Streaming covers the
+     * rest of the perceived speed.
+     *
+     * @return array<string, mixed>
+     */
+    public function providerOptions(Lab|string $provider): array
+    {
+        return match ($provider) {
+            Lab::OpenAI => ['reasoning' => ['effort' => 'minimal']],
+            default => [],
+        };
+    }
 
     public function __construct(
         public CandidateProfile $candidate,

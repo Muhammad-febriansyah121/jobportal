@@ -97,7 +97,7 @@ type DashboardProps = {
         created_at: string;
     }>;
     recentPayments: Array<{
-        id: number;
+        id: string;
         company_name: string;
         plan_name: string;
         amount: number;
