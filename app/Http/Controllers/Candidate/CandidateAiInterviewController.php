@@ -410,6 +410,11 @@ class CandidateAiInterviewController extends Controller
         AiInterviewSession $aiInterviewSession,
         ResolveCandidateProfile $resolveCandidateProfile
     ): Response|RedirectResponse {
+        // The live interview page is fully client-interactive (WebRTC, camera,
+        // timers). SSR adds no value and its hydration mismatch (React #418) can
+        // remount the component mid-connection, breaking the WebRTC data channel.
+        Inertia::disableSsr();
+
         $candidate = $resolveCandidateProfile->handle($request->user());
         $this->ensureOwnsSession($aiInterviewSession, $candidate->id);
 
