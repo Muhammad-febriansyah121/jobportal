@@ -292,6 +292,15 @@ export default function FrontNavbar() {
                         {currentPath.startsWith('/companies') && <span className="absolute inset-0 rounded-full bg-primary/10" />}
                         <span className="relative z-10">{t('front.nav.companies')}</span>
                     </a>
+                    <a
+                        href="/career-resources"
+                        className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                            currentPath.startsWith('/career-resources') ? 'font-semibold text-primary' : 'text-neutral-700 hover:bg-gray-100 hover:text-neutral-900'
+                        }`}
+                    >
+                        {currentPath.startsWith('/career-resources') && <span className="absolute inset-0 rounded-full bg-primary/10" />}
+                        <span className="relative z-10">{t('front.nav.career_resources')}</span>
+                    </a>
                     <NavDropdown label={t('front.nav.ai_tools')} items={aiToolsItems} currentPath={currentPath} />
                     <a
                         href="/salary"
@@ -383,6 +392,15 @@ export default function FrontNavbar() {
                             onClick={() => setMobileOpen(false)}
                         >
                             {t('front.nav.companies')}
+                        </Link>
+                        <Link
+                            href="/career-resources"
+                            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                                currentPath.startsWith('/career-resources') ? 'bg-primary/5 text-primary' : 'text-neutral-700 hover:bg-neutral-50'
+                            }`}
+                            onClick={() => setMobileOpen(false)}
+                        >
+                            {t('front.nav.career_resources')}
                         </Link>
                         <MobileSection label={t('front.nav.ai_tools')} items={aiToolsItems} currentPath={currentPath} onClose={() => setMobileOpen(false)} />
                         <Link

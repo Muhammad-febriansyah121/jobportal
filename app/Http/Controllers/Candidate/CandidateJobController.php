@@ -247,8 +247,8 @@ class CandidateJobController extends Controller
                     : [],
                 'similarJobs' => JobListing::query()
                     ->published()
-                    ->select(['id', 'company_id', 'title', 'slug', 'location_city', 'location_province', 'work_mode', 'job_type', 'salary_min', 'salary_max', 'is_salary_visible', 'published_at'])
-                    ->with(['company:id,name,logo_url,is_verified'])
+                    ->select(['id', 'company_id', 'industry_id', 'title', 'slug', 'location_city', 'location_province', 'work_mode', 'job_type', 'salary_min', 'salary_max', 'is_salary_visible', 'published_at'])
+                    ->with(['company:id,name,logo_url,is_verified', 'industry:id,name', 'skills:id,name'])
                     ->whereKeyNot($jobListing->id)
                     ->where('industry_id', $jobListing->industry_id)
                     ->latest('published_at')

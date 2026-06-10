@@ -3,11 +3,13 @@ import {
     ArrowLeft,
     BookOpen,
     CalendarDays,
+    Clock,
     FileText,
     LayoutTemplate,
     PlayCircle,
     Tag,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useTranslate } from '@/hooks/use-translate';
 import HomeLayout from '@/layouts/front/home-layout';
 import { cn } from '@/lib/utils';
@@ -67,10 +69,39 @@ type ShowProps = {
         category?: string | null;
         thumbnail_path?: string | null;
         content?: string | null;
+        reading_time?: number | null;
         published_at?: string | null;
     };
     related: Related[];
 };
+
+/** Thin scroll-progress bar pinned below the navbar. */
+function ReadingProgress() {
+    const [progress, setProgress] = useState(0);
+
+    useEffect(() => {
+        function onScroll() {
+            const scrollable =
+                document.documentElement.scrollHeight - window.innerHeight;
+            setProgress(
+                scrollable > 0 ? (window.scrollY / scrollable) * 100 : 0,
+            );
+        }
+
+        onScroll();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+
+    return (
+        <div className="fixed inset-x-0 top-0 z-50 h-1 bg-transparent">
+            <div
+                className="h-full bg-primary transition-[width] duration-150 ease-out"
+                style={{ width: `${progress}%` }}
+            />
+        </div>
+    );
+}
 
 function RelatedCard({ resource }: { resource: Related }) {
     const meta = TYPE_META[resource.type] ?? {
@@ -83,12 +114,12 @@ function RelatedCard({ resource }: { resource: Related }) {
 
     return (
         <Link
-            className="group flex gap-3 rounded-xl border border-border bg-white p-3 shadow-sm transition hover:border-primary/30 hover:shadow-md"
+            className="group flex gap-3 rounded-xl border border-border bg-white p-3 shadow-sm transition hover:border-primary/30 hover:shadow-md focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
             href={show(resource.slug).url}
         >
             <div
                 className={cn(
-                    'flex size-12 shrink-0 items-center justify-center rounded-lg',
+                    'flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg',
                     bg,
                 )}
             >
@@ -96,6 +127,7 @@ function RelatedCard({ resource }: { resource: Related }) {
                     <img
                         alt=""
                         className="size-12 rounded-lg object-cover"
+                        loading="lazy"
                         src={resource.thumbnail_path}
                     />
                 ) : (
@@ -131,6 +163,7 @@ export default function CareerResourceShow({ resource, related }: ShowProps) {
     return (
         <HomeLayout>
             <Head title={resource.title} />
+            <ReadingProgress />
 
             {/* Hero banner */}
             <div className="relative overflow-hidden bg-white pt-16 pb-0">
@@ -165,18 +198,28 @@ export default function CareerResourceShow({ resource, related }: ShowProps) {
                         {resource.title}
                     </h1>
 
-                    {resource.published_at && (
-                        <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <CalendarDays className="size-4" />
-                            {resource.published_at}
-                        </p>
-                    )}
+                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
+                        {resource.published_at && (
+                            <span className="flex items-center gap-1.5">
+                                <CalendarDays className="size-4" />
+                                {resource.published_at}
+                            </span>
+                        )}
+                        {resource.reading_time ? (
+                            <span className="flex items-center gap-1.5">
+                                <Clock className="size-4" />
+                                {t('career_resources.index.reading_time', {
+                                    count: resource.reading_time,
+                                })}
+                            </span>
+                        ) : null}
+                    </div>
 
                     {resource.thumbnail_path && (
-                        <div className="mt-6 overflow-hidden rounded-2xl border border-border shadow-sm">
+                        <div className="mt-6 aspect-video overflow-hidden rounded-2xl border border-border shadow-sm">
                             <img
                                 alt={resource.title}
-                                className="h-64 w-full object-cover md:h-80"
+                                className="h-full w-full object-cover"
                                 src={resource.thumbnail_path}
                             />
                         </div>
@@ -208,7 +251,7 @@ export default function CareerResourceShow({ resource, related }: ShowProps) {
                         </article>
 
                         {/* Sidebar */}
-                        <aside className="space-y-6">
+                        <aside className="space-y-6 lg:sticky lg:top-20 lg:self-start">
                             {/* Meta card */}
                             <div className="rounded-2xl border border-border bg-white p-4 shadow-sm">
                                 <h3 className="mb-3 text-sm font-bold text-foreground">
@@ -231,6 +274,18 @@ export default function CareerResourceShow({ resource, related }: ShowProps) {
                                             </dd>
                                         </div>
                                     )}
+                                    {resource.reading_time ? (
+                                        <div className="flex justify-between">
+                                            <dt className="text-muted-foreground">
+                                                {t('career_resources.show.meta_reading_time')}
+                                            </dt>
+                                            <dd className="font-medium text-foreground">
+                                                {t('career_resources.index.reading_time', {
+                                                    count: resource.reading_time,
+                                                })}
+                                            </dd>
+                                        </div>
+                                    ) : null}
                                     {resource.published_at && (
                                         <div className="flex justify-between">
                                             <dt className="text-muted-foreground">

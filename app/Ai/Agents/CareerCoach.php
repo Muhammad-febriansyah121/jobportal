@@ -25,16 +25,20 @@ class CareerCoach implements Agent, Conversational, HasProviderOptions
     private const HISTORY_LIMIT = 12;
 
     /**
-     * Keep gpt-5 fast for conversational replies: minimal reasoning effort cuts
-     * latency dramatically while staying coherent for chat. Streaming covers the
-     * rest of the perceived speed.
+     * Only reasoning-capable models (gpt-5 / o-series) accept the `reasoning`
+     * provider option; sending it to fast chat models like gpt-4o-mini causes an
+     * API error. Gate the option on the configured coach model so we stay fast and
+     * stable regardless of which model is set.
      *
      * @return array<string, mixed>
      */
     public function providerOptions(Lab|string $provider): array
     {
+        $coachModel = (string) config('services.openai.coach_model');
+        $supportsReasoning = str_starts_with($coachModel, 'gpt-5') || str_starts_with($coachModel, 'o');
+
         return match ($provider) {
-            Lab::OpenAI => ['reasoning' => ['effort' => 'minimal']],
+            Lab::OpenAI => $supportsReasoning ? ['reasoning' => ['effort' => 'minimal']] : [],
             default => [],
         };
     }

@@ -9,7 +9,33 @@ import { defineConfig } from 'vite';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
-export default defineConfig({
+/**
+ * Inline Babel plugin that strips every `console.*` call from app code. Runs in
+ * the existing react-compiler Babel pass (esbuild's `drop` does not reach
+ * Babel-transformed chunks), so no logs leak in the production bundle.
+ */
+function removeConsole({ types: t }: { types: typeof import('@babel/types') }) {
+    return {
+        name: 'remove-console',
+        visitor: {
+            CallExpression(nodePath: import('@babel/core').NodePath<import('@babel/types').CallExpression>) {
+                const callee = nodePath.get('callee');
+                if (callee.isMemberExpression() && callee.get('object').isIdentifier({ name: 'console' })) {
+                    if (nodePath.parentPath.isExpressionStatement()) {
+                        nodePath.parentPath.remove();
+                    } else {
+                        nodePath.replaceWith(t.unaryExpression('void', t.numericLiteral(0)));
+                    }
+                }
+            },
+        },
+    };
+}
+
+export default defineConfig(({ command }) => ({
+    // Strip debugger statements from the production bundle. console.* is removed via
+    // the removeConsole Babel plugin below. Dev builds keep every log intact.
+    esbuild: command === 'build' ? { drop: ['debugger'] } : {},
     resolve: {
         dedupe: ['react', 'react-dom'],
         alias: {
@@ -24,7 +50,10 @@ export default defineConfig({
         inertia(),
         react({
             babel: {
-                plugins: ['babel-plugin-react-compiler'],
+                plugins: [
+                    'babel-plugin-react-compiler',
+                    ...(command === 'build' ? [removeConsole] : []),
+                ],
             },
         }),
         tailwindcss(),
@@ -69,4 +98,4 @@ export default defineConfig({
             },
         },
     },
-});
+}));
