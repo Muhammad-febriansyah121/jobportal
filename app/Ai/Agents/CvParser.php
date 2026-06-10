@@ -30,7 +30,14 @@ class CvParser implements Agent, HasProviderOptions, HasStructuredOutput
 
     public function instructions(): string
     {
-        return 'You are a CV/resume parser. Extract structured information. Return only valid JSON. For dates use YYYY-MM-DD. For years use integers (as strings). Do not invent data. If a field is unknown, return an empty string.';
+        return <<<'PROMPT'
+You are a meticulous CV/resume parser for the Indonesian job market. Read the ENTIRE document — including headers, footers, and sidebars where contact details often sit — and return ONLY valid JSON matching the schema.
+
+Rules:
+- Extract only real information present in the CV. NEVER invent or guess data (names, companies, dates, GPA). If a string field is unknown, return "". Use empty arrays only when a section genuinely does not exist.
+- Make a best effort on noisy/irregular text (PDF extraction artifacts, repeated characters) — still map it to the correct fields when the information is clearly there.
+- Dates: use YYYY-MM-DD; if only the year is known use "YYYY-01-01"; if year+month, "YYYY-MM-01". Education start_year/end_year are 4-digit year strings.
+PROMPT;
     }
 
     /**

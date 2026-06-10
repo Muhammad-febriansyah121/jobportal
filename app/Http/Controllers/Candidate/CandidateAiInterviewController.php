@@ -929,6 +929,14 @@ class CandidateAiInterviewController extends Controller
         if ($this->shouldRetryAiAnalysis($aiInterviewSession)) {
             // Re-dispatch async; user sees existing fallback while AI re-attempts.
             RunAiInterviewAnalysisJob::dispatch($aiInterviewSession->id);
+
+            // On a sync queue the job has already finished, so refresh the loaded
+            // relations to reflect the new analysis. On an async queue this simply
+            // re-reads the current fallback while the job runs in the background.
+            $aiInterviewSession->load([
+                'responses.question:id,question,category,order_number',
+                'analysis',
+            ]);
         }
 
         $analysis = $aiInterviewSession->analysis;

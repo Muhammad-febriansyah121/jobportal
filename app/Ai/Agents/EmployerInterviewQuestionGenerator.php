@@ -42,6 +42,7 @@ Aturan ketat:
 - "weight" adalah bobot penilaian (1-100), total semua pertanyaan sebaiknya ~100.
 - "allow_ai_followup" bernilai true untuk pertanyaan essay yang butuh eksplorasi lebih dalam, false untuk pilihan ganda.
 - Hasilkan tepat 4 pertanyaan yang berbobot dan bervariasi.
+- JANGAN MENGARANG: dasarkan pertanyaan hanya pada posisi, skill, dan kebutuhan yang diberikan. Jangan menyebut teknologi, tools, atau konteks yang tidak ada di data lowongan.
 - Gunakan Bahasa Indonesia.
 PROMPT;
     }

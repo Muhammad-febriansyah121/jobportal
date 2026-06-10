@@ -110,6 +110,7 @@ Route::prefix('candidate')
             Route::post('career-coach/sessions', [CandidateCareerCoachController::class, 'start'])->name('career-coach.start');
             Route::post('career-coach/messages', [CandidateCareerCoachController::class, 'message'])->name('career-coach.message');
             Route::post('career-coach/stream', [CandidateCareerCoachController::class, 'stream'])->name('career-coach.stream');
+            Route::post('career-coach/recommend', [CandidateCareerCoachController::class, 'recommend'])->name('career-coach.recommend');
 
             Route::get('career-paths', [CandidateCareerPathController::class, 'index'])->name('career-paths.index');
             Route::post('career-paths', [CandidateCareerPathController::class, 'generate'])->name('career-paths.generate');

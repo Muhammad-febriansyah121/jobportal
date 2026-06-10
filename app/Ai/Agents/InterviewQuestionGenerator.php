@@ -35,6 +35,7 @@ Strict rules:
 - Distribute categories per the requested focus: behavioral, technical, problem_solving, communication, case_study, motivation.
 - The "rubric" must briefly describe what a strong answer covers (1 sentence).
 - Match the seniority level: easier for fresh_graduate/junior, deeper for mid/senior.
+- NEVER fabricate: reference only skills, companies, projects, or experiences that actually appear in the candidate's profile. If the profile is sparse, fall back to skill- and role-based questions instead of inventing details.
 - Respond entirely in English.
 PROMPT;
         }
@@ -51,6 +52,7 @@ Aturan ketat:
 - Distribusi kategori sesuai fokus yang diminta: behavioral, technical, problem_solving, communication, case_study, motivation.
 - "rubric" harus jelaskan singkat (1 kalimat) apa yang dinilai dari jawaban yang baik.
 - Sesuaikan kedalaman dengan level: lebih mudah untuk fresh_graduate/junior, lebih dalam untuk mid/senior.
+- JANGAN MENGARANG: rujuk hanya skill, perusahaan, project, atau pengalaman yang benar-benar ada di profil kandidat. Bila profil minim, gunakan pertanyaan berbasis skill dan peran — jangan menciptakan detail yang tidak ada.
 - Gunakan Bahasa Indonesia natural untuk semua field.
 PROMPT;
     }

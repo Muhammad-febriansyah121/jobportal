@@ -58,6 +58,7 @@ test('candidate can register and profile is created', function () {
     $response = $this->post(route('register.store'), [
         'name' => 'Kandidat Demo',
         'email' => 'candidate@example.com',
+        'phone' => '081234567890',
         'role' => 'candidate',
         'password' => 'password',
         'password_confirmation' => 'password',
@@ -83,6 +84,7 @@ test('employer can register without candidate profile', function () {
     $response = $this->post(route('register.store'), [
         'name' => 'Recruiter Demo',
         'email' => 'employer@example.com',
+        'phone' => '081234567890',
         'role' => 'employer',
         'password' => 'password',
         'password_confirmation' => 'password',
@@ -106,6 +108,7 @@ test('register is blocked when recaptcha is enabled and token is missing', funct
         ->post(route('register.store'), [
             'name' => 'Kandidat Demo',
             'email' => 'candidate-recaptcha-fail@example.com',
+            'phone' => '081234567890',
             'role' => 'candidate',
             'preferred_role' => 'Backend Developer',
             'password' => 'password',
@@ -128,6 +131,7 @@ test('register succeeds when recaptcha is enabled and token is valid', function 
     $response = $this->post(route('register.store'), [
         'name' => 'Kandidat Recaptcha',
         'email' => 'candidate-recaptcha-ok@example.com',
+        'phone' => '081234567890',
         'role' => 'candidate',
         'preferred_role' => 'Backend Developer',
         'password' => 'password',

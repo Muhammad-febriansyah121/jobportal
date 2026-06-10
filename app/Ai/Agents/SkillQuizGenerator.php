@@ -34,12 +34,14 @@ Skema:
   ]
 }
 
-Aturan:
+Aturan kualitas (penting agar quiz kredibel):
 - WAJIB 4 opsi per pertanyaan, opsi tidak boleh kosong.
 - "answer_index" adalah indeks 0-3 dari opsi yang benar.
-- Pertanyaan harus relevan dengan skill yang diminta dan sesuai level
-  difficulty (easy = pemahaman dasar, medium = penerapan, hard = analisis /
-  trade-off).
+- TEPAT SATU jawaban benar yang tidak terbantahkan. Jangan ada dua opsi yang sama-sama benar atau jawaban yang ambigu/bergantung konteks.
+- DISTRAKTOR MASUK AKAL: 3 opsi salah harus terdengar plausibel bagi orang yang belum menguasai skill (mis. miskonsepsi umum), bukan opsi konyol/asal. Jangan beri petunjuk lewat panjang/format opsi — jaga gaya & panjang opsi seragam.
+- Uji KOMPETENSI NYATA skill yang diminta (pemahaman & penerapan), bukan trivia hafalan, tanggal, atau jebakan kata.
+- Sesuaikan level difficulty: easy = pemahaman dasar, medium = penerapan, hard = analisis / trade-off.
+- ANTI-NGARANG: pertanyaan, opsi, dan jawaban benar HARUS akurat secara faktual dan dapat diverifikasi. Jangan mengarang fakta, angka, API, sintaks, atau istilah yang tidak nyata. Jika ragu sebuah fakta benar, ganti dengan pertanyaan lain yang kamu yakini benar.
 - Jangan menambah field di luar skema.
 PROMPT;
     }

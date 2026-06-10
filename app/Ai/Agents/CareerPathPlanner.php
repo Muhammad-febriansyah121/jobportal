@@ -32,10 +32,10 @@ Selalu balas dalam Bahasa Indonesia. Output harus mengikuti JSON schema ketat. P
 - target_role mengacu pada target yang dapat diukur dan spesifik.
 - match_score adalah angka 0-100 yang merefleksikan kecocokan antara skill saat ini dengan target peran.
 - summary maksimal 3 kalimat menjelaskan rasional jalur karier ini, mengaitkan strengths/gaps dari cv_review.
-- growth_potential berisi gambaran pertumbuhan industri (mis. "+24% YoY").
+- growth_potential berisi gambaran pertumbuhan industri dalam Bahasa Indonesia awam (mis. "+24% per tahun"); DILARANG memakai singkatan Inggris seperti "YoY", "CAGR", atau "MoM".
 - salary_range memberi estimasi gaji dalam IDR atau USD relevan dengan target.
 - key_gap_insight menyoroti satu kesenjangan paling kritikal yang harus diisi (prioritaskan dari cv_review.gaps).
-- skill_breakdown berisi 4-6 skill dengan progress 0-100 (current_level dan required_level).
+- skill_breakdown berisi 4-6 skill. current_level dan required_level WAJIB persentase skala 0-100 (mis. 45 = 45%, 80 = 80%) — DILARANG skala 1-5 atau 1-10. required_level peran menengah biasanya 70-85, senior 80-95.
 - learning_steps berisi 3-6 langkah praktis yang berurutan untuk menutup kesenjangan; setiap langkah punya title, description, dan tag (mis. "Direkomendasikan AI", "Strategis", "Dampak Tinggi").
 - milestones berisi 3-5 milestone karier dalam 6-18 bulan.
 PROMPT;

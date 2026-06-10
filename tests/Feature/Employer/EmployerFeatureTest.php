@@ -684,6 +684,7 @@ test('employer can compare ai interview candidates for a job', function () {
         'candidate_id' => $candidate->id,
         'status' => 'completed',
         'interview_mode' => 'voice',
+        'scheduled_at' => now()->subDay(),
         'completed_at' => now(),
     ]);
     $session->analysis()->create([

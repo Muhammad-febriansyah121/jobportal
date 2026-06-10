@@ -14,6 +14,7 @@ use App\Models\AiCareerRecommendation;
 use App\Models\CandidateProfile;
 use App\Services\AiService;
 use Illuminate\Contracts\Support\Responsable;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -278,6 +279,39 @@ class CandidateCareerCoachController extends Controller
             });
     }
 
+    /**
+     * Generate/refresh the target recommendation for the latest chat turn.
+     * Called separately from the chat stream so the conversation stays snappy
+     * while the heavier path analysis runs behind a skeleton in the UI.
+     */
+    public function recommend(Request $request, ResolveCandidateProfile $resolveCandidateProfile): JsonResponse
+    {
+        $data = $request->validate([
+            'session_id' => ['nullable', 'integer', 'exists:ai_career_coaching_sessions,id'],
+            'content' => ['required', 'string', 'max:5000'],
+        ]);
+
+        @set_time_limit(0);
+
+        $candidate = $resolveCandidateProfile->handle($request->user());
+        $session = filled($data['session_id'] ?? null)
+            ? $candidate->careerCoachingSessions()->whereKey($data['session_id'])->first()
+            : $candidate->careerCoachingSessions()->latest()->first();
+
+        if (! $session) {
+            return response()->json(['persisted' => false]);
+        }
+
+        $recommendationId = $this->maybeGenerateRecommendation(
+            $candidate,
+            $session,
+            $data['content'],
+            $this->resolveTargetRecommendation($candidate),
+        );
+
+        return response()->json(['persisted' => $recommendationId !== null]);
+    }
+
     public function message(Request $request, ResolveCandidateProfile $resolveCandidateProfile): RedirectResponse
     {
         $data = $request->validate([
@@ -397,7 +431,7 @@ class CandidateCareerCoachController extends Controller
         try {
             $contextJson = json_encode($context, JSON_UNESCAPED_UNICODE);
             $response = (new CareerCoachReplyGenerator($session, $contextJson, $activeRecommendation))
-                ->prompt($userContent);
+                ->prompt($userContent, model: (string) config('services.openai.model'));
             if (isset($response->structured) && is_array($response->structured)) {
                 $output = $response->structured;
             }
@@ -471,6 +505,115 @@ class CandidateCareerCoachController extends Controller
     }
 
     /**
+     * Decide from the chat turn whether a fresh career path/target should be
+     * generated, and persist it so the recommendation panel reflects the chat.
+     *
+     * @param  array<string, mixed>|null  $activeRecommendation
+     */
+    private function maybeGenerateRecommendation(
+        CandidateProfile $candidate,
+        AiCareerCoachingSession $session,
+        string $userContent,
+        ?array $activeRecommendation,
+    ): ?int {
+        if (! $this->ai->isConfigured() || ! $this->chatMayWarrantRecommendation($userContent)) {
+            return null;
+        }
+
+        $candidate->loadMissing(['skills', 'experiences', 'preferredIndustry']);
+
+        try {
+            $contextJson = json_encode($this->buildContext($candidate), JSON_UNESCAPED_UNICODE);
+            $response = (new CareerCoachReplyGenerator($session, $contextJson, $activeRecommendation))
+                ->prompt($userContent, model: (string) config('services.openai.model'));
+            $output = isset($response->structured) && is_array($response->structured)
+                ? $response->structured
+                : null;
+        } catch (\Throwable) {
+            return null;
+        }
+
+        $shouldGenerate = is_array($output)
+            && ! empty($output['should_generate_path'])
+            && is_array($output['recommendation'] ?? null)
+            && ! empty($output['recommendation']['target_role']);
+
+        if (! $shouldGenerate) {
+            return null;
+        }
+
+        return $this->persistRecommendation($candidate, $session, $output['recommendation']);
+    }
+
+    /**
+     * Cheap keyword gate so general chit-chat never triggers the heavy
+     * structured recommendation model.
+     */
+    private function chatMayWarrantRecommendation(string $content): bool
+    {
+        $keywords = [
+            'jalur', 'karier', 'karir', 'target', 'peran', 'role', 'posisi',
+            'skill', 'rekomendasi', 'gap', 'kesenjangan', 'path', 'roadmap',
+            'transisi', 'pindah', 'beralih', 'arah', 'cocok', 'gaji',
+        ];
+
+        $haystack = mb_strtolower($content);
+
+        foreach ($keywords as $keyword) {
+            if (str_contains($haystack, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Defensive scale fix: the model occasionally returns skill levels on a
+     * 0-5 or 0-10 scale instead of 0-100, which renders as near-empty bars.
+     * If the whole set sits at <=10, scale it up so the UI stays readable.
+     *
+     * @param  mixed  $skills
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeSkillLevels($skills): array
+    {
+        if (! is_array($skills)) {
+            return [];
+        }
+
+        $skills = array_values(array_filter($skills, 'is_array'));
+        if ($skills === []) {
+            return [];
+        }
+
+        $maxLevel = 0;
+        foreach ($skills as $skill) {
+            $maxLevel = max($maxLevel, (int) ($skill['current_level'] ?? 0), (int) ($skill['required_level'] ?? 0));
+        }
+
+        $factor = match (true) {
+            $maxLevel > 0 && $maxLevel <= 5 => 20,
+            $maxLevel <= 10 => 10,
+            default => 1,
+        };
+
+        if ($factor === 1) {
+            return $skills;
+        }
+
+        return array_map(function (array $skill) use ($factor): array {
+            foreach (['current_level', 'required_level'] as $key) {
+                if (isset($skill[$key])) {
+                    $skill[$key] = min(100, (int) $skill[$key] * $factor);
+                }
+            }
+
+            return $skill;
+        }, $skills);
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      */
     private function persistRecommendation(
@@ -482,6 +625,8 @@ class CandidateCareerCoachController extends Controller
         if ($targetRole === '') {
             return null;
         }
+
+        $payload['skill_breakdown'] = $this->normalizeSkillLevels($payload['skill_breakdown'] ?? null);
 
         return DB::transaction(function () use ($candidate, $session, $payload, $targetRole): int {
             AiCareerRecommendation::query()

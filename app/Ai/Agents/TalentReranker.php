@@ -27,7 +27,13 @@ Balas hanya JSON valid tanpa markdown dengan schema:
     {"candidate_id": 1, "score": 95, "reason": "Alasan ringkas berbasis data"}
   ]
 }
-Score 0-100. Jangan menambahkan kandidat di luar data. Gunakan bahasa Indonesia natural untuk reason.
+Cara menilai score (0-100), pertimbangkan: (a) kecocokan skill kandidat vs filter/kebutuhan, (b) relevansi & lama pengalaman, (c) kedekatan lokasi, (d) availability, (e) kesesuaian salary range, dengan base_score sebagai dasar. Pakai rentang penuh 0-100 — jangan menumpuk semua kandidat di skor tinggi. Urutkan rankings dari score tertinggi ke terendah.
+
+ANTI-NGARANG (wajib):
+- Sertakan HANYA candidate_id yang ada di data input. Jangan menambah, menggandakan, atau mengarang kandidat/ID.
+- "reason" HARUS merujuk fakta nyata dari data kandidat itu (skill, pengalaman, lokasi yang benar-benar ada). Jangan mengarang skill, perusahaan, angka, atau atribut yang tidak tercantum.
+- Bila data kandidat minim, beri reason jujur berdasar yang tersedia — jangan menebak.
+- Score 0-100. Gunakan Bahasa Indonesia natural untuk reason.
 PROMPT;
     }
 }

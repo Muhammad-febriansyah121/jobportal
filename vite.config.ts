@@ -10,14 +10,18 @@ import { defineConfig } from 'vite';
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 /**
- * Inline Babel plugin that strips every `console.*` call from app code. Runs in
- * the existing react-compiler Babel pass (esbuild's `drop` does not reach
- * Babel-transformed chunks), so no logs leak in the production bundle.
+ * Inline Babel plugin that strips every `console.*` call and `debugger`
+ * statement from app code. Runs in the existing react-compiler Babel pass, which
+ * is minifier-agnostic (Vite 8 uses oxc, not esbuild, so esbuild's `drop` is
+ * ignored). No logs or breakpoints leak into the production bundle.
  */
 function removeConsole({ types: t }: { types: typeof import('@babel/types') }) {
     return {
         name: 'remove-console',
         visitor: {
+            DebuggerStatement(nodePath: import('@babel/core').NodePath<import('@babel/types').DebuggerStatement>) {
+                nodePath.remove();
+            },
             CallExpression(nodePath: import('@babel/core').NodePath<import('@babel/types').CallExpression>) {
                 const callee = nodePath.get('callee');
                 if (callee.isMemberExpression() && callee.get('object').isIdentifier({ name: 'console' })) {
@@ -33,9 +37,6 @@ function removeConsole({ types: t }: { types: typeof import('@babel/types') }) {
 }
 
 export default defineConfig(({ command }) => ({
-    // Strip debugger statements from the production bundle. console.* is removed via
-    // the removeConsole Babel plugin below. Dev builds keep every log intact.
-    esbuild: command === 'build' ? { drop: ['debugger'] } : {},
     resolve: {
         dedupe: ['react', 'react-dom'],
         alias: {

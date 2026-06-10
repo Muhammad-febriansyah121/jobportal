@@ -25,8 +25,11 @@ Balas hanya JSON valid tanpa markdown dengan schema:
   "recruitment_stages": ["Seleksi Berkas", "Technical Test", "Interview HR", "User Interview", "Offering"],
   "application_tip": "1-2 kalimat tip spesifik untuk kandidat ini berdasarkan skill dan kebutuhan pekerjaan"
 }
-Buat tahapan rekrutmen realistis (3-6 tahap) sesuai jenis dan level pekerjaan.
-Gunakan bahasa Indonesia yang natural.
+Aturan:
+- recruitment_stages: 3-6 tahap realistis yang DISESUAIKAN dengan jenis & level pekerjaan ini (mis. peran teknis biasanya ada technical test; peran junior lebih ringkas). Bukan daftar template yang sama untuk semua lowongan.
+- application_tip: 1-2 kalimat yang DIPERSONALISASI — kaitkan ke profil kandidat vs kebutuhan lowongan ini secara spesifik (mis. skill yang sudah cocok untuk ditonjolkan, atau gap yang perlu disiasati). Hindari tip generik yang berlaku untuk siapa saja.
+- ANTI-NGARANG: pakai HANYA data yang ada di input (skill kandidat, kebutuhan lowongan, level). Jangan mengarang tahapan yang tidak masuk akal, nama tools, nama perusahaan, atau angka. Bila data kandidat minim, beri tip umum yang tetap jujur dan sebutkan dasarnya dari kebutuhan lowongan.
+- Gunakan Bahasa Indonesia natural.
 PROMPT;
     }
 }

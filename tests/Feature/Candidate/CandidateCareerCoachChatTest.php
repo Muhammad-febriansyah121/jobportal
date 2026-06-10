@@ -191,6 +191,131 @@ test('career coach stream returns SSE fallback when AI key missing', function ()
     expect($assistantReply->meta_json['quick_prompts'])->toBeArray()->not->toBeEmpty();
 });
 
+test('career coach recommend endpoint persists target recommendation when chat asks for a path', function () {
+    Setting::set('ai_api_key', 'test-ai-key');
+    config()->set('services.openai.api_key', 'test-ai-key');
+
+    CareerCoachReplyGenerator::fake([[
+        'reply' => 'Jalur yang paling realistis: **Junior Event & Portrait Photographer**.',
+        'quick_prompts' => ['Lihat learning step pertama'],
+        'should_generate_path' => true,
+        'recommendation' => [
+            'target_role' => 'Junior Event & Portrait Photographer (On-site)',
+            'match_score' => 28,
+            'summary' => 'Disiplin operasional dari pengalaman IT Support relevan.',
+            'growth_potential' => '+12% YoY',
+            'salary_range' => 'IDR 4.500.000 - 8.500.000/bulan',
+            'key_gap_insight' => 'Belum ada portofolio fotografi tervalidasi.',
+            'skill_breakdown' => [
+                ['name' => 'Komposisi & Teknik Fotografi', 'current_level' => 18, 'required_level' => 70, 'note' => 'Bangun portofolio.'],
+            ],
+            'learning_steps' => [
+                ['title' => 'Dasar Fotografi Event', 'description' => 'Kuasai teknik dasar.', 'tag' => 'Direkomendasikan AI'],
+            ],
+        ],
+    ]]);
+
+    $session = AiCareerCoachingSession::create([
+        'candidate_id' => $this->profile->id,
+        'title' => 'Coaching',
+        'status' => 'active',
+    ]);
+
+    $this->actingAs($this->candidate)
+        ->postJson(route('candidate.career-coach.recommend'), [
+            'session_id' => $session->id,
+            'content' => 'Jalur karier apa yang cocok untuk saya?',
+        ])
+        ->assertOk()
+        ->assertJson(['persisted' => true]);
+
+    $recommendation = AiCareerRecommendation::query()
+        ->where('candidate_id', $this->profile->id)
+        ->where('is_primary', true)
+        ->first();
+
+    expect($recommendation)->not->toBeNull();
+    expect($recommendation->target_role)->toBe('Junior Event & Portrait Photographer (On-site)');
+    expect($recommendation->match_score)->toBe(28);
+    expect($recommendation->coaching_session_id)->toBe($session->id);
+    expect($recommendation->learningPathSteps()->count())->toBe(1);
+});
+
+test('career coach recommend normalizes skill levels returned on a small scale', function () {
+    Setting::set('ai_api_key', 'test-ai-key');
+    config()->set('services.openai.api_key', 'test-ai-key');
+
+    CareerCoachReplyGenerator::fake([[
+        'reply' => 'Target kamu Data Lead.',
+        'quick_prompts' => ['Lihat estimasi gaji'],
+        'should_generate_path' => true,
+        'recommendation' => [
+            'target_role' => 'Data Lead',
+            'match_score' => 70,
+            'summary' => 'Cocok dengan pengalaman data.',
+            'growth_potential' => 'Naik ~15% tiap tahun',
+            'salary_range' => 'IDR 20-40 juta/bulan',
+            'key_gap_insight' => 'Perlu pengalaman memimpin tim.',
+            'skill_breakdown' => [
+                ['name' => 'SQL', 'current_level' => 2, 'required_level' => 4, 'note' => 'n'],
+                ['name' => 'Machine Learning', 'current_level' => 1, 'required_level' => 5, 'note' => 'n'],
+            ],
+            'learning_steps' => [
+                ['title' => 'Pimpin proyek data', 'description' => 'd', 'tag' => 'Strategis'],
+            ],
+        ],
+    ]]);
+
+    $session = AiCareerCoachingSession::create([
+        'candidate_id' => $this->profile->id,
+        'title' => 'Coaching',
+        'status' => 'active',
+    ]);
+
+    $this->actingAs($this->candidate)
+        ->postJson(route('candidate.career-coach.recommend'), [
+            'session_id' => $session->id,
+            'content' => 'Buatkan jalur karier dengan analisis kesenjangan skill.',
+        ])
+        ->assertOk()
+        ->assertJson(['persisted' => true]);
+
+    $skills = AiCareerRecommendation::query()
+        ->where('candidate_id', $this->profile->id)
+        ->latest()
+        ->first()
+        ->recommendation_json['skill_breakdown'];
+
+    // Whole set sat at <=5, so it is scaled up by 20 to a readable 0-100 range.
+    expect($skills[0]['current_level'])->toBe(40);
+    expect($skills[0]['required_level'])->toBe(80);
+    expect($skills[1]['current_level'])->toBe(20);
+    expect($skills[1]['required_level'])->toBe(100);
+});
+
+test('career coach recommend endpoint skips recommendation model for general chit-chat', function () {
+    Setting::set('ai_api_key', 'test-ai-key');
+    config()->set('services.openai.api_key', 'test-ai-key');
+
+    CareerCoachReplyGenerator::fake([])->preventStrayPrompts();
+
+    $session = AiCareerCoachingSession::create([
+        'candidate_id' => $this->profile->id,
+        'title' => 'Coaching',
+        'status' => 'active',
+    ]);
+
+    $this->actingAs($this->candidate)
+        ->postJson(route('candidate.career-coach.recommend'), [
+            'session_id' => $session->id,
+            'content' => 'Halo, apa kabar?',
+        ])
+        ->assertOk()
+        ->assertJson(['persisted' => false]);
+
+    expect(AiCareerRecommendation::query()->where('candidate_id', $this->profile->id)->exists())->toBeFalse();
+});
+
 test('career coach stream validates content', function () {
     $session = AiCareerCoachingSession::create([
         'candidate_id' => $this->profile->id,

@@ -99,10 +99,28 @@ export default function CandidateCareerCoach({
 }: CareerCoachProps) {
     const { t } = useTranslate();
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
+    const [isGeneratingRec, setIsGeneratingRec] = useState(false);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [activeSession?.messages.length]);
+
+    const generateRecommendation = useCallback(
+        async (content: string, sessionId: number | undefined) => {
+            setIsGeneratingRec(true);
+            try {
+                await requestRecommendation(content, sessionId);
+                router.reload({
+                    only: ['targetRecommendation', 'recommendations'],
+                });
+            } catch {
+                // Keep the existing recommendation if the refresh fails.
+            } finally {
+                setIsGeneratingRec(false);
+            }
+        },
+        [],
+    );
 
     const hasMessages = (activeSession?.messages.length ?? 0) > 0;
 
@@ -132,8 +150,12 @@ export default function CandidateCareerCoach({
                         hasMessages={hasMessages}
                         messagesEndRef={messagesEndRef}
                         quickPrompts={quickPrompts}
+                        onGenerateRecommendation={generateRecommendation}
                     />
-                    <RecommendationPanel target={targetRecommendation} />
+                    <RecommendationPanel
+                        target={targetRecommendation}
+                        isGenerating={isGeneratingRec}
+                    />
                 </div>
             </div>
         </>
@@ -146,12 +168,17 @@ function ChatPanel({
     hasMessages,
     messagesEndRef,
     quickPrompts,
+    onGenerateRecommendation,
 }: {
     activeSession: ActiveSession | null;
     sessions: CoachSession[];
     hasMessages: boolean;
     messagesEndRef: React.RefObject<HTMLDivElement | null>;
     quickPrompts: string[];
+    onGenerateRecommendation: (
+        content: string,
+        sessionId: number | undefined,
+    ) => void;
 }) {
     const { t } = useTranslate();
     const [streamingUser, setStreamingUser] = useState<string | null>(null);
@@ -186,14 +213,11 @@ function ChatPanel({
                     setStreamingAssistant((prev) => (prev ?? '') + delta);
                 });
                 router.reload({
-                    only: [
-                        'activeSession',
-                        'sessions',
-                        'quickPrompts',
-                        'targetRecommendation',
-                        'recommendations',
-                    ],
+                    only: ['activeSession', 'sessions', 'quickPrompts'],
                 });
+                if (chatMayWarrantRecommendation(trimmed)) {
+                    onGenerateRecommendation(trimmed, activeSession?.id);
+                }
             } catch {
                 setStreamingAssistant(
                     'Maaf, jaringan ke AI terputus. Coba lagi ya.',
@@ -202,7 +226,7 @@ function ChatPanel({
                 setIsStreaming(false);
             }
         },
-        [activeSession?.id, isStreaming],
+        [activeSession?.id, isStreaming, onGenerateRecommendation],
     );
 
     const hasContent =
@@ -364,6 +388,64 @@ async function streamCoachChat(
                 // Ignore malformed events.
             }
         }
+    }
+}
+
+const RECOMMENDATION_KEYWORDS = [
+    'jalur',
+    'karier',
+    'karir',
+    'target',
+    'peran',
+    'role',
+    'posisi',
+    'skill',
+    'rekomendasi',
+    'gap',
+    'kesenjangan',
+    'path',
+    'roadmap',
+    'transisi',
+    'pindah',
+    'beralih',
+    'arah',
+    'cocok',
+    'gaji',
+];
+
+function chatMayWarrantRecommendation(content: string): boolean {
+    const haystack = content.toLowerCase();
+    return RECOMMENDATION_KEYWORDS.some((keyword) =>
+        haystack.includes(keyword),
+    );
+}
+
+async function requestRecommendation(
+    content: string,
+    sessionId: number | undefined,
+): Promise<void> {
+    const csrfToken =
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? '';
+
+    const response = await fetch(
+        CandidateCareerCoachController.recommend.url(),
+        {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({ session_id: sessionId, content }),
+        },
+    );
+
+    if (!response.ok) {
+        throw new Error(`Recommendation failed with status ${response.status}`);
     }
 }
 
@@ -597,8 +679,18 @@ function ChatComposer({
     );
 }
 
-function RecommendationPanel({ target }: { target: TargetRecommendation | null }) {
+function RecommendationPanel({
+    target,
+    isGenerating,
+}: {
+    target: TargetRecommendation | null;
+    isGenerating: boolean;
+}) {
     const { t } = useTranslate();
+
+    if (isGenerating) {
+        return <RecommendationSkeleton />;
+    }
 
     if (!target) {
         return <RecommendationEmpty />;
@@ -769,21 +861,28 @@ function SkillGapAside({ target }: { target: TargetRecommendation }) {
                         const required = clampPercent(skill.required_level);
                         const isCritical = current < 50 && required - current >= 30;
 
+                        const gap = Math.max(0, required - current);
+
                         return (
                             <li key={skill.name} className="space-y-1.5">
                                 <div className="flex items-center justify-between gap-2">
                                     <span className="truncate text-sm font-semibold text-[#0f172a]">
                                         {skill.name}
                                     </span>
-                                    <span
-                                        className={cn(
-                                            'text-sm font-bold tabular-nums',
-                                            isCritical
-                                                ? 'text-rose-600'
-                                                : 'text-emerald-600',
-                                        )}
-                                    >
-                                        {current}%
+                                    <span className="flex items-baseline gap-1 tabular-nums">
+                                        <span
+                                            className={cn(
+                                                'text-sm font-bold',
+                                                isCritical
+                                                    ? 'text-rose-600'
+                                                    : 'text-emerald-600',
+                                            )}
+                                        >
+                                            {current}%
+                                        </span>
+                                        <span className="text-[11px] font-medium text-[#94a3b8]">
+                                            / {required}%
+                                        </span>
                                     </span>
                                 </div>
                                 <div
@@ -806,7 +905,31 @@ function SkillGapAside({ target }: { target: TargetRecommendation }) {
                                         )}
                                         style={{ width: `${current}%` }}
                                     />
+                                    <span
+                                        className="absolute inset-y-[-2px] w-0.5 rounded-full bg-[#01296A]"
+                                        style={{ left: `${required}%` }}
+                                        aria-hidden="true"
+                                    />
                                 </div>
+                                {gap > 0 ? (
+                                    <p
+                                        className={cn(
+                                            'text-[11px] font-semibold',
+                                            isCritical
+                                                ? 'text-rose-600'
+                                                : 'text-[#64748b]',
+                                        )}
+                                    >
+                                        {t(
+                                            'candidate.career_coach.skill_gap_to_close',
+                                            { gap: String(gap) },
+                                        )}
+                                    </p>
+                                ) : (
+                                    <p className="text-[11px] font-semibold text-emerald-600">
+                                        {t('candidate.career_coach.skill_gap_met')}
+                                    </p>
+                                )}
                             </li>
                         );
                     })}
@@ -849,6 +972,54 @@ function LearningCard({ step, index }: { step: LearningStep; index: number }) {
                 </p>
             ) : null}
         </article>
+    );
+}
+
+function RecommendationSkeleton() {
+    const { t } = useTranslate();
+
+    return (
+        <div className="space-y-5" aria-busy="true" aria-live="polite">
+            <Card className="overflow-hidden border-[#e0e7f3] shadow-sm">
+                <CardContent className="space-y-5 p-5 md:p-6">
+                    <div className="flex items-center gap-2 text-[#01296A]">
+                        <Sparkles className="size-4 animate-pulse" />
+                        <span className="text-[10px] font-bold tracking-[0.18em] uppercase">
+                            {t('candidate.career_coach.target_generating')}
+                        </span>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="w-2/3 space-y-2">
+                            <div className="h-8 animate-pulse rounded-lg bg-[#e8eef8]" />
+                            <div className="h-4 w-1/2 animate-pulse rounded bg-[#eef2f8]" />
+                        </div>
+                        <div className="h-10 w-16 animate-pulse rounded-lg bg-[#e8eef8]" />
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-[1.55fr_minmax(220px,1fr)]">
+                        <div className="space-y-3 rounded-2xl bg-[#f7f9fc] p-5">
+                            <div className="h-4 w-1/3 animate-pulse rounded bg-[#e2e8f2]" />
+                            <div className="h-3 animate-pulse rounded bg-[#eef2f8]" />
+                            <div className="h-3 w-5/6 animate-pulse rounded bg-[#eef2f8]" />
+                            <div className="grid gap-3 pt-2 sm:grid-cols-2">
+                                <div className="h-16 animate-pulse rounded-2xl bg-[#eaf2ff]" />
+                                <div className="h-16 animate-pulse rounded-2xl bg-[#eaf2ff]" />
+                            </div>
+                        </div>
+                        <div className="space-y-3 rounded-2xl bg-[#eaf2ff] p-5">
+                            <div className="h-4 w-2/3 animate-pulse rounded bg-white/70" />
+                            {[0, 1, 2].map((i) => (
+                                <div key={i} className="space-y-1.5">
+                                    <div className="h-3 w-1/2 animate-pulse rounded bg-white/70" />
+                                    <div className="h-2 animate-pulse rounded-full bg-white/80" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
     );
 }
 
