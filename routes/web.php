@@ -48,6 +48,7 @@ use App\Http\Controllers\PakasirWebhookController;
 use App\Http\Controllers\PricingController;
 use App\Http\Controllers\RegionController;
 use App\Http\Controllers\SalaryController;
+use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 
 // Override Fortify's password reset link route to support WhatsApp notification
@@ -60,6 +61,8 @@ Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
 
 Route::post('webhooks/pakasir', [PakasirWebhookController::class, 'handle'])
     ->name('webhooks.pakasir');
+
+Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 
 Route::get('/', HomeController::class)->name('home');
 Route::get('/jobs', [HomeController::class, 'jobs'])->name('jobs.index');

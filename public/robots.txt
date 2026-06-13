@@ -1,2 +1,11 @@
 User-agent: *
-Disallow:
+Disallow: /admin/
+Disallow: /employer/
+Disallow: /candidate/
+Disallow: /settings/
+Disallow: /dashboard
+Disallow: /login
+Disallow: /register
+Disallow: /api/
+
+Sitemap: https://karivia.id/sitemap.xml
