@@ -16,6 +16,7 @@ use App\Models\CompanyVerification;
 use App\Models\Industry;
 use App\Models\JobListing;
 use App\Models\Subscription;
+use App\Support\RichText;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -146,7 +147,7 @@ class AdminCompanyController extends Controller
                 [
                     'title' => 'Deskripsi',
                     'items' => [
-                        ['label' => 'Deskripsi perusahaan', 'value' => $company->description ?? '-'],
+                        ['label' => 'Deskripsi perusahaan', 'value' => RichText::toPlainText($company->description)],
                     ],
                 ],
                 [

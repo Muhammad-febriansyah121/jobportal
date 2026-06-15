@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\UpdateJobIntegrityScoreRequest;
 use App\Models\Company;
 use App\Models\Industry;
 use App\Models\JobListing;
+use App\Support\RichText;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -115,10 +116,10 @@ class AdminJobListingController extends Controller
                 [
                     'title' => 'Deskripsi',
                     'items' => [
-                        ['label' => 'Deskripsi', 'value' => $jobListing->description],
-                        ['label' => 'Tanggung jawab', 'value' => $jobListing->responsibilities ?? '-'],
-                        ['label' => 'Kualifikasi wajib', 'value' => $jobListing->required_qualifications ?? '-'],
-                        ['label' => 'Kualifikasi tambahan', 'value' => $jobListing->preferred_qualifications ?? '-'],
+                        ['label' => 'Deskripsi', 'value' => RichText::toPlainText($jobListing->description)],
+                        ['label' => 'Tanggung jawab', 'value' => RichText::toPlainText($jobListing->responsibilities)],
+                        ['label' => 'Kualifikasi wajib', 'value' => RichText::toPlainText($jobListing->required_qualifications)],
+                        ['label' => 'Kualifikasi tambahan', 'value' => RichText::toPlainText($jobListing->preferred_qualifications)],
                     ],
                 ],
             ],

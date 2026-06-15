@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Candidate;
 use App\Actions\Candidate\ResolveCandidateProfile;
 use App\Http\Controllers\Controller;
 use App\Models\Interview;
+use App\Support\RichText;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -86,7 +87,7 @@ class CandidateInterviewController extends Controller
                 'job' => $jobListing ? [
                     'id' => $jobListing->id,
                     'title' => $jobListing->title,
-                    'description' => $jobListing->description,
+                    'description' => RichText::toPlainText($jobListing->description, ''),
                     'location_city' => $jobListing->location_city,
                     'location_province' => $jobListing->location_province,
                     'work_mode' => $jobListing->work_mode,
@@ -97,7 +98,7 @@ class CandidateInterviewController extends Controller
                     'id' => $company->id,
                     'name' => $company->name,
                     'logo_url' => $company->logo_url,
-                    'description' => $company->description,
+                    'description' => RichText::toPlainText($company->description, ''),
                     'hq_city' => $company->hq_city,
                     'hq_province' => $company->hq_province,
                     'website' => $company->website,
