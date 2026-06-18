@@ -8,6 +8,7 @@ use App\Models\CandidateWalletTransaction;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 function markCandidateOnboarded(User $user): void
 {
@@ -60,32 +61,111 @@ test('candidate can save cv builder data', function () {
     expect($candidate->cv_builder_updated_at)->not->toBeNull();
 });
 
-test('candidate cannot save non ats template', function () {
+test('candidate cannot save unknown template', function () {
     $user = User::factory()->candidate()->create();
     markCandidateOnboarded($user);
 
     $response = $this->actingAs($user)->post(route('candidate.cvs.builder-save'), [
+        'template' => 'fancy',
+        'personal' => ['full_name' => 'Raka Pratama'],
+    ]);
+
+    $response->assertSessionHasErrors(['template']);
+});
+
+test('candidate can save modern template with photo fields, academic and languages', function () {
+    $user = User::factory()->candidate()->create();
+    markCandidateOnboarded($user);
+    $this->actingAs($user);
+
+    $response = $this->post(route('candidate.cvs.builder-save'), [
         'template' => 'modern',
-        'title' => 'CV Product Engineer',
-        'summary' => 'Product engineer with strong backend focus.',
+        'title' => 'CV Nur',
+        'summary' => 'Staf administrasi teliti.',
         'personal' => [
-            'full_name' => 'Raka Pratama',
-            'headline' => 'Product Engineer',
-            'email' => 'raka@example.com',
-            'phone' => '08123456789',
-            'city' => 'Jakarta',
-            'linkedin' => 'https://linkedin.com/in/raka',
-            'github' => 'https://github.com/raka',
-            'portfolio' => 'https://raka.dev',
+            'full_name' => 'Nur Mutmainnah',
+            'degree_title' => 'Sarjana Hukum (S.H.)',
+            'birth_place' => 'Maros',
+            'birth_date' => '28 Februari 2000',
+            'email' => 'nur@example.com',
+            'phone' => '085399255995',
+            'city' => 'Jakarta, Indonesia',
         ],
-        'skills' => ['Laravel', 'React', 'System Design'],
+        'skills' => ['Microsoft Word'],
+        'academic' => ['Penyusunan skripsi dan makalah', '', 'Legal research'],
         'experiences' => [],
         'educations' => [],
         'projects' => [],
         'certifications' => [],
+        'languages' => [
+            ['name' => 'Bahasa Indonesia', 'level' => 'Aktif'],
+            ['name' => 'Bahasa Inggris', 'level' => 'Pasif'],
+        ],
     ]);
 
-    $response->assertSessionHasErrors(['template']);
+    $response->assertRedirect();
+
+    $json = app(ResolveCandidateProfile::class)->handle($user)->refresh()->cv_builder_json;
+    expect($json['template'])->toBe('modern');
+    expect($json['personal']['degree_title'])->toBe('Sarjana Hukum (S.H.)');
+    expect($json['personal']['birth_place'])->toBe('Maros');
+    expect($json['academic'])->toBe(['Penyusunan skripsi dan makalah', 'Legal research']);
+    expect($json['languages'])->toHaveCount(2);
+    expect($json['languages'][1]['level'])->toBe('Pasif');
+});
+
+test('candidate can download modern cv builder as pdf', function () {
+    $user = User::factory()->candidate()->create();
+    markCandidateOnboarded($user);
+    $candidate = app(ResolveCandidateProfile::class)->handle($user);
+    $candidate->forceFill([
+        'cv_builder_json' => [
+            'template' => 'modern',
+            'title' => 'CV Nur',
+            'summary' => 'Staf administrasi teliti.',
+            'personal' => [
+                'full_name' => 'Nur Mutmainnah',
+                'degree_title' => 'Sarjana Hukum (S.H.)',
+                'birth_place' => 'Maros',
+                'birth_date' => '28 Februari 2000',
+                'email' => 'nur@example.com',
+                'phone' => '085399255995',
+                'city' => 'Jakarta, Indonesia',
+                'photo_path' => '',
+            ],
+            'skills' => ['Microsoft Word'],
+            'academic' => ['Legal research'],
+            'experiences' => [],
+            'educations' => [],
+            'projects' => [],
+            'certifications' => [],
+            'languages' => [['name' => 'Bahasa Indonesia', 'level' => 'Aktif']],
+        ],
+        'cv_builder_updated_at' => now(),
+    ])->save();
+
+    $response = $this->actingAs($user)->get(route('candidate.cvs.builder-pdf'));
+
+    $response->assertOk();
+    $response->assertHeader('content-type', 'application/pdf');
+    expect($response->getContent())->toStartWith('%PDF');
+});
+
+test('candidate can upload cv builder photo', function () {
+    Storage::fake('public');
+    $user = User::factory()->candidate()->create();
+    markCandidateOnboarded($user);
+
+    $response = $this->actingAs($user)->post(route('candidate.cvs.builder-photo'), [
+        'photo' => UploadedFile::fake()->image('foto.jpg', 300, 300),
+    ]);
+
+    $response->assertRedirect();
+
+    $json = app(ResolveCandidateProfile::class)->handle($user)->refresh()->cv_builder_json;
+    $path = $json['personal']['photo_path'];
+    expect($path)->toStartWith('cv-photos/');
+    Storage::disk('public')->assertExists($path);
 });
 
 test('candidate can download cv builder as pdf', function () {

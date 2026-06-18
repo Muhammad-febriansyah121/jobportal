@@ -3,8 +3,10 @@
 namespace App\Http\Middleware;
 
 use App\Models\AiInterviewSession;
+use App\Models\Company;
 use App\Models\Conversation;
 use App\Models\Interview;
+use App\Models\JobListing;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserNotification;
@@ -87,6 +89,7 @@ class HandleInertiaRequests extends Middleware
             'employer_unread_messages' => $this->employerUnreadMessages($user),
             'header_notifications' => fn () => $this->headerNotifications($user),
             'nav_counts' => $this->navCounts($user),
+            'platform_stats' => fn () => $this->platformStats(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'locale' => App::getLocale(),
             'available_locales' => SetLocale::SUPPORTED_LOCALES,
@@ -113,6 +116,21 @@ class HandleInertiaRequests extends Middleware
         $decoded = json_decode($contents, true);
 
         return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * @return array{active_jobs: int, active_companies: int, total_candidates: int}
+     */
+    private function platformStats(): array
+    {
+        return Cache::remember('platform_stats', 600, fn () => [
+            'active_jobs' => JobListing::query()
+                ->published()
+                ->where(fn ($q) => $q->whereNull('closes_at')->orWhere('closes_at', '>=', now()))
+                ->count(),
+            'active_companies' => Company::where('is_active', true)->whereNull('suspended_at')->count(),
+            'total_candidates' => User::where('role', 'candidate')->count(),
+        ]);
     }
 
     private function settingAssetUrl(?string $value): ?string

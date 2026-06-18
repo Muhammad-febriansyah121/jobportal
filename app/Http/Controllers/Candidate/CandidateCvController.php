@@ -16,6 +16,7 @@ use App\Models\AiAuditLog;
 use App\Models\CandidateCv;
 use App\Models\CandidateProfile;
 use App\Services\AiService;
+use App\Support\CvModernPdfRenderer;
 use App\Support\SimplePdfDocument;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -158,6 +159,39 @@ class CandidateCvController extends Controller
         ])->save();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'CV builder berhasil disimpan.']);
+
+        return back();
+    }
+
+    public function uploadBuilderPhoto(
+        Request $request,
+        ResolveCandidateProfile $resolveCandidateProfile
+    ): RedirectResponse {
+        $request->validate([
+            'photo' => ['required', 'image', 'mimes:jpeg,jpg,png', 'max:2048', 'dimensions:min_width=150,min_height=150'],
+        ]);
+
+        $candidate = $resolveCandidateProfile->handle($request->user());
+
+        $builderData = is_array($candidate->cv_builder_json) ? $candidate->cv_builder_json : [];
+        $personal = is_array($builderData['personal'] ?? null) ? $builderData['personal'] : [];
+
+        $oldPath = is_string($personal['photo_path'] ?? null) ? $personal['photo_path'] : null;
+        if ($oldPath !== null && Storage::disk('public')->exists($oldPath)) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        $path = $request->file('photo')->store('cv-photos/'.$candidate->id, 'public');
+
+        $personal['photo_path'] = $path;
+        $builderData['personal'] = $personal;
+
+        $candidate->forceFill([
+            'cv_builder_json' => $builderData,
+            'cv_builder_updated_at' => now(),
+        ])->save();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Foto CV berhasil diunggah.']);
 
         return back();
     }
@@ -456,10 +490,23 @@ class CandidateCvController extends Controller
             $candidate
         );
 
+        $personal = is_array($builderData['personal'] ?? null) ? $builderData['personal'] : [];
+        $filename = 'cv-'.Str::slug((string) ($personal['full_name'] ?? 'kandidat')).'.pdf';
+        $disposition = $request->boolean('inline') ? 'inline' : 'attachment';
+
+        if (($builderData['template'] ?? 'ats') === 'modern') {
+            $binary = (new CvModernPdfRenderer)->render($builderData);
+
+            return response($binary, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => "{$disposition}; filename=\"{$filename}\"",
+                'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            ]);
+        }
+
         $pdf = new SimplePdfDocument(
             title: (string) ($builderData['title'] ?? 'CV Kandidat')
         );
-        $personal = is_array($builderData['personal'] ?? null) ? $builderData['personal'] : [];
 
         $fullName = (string) ($personal['full_name'] ?? $builderData['title'] ?? 'CV Kandidat');
         $headline = (string) ($personal['headline'] ?? '');
@@ -598,8 +645,6 @@ class CandidateCvController extends Controller
         }
 
         $binary = $pdf->binary();
-        $filename = 'cv-'.Str::slug((string) ($personal['full_name'] ?? 'kandidat')).'.pdf';
-        $disposition = $request->boolean('inline') ? 'inline' : 'attachment';
 
         return response($binary, 200, [
             'Content-Type' => 'application/pdf',
@@ -732,10 +777,22 @@ class CandidateCvController extends Controller
     {
         $personal = is_array($data['personal'] ?? null) ? $data['personal'] : [];
         $skills = collect($data['skills'] ?? [])->filter()->values()->all();
+        $academic = collect($data['academic'] ?? [])->filter(fn ($v): bool => is_string($v) && trim($v) !== '')->map(fn (string $v): string => trim($v))->values()->all();
         $experiences = $this->filterNestedEntries($data['experiences'] ?? [], ['job_title', 'company_name', 'description']);
         $educations = $this->filterNestedEntries($data['educations'] ?? [], ['school_name', 'degree', 'field_of_study']);
         $projects = $this->filterNestedEntries($data['projects'] ?? [], ['name', 'role', 'description']);
         $certifications = $this->filterNestedEntries($data['certifications'] ?? [], ['name', 'issuer', 'year']);
+        $languages = $this->filterNestedEntries($data['languages'] ?? [], ['name']);
+
+        // Photo is uploaded via a separate endpoint, so preserve the stored path when the
+        // save payload does not include it.
+        $storedJson = is_array($candidate->cv_builder_json) ? $candidate->cv_builder_json : [];
+        $storedPersonal = is_array($storedJson['personal'] ?? null) ? $storedJson['personal'] : [];
+        $photoPath = (string) ($personal['photo_path'] ?? $storedPersonal['photo_path'] ?? '');
+        if ($photoPath === '') {
+            $photoPath = $this->avatarToStoragePath($candidate->user?->avatar_url);
+        }
+        $template = ($data['template'] ?? null) === 'modern' ? 'modern' : 'ats';
 
         // Auto-populate from profile when builder data is empty (first time open)
         if ($skills === [] && $candidate->relationLoaded('skills')) {
@@ -815,24 +872,30 @@ class CandidateCvController extends Controller
         }
 
         return [
-            'template' => 'ats',
+            'template' => $template,
             'title' => (string) ($data['title'] ?? ('CV '.$candidate->full_name)),
             'summary' => (string) ($data['summary'] ?? $candidate->ai_cv_summary ?? ''),
             'personal' => [
                 'full_name' => (string) ($personal['full_name'] ?? $candidate->full_name ?? ''),
                 'headline' => (string) ($personal['headline'] ?? $candidate->headline ?? ''),
+                'degree_title' => (string) ($personal['degree_title'] ?? ''),
+                'birth_place' => (string) ($personal['birth_place'] ?? ''),
+                'birth_date' => (string) ($personal['birth_date'] ?? ''),
                 'email' => (string) ($personal['email'] ?? $candidate->user?->email ?? ''),
                 'phone' => (string) ($personal['phone'] ?? ''),
                 'city' => (string) ($personal['city'] ?? $candidate->location_city ?? ''),
                 'linkedin' => (string) ($personal['linkedin'] ?? $candidate->linkedin_url ?? ''),
                 'github' => (string) ($personal['github'] ?? $candidate->github_url ?? ''),
                 'portfolio' => (string) ($personal['portfolio'] ?? $candidate->portfolio_url ?? ''),
+                'photo_path' => $photoPath,
             ],
             'skills' => $skills,
+            'academic' => $academic,
             'experiences' => $experiences,
             'educations' => $educations,
             'projects' => $projects,
             'certifications' => $certifications,
+            'languages' => $languages,
             'ai_review' => is_array($data['ai_review'] ?? null) ? $data['ai_review'] : null,
         ];
     }
@@ -1248,6 +1311,30 @@ class CandidateCvController extends Controller
      * @param  array<int, string>  $keys
      * @return array<int, array<string, mixed>>
      */
+    /**
+     * Convert a public-disk avatar URL (e.g. "/storage/avatars/x.jpg" or a full URL)
+     * into a relative storage path usable by Storage::disk('public').
+     */
+    private function avatarToStoragePath(?string $avatarUrl): string
+    {
+        if (! is_string($avatarUrl) || $avatarUrl === '') {
+            return '';
+        }
+
+        $path = parse_url($avatarUrl, PHP_URL_PATH);
+        if (! is_string($path) || $path === '') {
+            return '';
+        }
+
+        $marker = '/storage/';
+        $pos = strpos($path, $marker);
+        if ($pos === false) {
+            return '';
+        }
+
+        return ltrim(substr($path, $pos + strlen($marker)), '/');
+    }
+
     private function filterNestedEntries(mixed $entries, array $keys): array
     {
         if (! is_array($entries)) {

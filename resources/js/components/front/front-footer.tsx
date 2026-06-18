@@ -64,13 +64,18 @@ const socialMeta: Record<SocialKey, { label: string; icon: React.ReactNode }> =
     };
 
 export default function FrontFooter() {
-    const { branding, name } = usePage<{
+    const { branding, name, platform_stats } = usePage<{
         branding?: {
             name?: string;
             logo_url?: string | null;
             social?: Partial<Record<SocialKey, string | null>>;
         };
         name: string;
+        platform_stats?: {
+            active_jobs: number;
+            active_companies: number;
+            total_candidates: number;
+        };
     }>().props;
     const { t } = useTranslate();
 
@@ -105,14 +110,24 @@ export default function FrontFooter() {
         [t],
     );
 
-    const stats = useMemo(
-        () => [
-            { value: '50K+', label: t('footer.stats.jobs') },
-            { value: '10K+', label: t('footer.stats.companies') },
-            { value: '500K+', label: t('footer.stats.jobseekers') },
-        ],
-        [t],
-    );
+    const stats = useMemo(() => {
+        const format = (n: number) => `${(n ?? 0).toLocaleString('id')}+`;
+
+        return [
+            {
+                value: format(platform_stats?.active_jobs ?? 0),
+                label: t('footer.stats.jobs'),
+            },
+            {
+                value: format(platform_stats?.active_companies ?? 0),
+                label: t('footer.stats.companies'),
+            },
+            {
+                value: format(platform_stats?.total_candidates ?? 0),
+                label: t('footer.stats.jobseekers'),
+            },
+        ];
+    }, [t, platform_stats]);
 
     return (
         <footer className="relative overflow-hidden bg-white">

@@ -53,6 +53,7 @@ Route::prefix('candidate')
         Route::middleware('candidate.onboarded')->group(function () {
             Route::get('cvs/builder', [CandidateCvController::class, 'builder'])->name('cvs.builder-page');
             Route::post('cvs/builder/save', [CandidateCvController::class, 'saveBuilder'])->name('cvs.builder-save');
+            Route::post('cvs/builder/photo', [CandidateCvController::class, 'uploadBuilderPhoto'])->name('cvs.builder-photo');
             Route::post('cvs/builder/ai-draft', [CandidateCvController::class, 'generateAiDraft'])->name('cvs.builder-draft');
             Route::post('cvs/builder/ai-review', [CandidateCvController::class, 'reviewBuilder'])->name('cvs.builder-review');
             Route::post('cvs/builder/ai-review-stream', [CandidateCvController::class, 'reviewBuilderStream'])->name('cvs.builder-review-stream');

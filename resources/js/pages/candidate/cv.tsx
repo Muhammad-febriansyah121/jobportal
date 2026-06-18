@@ -60,6 +60,7 @@ import { useTranslate } from '@/hooks/use-translate';
 import {
     builderDraft,
     builderPdf,
+    builderPhoto,
     builderReview,
     builderReviewStream,
     builderSave,
@@ -104,25 +105,36 @@ type CvAiReview = {
     text: string;
 };
 
+type CvLanguageItem = {
+    name?: string;
+    level?: string;
+};
+
 type CvBuilderData = {
-    template: 'ats';
+    template: 'ats' | 'modern';
     title: string;
     summary: string;
     personal: {
         full_name: string;
         headline: string;
+        degree_title: string;
+        birth_place: string;
+        birth_date: string;
         email: string;
         phone: string;
         city: string;
         linkedin: string;
         github: string;
         portfolio: string;
+        photo_path: string;
     };
     skills: string[];
+    academic: string[];
     experiences: CvBuilderItem[];
     educations: CvEducationItem[];
     projects: CvProjectItem[];
     certifications: CvCertificationItem[];
+    languages: CvLanguageItem[];
     ai_review?: CvAiReview | null;
 };
 
@@ -246,6 +258,10 @@ export default function CandidateCv({
         name: '',
         issuer: '',
         year: '',
+    };
+    const languageTemplate: CvLanguageItem = {
+        name: '',
+        level: '',
     };
 
     const saveBuilder = () => {
@@ -412,6 +428,9 @@ export default function CandidateCv({
     ).length;
     const filledCertifications = form.data.certifications.filter(
         (item) => item.name || item.issuer,
+    ).length;
+    const filledLanguages = form.data.languages.filter(
+        (item) => item.name,
     ).length;
 
     return (
@@ -1053,16 +1072,57 @@ export default function CandidateCv({
                                                         'candidate.cv_builder.format_label',
                                                     )}
                                                 </p>
-                                                <div className="flex h-10 items-center gap-2 rounded-md border bg-muted/40 px-3 text-sm">
-                                                    <CheckCircle2 className="size-4 text-emerald-600" />
-                                                    <span className="font-medium">
-                                                        ATS
-                                                    </span>
-                                                    <span className="text-xs text-muted-foreground">
-                                                        {t(
-                                                            'candidate.cv_builder.ats_expansion',
-                                                        )}
-                                                    </span>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {(
+                                                        [
+                                                            {
+                                                                value: 'ats' as const,
+                                                                label: 'ATS',
+                                                                desc: t(
+                                                                    'candidate.cv_builder.ats_expansion',
+                                                                ),
+                                                            },
+                                                            {
+                                                                value: 'modern' as const,
+                                                                label: t(
+                                                                    'candidate.cv_builder.template_modern_label',
+                                                                ),
+                                                                desc: t(
+                                                                    'candidate.cv_builder.template_modern_desc',
+                                                                ),
+                                                            },
+                                                        ]
+                                                    ).map((opt) => (
+                                                        <button
+                                                            key={opt.value}
+                                                            type="button"
+                                                            onClick={() =>
+                                                                form.setData(
+                                                                    'template',
+                                                                    opt.value,
+                                                                )
+                                                            }
+                                                            className={`flex flex-col gap-0.5 rounded-md border px-3 py-2 text-left text-sm transition ${
+                                                                form.data
+                                                                    .template ===
+                                                                opt.value
+                                                                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                                                                    : 'bg-muted/40 hover:bg-muted'
+                                                            }`}
+                                                        >
+                                                            <span className="flex items-center gap-1.5 font-medium">
+                                                                {form.data
+                                                                    .template ===
+                                                                    opt.value && (
+                                                                    <CheckCircle2 className="size-3.5 text-primary" />
+                                                                )}
+                                                                {opt.label}
+                                                            </span>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                {opt.desc}
+                                                            </span>
+                                                        </button>
+                                                    ))}
                                                 </div>
                                                 <FieldHint>
                                                     {t(
@@ -1155,6 +1215,117 @@ export default function CandidateCv({
                                                 </FieldHint>
                                             </Field>
                                         </div>
+
+                                        {form.data.template === 'modern' && (
+                                            <div className="mt-4 space-y-4 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
+                                                <p className="text-xs font-medium text-primary">
+                                                    {t(
+                                                        'candidate.cv_builder.modern_extra_hint',
+                                                    )}
+                                                </p>
+                                                <div className="grid items-start gap-4 md:grid-cols-2">
+                                                    <Field
+                                                        label={t(
+                                                            'candidate.cv_builder.degree_title_label',
+                                                        )}
+                                                        name="personal.degree_title"
+                                                    >
+                                                        <Input
+                                                            value={
+                                                                form.data
+                                                                    .personal
+                                                                    .degree_title
+                                                            }
+                                                            onChange={(event) =>
+                                                                form.setData(
+                                                                    'personal',
+                                                                    {
+                                                                        ...form
+                                                                            .data
+                                                                            .personal,
+                                                                        degree_title:
+                                                                            event
+                                                                                .target
+                                                                                .value,
+                                                                    },
+                                                                )
+                                                            }
+                                                            placeholder={t(
+                                                                'candidate.cv_builder.degree_title_placeholder',
+                                                            )}
+                                                        />
+                                                    </Field>
+                                                    <PhotoUploader
+                                                        photoPath={
+                                                            form.data.personal
+                                                                .photo_path
+                                                        }
+                                                    />
+                                                    <Field
+                                                        label={t(
+                                                            'candidate.cv_builder.birth_place_label',
+                                                        )}
+                                                        name="personal.birth_place"
+                                                    >
+                                                        <Input
+                                                            value={
+                                                                form.data
+                                                                    .personal
+                                                                    .birth_place
+                                                            }
+                                                            onChange={(event) =>
+                                                                form.setData(
+                                                                    'personal',
+                                                                    {
+                                                                        ...form
+                                                                            .data
+                                                                            .personal,
+                                                                        birth_place:
+                                                                            event
+                                                                                .target
+                                                                                .value,
+                                                                    },
+                                                                )
+                                                            }
+                                                            placeholder={t(
+                                                                'candidate.cv_builder.birth_place_placeholder',
+                                                            )}
+                                                        />
+                                                    </Field>
+                                                    <Field
+                                                        label={t(
+                                                            'candidate.cv_builder.birth_date_label',
+                                                        )}
+                                                        name="personal.birth_date"
+                                                    >
+                                                        <Input
+                                                            value={
+                                                                form.data
+                                                                    .personal
+                                                                    .birth_date
+                                                            }
+                                                            onChange={(event) =>
+                                                                form.setData(
+                                                                    'personal',
+                                                                    {
+                                                                        ...form
+                                                                            .data
+                                                                            .personal,
+                                                                        birth_date:
+                                                                            event
+                                                                                .target
+                                                                                .value,
+                                                                    },
+                                                                )
+                                                            }
+                                                            placeholder={t(
+                                                                'candidate.cv_builder.birth_date_placeholder',
+                                                            )}
+                                                        />
+                                                    </Field>
+                                                </div>
+                                            </div>
+                                        )}
                                     </FormSection>
 
                                     <FormSection
@@ -1414,6 +1585,36 @@ export default function CandidateCv({
                                             }
                                             t={t}
                                         />
+                                    </FormSection>
+
+                                    <FormSection
+                                        title={t(
+                                            'candidate.cv_builder.section_academic_title',
+                                        )}
+                                        description={t(
+                                            'candidate.cv_builder.section_academic_description',
+                                        )}
+                                    >
+                                        <textarea
+                                            className="min-h-[110px] w-full rounded-md border bg-background px-3 py-2 text-sm"
+                                            value={form.data.academic.join('\n')}
+                                            onChange={(event) =>
+                                                form.setData(
+                                                    'academic',
+                                                    event.target.value.split(
+                                                        '\n',
+                                                    ),
+                                                )
+                                            }
+                                            placeholder={t(
+                                                'candidate.cv_builder.academic_placeholder',
+                                            )}
+                                        />
+                                        <FieldHint>
+                                            {t(
+                                                'candidate.cv_builder.academic_hint',
+                                            )}
+                                        </FieldHint>
                                     </FormSection>
                                 </AccordionSection>
 
@@ -2214,6 +2415,125 @@ export default function CandidateCv({
                                         )}
                                     </ArraySection>
                                 </AccordionSection>
+
+                                <AccordionSection
+                                    sectionKey="bahasa"
+                                    title={t('candidate.cv_builder.tab_languages')}
+                                    open={openSections.has('bahasa')}
+                                    onToggle={() => toggleSection('bahasa')}
+                                    badge={
+                                        filledLanguages > 0 ? (
+                                            <Badge
+                                                variant="secondary"
+                                                className="ml-1 px-1.5"
+                                            >
+                                                {filledLanguages}
+                                            </Badge>
+                                        ) : null
+                                    }
+                                    className="space-y-4"
+                                >
+                                    <ArraySection
+                                        title={t(
+                                            'candidate.cv_builder.section_language_title',
+                                        )}
+                                        addLabel={t(
+                                            'candidate.cv_builder.add_language',
+                                        )}
+                                        emptyTitle={t(
+                                            'candidate.cv_builder.empty_language_title',
+                                        )}
+                                        emptyDescription={t(
+                                            'candidate.cv_builder.empty_language_description',
+                                        )}
+                                        isEmpty={
+                                            form.data.languages.length === 0
+                                        }
+                                        onAdd={() =>
+                                            form.setData('languages', [
+                                                ...form.data.languages,
+                                                languageTemplate,
+                                            ])
+                                        }
+                                    >
+                                        {form.data.languages.map(
+                                            (item, index) => (
+                                                <SimpleArrayCard
+                                                    key={`language-${index}`}
+                                                    title={
+                                                        item.name || 'Bahasa'
+                                                    }
+                                                    onRemove={() =>
+                                                        form.setData(
+                                                            'languages',
+                                                            form.data.languages.filter(
+                                                                (
+                                                                    _,
+                                                                    itemIndex,
+                                                                ) =>
+                                                                    itemIndex !==
+                                                                    index,
+                                                            ),
+                                                        )
+                                                    }
+                                                >
+                                                    <div className="grid gap-3 md:grid-cols-2">
+                                                        <Input
+                                                            value={
+                                                                item.name ?? ''
+                                                            }
+                                                            placeholder={t(
+                                                                'candidate.cv_builder.language_name_placeholder',
+                                                            )}
+                                                            onChange={(event) =>
+                                                                updateItem(
+                                                                    form.data
+                                                                        .languages,
+                                                                    index,
+                                                                    {
+                                                                        name: event
+                                                                            .target
+                                                                            .value,
+                                                                    },
+                                                                    (next) =>
+                                                                        form.setData(
+                                                                            'languages',
+                                                                            next,
+                                                                        ),
+                                                                )
+                                                            }
+                                                        />
+                                                        <Input
+                                                            value={
+                                                                item.level ?? ''
+                                                            }
+                                                            placeholder={t(
+                                                                'candidate.cv_builder.language_level_placeholder',
+                                                            )}
+                                                            onChange={(event) =>
+                                                                updateItem(
+                                                                    form.data
+                                                                        .languages,
+                                                                    index,
+                                                                    {
+                                                                        level: event
+                                                                            .target
+                                                                            .value,
+                                                                    },
+                                                                    (next) =>
+                                                                        form.setData(
+                                                                            'languages',
+                                                                            next,
+                                                                        ),
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                </SimpleArrayCard>
+                                            ),
+                                        )}
+                                    </ArraySection>
+                                </AccordionSection>
                             </div>
 
                             <InputError
@@ -2877,6 +3197,80 @@ function updateItem<T extends object>(
         itemIndex === index ? { ...item, ...patch } : item,
     );
     onChange(next);
+}
+
+function PhotoUploader({ photoPath }: { photoPath: string }) {
+    const { t } = useTranslate();
+    const [uploading, setUploading] = useState(false);
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    const previewUrl = photoPath ? `/storage/${photoPath}` : null;
+
+    const onPick = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) {
+            return;
+        }
+
+        setUploading(true);
+        router.post(
+            builderPhoto().url,
+            { photo: file },
+            {
+                forceFormData: true,
+                preserveScroll: true,
+                onFinish: () => {
+                    setUploading(false);
+                    if (inputRef.current) {
+                        inputRef.current.value = '';
+                    }
+                },
+            },
+        );
+    };
+
+    return (
+        <Field
+            label={t('candidate.cv_builder.photo_label')}
+            name="personal.photo_path"
+        >
+            <div className="flex items-center gap-3">
+                <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+                    {previewUrl ? (
+                        <img
+                            src={previewUrl}
+                            alt=""
+                            className="size-full object-cover"
+                        />
+                    ) : (
+                        <User className="size-6 text-muted-foreground" />
+                    )}
+                </div>
+                <div className="space-y-1">
+                    <input
+                        ref={inputRef}
+                        type="file"
+                        accept="image/jpeg,image/png"
+                        className="hidden"
+                        onChange={onPick}
+                    />
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={uploading}
+                        onClick={() => inputRef.current?.click()}
+                    >
+                        {uploading
+                            ? t('candidate.cv_builder.photo_uploading')
+                            : t('candidate.cv_builder.photo_button')}
+                    </Button>
+                    <FieldHint>
+                        {t('candidate.cv_builder.photo_hint')}
+                    </FieldHint>
+                </div>
+            </div>
+        </Field>
+    );
 }
 
 function FormSection({

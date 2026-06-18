@@ -18,20 +18,29 @@ class SaveCandidateCvBuilderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'template' => ['nullable', 'string', Rule::in(['ats'])],
+            'template' => ['nullable', 'string', Rule::in(['ats', 'modern'])],
             'title' => ['nullable', 'string', 'max:120'],
             'summary' => ['nullable', 'string', 'max:2500'],
             'personal' => ['required', 'array'],
             'personal.full_name' => ['required', 'string', 'max:120'],
             'personal.headline' => ['nullable', 'string', 'max:160'],
+            'personal.degree_title' => ['nullable', 'string', 'max:120'],
+            'personal.birth_place' => ['nullable', 'string', 'max:80'],
+            'personal.birth_date' => ['nullable', 'string', 'max:40'],
             'personal.email' => ['nullable', 'email', 'max:120'],
             'personal.phone' => ['nullable', 'string', 'max:40'],
             'personal.city' => ['nullable', 'string', 'max:80'],
             'personal.linkedin' => ['nullable', 'url', 'max:255'],
             'personal.github' => ['nullable', 'url', 'max:255'],
             'personal.portfolio' => ['nullable', 'url', 'max:255'],
+            'personal.photo_path' => ['nullable', 'string', 'max:255'],
             'skills' => ['nullable', 'array', 'max:40'],
             'skills.*' => ['nullable', 'string', 'max:80'],
+            'academic' => ['nullable', 'array', 'max:20'],
+            'academic.*' => ['nullable', 'string', 'max:300'],
+            'languages' => ['nullable', 'array', 'max:15'],
+            'languages.*.name' => ['nullable', 'string', 'max:60'],
+            'languages.*.level' => ['nullable', 'string', 'max:40'],
             'experiences' => ['nullable', 'array', 'max:20'],
             'experiences.*.job_title' => ['nullable', 'string', 'max:120'],
             'experiences.*.company_name' => ['nullable', 'string', 'max:120'],
@@ -65,10 +74,12 @@ class SaveCandidateCvBuilderRequest extends FormRequest
     {
         $this->merge([
             'skills' => is_array($this->input('skills')) ? $this->input('skills') : [],
+            'academic' => is_array($this->input('academic')) ? $this->input('academic') : [],
             'experiences' => is_array($this->input('experiences')) ? $this->input('experiences') : [],
             'educations' => is_array($this->input('educations')) ? $this->input('educations') : [],
             'projects' => is_array($this->input('projects')) ? $this->input('projects') : [],
             'certifications' => is_array($this->input('certifications')) ? $this->input('certifications') : [],
+            'languages' => is_array($this->input('languages')) ? $this->input('languages') : [],
         ]);
     }
 }
