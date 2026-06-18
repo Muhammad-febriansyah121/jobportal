@@ -2759,6 +2759,10 @@ function CvLivePreview({
     data: CvBuilderData;
     t: (key: string) => string;
 }) {
+    if (data.template === 'modern') {
+        return <CvModernPreview data={data} t={t} />;
+    }
+
     const personal = data.personal;
     const contactLine = [personal.city, personal.email, personal.phone]
         .filter((value) => value && value.trim() !== '')
@@ -3091,6 +3095,316 @@ function PreviewSectionTitle({ title }: { title: string }) {
         <h3 className="mb-1.5 border-b border-slate-300 pb-1 text-[10px] font-bold tracking-[0.2em] text-slate-700 uppercase">
             {title}
         </h3>
+    );
+}
+
+function ModernSectionTitle({ title }: { title: string }) {
+    return (
+        <h3 className="mb-1.5 border-b-[1.5px] border-slate-900 pb-1 text-[11px] font-bold tracking-[0.08em] text-[#1f3c88] uppercase">
+            {title}
+        </h3>
+    );
+}
+
+function CvModernPreview({
+    data,
+    t,
+}: {
+    data: CvBuilderData;
+    t: (key: string) => string;
+}) {
+    const p = data.personal;
+    const birthLine = [p.birth_place, p.birth_date]
+        .filter((v) => v && v.trim() !== '')
+        .join(', ');
+    const links = [p.linkedin, p.github, p.portfolio].filter(
+        (v) => v && v.trim() !== '',
+    );
+    const photoUrl = p.photo_path ? `/storage/${p.photo_path}` : null;
+
+    const bullets = (description?: string): string[] =>
+        (description ?? '')
+            .split(/\r\n|\r|\n|•|- /)
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0);
+
+    const period = (start?: string, end?: string, isCurrent?: boolean) => {
+        const s = start?.trim() ?? '';
+        const e = isCurrent
+            ? t('candidate.cv_builder.now')
+            : (end?.trim() ?? '');
+        if (!s && !e) return '';
+        if (!s) return e;
+        if (!e) return s;
+        return `${s} - ${e}`;
+    };
+
+    const skills = data.skills.filter((v) => v.trim() !== '');
+    const academic = data.academic.filter((v) => v.trim() !== '');
+    const experiences = data.experiences.filter(
+        (i) => i.company_name || i.job_title || i.description,
+    );
+    const educations = data.educations.filter(
+        (i) => i.school_name || i.degree || i.field_of_study,
+    );
+    const certifications = data.certifications.filter((i) => i.name || i.issuer);
+    const languages = data.languages
+        .map((l) =>
+            l.level ? `${l.name ?? ''} (${l.level})` : (l.name ?? ''),
+        )
+        .filter((v) => v.trim() !== '');
+
+    return (
+        <div className="rounded-b-xl bg-slate-200/80 px-4 py-5 sm:px-5">
+            <div
+                className="mx-auto bg-white font-serif text-[11px] leading-[1.5] text-slate-900"
+                style={{
+                    aspectRatio: '1 / 1.414',
+                    width: '100%',
+                    maxWidth: '720px',
+                    minHeight: '720px',
+                    boxShadow:
+                        '0 1px 2px rgba(15, 23, 42, 0.08), 0 12px 28px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.04)',
+                }}
+            >
+                <div className="space-y-3.5 px-[7%] py-[6%]">
+                    <header className="flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                            <h2 className="text-[20px] leading-tight font-bold text-[#1f3c88]">
+                                {(
+                                    p.full_name ||
+                                    t('candidate.cv_builder.full_name_fallback')
+                                ).toUpperCase()}
+                            </h2>
+                            {birthLine ? (
+                                <p className="text-slate-800">{birthLine}</p>
+                            ) : null}
+                            {p.degree_title || p.headline ? (
+                                <p className="text-slate-800">
+                                    {p.degree_title || p.headline}
+                                </p>
+                            ) : null}
+                            <div className="space-y-0.5 pt-1 text-[10.5px] text-slate-700">
+                                {p.city ? (
+                                    <p className="flex items-center gap-1.5">
+                                        <MapPin className="size-3 text-[#1f3c88]" />
+                                        {p.city}
+                                    </p>
+                                ) : null}
+                                {p.phone ? (
+                                    <p className="flex items-center gap-1.5">
+                                        <Phone className="size-3 text-[#1f3c88]" />
+                                        {p.phone}
+                                    </p>
+                                ) : null}
+                                {p.email ? (
+                                    <p className="flex items-center gap-1.5">
+                                        <Mail className="size-3 text-[#1f3c88]" />
+                                        {p.email}
+                                    </p>
+                                ) : null}
+                                {links.map((link) => (
+                                    <p
+                                        key={link}
+                                        className="flex items-center gap-1.5"
+                                    >
+                                        <Globe className="size-3 text-[#1f3c88]" />
+                                        {link}
+                                    </p>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="size-[88px] shrink-0 overflow-hidden border-2 border-slate-300 bg-slate-100">
+                            {photoUrl ? (
+                                <img
+                                    src={photoUrl}
+                                    alt=""
+                                    className="size-full object-cover"
+                                />
+                            ) : (
+                                <div className="flex size-full items-center justify-center">
+                                    <User className="size-7 text-slate-400" />
+                                </div>
+                            )}
+                        </div>
+                    </header>
+
+                    {data.summary ? (
+                        <section>
+                            <ModernSectionTitle
+                                title={t(
+                                    'candidate.cv_builder.preview_summary_title',
+                                )}
+                            />
+                            <p className="text-justify text-slate-800">
+                                {data.summary}
+                            </p>
+                        </section>
+                    ) : null}
+
+                    {educations.length > 0 ? (
+                        <section>
+                            <ModernSectionTitle
+                                title={t(
+                                    'candidate.cv_builder.preview_education_title',
+                                )}
+                            />
+                            {educations.map((item, index) => (
+                                <div key={`edu-${index}`} className="mb-1.5">
+                                    <p className="font-bold">
+                                        {item.school_name}
+                                    </p>
+                                    {item.degree || item.field_of_study ? (
+                                        <p className="text-slate-800">
+                                            {[item.degree, item.field_of_study]
+                                                .filter((v) => v)
+                                                .join(' | ')}
+                                        </p>
+                                    ) : null}
+                                    {period(
+                                        item.start_year,
+                                        item.end_year,
+                                    ) ? (
+                                        <p className="text-[10px] text-slate-600">
+                                            {period(
+                                                item.start_year,
+                                                item.end_year,
+                                            )}
+                                        </p>
+                                    ) : null}
+                                </div>
+                            ))}
+                        </section>
+                    ) : null}
+
+                    {academic.length > 0 ? (
+                        <section>
+                            <ModernSectionTitle
+                                title={t(
+                                    'candidate.cv_builder.section_academic_title',
+                                )}
+                            />
+                            <ul className="ml-4 list-disc space-y-0.5 text-slate-800">
+                                {academic.map((item, index) => (
+                                    <li key={`aca-${index}`}>{item}</li>
+                                ))}
+                            </ul>
+                        </section>
+                    ) : null}
+
+                    {experiences.length > 0 ? (
+                        <section>
+                            <ModernSectionTitle
+                                title={t(
+                                    'candidate.cv_builder.preview_experience_title',
+                                )}
+                            />
+                            {experiences.map((item, index) => {
+                                const lines = bullets(item.description);
+
+                                return (
+                                    <div
+                                        key={`exp-${index}`}
+                                        className="mb-2 space-y-0.5"
+                                    >
+                                        {item.company_name ? (
+                                            <p className="font-bold">
+                                                {item.company_name}
+                                            </p>
+                                        ) : null}
+                                        {[
+                                            item.location,
+                                            period(
+                                                item.start_date,
+                                                item.end_date,
+                                                item.is_current,
+                                            ),
+                                        ]
+                                            .filter((v) => v)
+                                            .join(' | ') ? (
+                                            <p className="text-[10px] text-slate-600">
+                                                {[
+                                                    item.location,
+                                                    period(
+                                                        item.start_date,
+                                                        item.end_date,
+                                                        item.is_current,
+                                                    ),
+                                                ]
+                                                    .filter((v) => v)
+                                                    .join(' | ')}
+                                            </p>
+                                        ) : null}
+                                        {item.job_title ? (
+                                            <p className="text-slate-800">
+                                                {item.job_title}
+                                            </p>
+                                        ) : null}
+                                        {lines.length > 0 ? (
+                                            <ul className="ml-4 list-disc space-y-0.5 text-slate-800">
+                                                {lines.map((b, bIndex) => (
+                                                    <li key={bIndex}>{b}</li>
+                                                ))}
+                                            </ul>
+                                        ) : null}
+                                    </div>
+                                );
+                            })}
+                        </section>
+                    ) : null}
+
+                    {skills.length > 0 ? (
+                        <section>
+                            <ModernSectionTitle
+                                title={t(
+                                    'candidate.cv_builder.preview_skills_title',
+                                )}
+                            />
+                            <ul className="ml-4 list-disc space-y-0.5 text-slate-800">
+                                {skills.map((skill, index) => (
+                                    <li key={`skill-${index}`}>{skill}</li>
+                                ))}
+                            </ul>
+                        </section>
+                    ) : null}
+
+                    {certifications.length > 0 ? (
+                        <section>
+                            <ModernSectionTitle
+                                title={t(
+                                    'candidate.cv_builder.preview_certification_title',
+                                )}
+                            />
+                            <ul className="ml-4 list-disc space-y-0.5 text-slate-800">
+                                {certifications.map((item, index) => (
+                                    <li key={`cert-${index}`}>
+                                        {[item.name, item.issuer, item.year]
+                                            .filter((v) => v)
+                                            .join(' - ')}
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    ) : null}
+
+                    {languages.length > 0 ? (
+                        <section>
+                            <ModernSectionTitle
+                                title={t('candidate.cv_builder.tab_languages')}
+                            />
+                            <ul className="ml-4 list-disc space-y-0.5 text-slate-800">
+                                {languages.map((lang, index) => (
+                                    <li key={`lang-${index}`}>{lang}</li>
+                                ))}
+                            </ul>
+                        </section>
+                    ) : null}
+                </div>
+            </div>
+            <p className="mt-2 text-center text-[10px] text-slate-500">
+                {t('candidate.cv_builder.preview_footer')}
+            </p>
+        </div>
     );
 }
 
