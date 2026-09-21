@@ -115,7 +115,9 @@ export function AdminDataTable({
                             key={`${link.label}-${link.url}`}
                         >
                             {link.url ? (
-                                <Link href={link.url}>{cleanPaginationLabel(link.label)}</Link>
+                                <Link href={normalizeInternalUrl(link.url)}>
+                                    {cleanPaginationLabel(link.label)}
+                                </Link>
                             ) : (
                                 <span>{cleanPaginationLabel(link.label)}</span>
                             )}
@@ -125,6 +127,24 @@ export function AdminDataTable({
             )}
         </div>
     );
+}
+
+function normalizeInternalUrl(url: string): string {
+    if (typeof window === 'undefined') {
+        return url;
+    }
+
+    try {
+        const parsedUrl = new URL(url, window.location.href);
+
+        if (parsedUrl.hostname !== window.location.hostname) {
+            return url;
+        }
+
+        return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+    } catch {
+        return url;
+    }
 }
 
 function Cell({ value }: { value: AdminCell }) {
