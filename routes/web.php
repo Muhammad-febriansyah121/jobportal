@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\AdminPlatformAnalyticsController;
 use App\Http\Controllers\Admin\AdminPricingPlanController;
 use App\Http\Controllers\Admin\AdminReportController;
 use App\Http\Controllers\Admin\AdminSalaryInsightController;
+use App\Http\Controllers\Admin\AdminScrapedJobController;
 use App\Http\Controllers\Admin\AdminSkillController;
 use App\Http\Controllers\Admin\AdminSubIndustryController;
 use App\Http\Controllers\Admin\AdminSubscriptionController;
@@ -138,6 +139,10 @@ Route::prefix('admin')
         Route::patch('jobs/{jobListing}/publish', [AdminJobListingController::class, 'publish'])->name('jobs.publish');
         Route::patch('jobs/{jobListing}/suspend', [AdminJobListingController::class, 'suspend'])->name('jobs.suspend');
         Route::patch('jobs/{jobListing}/reject', [AdminJobListingController::class, 'reject'])->name('jobs.reject');
+
+        Route::resource('scraped-jobs', AdminScrapedJobController::class)
+            ->parameters(['scraped-jobs' => 'scrapedJob'])
+            ->only(['index', 'show']);
 
         Route::resource('reports', AdminReportController::class)->only(['index', 'show']);
         Route::patch('reports/{report}/under-review', [AdminReportController::class, 'underReview'])->name('reports.under-review');

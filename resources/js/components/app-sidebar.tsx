@@ -103,6 +103,7 @@ import { edit as adminLegalTerms } from '@/routes/admin/legal/terms';
 import { index as adminPricingPlans } from '@/routes/admin/pricing-plans';
 import { index as adminReports } from '@/routes/admin/reports';
 import { index as adminSalaryInsights } from '@/routes/admin/salary-insights';
+import { index as adminScrapedJobs } from '@/routes/admin/scraped-jobs';
 import { index as adminDatabaseBackup } from '@/routes/admin/database-backup';
 import { edit as adminSettings } from '@/routes/admin/settings';
 import { index as adminSkills } from '@/routes/admin/skills';
@@ -272,6 +273,11 @@ function AdminSidebar() {
                         title: t('nav.admin.jobs'),
                         href: adminJobs(),
                         icon: BriefcaseBusiness,
+                    },
+                    {
+                        title: t('nav.admin.scraped_jobs'),
+                        href: adminScrapedJobs(),
+                        icon: FileSearch,
                     },
                 ],
             },

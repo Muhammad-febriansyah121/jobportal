@@ -73,6 +73,7 @@
     "nav.admin.companies": "Perusahaan",
     "nav.admin.company_verifications": "Verifikasi Perusahaan",
     "nav.admin.jobs": "Lowongan",
+    "nav.admin.scraped_jobs": "Hasil Scrape",
     "nav.admin.skills": "Skill & Keahlian",
     "nav.admin.assessment_questions": "Bank Soal",
     "nav.admin.industries": "Industri",
