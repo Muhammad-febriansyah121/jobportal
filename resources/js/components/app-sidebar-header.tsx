@@ -131,14 +131,14 @@ export function AppSidebarHeader({
     };
 
     return (
-        <header className="flex h-18 shrink-0 items-center justify-between gap-4 border-b border-[#e8edf3] bg-white px-4 py-3 transition-[width,height] ease-linear md:px-8 md:py-0">
+        <header className="flex h-18 shrink-0 items-center justify-between gap-4 border-b border-[#E5EDF7] bg-white px-4 py-3 transition-[width,height] ease-linear md:px-8 md:py-0">
             <div className="flex items-center gap-3 md:flex-1">
-                <SidebarTrigger className="-ml-1 text-[#667085] hover:text-[#01296A]" />
+                <SidebarTrigger className="-ml-1 text-[#667085] hover:text-[#0F4C94]" />
                 <div className="relative hidden w-full max-w-[520px] md:block">
                     <Search className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-[#9aa4b2]" />
                     <Input
                         placeholder={searchPlaceholder}
-                        className="h-11 rounded-lg border-0 bg-[#f4f7fa] pl-12 text-sm font-medium text-[#4b5565] shadow-none focus-visible:bg-white"
+                        className="h-11 rounded-lg border-0 bg-[#F8FAFC] pl-12 text-sm font-medium text-[#64748B] shadow-none focus-visible:bg-white"
                     />
                 </div>
             </div>
@@ -147,7 +147,7 @@ export function AppSidebarHeader({
                 <LanguageSwitcher
                     align="end"
                     variant="inline"
-                    triggerClassName="h-11 rounded-lg bg-[#f4f7fa] text-[#4b5565] hover:bg-[#eaf2ff] hover:text-[#01296A]"
+                    triggerClassName="h-11 rounded-lg bg-[#F8FAFC] text-[#64748B] hover:bg-[#F4F8FF] hover:text-[#0F4C94]"
                 />
 
                 <Sheet>
@@ -155,12 +155,12 @@ export function AppSidebarHeader({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="relative h-11 w-11 rounded-lg bg-[#f4f7fa] text-[#667085] hover:bg-[#eaf2ff] hover:text-[#01296A]"
+                            className="relative h-11 w-11 rounded-lg bg-[#F8FAFC] text-[#667085] hover:bg-[#F4F8FF] hover:text-[#0F4C94]"
                             aria-label={t('shared.notification_bell')}
                         >
                             <Bell className="size-5" />
                             {unreadNotificationCount > 0 ? (
-                                <span className="absolute top-1.5 right-1.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#01296A] px-1 text-[10px] font-bold text-white">
+                                <span className="absolute top-1.5 right-1.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#0F4C94] px-1 text-[10px] font-bold text-white">
                                     {unreadNotificationCount > 9
                                         ? '9+'
                                         : unreadNotificationCount}
@@ -172,13 +172,13 @@ export function AppSidebarHeader({
                         side="right"
                         className="flex w-full flex-col gap-0 p-0 sm:max-w-sm"
                     >
-                        <SheetHeader className="border-b border-[#e8edf3] px-5 py-4">
+                        <SheetHeader className="border-b border-[#E5EDF7] px-5 py-4">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="flex flex-col gap-1">
-                                    <SheetTitle className="text-base font-bold text-[#111827]">
+                                    <SheetTitle className="text-base font-bold text-[#0F2747]">
                                         {t('app_header.notifications_title')}
                                     </SheetTitle>
-                                    <SheetDescription className="text-xs text-[#8490a3]">
+                                    <SheetDescription className="text-xs text-[#64748B]">
                                         {unreadNotificationCount > 0
                                             ? t('app_header.notifications_unread', { count: unreadNotificationCount })
                                             : t('app_header.notifications_none')}
@@ -188,7 +188,7 @@ export function AppSidebarHeader({
                                     <button
                                         type="button"
                                         onClick={handleMarkAllRead}
-                                        className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-[#01296A] transition hover:bg-[#eaf2ff]"
+                                        className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-[#0F4C94] transition hover:bg-[#F4F8FF]"
                                     >
                                         <CheckCheck className="size-3.5" />
                                         {t('app_header.notifications_mark_all_read')}
@@ -198,7 +198,7 @@ export function AppSidebarHeader({
                         </SheetHeader>
                         <div className="flex-1 overflow-y-auto p-3">
                             {notifications.length === 0 ? (
-                                <div className="rounded-md px-3 py-10 text-center text-sm text-[#8490a3]">
+                                <div className="rounded-md px-3 py-10 text-center text-sm text-[#64748B]">
                                     {t('app_header.notifications_empty')}
                                 </div>
                             ) : (
@@ -221,11 +221,11 @@ export function AppSidebarHeader({
                                             )}
                                         >
                                             <div className="flex items-start justify-between gap-2">
-                                                <span className="text-sm font-semibold text-[#111827]">
+                                                <span className="text-sm font-semibold text-[#0F2747]">
                                                     {notification.title}
                                                 </span>
                                                 {notification.is_read ? null : (
-                                                    <span className="mt-1 size-2 rounded-full bg-[#01296A]" />
+                                                    <span className="mt-1 size-2 rounded-full bg-[#0F4C94]" />
                                                 )}
                                             </div>
                                             {notification.message ? (
@@ -247,19 +247,19 @@ export function AppSidebarHeader({
                         </div>
                     </SheetContent>
                 </Sheet>
-                <div className="hidden h-10 w-px bg-[#e8edf3] md:block" />
+                <div className="hidden h-10 w-px bg-[#E5EDF7] md:block" />
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <button className="flex min-w-0 items-center gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-[#eaf2ff] data-[state=open]:bg-[#eaf2ff]">
+                        <button className="flex min-w-0 items-center gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-[#F4F8FF] data-[state=open]:bg-[#F4F8FF]">
                             <span className="hidden min-w-0 text-right md:block">
-                                <span className="block truncate text-sm font-bold text-[#111827]">
+                                <span className="block truncate text-sm font-bold text-[#0F2747]">
                                     {auth.user?.name ?? 'Karivia'}
                                 </span>
-                                <span className="block truncate text-xs font-medium text-[#8490a3]">
+                                <span className="block truncate text-xs font-medium text-[#64748B]">
                                     {roleLabel}
                                 </span>
                             </span>
-                            <span className="flex size-11 items-center justify-center overflow-hidden rounded-full border-2 border-[#d6e0f5] bg-[#1E4D96] text-sm font-bold text-white">
+                            <span className="flex size-11 items-center justify-center overflow-hidden rounded-full border-2 border-[#E5EDF7] bg-[#136BB4] text-sm font-bold text-white">
                                 {auth.user?.avatar_url ? (
                                     <img
                                         src={auth.user.avatar_url}
@@ -274,7 +274,7 @@ export function AppSidebarHeader({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
                         align="end"
-                        className="w-56 rounded-lg border-[#e8edf3] p-2"
+                        className="w-56 rounded-lg border-[#E5EDF7] p-2"
                     >
                         <DropdownMenuItem asChild>
                             <Link

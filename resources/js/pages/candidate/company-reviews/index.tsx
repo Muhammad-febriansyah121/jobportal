@@ -314,9 +314,9 @@ export default function CandidateCompanyReviewsIndex({
                 )}
 
                 {/* Notice */}
-                <div className="rounded-xl border border-[#01296a]/20 bg-[#01296a]/5 px-4 py-3 text-sm text-[#01296a]">
+                <div className="rounded-xl border border-[#0F4C94]/20 bg-[#0F4C94]/5 px-4 py-3 text-sm text-[#0F4C94]">
                     <p className="font-semibold">{t('candidate.company_reviews.notice_title')}</p>
-                    <p className="mt-1 text-[#01296a]/80">
+                    <p className="mt-1 text-[#0F4C94]/80">
                         {t('candidate.company_reviews.notice_description')}
                     </p>
                 </div>

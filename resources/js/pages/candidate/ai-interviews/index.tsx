@@ -312,10 +312,10 @@ function MockInterviewSection({
 
     return (
         <div className="space-y-5">
-            <Card className="border-[#01296A]/15 bg-gradient-to-br from-[#eff4ff] to-background">
+            <Card className="border-[#0F4C94]/15 bg-gradient-to-br from-[#eff4ff] to-background">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Sparkles className="size-5 text-[#01296A]" />
+                        <Sparkles className="size-5 text-[#0F4C94]" />
                         {t('candidate.ai_interviews.quickstart_title')}
                     </CardTitle>
                     <CardDescription>
@@ -629,10 +629,10 @@ function QuickStartCard({
             type="button"
             onClick={() => form.post(storeUrl, { preserveScroll: false })}
             disabled={form.processing}
-            className="group flex h-full flex-col gap-3 rounded-lg border bg-background p-4 text-left transition hover:border-[#01296A]/40 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+            className="group flex h-full flex-col gap-3 rounded-lg border bg-background p-4 text-left transition hover:border-[#0F4C94]/40 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
         >
             <div className="flex items-center gap-2">
-                <span className="rounded-md bg-[#01296A]/10 p-2 text-[#01296A]">
+                <span className="rounded-md bg-[#0F4C94]/10 p-2 text-[#0F4C94]">
                     <Icon className="size-4" />
                 </span>
                 <p className="text-sm font-semibold">{preset.label}</p>
@@ -640,7 +640,7 @@ function QuickStartCard({
             <p className="flex-1 text-xs text-muted-foreground">
                 {preset.description}
             </p>
-            <div className="flex items-center gap-2 text-xs font-medium text-[#01296A] group-hover:underline">
+            <div className="flex items-center gap-2 text-xs font-medium text-[#0F4C94] group-hover:underline">
                 {form.processing
                     ? t('candidate.ai_interviews.btn_starting')
                     : t('candidate.ai_interviews.btn_start')}
@@ -664,7 +664,7 @@ function ApplicationStartCard({
         <Form
             action={storeUrl}
             method="post"
-            className="flex h-full flex-col gap-3 rounded-lg border p-4 transition hover:border-[#01296A]/40 hover:shadow-sm"
+            className="flex h-full flex-col gap-3 rounded-lg border p-4 transition hover:border-[#0F4C94]/40 hover:shadow-sm"
         >
             {({ processing }) => (
                 <>
@@ -707,7 +707,7 @@ function ApplicationStartCard({
                                     className={cn(
                                         'flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition',
                                         mode === option
-                                            ? 'bg-[#01296A] text-white'
+                                            ? 'bg-[#0F4C94] text-white'
                                             : 'text-muted-foreground hover:text-foreground',
                                     )}
                                 >
@@ -826,7 +826,7 @@ function SkillDrillSection({
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <Brain className="size-5 text-[#01296A]" />
+                    <Brain className="size-5 text-[#0F4C94]" />
                     {t('candidate.ai_interviews.skill_drill_title')}
                 </CardTitle>
                 <CardDescription>
@@ -844,7 +844,7 @@ function SkillDrillSection({
                         <div className="space-y-2">
                             <div className="flex min-h-10 flex-wrap items-center gap-2 rounded-md border border-input bg-background px-3 py-2 focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/40">
                                 {skill && (
-                                    <span className="inline-flex items-center gap-1 rounded-md bg-[#01296A]/10 py-1 pr-1 pl-2.5 text-sm text-[#01296A]">
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-[#0F4C94]/10 py-1 pr-1 pl-2.5 text-sm text-[#0F4C94]">
                                         {skill}
                                         <button
                                             type="button"
@@ -852,7 +852,7 @@ function SkillDrillSection({
                                             aria-label={t(
                                                 'candidate.ai_interviews.aria_remove_skill',
                                             )}
-                                            className="rounded-sm p-0.5 hover:bg-[#01296A]/15"
+                                            className="rounded-sm p-0.5 hover:bg-[#0F4C94]/15"
                                         >
                                             <X className="size-3.5" />
                                         </button>
@@ -1090,7 +1090,7 @@ function RecentSessionItem({ session }: { session: RecentSession }) {
     return (
         <Link
             href={show(session.id).url}
-            className="flex items-start gap-3 rounded-lg border p-3 transition hover:border-[#01296A]/40 hover:shadow-sm"
+            className="flex items-start gap-3 rounded-lg border p-3 transition hover:border-[#0F4C94]/40 hover:shadow-sm"
         >
             <span className="mt-0.5 rounded-md bg-muted/40 p-2 text-muted-foreground">
                 <Icon className="size-4" />
@@ -1107,7 +1107,7 @@ function RecentSessionItem({ session }: { session: RecentSession }) {
                         {session.status.replace('_', ' ')}
                     </span>
                     {session.is_employer_scheduled ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-[#01296A]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#01296A]">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-[#0F4C94]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#0F4C94]">
                             <Briefcase className="size-3" />
                             {t(
                                 'candidate.ai_interviews.company_interview_label',
@@ -1191,7 +1191,7 @@ function PillRadio({
                     key={option.value}
                     className={`cursor-pointer rounded-md border px-3 py-1.5 text-sm transition ${
                         value === option.value
-                            ? 'border-[#01296A] bg-[#01296A]/5 font-medium text-[#01296A]'
+                            ? 'border-[#0F4C94] bg-[#0F4C94]/5 font-medium text-[#0F4C94]'
                             : 'border-input hover:border-foreground/30'
                     }`}
                 >
@@ -1234,7 +1234,7 @@ function RadioCardGroup({
                         key={option.value}
                         className={`flex cursor-pointer flex-col gap-1.5 rounded-lg border p-3 transition ${
                             active
-                                ? 'border-[#01296A] bg-[#01296A]/5 ring-2 ring-[#01296A]/20'
+                                ? 'border-[#0F4C94] bg-[#0F4C94]/5 ring-2 ring-[#0F4C94]/20'
                                 : 'border-input hover:border-foreground/30'
                         }`}
                     >
@@ -1249,11 +1249,11 @@ function RadioCardGroup({
                         <div className="flex items-center gap-2">
                             {Icon ? (
                                 <Icon
-                                    className={`size-4 ${active ? 'text-[#01296A]' : 'text-muted-foreground'}`}
+                                    className={`size-4 ${active ? 'text-[#0F4C94]' : 'text-muted-foreground'}`}
                                 />
                             ) : null}
                             <p
-                                className={`text-sm font-semibold ${active ? 'text-[#01296A]' : ''}`}
+                                className={`text-sm font-semibold ${active ? 'text-[#0F4C94]' : ''}`}
                             >
                                 {option.label}
                             </p>

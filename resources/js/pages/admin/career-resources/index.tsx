@@ -46,7 +46,7 @@ export default function CareerResourceIndex({
                     </div>
                     <Button
                         asChild
-                        className="bg-[#01296A] hover:bg-[#001D4D]"
+                        className="bg-[#0F4C94] hover:bg-[#093579]"
                     >
                         <Link href={createHref} prefetch>
                             <Plus />

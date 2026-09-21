@@ -43,7 +43,7 @@ function CustomTabs({
                     onClick={() => onChange(tab.key)}
                     className={`flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition ${
                         active === tab.key
-                            ? 'border-[#1E4D96] text-[#1E4D96]'
+                            ? 'border-[#136BB4] text-[#136BB4]'
                             : 'border-transparent text-muted-foreground hover:text-foreground'
                     }`}
                 >
@@ -91,8 +91,8 @@ function Section({
     return (
         <Card>
             <div className="flex items-center gap-3 border-b px-6 py-4">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-[#1E4D96]/10">
-                    <Icon className="size-4 text-[#1E4D96]" />
+                <div className="flex size-8 items-center justify-center rounded-lg bg-[#136BB4]/10">
+                    <Icon className="size-4 text-[#136BB4]" />
                 </div>
                 <h2 className="text-base font-semibold">{title}</h2>
             </div>
@@ -137,7 +137,7 @@ function Input({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
-            className="w-full rounded-lg border bg-white px-3 py-2 text-sm ring-offset-background transition outline-none focus:border-[#1E4D96] focus:ring-2 focus:ring-[#1E4D96]/50"
+            className="w-full rounded-lg border bg-white px-3 py-2 text-sm ring-offset-background transition outline-none focus:border-[#136BB4] focus:ring-2 focus:ring-[#136BB4]/50"
         />
     );
 }
@@ -159,7 +159,7 @@ function Textarea({
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
             rows={rows}
-            className="w-full resize-y rounded-lg border bg-white px-3 py-2 text-sm ring-offset-background transition outline-none focus:border-[#1E4D96] focus:ring-2 focus:ring-[#1E4D96]/50"
+            className="w-full resize-y rounded-lg border bg-white px-3 py-2 text-sm ring-offset-background transition outline-none focus:border-[#136BB4] focus:ring-2 focus:ring-[#136BB4]/50"
         />
     );
 }
@@ -181,7 +181,7 @@ function AiApiKeyInput({
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder="sk-..."
-                className="w-full rounded-lg border bg-white px-3 py-2 pr-10 text-sm ring-offset-background transition outline-none focus:border-[#1E4D96] focus:ring-2 focus:ring-[#1E4D96]/50"
+                className="w-full rounded-lg border bg-white px-3 py-2 pr-10 text-sm ring-offset-background transition outline-none focus:border-[#136BB4] focus:ring-2 focus:ring-[#136BB4]/50"
             />
             <button
                 type="button"
@@ -255,8 +255,8 @@ inputRef.current.value = '';
             <div
                 className={`relative flex min-h-36 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition ${
                     isDragging
-                        ? 'border-[#1E4D96] bg-[#1E4D96]/5'
-                        : 'border-border bg-muted/30 hover:border-[#1E4D96]/50'
+                        ? 'border-[#136BB4] bg-[#136BB4]/5'
+                        : 'border-border bg-muted/30 hover:border-[#136BB4]/50'
                 }`}
                 onDragOver={(e) => {
                     e.preventDefault();
@@ -436,7 +436,7 @@ export default function AdminSettings({ settings }: SettingsProps) {
                         <button
                             type="submit"
                             disabled={processing}
-                            className="rounded-lg bg-[#1E4D96] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#001D4D] disabled:opacity-60"
+                            className="rounded-lg bg-[#136BB4] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#093579] disabled:opacity-60"
                         >
                             {processing ? t('admin.settings.saving') : t('admin.settings.save_changes')}
                         </button>
@@ -797,7 +797,7 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                                 }
                                             />
                                             <div
-                                                className={`h-6 w-11 rounded-full transition-colors ${data['maintenance_mode'] ? 'bg-[#1E4D96]' : 'bg-muted-foreground/30'}`}
+                                                className={`h-6 w-11 rounded-full transition-colors ${data['maintenance_mode'] ? 'bg-[#136BB4]' : 'bg-muted-foreground/30'}`}
                                             />
                                             <div
                                                 className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${data['maintenance_mode'] ? 'translate-x-5.5' : 'translate-x-0.5'}`}
@@ -866,7 +866,7 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                                 }
                                             />
                                             <div
-                                                className={`h-6 w-11 rounded-full transition-colors ${data['smtp_auth'] ? 'bg-[#1E4D96]' : 'bg-muted-foreground/30'}`}
+                                                className={`h-6 w-11 rounded-full transition-colors ${data['smtp_auth'] ? 'bg-[#136BB4]' : 'bg-muted-foreground/30'}`}
                                             />
                                             <div
                                                 className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${data['smtp_auth'] ? 'translate-x-5.5' : 'translate-x-0.5'}`}
@@ -929,7 +929,7 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                                 )
                                             }
                                             placeholder="email-tujuan@domain.com"
-                                            className="w-full rounded-lg border bg-white px-3 py-2 text-sm ring-offset-background transition outline-none focus:border-[#1E4D96] focus:ring-2 focus:ring-[#1E4D96]/50"
+                                            className="w-full rounded-lg border bg-white px-3 py-2 text-sm ring-offset-background transition outline-none focus:border-[#136BB4] focus:ring-2 focus:ring-[#136BB4]/50"
                                         />
                                         <button
                                             type="button"
@@ -962,7 +962,7 @@ export default function AdminSettings({ settings }: SettingsProps) {
                                                 smtpTestForm.processing ||
                                                 smtpTestForm.data.to === ''
                                             }
-                                            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[#1E4D96] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#1E4D96]/90 disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[#136BB4] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#136BB4]/90 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
                                             {smtpTestForm.processing
                                                 ? t('admin.settings.system.smtp_test_sending')

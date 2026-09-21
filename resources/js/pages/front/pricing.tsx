@@ -287,7 +287,7 @@ export default function Pricing({ plans, candidateMenus }: Props) {
                                         isLastOrphan ? 'sm:col-span-2 sm:max-w-md sm:justify-self-center lg:max-w-none lg:justify-self-stretch' : ''
                                     } ${
                                         isPopular
-                                            ? 'bg-gradient-to-br from-primary via-primary to-[#01296A] text-white shadow-2xl shadow-primary/30'
+                                            ? 'bg-gradient-to-br from-primary via-primary to-[#0F4C94] text-white shadow-2xl shadow-primary/30'
                                             : isEnterprise
                                               ? 'border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 via-white to-primary/5 hover:-translate-y-1 hover:border-primary/60 hover:shadow-xl'
                                               : 'border border-slate-200/70 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl'
@@ -445,7 +445,7 @@ export default function Pricing({ plans, candidateMenus }: Props) {
                                                 ? 'bg-white text-primary shadow-md hover:bg-white/95 hover:shadow-lg'
                                                 : isEnterprise
                                                   ? 'border border-primary/30 bg-white text-primary hover:border-primary hover:bg-primary hover:text-white'
-                                                  : 'bg-primary text-white hover:bg-[#01296A] hover:shadow-md'
+                                                  : 'bg-primary text-white hover:bg-[#0F4C94] hover:shadow-md'
                                         }`}
                                     >
                                         {isEnterprise

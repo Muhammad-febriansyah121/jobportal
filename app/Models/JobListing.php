@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'company_id', 'created_by', 'industry_id', 'title', 'slug', 'description',
@@ -59,6 +60,11 @@ class JobListing extends Model
     public function analytics(): HasMany
     {
         return $this->hasMany(JobListingAnalytic::class);
+    }
+
+    public function source(): HasOne
+    {
+        return $this->hasOne(JobListingSource::class);
     }
 
     public function aiMatchScores(): HasMany

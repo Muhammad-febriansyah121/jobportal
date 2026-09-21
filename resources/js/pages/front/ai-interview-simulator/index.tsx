@@ -97,7 +97,7 @@ function PageHeader() {
             <div
                 className="pointer-events-none absolute inset-0"
                 style={{
-                    backgroundImage: 'radial-gradient(#01296a18 1px, transparent 1px)',
+                    backgroundImage: 'radial-gradient(#0F4C9418 1px, transparent 1px)',
                     backgroundSize: '26px 26px',
                 }}
             />

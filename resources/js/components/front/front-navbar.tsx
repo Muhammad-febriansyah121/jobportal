@@ -1,450 +1,187 @@
-import { Link, router, usePage } from '@inertiajs/react';
-import {
-    Bot,
-    ChevronDown,
-    ScanSearch,
-    Sparkles,
-} from 'lucide-react';
-import { forwardRef, useMemo, useRef, useState } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
-import { LanguageSwitcher } from '@/components/language-switcher';
-import {
-    MobileNav,
-    MobileNavHeader,
-    MobileNavMenu,
-    MobileNavToggle,
-    Navbar,
-    NavBody,
-} from '@/components/ui/resizable-navbar';
-import { ShimmerButton } from '@/components/ui/shimmer-button';
+import { Link, usePage } from '@inertiajs/react';
+import { ChevronDown, Menu, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useTranslate } from '@/hooks/use-translate';
 import { home, login, register } from '@/routes';
 import { index as companiesIndex } from '@/routes/companies';
 import { index as jobsIndex } from '@/routes/jobs';
 import type { Auth } from '@/types';
 
-type MotionLikeProps<T extends HTMLElement> = React.HTMLAttributes<T> & {
-    animate?: unknown;
-    exit?: unknown;
-    initial?: unknown;
-    layoutId?: unknown;
-    transition?: unknown;
-    variants?: unknown;
-    viewport?: unknown;
-    whileInView?: unknown;
+type Branding = {
+    name?: string;
+    logo_url?: string | null;
 };
 
-function stripMotionProps<T extends HTMLElement>({
-    animate: _animate,
-    exit: _exit,
-    initial: _initial,
-    layoutId: _layoutId,
-    transition: _transition,
-    variants: _variants,
-    viewport: _viewport,
-    whileInView: _whileInView,
-    ...props
-}: MotionLikeProps<T>): React.HTMLAttributes<T> {
-    return props;
-}
+const logoPath = '/images/karivia-assets/logo/karivia-logo-original.png';
 
-const MotionDiv = forwardRef<HTMLDivElement, MotionLikeProps<HTMLDivElement>>(
-    function MotionDiv(props, ref) {
-        return <div ref={ref} {...stripMotionProps(props)} />;
-    },
-);
-
-const AnimatePresence = ({
-    children,
+export default function FrontNavbar({
+    overlay = false,
 }: {
-    children: React.ReactNode;
-    initial?: boolean;
-}) => <>{children}</>;
+    overlay?: boolean;
+}) {
+    const page = usePage<{ auth: Auth; branding?: Branding; name: string }>();
+    const { auth, branding, name } = page.props;
+    const { t } = useTranslate();
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
+    const siteName = branding?.name ?? name ?? 'Karivia';
+    const currentPath = page.url.split('?')[0];
 
-const motion = {
-    div: MotionDiv,
-};
+    const links = [
+        { label: t('front.nav.jobs'), href: jobsIndex.url() },
+        { label: t('front.nav.companies'), href: companiesIndex.url() },
+        { label: 'Sumber Karier', href: '/career-resources' },
+        { label: 'AI Tools', href: '/ai-interview-simulator', dropdown: true },
+        { label: 'Cek Gaji', href: '/salary' },
+    ];
 
-type DropdownItem = {
-    name: string;
-    href: string;
-    icon: React.ElementType;
-    desc?: string;
-    badge?: string;
-};
+    const logo = branding?.logo_url ?? logoPath;
+    const isOverlay = overlay && !scrolled;
 
-function NavDropdown({ label, items, currentPath }: { label: string; items: DropdownItem[]; currentPath: string }) {
-    const [open, setOpen] = useState(false);
-    const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const isActive = items.some((i) => currentPath === i.href || currentPath.startsWith(i.href + '/'));
+    useEffect(() => {
+        if (!overlay) {
+            return;
+        }
 
-    function handleMouseEnter() {
-        if (closeTimer.current) {
-clearTimeout(closeTimer.current);
-}
+        const handleScroll = () => setScrolled(window.scrollY > 16);
 
-        setOpen(true);
-    }
+        handleScroll();
+        window.addEventListener('scroll', handleScroll, { passive: true });
 
-    function handleMouseLeave() {
-        closeTimer.current = setTimeout(() => setOpen(false), 80);
-    }
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [overlay]);
 
     return (
-        <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-            <button
-                className={`flex items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                    isActive ? 'font-semibold text-primary' : 'text-neutral-700 hover:text-neutral-900'
-                } hover:bg-gray-100`}
-            >
-                {isActive && <span className="absolute inset-0 rounded-full bg-primary/10" />}
-                <span className="relative z-10">{label}</span>
-                <ChevronDown className={`relative z-10 size-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
-            </button>
+        <header
+            className={
+                overlay
+                    ? `fixed inset-x-0 top-0 z-50 border-b transition-all duration-300 ${isOverlay ? 'border-white/10 bg-transparent' : 'border-border/80 bg-white/95 shadow-lg shadow-slate-900/10 backdrop-blur-md'}`
+                    : 'relative z-50 border-b border-border bg-white'
+            }
+        >
+            <div className="mx-auto flex h-14 max-w-[1160px] items-center justify-between gap-5 px-5 sm:px-8 lg:px-10">
+                <Link
+                    href={home.url()}
+                    aria-label={`Kembali ke ${siteName}`}
+                    className="shrink-0"
+                >
+                    <img
+                        src={logo}
+                        alt={siteName}
+                        width={150}
+                        height={42}
+                        className={`h-10 w-[150px] object-cover object-center ${isOverlay ? 'brightness-0 invert' : ''}`}
+                    />
+                </Link>
 
-            {/* Gap bridge */}
-            {open && <div className="absolute left-0 top-full h-2 w-full" />}
-
-            {open && (
-                <div className="absolute left-1/2 top-[calc(100%+4px)] w-60 -translate-x-1/2 rounded-2xl border border-neutral-100 bg-white p-1.5 shadow-xl shadow-neutral-200/60">
-                    {items.map((item) => {
-                        const active = currentPath === item.href || currentPath.startsWith(item.href + '/');
+                <nav
+                    className="hidden items-center gap-0.5 xl:flex"
+                    aria-label="Navigasi utama"
+                >
+                    {links.map((link) => {
+                        const active =
+                            link.href === '/'
+                                ? currentPath === '/'
+                                : currentPath.startsWith(link.href);
 
                         return (
                             <Link
-                                key={item.href}
-                                href={item.href}
-                                className={`flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors ${
-                                    active ? 'bg-primary/5 text-primary' : 'text-neutral-700 hover:bg-primary/5 hover:text-primary'
-                                }`}
+                                key={link.href}
+                                href={link.href}
+                                className={`relative inline-flex items-center gap-1 px-3.5 py-5 text-[12px] leading-none font-semibold transition-colors ${isOverlay ? (active ? 'text-white after:absolute after:inset-x-3.5 after:bottom-0 after:h-0.5 after:rounded-full after:bg-white' : 'text-white/80 hover:text-white') : active ? 'text-primary after:absolute after:inset-x-3.5 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary' : 'text-text hover:text-primary'}`}
                             >
-                                <span className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg ${active ? 'bg-primary/10' : 'bg-neutral-100'}`}>
-                                    <item.icon className={`size-3.5 ${active ? 'text-primary' : 'text-neutral-500'}`} />
-                                </span>
-                                <span className="min-w-0 flex-1">
-                                    <span className="flex items-center gap-1.5">
-                                        <span className="text-sm font-medium leading-tight">{item.name}</span>
-                                        {item.badge && (
-                                            <span className="inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-primary to-blue-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
-                                                <Sparkles className="size-2.5" />
-                                                {item.badge}
-                                            </span>
-                                        )}
-                                    </span>
-                                    {item.desc && <span className="mt-0.5 block text-xs text-neutral-400">{item.desc}</span>}
-                                </span>
+                                {link.label}
+                                {link.dropdown && (
+                                    <ChevronDown
+                                        className="size-3.5"
+                                        aria-hidden="true"
+                                    />
+                                )}
                             </Link>
                         );
                     })}
-                </div>
-            )}
-        </div>
-    );
-}
+                </nav>
 
-function MobileSection({ label, items, currentPath, onClose }: { label: string; items: DropdownItem[]; currentPath: string; onClose: () => void }) {
-    const [open, setOpen] = useState(false);
-    const isAnyActive = items.some((i) => currentPath === i.href || currentPath.startsWith(i.href + '/'));
-
-    return (
-        <div className="w-full">
-            <button
-                onClick={() => setOpen((v) => !v)}
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                    isAnyActive ? 'bg-primary/5 text-primary' : 'text-neutral-700 hover:bg-neutral-50'
-                }`}
-            >
-                <span>{label}</span>
-                <ChevronDown className={`size-4 transition-transform duration-200 ${open ? 'rotate-180' : ''} ${isAnyActive ? 'text-primary' : 'text-neutral-400'}`} />
-            </button>
-            <AnimatePresence initial={false}>
-                {open && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2, ease: 'easeInOut' }}
-                        className="overflow-hidden"
-                    >
-                        <div className="mt-1 space-y-0.5 pb-1 pl-2">
-                            {items.map((item) => {
-                                const active = currentPath === item.href || currentPath.startsWith(item.href + '/');
-
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${
-                                            active ? 'bg-primary/5 font-medium text-primary' : 'text-neutral-600 hover:bg-neutral-50 hover:text-primary'
-                                        }`}
-                                        onClick={onClose}
-                                    >
-                                        <span className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${active ? 'bg-primary/10' : 'bg-neutral-100'}`}>
-                                            <item.icon className={`size-3.5 ${active ? 'text-primary' : 'text-neutral-500'}`} />
-                                        </span>
-                                        <span className="min-w-0 flex-1">
-                                            <span className="flex items-center gap-1.5">
-                                                <span className="leading-tight">{item.name}</span>
-                                                {item.badge && (
-                                                    <span className="inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-primary to-blue-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
-                                                        <Sparkles className="size-2.5" />
-                                                        {item.badge}
-                                                    </span>
-                                                )}
-                                            </span>
-                                            {item.desc && <span className="block text-xs text-neutral-400">{item.desc}</span>}
-                                        </span>
-                                    </Link>
-                                );
-                            })}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-}
-
-function FrontBrandLogo({ siteLogoUrl, siteName }: { siteLogoUrl: string | null; siteName: string }) {
-    return (
-        <div className="flex h-20 w-auto shrink-0 items-center">
-            {siteLogoUrl ? (
-                <img
-                    src={siteLogoUrl}
-                    alt={siteName}
-                    width={300}
-                    height={80}
-                    fetchPriority="high"
-                    decoding="async"
-                    className="h-full w-auto max-w-[300px] object-contain"
-                />
-            ) : (
-                <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary">
-                    <AppLogoIcon className="size-9 fill-white" />
-                </div>
-            )}
-        </div>
-    );
-}
-
-export default function FrontNavbar() {
-    const page = usePage<{ auth: Auth; branding?: { name?: string; logo_url?: string | null }; name: string }>();
-    const { auth, branding, name } = page.props;
-    const siteName = branding?.name ?? name;
-    const siteLogoUrl = branding?.logo_url ?? null;
-    const currentPath = page.url.split('?')[0];
-    const [mobileOpen, setMobileOpen] = useState(false);
-    const { t } = useTranslate();
-
-    const aiToolsItems = useMemo<DropdownItem[]>(
-        () => [
-            {
-                name: t('front.nav.cv_analyzer'),
-                href: '/cv-analyzer',
-                icon: ScanSearch,
-                desc: t('front.nav.cv_analyzer.desc'),
-            },
-            {
-                name: t('front.nav.ai_interview'),
-                href: '/ai-interview-simulator',
-                icon: Bot,
-                desc: t('front.nav.ai_interview.desc'),
-            },
-        ],
-        [t],
-    );
-
-    return (
-        <Navbar>
-            {/* Desktop */}
-            <NavBody>
-                <Link href={home.url()} className="relative z-20 flex items-center">
-                    <FrontBrandLogo siteLogoUrl={siteLogoUrl} siteName={siteName} />
-                </Link>
-
-                <div className="absolute inset-0 hidden flex-1 flex-row items-center justify-center gap-1 text-sm lg:flex">
-                    {/* Home */}
-                    <a
-                        href={home.url()}
-                        className={`relative px-4 py-2 text-sm font-medium transition-colors ${
-                            currentPath === '/' ? 'font-semibold text-primary' : 'text-neutral-700 hover:bg-gray-100 hover:text-neutral-900'
-                        } rounded-full`}
-                    >
-                        {currentPath === '/' && <span className="absolute inset-0 rounded-full bg-primary/10" />}
-                        <span className="relative z-10">{t('front.nav.home')}</span>
-                    </a>
-
-                    <a
-                        href={jobsIndex().url}
-                        className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                            currentPath.startsWith('/jobs') ? 'font-semibold text-primary' : 'text-neutral-700 hover:bg-gray-100 hover:text-neutral-900'
-                        }`}
-                    >
-                        {currentPath.startsWith('/jobs') && <span className="absolute inset-0 rounded-full bg-primary/10" />}
-                        <span className="relative z-10">{t('front.nav.jobs')}</span>
-                    </a>
-                    <a
-                        href={companiesIndex().url}
-                        className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                            currentPath.startsWith('/companies') ? 'font-semibold text-primary' : 'text-neutral-700 hover:bg-gray-100 hover:text-neutral-900'
-                        }`}
-                    >
-                        {currentPath.startsWith('/companies') && <span className="absolute inset-0 rounded-full bg-primary/10" />}
-                        <span className="relative z-10">{t('front.nav.companies')}</span>
-                    </a>
-                    <a
-                        href="/career-resources"
-                        className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                            currentPath.startsWith('/career-resources') ? 'font-semibold text-primary' : 'text-neutral-700 hover:bg-gray-100 hover:text-neutral-900'
-                        }`}
-                    >
-                        {currentPath.startsWith('/career-resources') && <span className="absolute inset-0 rounded-full bg-primary/10" />}
-                        <span className="relative z-10">{t('front.nav.career_resources')}</span>
-                    </a>
-                    <NavDropdown label={t('front.nav.ai_tools')} items={aiToolsItems} currentPath={currentPath} />
-                    <a
-                        href="/salary"
-                        className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                            currentPath === '/salary' ? 'font-semibold text-primary' : 'text-neutral-700 hover:bg-gray-100 hover:text-neutral-900'
-                        }`}
-                    >
-                        {currentPath === '/salary' && <span className="absolute inset-0 rounded-full bg-primary/10" />}
-                        <span className="relative z-10">{t('front.nav.salary_check')}</span>
-                    </a>
-                </div>
-
-                <div className="relative z-20 flex items-center gap-2">
-                    <LanguageSwitcher align="end" variant="inline" />
+                <div className="hidden items-center gap-3 lg:flex">
                     {auth?.user ? (
-                        <ShimmerButton
-                            background="var(--primary)"
-                            className="h-9 px-5 text-sm font-medium"
-                            onClick={() => router.visit('/dashboard')}
+                        <Link
+                            href="/dashboard"
+                            className={`inline-flex min-h-10 items-center rounded-full border px-5 text-xs font-bold transition focus-visible:ring-2 focus-visible:outline-none ${isOverlay ? 'border-white/70 text-white hover:bg-white/10 focus-visible:ring-white' : 'border-primary text-primary hover:bg-background-soft focus-visible:ring-primary'}`}
                         >
                             {t('front.nav.dashboard')}
-                        </ShimmerButton>
+                        </Link>
                     ) : (
                         <>
                             <Link
                                 href={login.url()}
-                                className="rounded-full border border-neutral-200 px-4 py-1.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 hover:text-neutral-900"
+                                className={`inline-flex min-h-10 items-center rounded-full border px-5 text-xs font-bold transition focus-visible:ring-2 focus-visible:outline-none ${isOverlay ? 'border-white/70 text-white hover:bg-white/10 focus-visible:ring-white' : 'border-primary text-primary hover:bg-background-soft focus-visible:ring-primary'}`}
                             >
                                 {t('front.nav.login')}
                             </Link>
-                            <ShimmerButton
-                                background="var(--primary)"
-                                className="h-9 px-5 text-sm font-medium"
-                                onClick={() => router.visit(register.url())}
+                            <Link
+                                href={register.url()}
+                                className="inline-flex min-h-10 items-center rounded-full bg-primary px-5 text-xs font-bold text-white shadow-[0_6px_14px_rgba(10,102,255,0.18)] transition hover:bg-primary-700 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
                             >
                                 {t('front.nav.register')}
-                            </ShimmerButton>
+                            </Link>
                         </>
                     )}
                 </div>
-            </NavBody>
 
-            {/* Mobile */}
-            <MobileNav>
-                <MobileNavHeader>
-                    <Link href={home.url()} className="flex items-center">
-                        <FrontBrandLogo siteLogoUrl={siteLogoUrl} siteName={siteName} />
-                    </Link>
-                    <div className="flex items-center gap-2">
-                        <LanguageSwitcher align="end" variant="inline" />
-                        <MobileNavToggle isOpen={mobileOpen} onClick={() => setMobileOpen((v) => !v)} />
-                    </div>
-                </MobileNavHeader>
+                <button
+                    type="button"
+                    aria-label={mobileOpen ? 'Tutup menu' : 'Buka menu'}
+                    aria-expanded={mobileOpen}
+                    onClick={() => setMobileOpen((open) => !open)}
+                    className={`flex size-11 items-center justify-center rounded-xl border transition focus-visible:ring-2 focus-visible:outline-none xl:hidden ${isOverlay ? 'border-white/50 text-white hover:bg-white/10 focus-visible:ring-white' : 'border-border text-heading hover:bg-background-soft focus-visible:ring-primary'}`}
+                >
+                    {mobileOpen ? (
+                        <X className="size-5" />
+                    ) : (
+                        <Menu className="size-5" />
+                    )}
+                </button>
+            </div>
 
-                <MobileNavMenu isOpen={mobileOpen} onClose={() => setMobileOpen(false)}>
-                    {/* Home */}
-                    <Link
-                        href={home.url()}
-                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                            currentPath === '/' ? 'bg-primary/5 text-primary' : 'text-neutral-700 hover:bg-neutral-50'
-                        }`}
-                        onClick={() => setMobileOpen(false)}
+            {mobileOpen && (
+                <div
+                    className={`border-t px-5 py-4 xl:hidden ${isOverlay ? 'border-white/10 bg-[#103e9e]' : 'border-border bg-white'}`}
+                >
+                    <nav
+                        className="mx-auto flex max-w-7xl flex-col gap-1"
+                        aria-label="Navigasi mobile"
                     >
-                        <span className={`flex size-7 items-center justify-center rounded-lg ${currentPath === '/' ? 'bg-primary/10' : 'bg-neutral-100'}`}>
-                            <svg className={`size-3.5 ${currentPath === '/' ? 'text-primary' : 'text-neutral-500'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                                <polyline points="9 22 9 12 15 12 15 22" />
-                            </svg>
-                        </span>
-                        {t('front.nav.home')}
-                    </Link>
-
-                    {/* Nav sections */}
-                    <div className="w-full space-y-0.5 border-t border-neutral-100 pt-1">
-                        <Link
-                            href={jobsIndex().url}
-                            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                                currentPath.startsWith('/jobs') ? 'bg-primary/5 text-primary' : 'text-neutral-700 hover:bg-neutral-50'
-                            }`}
-                            onClick={() => setMobileOpen(false)}
-                        >
-                            {t('front.nav.jobs')}
-                        </Link>
-                        <Link
-                            href={companiesIndex().url}
-                            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                                currentPath.startsWith('/companies') ? 'bg-primary/5 text-primary' : 'text-neutral-700 hover:bg-neutral-50'
-                            }`}
-                            onClick={() => setMobileOpen(false)}
-                        >
-                            {t('front.nav.companies')}
-                        </Link>
-                        <Link
-                            href="/career-resources"
-                            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                                currentPath.startsWith('/career-resources') ? 'bg-primary/5 text-primary' : 'text-neutral-700 hover:bg-neutral-50'
-                            }`}
-                            onClick={() => setMobileOpen(false)}
-                        >
-                            {t('front.nav.career_resources')}
-                        </Link>
-                        <MobileSection label={t('front.nav.ai_tools')} items={aiToolsItems} currentPath={currentPath} onClose={() => setMobileOpen(false)} />
-                        <Link
-                            href="/salary"
-                            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                                currentPath === '/salary' ? 'bg-primary/5 text-primary' : 'text-neutral-700 hover:bg-neutral-50'
-                            }`}
-                            onClick={() => setMobileOpen(false)}
-                        >
-                            {t('front.nav.salary_check')}
-                        </Link>
-                    </div>
-
-                    {/* Auth buttons */}
-                    <div className="flex w-full flex-col gap-2 border-t border-neutral-100 pt-2">
-                        {auth?.user ? (
-                            <ShimmerButton
-                                background="var(--primary)"
-                                className="w-full justify-center text-sm font-medium"
-                                onClick={() => { router.visit('/dashboard'); setMobileOpen(false); }}
+                        {links.map((link) => (
+                            <Link
+                                key={link.href}
+                                href={link.href}
+                                onClick={() => setMobileOpen(false)}
+                                className={`min-h-11 rounded-xl px-4 py-3 text-sm font-semibold ${isOverlay ? 'text-white hover:bg-white/10 hover:text-white' : 'text-text hover:bg-background-soft hover:text-primary'}`}
                             >
-                                {t('front.nav.dashboard')}
-                            </ShimmerButton>
-                        ) : (
-                            <>
-                                <Link
-                                    href={login.url()}
-                                    className="w-full rounded-full border border-neutral-200 px-4 py-2.5 text-center text-sm font-medium text-neutral-700 transition hover:bg-neutral-50"
-                                    onClick={() => setMobileOpen(false)}
-                                >
-                                    {t('front.nav.login')}
-                                </Link>
-                                <ShimmerButton
-                                    background="var(--primary)"
-                                    className="w-full justify-center text-sm font-medium"
-                                    onClick={() => { router.visit(register.url()); setMobileOpen(false); }}
-                                >
-                                    {t('front.nav.register')}
-                                </ShimmerButton>
-                            </>
-                        )}
-                    </div>
-                </MobileNavMenu>
-            </MobileNav>
-        </Navbar>
+                                {link.label}
+                            </Link>
+                        ))}
+                        <div
+                            className={`mt-3 grid grid-cols-2 gap-2 border-t pt-4 ${isOverlay ? 'border-white/10' : 'border-border'}`}
+                        >
+                            <Link
+                                href={login.url()}
+                                onClick={() => setMobileOpen(false)}
+                                className={`min-h-11 rounded-xl border px-4 py-3 text-center text-sm font-bold ${isOverlay ? 'border-white/60 text-white' : 'border-primary text-primary'}`}
+                            >
+                                {t('front.nav.login')}
+                            </Link>
+                            <Link
+                                href={register.url()}
+                                onClick={() => setMobileOpen(false)}
+                                className="min-h-11 rounded-xl bg-primary px-4 py-3 text-center text-sm font-bold text-white"
+                            >
+                                {t('front.nav.register')}
+                            </Link>
+                        </div>
+                    </nav>
+                </div>
+            )}
+        </header>
     );
 }

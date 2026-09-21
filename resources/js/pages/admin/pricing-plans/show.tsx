@@ -62,7 +62,7 @@ export default function PricingPlanShow({
 
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex flex-wrap gap-2">
-                        <Badge className="bg-[#01296A] text-white">
+                        <Badge className="bg-[#0F4C94] text-white">
                             {plan.slug}
                         </Badge>
                         <Badge
@@ -84,7 +84,7 @@ export default function PricingPlanShow({
 
                 <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
                     <section className="rounded-lg border bg-white p-6 shadow-sm">
-                        <p className="text-sm font-semibold text-[#01296A]">
+                        <p className="text-sm font-semibold text-[#0F4C94]">
                             {t('admin.pricing_plans_show.pricing_plan')}
                         </p>
                         <h1 className="mt-3 text-3xl font-bold tracking-tight">
@@ -96,7 +96,7 @@ export default function PricingPlanShow({
                         <p className="mt-1 text-sm text-muted-foreground">
                             {t('admin.pricing_plans_show.price_label')}
                         </p>
-                        <p className="mt-5 inline-flex rounded-md bg-[#eaf2ff] px-3 py-2 text-sm font-bold text-[#01296A]">
+                        <p className="mt-5 inline-flex rounded-md bg-[#F4F8FF] px-3 py-2 text-sm font-bold text-[#0F4C94]">
                             {plan.duration_label}
                         </p>
 
@@ -187,7 +187,7 @@ function Metric({
 }) {
     return (
         <div className="rounded-lg border bg-white p-5 shadow-sm">
-            <span className="flex size-11 items-center justify-center rounded-lg bg-[#eaf2ff] text-[#01296A]">
+            <span className="flex size-11 items-center justify-center rounded-lg bg-[#F4F8FF] text-[#0F4C94]">
                 <Icon className="size-5" />
             </span>
             <p className="mt-4 text-sm font-semibold text-muted-foreground">

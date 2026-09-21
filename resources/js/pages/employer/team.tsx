@@ -82,7 +82,7 @@ function MemberAvatar({ name, url }: { name: string; url: string | null }) {
     }
 
     return (
-        <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-[#01296A] text-sm font-bold text-white uppercase shadow-sm ring-2 ring-white">
+        <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-[#0F4C94] text-sm font-bold text-white uppercase shadow-sm ring-2 ring-white">
             {name.charAt(0)}
         </div>
     );

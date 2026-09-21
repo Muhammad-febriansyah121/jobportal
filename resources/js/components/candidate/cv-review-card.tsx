@@ -49,7 +49,7 @@ export function CvReviewCard({ review }: { review: CvReview }) {
     const offset = circumference - (review.ats_score / 100) * circumference;
 
     return (
-        <Card className="overflow-hidden border-[#e0e7f3] shadow-sm">
+        <Card className="overflow-hidden border-[#E5EDF7] shadow-sm">
             <CardContent className="space-y-5 p-5 md:p-6">
                 <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">

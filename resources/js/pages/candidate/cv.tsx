@@ -555,7 +555,7 @@ export default function CandidateCv({
                     <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
                         <SheetHeader>
                             <SheetTitle className="flex items-center gap-2">
-                                <Sparkles className="size-5 text-[#01296A]" />
+                                <Sparkles className="size-5 text-[#0F4C94]" />
                                 {t('candidate.cv_builder.ai_cv_draft')}
                             </SheetTitle>
                             <SheetDescription>
@@ -564,7 +564,7 @@ export default function CandidateCv({
                         </SheetHeader>
                         <div className="space-y-4 px-4 pb-6">
                             <div className="rounded-lg border bg-[#eff4ff] p-3 text-sm">
-                                <p className="font-semibold text-[#01296A]">
+                                <p className="font-semibold text-[#0F4C94]">
                                     {t('candidate.cv_builder.balance_title')}
                                 </p>
                                 {wallet.has_free_draft_available ? (
@@ -607,7 +607,7 @@ export default function CandidateCv({
                                 {!canGenerateDraft ? (
                                     <Link
                                         href={wallet.pricing_href}
-                                        className="mt-2 inline-flex text-xs font-semibold text-[#01296A] hover:underline"
+                                        className="mt-2 inline-flex text-xs font-semibold text-[#0F4C94] hover:underline"
                                     >
                                         {t('candidate.pricing.topup_now')}
                                     </Link>
@@ -973,11 +973,11 @@ export default function CandidateCv({
                 </Card>
 
                 {aiSummary ? (
-                    <Card className="border-[#01296A]/20 bg-[#eff4ff]/50">
+                    <Card className="border-[#0F4C94]/20 bg-[#eff4ff]/50">
                         <CardContent className="flex gap-3 py-4">
-                            <Sparkles className="mt-0.5 size-5 shrink-0 text-[#01296A]" />
+                            <Sparkles className="mt-0.5 size-5 shrink-0 text-[#0F4C94]" />
                             <div className="space-y-1">
-                                <p className="text-xs font-semibold tracking-wide text-[#01296A] uppercase">
+                                <p className="text-xs font-semibold tracking-wide text-[#0F4C94] uppercase">
                                     {t('candidate.cv_builder.ai_summary')}
                                 </p>
                                 <p className="text-sm leading-6 text-foreground/80">
@@ -3100,7 +3100,7 @@ function PreviewSectionTitle({ title }: { title: string }) {
 
 function ModernSectionTitle({ title }: { title: string }) {
     return (
-        <h3 className="mb-1.5 border-b-[1.5px] border-slate-900 pb-1 text-[11px] font-bold tracking-[0.08em] text-[#1f3c88] uppercase">
+        <h3 className="mb-1.5 border-b-[1.5px] border-slate-900 pb-1 text-[11px] font-bold tracking-[0.08em] text-[#093579] uppercase">
             {title}
         </h3>
     );
@@ -3170,7 +3170,7 @@ function CvModernPreview({
                 <div className="space-y-3.5 px-[7%] py-[6%]">
                     <header className="flex items-start justify-between gap-4">
                         <div className="space-y-1">
-                            <h2 className="text-[20px] leading-tight font-bold text-[#1f3c88]">
+                            <h2 className="text-[20px] leading-tight font-bold text-[#093579]">
                                 {(
                                     p.full_name ||
                                     t('candidate.cv_builder.full_name_fallback')
@@ -3187,19 +3187,19 @@ function CvModernPreview({
                             <div className="space-y-0.5 pt-1 text-[10.5px] text-slate-700">
                                 {p.city ? (
                                     <p className="flex items-center gap-1.5">
-                                        <MapPin className="size-3 text-[#1f3c88]" />
+                                        <MapPin className="size-3 text-[#093579]" />
                                         {p.city}
                                     </p>
                                 ) : null}
                                 {p.phone ? (
                                     <p className="flex items-center gap-1.5">
-                                        <Phone className="size-3 text-[#1f3c88]" />
+                                        <Phone className="size-3 text-[#093579]" />
                                         {p.phone}
                                     </p>
                                 ) : null}
                                 {p.email ? (
                                     <p className="flex items-center gap-1.5">
-                                        <Mail className="size-3 text-[#1f3c88]" />
+                                        <Mail className="size-3 text-[#093579]" />
                                         {p.email}
                                     </p>
                                 ) : null}
@@ -3208,7 +3208,7 @@ function CvModernPreview({
                                         key={link}
                                         className="flex items-center gap-1.5"
                                     >
-                                        <Globe className="size-3 text-[#1f3c88]" />
+                                        <Globe className="size-3 text-[#093579]" />
                                         {link}
                                     </p>
                                 ))}
@@ -3774,13 +3774,13 @@ function SkillChipInput({
                 {skills.map((skill) => (
                     <span
                         key={skill}
-                        className="inline-flex items-center gap-1 rounded-md bg-[#01296A]/10 py-1 pr-1 pl-2.5 text-sm text-[#01296A]"
+                        className="inline-flex items-center gap-1 rounded-md bg-[#0F4C94]/10 py-1 pr-1 pl-2.5 text-sm text-[#0F4C94]"
                     >
                         {skill}
                         <button
                             type="button"
                             onClick={() => remove(skill)}
-                            className="rounded-sm p-0.5 transition hover:bg-[#01296A]/15"
+                            className="rounded-sm p-0.5 transition hover:bg-[#0F4C94]/15"
                             aria-label={t(
                                 'candidate.cv_builder.remove_skill_aria',
                                 {

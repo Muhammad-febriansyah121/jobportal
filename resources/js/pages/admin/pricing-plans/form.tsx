@@ -337,7 +337,7 @@ export function PricingPlanForm({
                     </div>
 
                     <div className="mt-5 rounded-lg border bg-[#eff4ff] p-4">
-                        <p className="text-sm font-semibold text-[#01296A]">
+                        <p className="text-sm font-semibold text-[#0F4C94]">
                             {form.data.name || 'Nama Paket'}
                         </p>
                         <p className="mt-3 text-3xl font-bold tracking-tight">
@@ -346,7 +346,7 @@ export function PricingPlanForm({
                         <p className="mt-1 text-xs text-muted-foreground">
                             harga paket
                         </p>
-                        <p className="mt-4 rounded-md bg-white px-3 py-2 text-sm font-bold text-[#01296A]">
+                        <p className="mt-4 rounded-md bg-white px-3 py-2 text-sm font-bold text-[#0F4C94]">
                             {durationLabel(form.data.duration_days)}
                         </p>
                     </div>
@@ -377,7 +377,7 @@ export function PricingPlanForm({
                     </p>
                     <Button
                         type="submit"
-                        className="mt-5 w-full bg-[#01296A] hover:bg-[#001D4D]"
+                        className="mt-5 w-full bg-[#0F4C94] hover:bg-[#093579]"
                         disabled={form.processing}
                     >
                         {form.processing ? 'Menyimpan...' : 'Simpan Paket'}

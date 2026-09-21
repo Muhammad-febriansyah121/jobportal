@@ -907,7 +907,7 @@ function StatusUpdateButton({
                         </Button>
                         <Button
                             size="sm"
-                            className="flex-1 bg-[#01296A] hover:bg-[#001D4D]"
+                            className="flex-1 bg-[#0F4C94] hover:bg-[#093579]"
                             disabled={processing}
                             onClick={submit}
                         >
@@ -1076,7 +1076,9 @@ function BulkAiInterviewDialog({
         form.transform((data) => ({
             ...data,
             application_ids: applications.map((application) => application.id),
-        })).post(storeBulkAiInterview(jobId).url, {
+        }));
+
+        form.post(storeBulkAiInterview(jobId).url, {
             preserveScroll: true,
             onSuccess: () => {
                 form.reset();
@@ -1812,7 +1814,7 @@ function ScheduleDialog({
                                     type === m.key
                                         ? m.key === 'ai'
                                             ? 'border-violet-500 bg-violet-50'
-                                            : 'border-[#01296A] bg-[#EEF3FB]'
+                                            : 'border-[#0F4C94] bg-[#EEF3FB]'
                                         : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
                                 ].join(' ')}
                             >
@@ -1822,7 +1824,7 @@ function ScheduleDialog({
                                         type === m.key
                                             ? m.key === 'ai'
                                                 ? 'text-violet-700'
-                                                : 'text-[#01296A]'
+                                                : 'text-[#0F4C94]'
                                             : 'text-slate-600',
                                     ].join(' ')}
                                 >
@@ -1832,7 +1834,7 @@ function ScheduleDialog({
                                             type === m.key
                                                 ? m.key === 'ai'
                                                     ? 'bg-violet-100'
-                                                    : 'bg-[#01296A]/10'
+                                                    : 'bg-[#0F4C94]/10'
                                                 : 'bg-slate-100',
                                         ].join(' ')}
                                     >
@@ -2005,7 +2007,7 @@ function ScheduleDialog({
                                 <Button
                                     type="submit"
                                     disabled={regular.processing}
-                                    className="h-10 w-full bg-[#01296A] text-sm font-semibold hover:bg-[#001D4D]"
+                                    className="h-10 w-full bg-[#0F4C94] text-sm font-semibold hover:bg-[#093579]"
                                 >
                                     {regular.processing
                                         ? t(
@@ -2213,7 +2215,7 @@ function Avatar({ name, src }: { name: string; src: string | null }) {
     }
 
     return (
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-[#111827] text-sm font-semibold text-white">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-[#0F2747] text-sm font-semibold text-white">
             {name
                 .split(' ')
                 .map((part) => part[0])
@@ -2280,7 +2282,7 @@ function scoreBarClass(score: number) {
         score >= 80
             ? 'bg-[#10b981]'
             : score >= 60
-              ? 'bg-[#3b82f6]'
+              ? 'bg-[#319FC9]'
               : 'bg-[#f59e0b]';
 
     return `h-full rounded-full ${color}`;

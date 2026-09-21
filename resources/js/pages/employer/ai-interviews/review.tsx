@@ -239,7 +239,7 @@ export default function EmployerAiInterviewReview({
                         </div>
                     </div>
 
-                    <Card className="overflow-hidden border-0 bg-gradient-to-br from-[#01296A] via-[#0a3a8a] to-[#0a4ba5] text-white shadow-lg">
+                    <Card className="overflow-hidden border-0 bg-gradient-to-br from-[#0F4C94] via-[#0F4C94] to-[#136BB4] text-white shadow-lg">
                         <CardContent className="grid gap-6 p-6 md:grid-cols-[auto_1fr_auto] md:items-center md:gap-8 md:p-8">
                             <ScoreRing score={score} />
                             <div className="space-y-3">
@@ -554,9 +554,9 @@ export default function EmployerAiInterviewReview({
                                     items={session.analysis?.weaknesses ?? []}
                                     tone="warning"
                                 />
-                                <Card className="border-[#01296A]/20 bg-[#eff4ff]/60">
+                                <Card className="border-[#0F4C94]/20 bg-[#eff4ff]/60">
                                     <CardContent className="space-y-3 p-5">
-                                        <div className="flex size-10 items-center justify-center rounded-xl bg-[#01296A]/15 text-[#01296A]">
+                                        <div className="flex size-10 items-center justify-center rounded-xl bg-[#0F4C94]/15 text-[#0F4C94]">
                                             <Target className="size-5" />
                                         </div>
                                         <div className="space-y-1">
@@ -612,7 +612,7 @@ export default function EmployerAiInterviewReview({
                                                                 'flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white',
                                                                 line.speaker ===
                                                                     'ai'
-                                                                    ? 'bg-[#01296A]'
+                                                                    ? 'bg-[#0F4C94]'
                                                                     : 'bg-slate-500',
                                                             )}
                                                         >
@@ -628,7 +628,7 @@ export default function EmployerAiInterviewReview({
                                                                 'max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-6',
                                                                 line.speaker ===
                                                                     'ai'
-                                                                    ? 'rounded-tl-sm bg-[#eff4ff] text-[#01296A]'
+                                                                    ? 'rounded-tl-sm bg-[#eff4ff] text-[#0F4C94]'
                                                                     : 'rounded-tr-sm border bg-white text-foreground shadow-sm',
                                                             )}
                                                         >
@@ -948,11 +948,11 @@ function SectionTitle({
 }) {
     return (
         <div className="flex items-start gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#01296A]/10 text-[#01296A]">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#0F4C94]/10 text-[#0F4C94]">
                 <Icon className="size-4" />
             </div>
             <div>
-                <p className="text-[10px] font-semibold tracking-[0.18em] text-[#01296A] uppercase">
+                <p className="text-[10px] font-semibold tracking-[0.18em] text-[#0F4C94] uppercase">
                     {eyebrow}
                 </p>
                 <CardTitle className="mt-0.5 text-base">{title}</CardTitle>
@@ -1133,8 +1133,8 @@ function ResponseCard({ response }: { response: Response }) {
                         </p>
                     </div>
                     {response.ai_analysis ? (
-                        <div className="flex gap-2.5 rounded-lg border border-[#01296A]/15 bg-[#eff4ff]/60 px-3 py-2">
-                            <Sparkles className="mt-0.5 size-3.5 shrink-0 text-[#01296A]" />
+                        <div className="flex gap-2.5 rounded-lg border border-[#0F4C94]/15 bg-[#eff4ff]/60 px-3 py-2">
+                            <Sparkles className="mt-0.5 size-3.5 shrink-0 text-[#0F4C94]" />
                             <p className="text-sm leading-6 text-foreground/85">
                                 {response.ai_analysis}
                             </p>

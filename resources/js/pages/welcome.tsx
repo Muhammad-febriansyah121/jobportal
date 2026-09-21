@@ -25,7 +25,7 @@ export default function Welcome({
                         {auth.user ? (
                             <Link
                                 href={dashboard()}
-                                className="inline-block rounded-sm border border-[#01296A35] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#01296A4a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
+                                className="inline-block rounded-sm border border-[#0F4C9435] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#0F4C944a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
                             >
                                 {t('common.welcome.dashboard')}
                             </Link>
@@ -33,14 +33,14 @@ export default function Welcome({
                             <>
                                 <Link
                                     href={login()}
-                                    className="inline-block rounded-sm border border-transparent px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#01296A35] dark:text-[#EDEDEC] dark:hover:border-[#3E3E3A]"
+                                    className="inline-block rounded-sm border border-transparent px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#0F4C9435] dark:text-[#EDEDEC] dark:hover:border-[#3E3E3A]"
                                 >
                                     {t('common.welcome.login')}
                                 </Link>
                                 {canRegister && (
                                     <Link
                                         href={register()}
-                                        className="inline-block rounded-sm border border-[#01296A35] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#01296A4a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
+                                        className="inline-block rounded-sm border border-[#0F4C9435] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#0F4C944a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
                                     >
                                         {t('common.welcome.register')}
                                     </Link>
@@ -72,7 +72,7 @@ export default function Welcome({
                                         <a
                                             href="https://laravel.com/docs"
                                             target="_blank"
-                                            className="ml-1 inline-flex items-center space-x-1 font-medium text-[#01296A] underline underline-offset-4 dark:text-[#5B8DEF]"
+                                            className="ml-1 inline-flex items-center space-x-1 font-medium text-[#0F4C94] underline underline-offset-4 dark:text-[#319FC9]"
                                         >
                                             <span>{t('common.welcome.documentation')}</span>
                                             <svg
@@ -103,7 +103,7 @@ export default function Welcome({
                                         <a
                                             href="https://laracasts.com"
                                             target="_blank"
-                                            className="ml-1 inline-flex items-center space-x-1 font-medium text-[#01296A] underline underline-offset-4 dark:text-[#5B8DEF]"
+                                            className="ml-1 inline-flex items-center space-x-1 font-medium text-[#0F4C94] underline underline-offset-4 dark:text-[#319FC9]"
                                         >
                                             <span>Laracasts</span>
                                             <svg
@@ -136,10 +136,10 @@ export default function Welcome({
                                 </li>
                             </ul>
                         </div>
-                        <div className="relative -mb-px aspect-[335/364] w-full shrink-0 overflow-hidden rounded-t-lg bg-[#eaf2ff] lg:mb-0 lg:-ml-px lg:aspect-auto lg:w-[438px] lg:rounded-t-none lg:rounded-r-lg dark:bg-[#001D4D]">
+                        <div className="relative -mb-px aspect-[335/364] w-full shrink-0 overflow-hidden rounded-t-lg bg-[#F4F8FF] lg:mb-0 lg:-ml-px lg:aspect-auto lg:w-[438px] lg:rounded-t-none lg:rounded-r-lg dark:bg-[#093579]">
                             {/* Laravel Logo */}
                             <svg
-                                className="w-full max-w-none translate-y-0 text-[#01296A] opacity-100 transition-all duration-750 dark:text-[#5B8DEF] starting:opacity-0 motion-safe:starting:translate-y-6"
+                                className="w-full max-w-none translate-y-0 text-[#0F4C94] opacity-100 transition-all duration-750 dark:text-[#319FC9] starting:opacity-0 motion-safe:starting:translate-y-6"
                                 viewBox="0 0 438 104"
                                 fill="none"
                                 xmlns="http://www.w3.org/2000/svg"
@@ -176,7 +176,7 @@ export default function Welcome({
 
                             {/* 13 */}
                             <svg
-                                className="relative -mt-[6.6rem] -ml-8 w-[438px] max-w-none [--stroke-color:#1B1B18] lg:ml-0 dark:[--stroke-color:#5B8DEF]"
+                                className="relative -mt-[6.6rem] -ml-8 w-[438px] max-w-none [--stroke-color:#1B1B18] lg:ml-0 dark:[--stroke-color:#319FC9]"
                                 viewBox="0 0 440 392"
                                 fill="none"
                                 xmlns="http://www.w3.org/2000/svg"
@@ -223,7 +223,7 @@ export default function Welcome({
                                     />
                                 </g>
 
-                                <g className="text-[#F3BEC7] opacity-100 transition-all delay-400 duration-750 dark:text-[#001D4D] starting:opacity-0 motion-safe:starting:-translate-x-[26px]">
+                                <g className="text-[#F3BEC7] opacity-100 transition-all delay-400 duration-750 dark:text-[#093579] starting:opacity-0 motion-safe:starting:-translate-x-[26px]">
                                     <mask
                                         id="path-2-mask"
                                         maskUnits="userSpaceOnUse"
@@ -265,7 +265,7 @@ export default function Welcome({
                                     />
                                 </g>
 
-                                <g className="text-[#5B8DEF] opacity-100 mix-blend-color transition-all delay-400 duration-750 dark:text-[#001D4D] dark:mix-blend-hard-light starting:opacity-0 motion-safe:starting:-translate-x-[51px]">
+                                <g className="text-[#319FC9] opacity-100 mix-blend-color transition-all delay-400 duration-750 dark:text-[#093579] dark:mix-blend-hard-light starting:opacity-0 motion-safe:starting:-translate-x-[51px]">
                                     <mask
                                         id="path-3-mask"
                                         maskUnits="userSpaceOnUse"
@@ -307,7 +307,7 @@ export default function Welcome({
                                     />
                                 </g>
 
-                                <g className="text-[#F3BEC7] opacity-100 mix-blend-multiply transition-all delay-400 duration-750 dark:text-[#001D4D] dark:mix-blend-normal starting:opacity-0 motion-safe:starting:-translate-x-[78px]">
+                                <g className="text-[#F3BEC7] opacity-100 mix-blend-multiply transition-all delay-400 duration-750 dark:text-[#093579] dark:mix-blend-normal starting:opacity-0 motion-safe:starting:-translate-x-[78px]">
                                     <mask
                                         id="path-4-mask"
                                         maskUnits="userSpaceOnUse"
@@ -349,7 +349,7 @@ export default function Welcome({
                                     />
                                 </g>
 
-                                <g className="text-[#F3BEC7] opacity-100 mix-blend-hard-light transition-all delay-400 duration-750 dark:text-[#001D4D] starting:opacity-0 motion-safe:starting:-translate-x-[102px]">
+                                <g className="text-[#F3BEC7] opacity-100 mix-blend-hard-light transition-all delay-400 duration-750 dark:text-[#093579] starting:opacity-0 motion-safe:starting:-translate-x-[102px]">
                                     <mask
                                         id="path-5-mask"
                                         maskUnits="userSpaceOnUse"

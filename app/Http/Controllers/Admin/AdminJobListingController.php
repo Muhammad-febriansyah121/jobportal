@@ -23,7 +23,7 @@ class AdminJobListingController extends Controller
     {
         $jobs = JobListing::query()
             ->select(['id', 'company_id', 'industry_id', 'title', 'slug', 'location_city', 'location_province', 'status', 'integrity_score', 'published_at', 'created_at'])
-            ->with(['company:id,name,slug,is_verified', 'industry:id,name'])
+            ->with(['company:id,name,slug,is_verified', 'industry:id,name', 'source:id,job_listing_id,platform'])
             ->withCount('applications')
             ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->string('search')->toString().'%'))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
@@ -37,6 +37,7 @@ class AdminJobListingController extends Controller
                 'title' => $job->title,
                 'company' => $job->company?->name,
                 'industry' => $job->industry?->name ?? '-',
+                'source' => $job->source?->platform ? 'Scraped · '.$job->source->platform : 'Original',
                 'location' => collect([$job->location_city, $job->location_province])->filter()->join(', ') ?: '-',
                 'status' => [
                     'label' => str($job->status)->headline()->toString(),
@@ -69,6 +70,7 @@ class AdminJobListingController extends Controller
             'columns' => [
                 ['key' => 'title', 'label' => 'Judul'],
                 ['key' => 'company', 'label' => 'Perusahaan'],
+                ['key' => 'source', 'label' => 'Sumber'],
                 ['key' => 'location', 'label' => 'Lokasi'],
                 ['key' => 'status', 'label' => 'Status'],
                 ['key' => 'integrity_score', 'label' => 'Integrity'],
@@ -82,7 +84,7 @@ class AdminJobListingController extends Controller
 
     public function show(JobListing $jobListing): Response
     {
-        $jobListing->load(['company:id,name,slug,is_verified', 'industry:id,name', 'creator:id,name,email'])
+        $jobListing->load(['company:id,name,slug,is_verified', 'industry:id,name', 'creator:id,name,email', 'source'])
             ->loadCount('applications');
 
         return Inertia::render('admin/resources/show', [
@@ -111,6 +113,18 @@ class AdminJobListingController extends Controller
                         ['label' => 'Lamaran', 'value' => $jobListing->applications_count],
                         ['label' => 'Published at', 'value' => $jobListing->published_at?->format('d M Y H:i') ?? '-'],
                         ['label' => 'Dibuat oleh', 'value' => $jobListing->creator?->name.' <'.$jobListing->creator?->email.'>'],
+                    ],
+                ],
+                [
+                    'title' => 'Sumber data (admin)',
+                    'items' => [
+                        ['label' => 'Asal data', 'value' => $jobListing->source ? 'Scraped' : 'Original'],
+                        ['label' => 'Platform', 'value' => $jobListing->source?->platform ?? '-'],
+                        ['label' => 'External job ID', 'value' => $jobListing->source?->external_job_id ?? '-'],
+                        ['label' => 'URL sumber', 'value' => $jobListing->source?->source_url ?? '-'],
+                        ['label' => 'Waktu scrape', 'value' => $jobListing->source?->scraped_at?->format('d M Y H:i') ?? '-'],
+                        ['label' => 'Email HR', 'value' => $jobListing->source?->contact_email ?? '-'],
+                        ['label' => 'Email terverifikasi', 'value' => $jobListing->source?->email_verified ? 'Ya' : 'Tidak'],
                     ],
                 ],
                 [

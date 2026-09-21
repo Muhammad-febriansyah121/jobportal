@@ -175,7 +175,7 @@ export default function CandidateAiInterviewFeedback({
                         </span>
                     </div>
 
-                    <Card className="overflow-hidden border-0 bg-gradient-to-br from-[#01296A] to-[#0a4ba5] text-white shadow-lg">
+                    <Card className="overflow-hidden border-0 bg-gradient-to-br from-[#0F4C94] to-[#136BB4] text-white shadow-lg">
                         <CardContent className="grid gap-6 p-6 md:grid-cols-[auto_1fr] md:items-center md:gap-8 md:p-8">
                             <ScoreCircle score={fitScore} />
                             <div className="space-y-3">
@@ -248,11 +248,11 @@ export default function CandidateAiInterviewFeedback({
                     {session.summary || session.recommendation ? (
                         <Card>
                             <CardContent className="flex gap-3 py-5">
-                                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-[#01296A]/10">
-                                    <Sparkles className="size-4 text-[#01296A]" />
+                                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-[#0F4C94]/10">
+                                    <Sparkles className="size-4 text-[#0F4C94]" />
                                 </span>
                                 <div className="space-y-2">
-                                    <p className="text-xs font-semibold tracking-[0.2em] text-[#01296A] uppercase">
+                                    <p className="text-xs font-semibold tracking-[0.2em] text-[#0F4C94] uppercase">
                                         {t('candidate.ai_interview_feedback.ai_notes')}
                                     </p>
                                     {session.summary ? (
@@ -366,7 +366,7 @@ export default function CandidateAiInterviewFeedback({
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-base">
-                                    <Brain className="size-4 text-[#01296A]" />
+                                    <Brain className="size-4 text-[#0F4C94]" />
                                     {t('candidate.ai_interview_feedback.competency_title')}
                                 </CardTitle>
                             </CardHeader>
@@ -379,10 +379,10 @@ export default function CandidateAiInterviewFeedback({
                     ) : null}
 
                     {session.improvement_tips.length > 0 ? (
-                        <Card className="border-[#01296A]/15 bg-[#eff4ff]/50">
+                        <Card className="border-[#0F4C94]/15 bg-[#eff4ff]/50">
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-base">
-                                    <Lightbulb className="size-4 text-[#01296A]" />
+                                    <Lightbulb className="size-4 text-[#0F4C94]" />
                                     {t('candidate.ai_interview_feedback.improvement_tips_title')}
                                 </CardTitle>
                             </CardHeader>
@@ -393,7 +393,7 @@ export default function CandidateAiInterviewFeedback({
                                             key={`tip-${index}`}
                                             className="flex items-start gap-3 text-sm leading-6"
                                         >
-                                            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#01296A] text-xs font-bold text-white">
+                                            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#0F4C94] text-xs font-bold text-white">
                                                 {index + 1}
                                             </span>
                                             <span className="pt-0.5">{tip}</span>
@@ -408,7 +408,7 @@ export default function CandidateAiInterviewFeedback({
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-base">
-                                    <TrendingUp className="size-4 text-[#01296A]" />
+                                    <TrendingUp className="size-4 text-[#0F4C94]" />
                                     {t('candidate.ai_interview_feedback.category_breakdown_title')}
                                 </CardTitle>
                             </CardHeader>
@@ -431,7 +431,7 @@ export default function CandidateAiInterviewFeedback({
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-base">
-                                    <Lightbulb className="size-4 text-[#01296A]" />
+                                    <Lightbulb className="size-4 text-[#0F4C94]" />
                                     {t('candidate.ai_interview_feedback.question_feedback_title')}
                                 </CardTitle>
                             </CardHeader>
@@ -453,7 +453,7 @@ export default function CandidateAiInterviewFeedback({
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-base">
-                                    <TrendingUp className="size-4 text-[#01296A]" />
+                                    <TrendingUp className="size-4 text-[#0F4C94]" />
                                     {t('candidate.ai_interview_feedback.progress_trends_title')}
                                 </CardTitle>
                             </CardHeader>
@@ -470,7 +470,7 @@ export default function CandidateAiInterviewFeedback({
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-base">
-                                    <BookOpen className="size-4 text-[#01296A]" />
+                                    <BookOpen className="size-4 text-[#0F4C94]" />
                                     {t('candidate.ai_interview_feedback.suggested_resources_title')}
                                 </CardTitle>
                             </CardHeader>
@@ -485,7 +485,7 @@ export default function CandidateAiInterviewFeedback({
                         </Card>
                     ) : null}
 
-                    <Card className="border-[#01296A]/15 bg-gradient-to-br from-[#eff4ff] to-background">
+                    <Card className="border-[#0F4C94]/15 bg-gradient-to-br from-[#eff4ff] to-background">
                         <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
                             <div className="space-y-1">
                                 <p className="text-base font-semibold">
@@ -935,7 +935,7 @@ function ProgressTrendChart({
                     {fitSeries.length > 1 ? (
                         <polyline
                             fill="none"
-                            stroke="#01296A"
+                            stroke="#0F4C94"
                             strokeWidth="2.5"
                             points={fitSeries
                                 .map((point) => `${point.x},${point.y}`)
@@ -949,7 +949,7 @@ function ProgressTrendChart({
                             cx={point.x}
                             cy={point.y}
                             r="3"
-                            fill="#01296A"
+                            fill="#0F4C94"
                         />
                     ))}
 
@@ -985,7 +985,7 @@ function ProgressTrendChart({
             <div className="flex flex-wrap gap-2 text-xs">
                 <span className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-1">
                     <span
-                        className="size-2 rounded-full bg-[#01296A]"
+                        className="size-2 rounded-full bg-[#0F4C94]"
                         aria-hidden
                     />
                     {t('candidate.ai_interview_feedback.fit_score_legend')}
@@ -1032,20 +1032,20 @@ function EducationResourceCard({
     return (
         <Link
             href={showCareerResource(resource.slug)}
-            className="group flex h-full items-start gap-3 rounded-lg border p-3 transition hover:border-[#01296A]/40 hover:shadow-sm"
+            className="group flex h-full items-start gap-3 rounded-lg border p-3 transition hover:border-[#0F4C94]/40 hover:shadow-sm"
         >
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#01296A]/10 text-[#01296A]">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#0F4C94]/10 text-[#0F4C94]">
                 <Icon className="size-4" />
             </span>
             <div className="min-w-0 flex-1 space-y-1">
                 <p className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
                     {typeLabel}
                 </p>
-                <p className="line-clamp-2 text-sm leading-snug font-medium group-hover:text-[#01296A]">
+                <p className="line-clamp-2 text-sm leading-snug font-medium group-hover:text-[#0F4C94]">
                     {resource.title}
                 </p>
             </div>
-            <ArrowRight className="size-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-[#01296A]" />
+            <ArrowRight className="size-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-[#0F4C94]" />
         </Link>
     );
 }

@@ -44,7 +44,7 @@ export default function CandidatePricingMenuIndex({
                             </p>
                         ) : null}
                     </div>
-                    <Button asChild className="bg-[#01296A] hover:bg-[#001D4D]">
+                    <Button asChild className="bg-[#0F4C94] hover:bg-[#093579]">
                         <Link href={createHref} prefetch>
                             <Plus />
                             Tambah Menu

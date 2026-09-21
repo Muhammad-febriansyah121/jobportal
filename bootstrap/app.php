@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AuthenticateScraperToken;
 use App\Http\Middleware\DisableInertiaSSR;
 use App\Http\Middleware\EnsureCandidateOnboardingIsComplete;
 use App\Http\Middleware\EnsureUserIsAdmin;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state', 'app_locale']);
 
         $middleware->alias([
+            'scraper.token' => AuthenticateScraperToken::class,
             'admin' => EnsureUserIsAdmin::class,
             'candidate' => EnsureUserIsCandidate::class,
             'candidate.onboarded' => EnsureCandidateOnboardingIsComplete::class,

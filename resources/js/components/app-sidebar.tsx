@@ -417,7 +417,7 @@ function AdminSidebar() {
     return (
         <Sidebar
             collapsible="icon"
-            className="border-r border-[#e8edf3] bg-white text-[#4a5568]"
+            className="border-r border-[#E5EDF7] bg-white text-[#64748B]"
         >
             <SidebarHeader className="gap-0 px-5 py-5 group-data-[collapsible=icon]:px-2">
                 <SidebarMenu>
@@ -461,7 +461,7 @@ function AdminSidebar() {
 
             <SidebarFooter className="border-t border-[#eef2f6] bg-white p-4 group-data-[collapsible=icon]:p-2">
                 <div className="flex items-center justify-between px-2 group-data-[collapsible=icon]:hidden">
-                    <span className="text-[11px] font-semibold tracking-[0.18em] text-[#8490a3] uppercase">
+                    <span className="text-[11px] font-semibold tracking-[0.18em] text-[#64748B] uppercase">
                         {t('language.label')}
                     </span>
                     <LanguageSwitcher align="end" variant="inline" />
@@ -498,7 +498,7 @@ function AdminSidebarMenuItem({
                         <SidebarMenuButton
                             isActive={isActive}
                             tooltip={{ children: item.title }}
-                            className="h-11 rounded-lg px-4 text-[15px] font-semibold text-[#4b5565] group-data-[collapsible=icon]:justify-center hover:bg-[#eaf2ff] hover:text-[#01296A] data-[active=true]:bg-[#eaf2ff] data-[active=true]:text-[#01296A]"
+                            className="h-11 rounded-lg px-4 text-[15px] font-semibold text-[#64748B] group-data-[collapsible=icon]:justify-center hover:bg-[#F4F8FF] hover:text-[#0F4C94] data-[active=true]:bg-[#F4F8FF] data-[active=true]:text-[#0F4C94]"
                         >
                             {item.icon ? (
                                 <item.icon className="size-5" />
@@ -508,13 +508,13 @@ function AdminSidebarMenuItem({
                         </SidebarMenuButton>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
-                        <SidebarMenuSub className="mx-3 mt-1 border-l border-[#d6e0f5] px-2">
+                        <SidebarMenuSub className="mx-3 mt-1 border-l border-[#E5EDF7] px-2">
                             {item.children?.map((child) => (
                                 <SidebarMenuSubItem key={child.title}>
                                     <SidebarMenuSubButton
                                         asChild
                                         isActive={isCurrentUrl(child.href)}
-                                        className="h-8 rounded-lg text-sm font-semibold text-[#667085] hover:bg-[#eaf2ff] hover:text-[#01296A] data-[active=true]:bg-[#eaf2ff] data-[active=true]:text-[#01296A]"
+                                        className="h-8 rounded-lg text-sm font-semibold text-[#667085] hover:bg-[#F4F8FF] hover:text-[#0F4C94] data-[active=true]:bg-[#F4F8FF] data-[active=true]:text-[#0F4C94]"
                                     >
                                         <Link href={child.href} prefetch>
                                             <span>{child.title}</span>
@@ -535,7 +535,7 @@ function AdminSidebarMenuItem({
                 asChild
                 isActive={isActive}
                 tooltip={{ children: item.title }}
-                className="h-11 rounded-lg px-4 text-[15px] font-semibold text-[#4b5565] group-data-[collapsible=icon]:justify-center hover:bg-[#eaf2ff] hover:text-[#01296A] data-[active=true]:bg-[#eaf2ff] data-[active=true]:text-[#01296A]"
+                className="h-11 rounded-lg px-4 text-[15px] font-semibold text-[#64748B] group-data-[collapsible=icon]:justify-center hover:bg-[#F4F8FF] hover:text-[#0F4C94] data-[active=true]:bg-[#F4F8FF] data-[active=true]:text-[#0F4C94]"
             >
                 <Link href={item.href} prefetch>
                     {item.icon ? <item.icon className="size-5" /> : null}
@@ -712,7 +712,7 @@ function CandidateSidebar() {
     return (
         <Sidebar
             collapsible="icon"
-            className="border-r border-[#e8edf3] bg-white text-[#4a5568]"
+            className="border-r border-[#E5EDF7] bg-white text-[#64748B]"
         >
             <SidebarHeader className="gap-0 px-5 py-5 group-data-[collapsible=icon]:px-2">
                 <SidebarMenu>
@@ -728,10 +728,10 @@ function CandidateSidebar() {
                                     siteName={siteName}
                                 />
                                 <span className="grid flex-1 text-left group-data-[collapsible=icon]:hidden">
-                                    <span className="truncate text-lg font-bold tracking-wide text-[#111827]">
+                                    <span className="truncate text-lg font-bold tracking-wide text-[#0F2747]">
                                         {siteName}
                                     </span>
-                                    <span className="truncate text-xs font-bold tracking-[0.18em] text-[#8490a3] uppercase">
+                                    <span className="truncate text-xs font-bold tracking-[0.18em] text-[#64748B] uppercase">
                                         {t('nav.candidate.tagline')}
                                     </span>
                                 </span>
@@ -749,7 +749,7 @@ function CandidateSidebar() {
                             className="space-y-1.5"
                         >
                             {group.label ? (
-                                <p className="px-3 text-[10px] font-bold tracking-[0.18em] text-[#8490a3] uppercase group-data-[collapsible=icon]:hidden">
+                                <p className="px-3 text-[10px] font-bold tracking-[0.18em] text-[#64748B] uppercase group-data-[collapsible=icon]:hidden">
                                     {group.label}
                                 </p>
                             ) : null}
@@ -797,7 +797,7 @@ function CandidateSidebar() {
                                                         children: item.title,
                                                     }}
                                                     className={cn(
-                                                        'h-11 rounded-lg px-4 text-[15px] font-semibold text-[#4b5565] group-data-[collapsible=icon]:justify-center hover:bg-[#eaf2ff] hover:text-[#01296A] data-[active=true]:bg-[#eaf2ff] data-[active=true]:text-[#01296A]',
+                                                        'h-11 rounded-lg px-4 text-[15px] font-semibold text-[#64748B] group-data-[collapsible=icon]:justify-center hover:bg-[#F4F8FF] hover:text-[#0F4C94] data-[active=true]:bg-[#F4F8FF] data-[active=true]:text-[#0F4C94]',
                                                         showInterviewBadge ||
                                                             showAiCoachBadge
                                                             ? 'pr-9'
@@ -816,7 +816,7 @@ function CandidateSidebar() {
                                                 </SidebarMenuButton>
                                             )}
                                             {showInterviewBadge ? (
-                                                <SidebarMenuBadge className="top-2.5 right-2 size-5 rounded-full bg-[#01296A] text-[10px] font-bold text-white!">
+                                                <SidebarMenuBadge className="top-2.5 right-2 size-5 rounded-full bg-[#0F4C94] text-[10px] font-bold text-white!">
                                                     {interviewNotificationCount >
                                                     9
                                                         ? '9+'
@@ -824,7 +824,7 @@ function CandidateSidebar() {
                                                 </SidebarMenuBadge>
                                             ) : null}
                                             {showAiCoachBadge ? (
-                                                <SidebarMenuBadge className="top-2.5 right-2 size-5 rounded-full bg-[#01296A] text-[10px] font-bold text-white!">
+                                                <SidebarMenuBadge className="top-2.5 right-2 size-5 rounded-full bg-[#0F4C94] text-[10px] font-bold text-white!">
                                                     {aiSimulatorNotificationCount >
                                                     9
                                                         ? '9+'
@@ -840,8 +840,8 @@ function CandidateSidebar() {
                 </div>
 
                 {isProfileLocked && (
-                    <div className="rounded-lg border border-[#d6e0f5] bg-[#eff4ff] p-4 group-data-[collapsible=icon]:hidden">
-                        <p className="text-xs font-bold tracking-[0.12em] text-[#01296A] uppercase">
+                    <div className="rounded-lg border border-[#E5EDF7] bg-[#eff4ff] p-4 group-data-[collapsible=icon]:hidden">
+                        <p className="text-xs font-bold tracking-[0.12em] text-[#0F4C94] uppercase">
                             {t('nav.candidate.complete_profile_title')}
                         </p>
                         <p className="mt-3 text-sm leading-6 font-medium text-[#6b7280]">
@@ -849,7 +849,7 @@ function CandidateSidebar() {
                         </p>
                         <Link
                             href={candidateOnboardingEdit()}
-                            className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-lg bg-[#01296A] text-sm font-bold text-white shadow-sm transition hover:bg-[#001D4D]"
+                            className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-lg bg-[#0F4C94] text-sm font-bold text-white shadow-sm transition hover:bg-[#093579]"
                         >
                             {t('nav.candidate.complete_profile_cta')}
                         </Link>
@@ -873,7 +873,7 @@ function CandidateSidebar() {
                                     </svg>
                                 </span>
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-[13px] leading-tight font-bold text-[#01296A]">
+                                    <p className="text-[13px] leading-tight font-bold text-[#0F4C94]">
                                         {t('candidate.footer.contact_title')}
                                     </p>
                                     <p className="mt-0.5 text-[11px] leading-snug text-[#5b6473]">
@@ -923,7 +923,7 @@ function CandidateSidebar() {
                     </a>
                 )}
                 <div className="flex items-center justify-between px-2 group-data-[collapsible=icon]:hidden">
-                    <span className="text-[11px] font-semibold tracking-[0.18em] text-[#8490a3] uppercase">
+                    <span className="text-[11px] font-semibold tracking-[0.18em] text-[#64748B] uppercase">
                         {t('language.label')}
                     </span>
                     <LanguageSwitcher align="end" variant="inline" />
@@ -1063,7 +1063,7 @@ function EmployerSidebar() {
     return (
         <Sidebar
             collapsible="icon"
-            className="border-r border-[#e8edf3] bg-white text-[#4a5568]"
+            className="border-r border-[#E5EDF7] bg-white text-[#64748B]"
         >
             <SidebarHeader className="gap-0 border-b border-[#eef2f6] px-5 py-6 group-data-[collapsible=icon]:px-2">
                 <SidebarMenu>
@@ -1079,10 +1079,10 @@ function EmployerSidebar() {
                                     siteName={siteName}
                                 />
                                 <span className="grid flex-1 text-left group-data-[collapsible=icon]:hidden">
-                                    <span className="truncate text-lg font-bold tracking-wide text-[#111827]">
+                                    <span className="truncate text-lg font-bold tracking-wide text-[#0F2747]">
                                         {siteName}
                                     </span>
-                                    <span className="truncate text-xs font-medium text-[#8490a3]">
+                                    <span className="truncate text-xs font-medium text-[#64748B]">
                                         {t('nav.employer.tagline')}
                                     </span>
                                 </span>
@@ -1100,7 +1100,7 @@ function EmployerSidebar() {
                             className="space-y-1.5"
                         >
                             {group.label ? (
-                                <p className="px-3 text-[10px] font-bold tracking-[0.18em] text-[#8490a3] uppercase group-data-[collapsible=icon]:hidden">
+                                <p className="px-3 text-[10px] font-bold tracking-[0.18em] text-[#64748B] uppercase group-data-[collapsible=icon]:hidden">
                                     {group.label}
                                 </p>
                             ) : null}
@@ -1126,7 +1126,7 @@ function EmployerSidebar() {
                                                     children: item.title,
                                                 }}
                                                 className={cn(
-                                                    'h-11 rounded-lg px-3 text-[15px] font-semibold text-[#4b5565] group-data-[collapsible=icon]:justify-center hover:bg-[#eaf2ff] hover:text-[#01296A] data-[active=true]:bg-[#eaf2ff] data-[active=true]:text-[#01296A]',
+                                                    'h-11 rounded-lg px-3 text-[15px] font-semibold text-[#64748B] group-data-[collapsible=icon]:justify-center hover:bg-[#F4F8FF] hover:text-[#0F4C94] data-[active=true]:bg-[#F4F8FF] data-[active=true]:text-[#0F4C94]',
                                                     badgeValue ? 'pr-9' : '',
                                                 )}
                                             >
@@ -1143,7 +1143,7 @@ function EmployerSidebar() {
                                                 </Link>
                                             </SidebarMenuButton>
                                             {badgeValue ? (
-                                                <SidebarMenuBadge className="top-2.5 right-2 size-5 rounded-full bg-[#01296A] text-[10px] font-bold text-white!">
+                                                <SidebarMenuBadge className="top-2.5 right-2 size-5 rounded-full bg-[#0F4C94] text-[10px] font-bold text-white!">
                                                     {badgeValue}
                                                 </SidebarMenuBadge>
                                             ) : null}
@@ -1162,14 +1162,14 @@ function EmployerSidebar() {
                     <div className="grid gap-3">
                         <Link
                             href={employerJobsCreate()}
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#01296A] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#001D4D]"
+                            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#0F4C94] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#093579]"
                         >
                             <PlusCircle className="size-4" />
                             {t('nav.employer.create_job')}
                         </Link>
                         <Link
                             href={employerTalentSearch()}
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#e4e9f0] bg-white px-4 text-sm font-bold text-[#313947] shadow-sm transition hover:border-[#01296A]/30 hover:bg-[#eaf2ff] hover:text-[#01296A]"
+                            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#e4e9f0] bg-white px-4 text-sm font-bold text-[#313947] shadow-sm transition hover:border-[#0F4C94]/30 hover:bg-[#F4F8FF] hover:text-[#0F4C94]"
                         >
                             <Search className="size-4" />
                             {t('nav.employer.find_talent')}
@@ -1194,7 +1194,7 @@ function EmployerSidebar() {
                                     </svg>
                                 </span>
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-[13px] leading-tight font-bold text-[#01296A]">
+                                    <p className="text-[13px] leading-tight font-bold text-[#0F4C94]">
                                         {t('employer.footer.contact_title')}
                                     </p>
                                     <p className="mt-0.5 text-[11px] leading-snug text-[#5b6473]">
@@ -1249,9 +1249,9 @@ function EmployerSidebar() {
                             <DropdownMenuTrigger asChild>
                                 <SidebarMenuButton
                                     size="lg"
-                                    className="h-14 rounded-lg p-0 group-data-[collapsible=icon]:justify-center hover:bg-[#eaf2ff] data-[state=open]:bg-[#eaf2ff]"
+                                    className="h-14 rounded-lg p-0 group-data-[collapsible=icon]:justify-center hover:bg-[#F4F8FF] data-[state=open]:bg-[#F4F8FF]"
                                 >
-                                    <span className="flex size-11 items-center justify-center overflow-hidden rounded-full bg-[#1E4D96] text-sm font-bold text-white">
+                                    <span className="flex size-11 items-center justify-center overflow-hidden rounded-full bg-[#136BB4] text-sm font-bold text-white">
                                         {auth.user?.avatar_url ? (
                                             <img
                                                 src={auth.user.avatar_url}
@@ -1263,20 +1263,20 @@ function EmployerSidebar() {
                                         )}
                                     </span>
                                     <span className="grid flex-1 text-left group-data-[collapsible=icon]:hidden">
-                                        <span className="truncate text-sm font-bold text-[#1f2937]">
+                                        <span className="truncate text-sm font-bold text-[#0F2747]">
                                             {auth.user?.name ?? 'HR Manager'}
                                         </span>
-                                        <span className="truncate text-xs font-medium text-[#8490a3]">
+                                        <span className="truncate text-xs font-medium text-[#64748B]">
                                             {t('nav.employer.role_label')}
                                         </span>
                                     </span>
-                                    <Settings className="size-4 text-[#8490a3] group-data-[collapsible=icon]:hidden" />
+                                    <Settings className="size-4 text-[#64748B] group-data-[collapsible=icon]:hidden" />
                                 </SidebarMenuButton>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
                                 side="top"
                                 align="end"
-                                className="w-56 rounded-lg border-[#e8edf3] p-2"
+                                className="w-56 rounded-lg border-[#E5EDF7] p-2"
                             >
                                 <DropdownMenuItem asChild>
                                     <Link
@@ -1307,7 +1307,7 @@ function EmployerSidebar() {
                     </SidebarMenuItem>
                 </SidebarMenu>
                 <div className="mt-2 flex items-center justify-between px-2 group-data-[collapsible=icon]:hidden">
-                    <span className="text-[11px] font-semibold tracking-[0.18em] text-[#8490a3] uppercase">
+                    <span className="text-[11px] font-semibold tracking-[0.18em] text-[#64748B] uppercase">
                         {t('language.label')}
                     </span>
                     <LanguageSwitcher align="end" variant="inline" />
@@ -1336,7 +1336,7 @@ function SidebarBrandMark({
                     className="h-full max-h-14 w-full object-contain"
                 />
             ) : (
-                <Rocket className="size-5 text-[#01296A]" />
+                <Rocket className="size-5 text-[#0F4C94]" />
             )}
         </span>
     );

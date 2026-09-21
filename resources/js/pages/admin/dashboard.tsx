@@ -110,7 +110,7 @@ type DashboardProps = {
 
 /* ─── Chart constants ─── */
 const C = {
-    primary: '#01296a',
+    primary: '#0F4C94',
     blue: '#3B82F6',
     emerald: '#10B981',
     amber: '#F59E0B',
@@ -181,7 +181,7 @@ export default function AdminDashboard({
             <Head title={t('admin.dashboard.title')} />
             <div className="flex flex-col gap-8 p-4 md:p-6">
                 {/* ─── Hero ─── */}
-                <section className="relative overflow-hidden rounded-2xl border bg-[#01296a] px-6 py-5 text-white shadow-sm">
+                <section className="relative overflow-hidden rounded-2xl border bg-[#0F4C94] px-6 py-5 text-white shadow-sm">
                     <div className="relative z-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div>
                             <p className="text-xs font-semibold tracking-widest text-white/50 uppercase">
@@ -433,7 +433,7 @@ export default function AdminDashboard({
                                     )}
                                     value={conversionFunnel.applications}
                                     icon={ClipboardList}
-                                    color="bg-[#01296a]"
+                                    color="bg-[#0F4C94]"
                                 />
                                 <FunnelArrow
                                     rate={
@@ -525,7 +525,7 @@ export default function AdminDashboard({
                                                 </p>
                                             </div>
                                             <div className="shrink-0 text-right">
-                                                <p className="text-sm font-bold text-[#01296a]">
+                                                <p className="text-sm font-bold text-[#0F4C94]">
                                                     {job.applications_count}
                                                 </p>
                                                 <p className="text-[10px] text-muted-foreground">
@@ -602,7 +602,7 @@ export default function AdminDashboard({
                                                 </div>
                                             </div>
                                             <div className="shrink-0 text-right">
-                                                <p className="text-sm font-bold text-[#01296a]">
+                                                <p className="text-sm font-bold text-[#0F4C94]">
                                                     {company.job_listings_count}
                                                 </p>
                                                 <p className="text-[10px] text-muted-foreground">
@@ -648,7 +648,7 @@ export default function AdminDashboard({
                         <CardHeader className="pb-3">
                             <div className="flex items-center justify-between">
                                 <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                                    <UserPlus className="size-4 text-[#01296a]" />
+                                    <UserPlus className="size-4 text-[#0F4C94]" />
                                     {t(
                                         'admin.dashboard.recent_registrations.title',
                                     )}
@@ -681,7 +681,7 @@ export default function AdminDashboard({
                                             key={user.id}
                                             className="flex items-center gap-3 py-2.5"
                                         >
-                                            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#01296a]/10 text-xs font-bold text-[#01296a]">
+                                            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#0F4C94]/10 text-xs font-bold text-[#0F4C94]">
                                                 {user.name
                                                     .charAt(0)
                                                     .toUpperCase()}
@@ -730,7 +730,7 @@ export default function AdminDashboard({
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between gap-2">
                             <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                                <WalletCards className="size-4 text-[#01296a]" />
+                                <WalletCards className="size-4 text-[#0F4C94]" />
                                 {t('admin.dashboard.recent_payments.title')}
                             </CardTitle>
                             {metrics.pending_payments_count > 0 && (
@@ -1192,8 +1192,8 @@ function KpiCard({
     value,
     icon: Icon,
     sub,
-    iconBg = 'bg-[#01296a]/10',
-    iconColor = 'text-[#01296a]',
+    iconBg = 'bg-[#0F4C94]/10',
+    iconColor = 'text-[#0F4C94]',
 }: {
     label: string;
     value: string;
@@ -1240,8 +1240,8 @@ function StatCard({
         <article className="rounded-xl border bg-white p-4 shadow-xs dark:bg-card">
             <div className="flex items-start justify-between gap-2">
                 <p className="text-sm text-muted-foreground">{label}</p>
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#01296a]/10">
-                    <Icon className="size-4 text-[#01296a]" />
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#0F4C94]/10">
+                    <Icon className="size-4 text-[#0F4C94]" />
                 </div>
             </div>
             <p className="mt-3 text-2xl font-bold tracking-tight">

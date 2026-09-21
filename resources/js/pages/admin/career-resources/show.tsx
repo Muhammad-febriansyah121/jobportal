@@ -50,7 +50,7 @@ export default function CareerResourceShow({
 
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex flex-wrap gap-2">
-                        <Badge className="bg-[#01296A] text-white">
+                        <Badge className="bg-[#0F4C94] text-white">
                             {resource.type_label}
                         </Badge>
                         <Badge variant="outline">
@@ -74,17 +74,17 @@ export default function CareerResourceShow({
                             className="aspect-[16/6] w-full object-cover"
                         />
                     ) : (
-                        <div className="flex aspect-[16/6] w-full items-center justify-center bg-[#eff4ff] text-sm font-bold text-[#01296A]">
+                        <div className="flex aspect-[16/6] w-full items-center justify-center bg-[#eff4ff] text-sm font-bold text-[#0F4C94]">
                             {t('admin.career_resources_show.no_thumbnail')}
                         </div>
                     )}
 
                     <div className="space-y-6 p-6">
                         <header className="space-y-3">
-                            <p className="text-sm font-semibold text-[#01296A]">
+                            <p className="text-sm font-semibold text-[#0F4C94]">
                                 /{resource.slug}
                             </p>
-                            <h1 className="max-w-4xl text-3xl font-bold tracking-tight text-[#111827]">
+                            <h1 className="max-w-4xl text-3xl font-bold tracking-tight text-[#0F2747]">
                                 {resource.title}
                             </h1>
                             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -100,7 +100,7 @@ export default function CareerResourceShow({
                         </header>
 
                         <div
-                            className="max-w-4xl text-base leading-8 text-[#313947] [&_blockquote]:border-l-4 [&_blockquote]:border-[#01296A] [&_blockquote]:bg-[#eff4ff] [&_blockquote]:px-4 [&_blockquote]:py-2 [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-2xl [&_h2]:font-bold [&_h3]:text-xl [&_h3]:font-bold [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-4 [&_strong]:font-bold [&_ul]:list-disc [&_ul]:pl-6"
+                            className="max-w-4xl text-base leading-8 text-[#313947] [&_blockquote]:border-l-4 [&_blockquote]:border-[#0F4C94] [&_blockquote]:bg-[#eff4ff] [&_blockquote]:px-4 [&_blockquote]:py-2 [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-2xl [&_h2]:font-bold [&_h3]:text-xl [&_h3]:font-bold [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-4 [&_strong]:font-bold [&_ul]:list-disc [&_ul]:pl-6"
                             dangerouslySetInnerHTML={{
                                 __html: resource.content,
                             }}

@@ -112,7 +112,7 @@ export default function CandidateMessageShow({
                             type="submit"
                             disabled={processing || !data.body.trim()}
                             size="icon"
-                            className="shrink-0 bg-[#01296A] hover:bg-[#001D4D]"
+                            className="shrink-0 bg-[#0F4C94] hover:bg-[#093579]"
                         >
                             <Send className="size-4" />
                         </Button>
@@ -146,7 +146,7 @@ function MessageBubble({ message }: { message: MessageItem }) {
                 <div
                     className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                         message.is_mine
-                            ? 'rounded-br-sm bg-[#01296A] text-white'
+                            ? 'rounded-br-sm bg-[#0F4C94] text-white'
                             : 'rounded-bl-sm bg-white text-foreground shadow-sm'
                     }`}
                 >
@@ -172,7 +172,7 @@ function SenderAvatar({ name, src }: { name: string; src: string | null }) {
     }
 
     return (
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#111827] text-xs font-semibold text-white">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#0F2747] text-xs font-semibold text-white">
             {name
                 .split(' ')
                 .map((part) => part[0])
@@ -195,7 +195,7 @@ function CompanyAvatar({ name, src }: { name: string; src: string | null }) {
     }
 
     return (
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#111827] text-sm font-semibold text-white">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#0F2747] text-sm font-semibold text-white">
             <Building2 className="size-5" />
         </div>
     );

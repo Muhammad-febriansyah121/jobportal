@@ -53,7 +53,7 @@ export default function Home({
     faqs,
 }: HomeProps) {
     return (
-        <HomeLayout>
+        <HomeLayout overlayNavbar>
             <HeroSection
                 jobs={jobs}
                 jobs_pagination={jobs_pagination}

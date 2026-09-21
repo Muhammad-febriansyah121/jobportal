@@ -138,8 +138,8 @@ export default function CandidateJobsIndex({
             <div className="space-y-5 p-4 md:p-6">
                 {/* Page header */}
                 <div className="flex items-start gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#01296A]/10">
-                        <BriefcaseBusiness className="size-5 text-[#01296A]" />
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#0F4C94]/10">
+                        <BriefcaseBusiness className="size-5 text-[#0F4C94]" />
                     </div>
                     <div>
                         <h1 className="text-xl font-bold text-foreground">
@@ -161,7 +161,7 @@ export default function CandidateJobsIndex({
                                 className={[
                                     'rounded-lg px-4 py-1.5 text-sm font-medium transition-all duration-150',
                                     filters.tab === tab
-                                        ? 'bg-white text-[#01296A] shadow-sm ring-1 ring-black/5'
+                                        ? 'bg-white text-[#0F4C94] shadow-sm ring-1 ring-black/5'
                                         : 'text-muted-foreground hover:text-foreground',
                                 ].join(' ')}
                             >
@@ -376,7 +376,7 @@ export default function CandidateJobsIndex({
                             <div className="flex items-center gap-3 pt-1">
                                 <Button
                                     type="submit"
-                                    className="bg-[#01296A] hover:bg-[#001D4D]"
+                                    className="bg-[#0F4C94] hover:bg-[#093579]"
                                 >
                                     <Filter className="size-4" />
                                     {t('candidate.jobs.apply_filter')}
@@ -436,7 +436,7 @@ function JobCard({
     return (
         <Card
             className={cn(
-                'overflow-hidden border-border/70 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#01296A]/25 hover:shadow-md',
+                'overflow-hidden border-border/70 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#0F4C94]/25 hover:shadow-md',
                 job.has_applied && 'border-l-[3px] border-l-emerald-500',
             )}
         >
@@ -458,7 +458,7 @@ function JobCard({
                                     <div className="min-w-0">
                                         <Link
                                             href={show(job.slug)}
-                                            className="line-clamp-2 text-lg leading-tight font-bold text-foreground transition-colors hover:text-[#01296A]"
+                                            className="line-clamp-2 text-lg leading-tight font-bold text-foreground transition-colors hover:text-[#0F4C94]"
                                         >
                                             {job.title}
                                         </Link>
@@ -525,7 +525,7 @@ function JobCard({
                                             )}
                                         </Badge>
                                     ) : job.company_verified ? (
-                                        <Badge className="border-transparent bg-[#01296A]/10 text-[#01296A] hover:bg-[#01296A]/10">
+                                        <Badge className="border-transparent bg-[#0F4C94]/10 text-[#0F4C94] hover:bg-[#0F4C94]/10">
                                             {t('candidate.jobs.verified_badge')}
                                         </Badge>
                                     ) : null}
@@ -547,7 +547,7 @@ function JobCard({
                                                 null &&
                                             job.matched_skills_count !==
                                                 undefined ? (
-                                                <span className="text-xs font-medium text-[#01296A]">
+                                                <span className="text-xs font-medium text-[#0F4C94]">
                                                     {job.matched_skills_count}/
                                                     {job.skills.length} cocok
                                                 </span>
@@ -632,7 +632,7 @@ function JobCard({
                         <div className="mt-5 grid gap-2">
                             <Button
                                 asChild
-                                className="h-10 bg-[#01296A] hover:bg-[#001D4D]"
+                                className="h-10 bg-[#0F4C94] hover:bg-[#093579]"
                             >
                                 <Link href={show(job.slug)}>
                                     <Eye className="size-4" />
@@ -669,7 +669,7 @@ function SaveJobButton({
             method="delete"
             as="button"
             className={cn(
-                'inline-flex shrink-0 items-center gap-2 text-[#01296A] transition-colors hover:text-[#001D4D]',
+                'inline-flex shrink-0 items-center gap-2 text-[#0F4C94] transition-colors hover:text-[#093579]',
                 className,
             )}
             aria-label="Hapus simpanan"

@@ -234,7 +234,7 @@ function ChatPanel({
 
     return (
         <Card
-            className="flex h-[calc(100dvh-220px)] min-h-[560px] flex-col overflow-hidden border-[#e0e7f3] shadow-sm"
+            className="flex h-[calc(100dvh-220px)] min-h-[560px] flex-col overflow-hidden border-[#E5EDF7] shadow-sm"
             aria-label={t('candidate.career_coach.chat_aria')}
         >
             <header className="flex items-center justify-between gap-3 border-b border-[#eef2f6] bg-white px-5 py-4">
@@ -243,7 +243,7 @@ function ChatPanel({
                         className="inline-flex size-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100"
                         aria-hidden="true"
                     />
-                    <h2 className="text-lg font-bold tracking-tight text-[#0f172a]">
+                    <h2 className="text-lg font-bold tracking-tight text-[#0F2747]">
                         {t('candidate.career_coach.chat_title')}
                     </h2>
                 </div>
@@ -258,7 +258,7 @@ function ChatPanel({
                 </Button>
             </header>
 
-            <div className="flex-1 space-y-5 overflow-y-auto bg-[#f7f9fc] px-5 py-5">
+            <div className="flex-1 space-y-5 overflow-y-auto bg-[#F8FAFC] px-5 py-5">
                 {hasContent ? (
                     <>
                         {activeSession?.messages.map((message) =>
@@ -454,11 +454,11 @@ function EmptyConversation() {
 
     return (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-[#cfd8e8] bg-white p-8 text-center">
-            <div className="flex size-12 items-center justify-center rounded-full bg-[#eaf2ff] text-[#01296A]">
+            <div className="flex size-12 items-center justify-center rounded-full bg-[#F4F8FF] text-[#0F4C94]">
                 <Sparkles className="size-6" />
             </div>
             <div className="space-y-1.5">
-                <h3 className="text-base font-bold text-[#0f172a]">
+                <h3 className="text-base font-bold text-[#0F2747]">
                     {t('candidate.career_coach.empty_title')}
                 </h3>
                 <p className="text-sm leading-6 text-muted-foreground">
@@ -479,7 +479,7 @@ function EmptyConversation() {
 
 function SuggestionPill({ label }: { label: string }) {
     return (
-        <div className="rounded-xl border border-[#dde6f5] bg-[#eaf2ff] px-3 py-2.5 text-left text-xs font-semibold text-[#01296A]">
+        <div className="rounded-xl border border-[#dde6f5] bg-[#F4F8FF] px-3 py-2.5 text-left text-xs font-semibold text-[#0F4C94]">
             {label}
         </div>
     );
@@ -489,7 +489,7 @@ function UserMessage({ message }: { message: CoachMessage }) {
     return (
         <div className="flex justify-end">
             <div className="max-w-[80%] space-y-1">
-                <div className="rounded-2xl rounded-tr-sm bg-[#01296A] px-4 py-3 text-sm leading-6 text-white shadow-sm">
+                <div className="rounded-2xl rounded-tr-sm bg-[#0F4C94] px-4 py-3 text-sm leading-6 text-white shadow-sm">
                     {message.content}
                 </div>
                 {message.created_at ? (
@@ -516,28 +516,28 @@ function AssistantMessage({
         <div className="flex justify-start">
             <div className="flex w-full max-w-[88%] gap-3">
                 <span
-                    className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#eaf2ff] text-[#01296A]"
+                    className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#F4F8FF] text-[#0F4C94]"
                     aria-hidden="true"
                 >
                     <Sparkles className="size-4" />
                 </span>
                 <div className="flex-1 space-y-1.5">
-                    <p className="text-[10px] font-bold tracking-[0.18em] text-[#01296A] uppercase">
+                    <p className="text-[10px] font-bold tracking-[0.18em] text-[#0F4C94] uppercase">
                         {t('candidate.career_coach.assistant_label')}
                     </p>
-                    <div className="space-y-2 rounded-2xl rounded-tl-sm border border-[#e6ebf3] bg-white px-4 py-3 text-sm leading-7 text-[#0f172a] shadow-sm">
+                    <div className="space-y-2 rounded-2xl rounded-tl-sm border border-[#E5EDF7] bg-white px-4 py-3 text-sm leading-7 text-[#0F2747] shadow-sm">
                         {showTyping ? (
                             <span className="inline-flex items-center gap-1 text-muted-foreground">
-                                <span className="size-1.5 animate-bounce rounded-full bg-[#01296A] [animation-delay:-0.3s]" />
-                                <span className="size-1.5 animate-bounce rounded-full bg-[#01296A] [animation-delay:-0.15s]" />
-                                <span className="size-1.5 animate-bounce rounded-full bg-[#01296A]" />
+                                <span className="size-1.5 animate-bounce rounded-full bg-[#0F4C94] [animation-delay:-0.3s]" />
+                                <span className="size-1.5 animate-bounce rounded-full bg-[#0F4C94] [animation-delay:-0.15s]" />
+                                <span className="size-1.5 animate-bounce rounded-full bg-[#0F4C94]" />
                             </span>
                         ) : (
                             <>
                                 {renderRichText(message.content)}
                                 {streaming ? (
                                     <span
-                                        className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-[#01296A] align-middle"
+                                        className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-[#0F4C94] align-middle"
                                         aria-hidden="true"
                                     />
                                 ) : null}
@@ -565,7 +565,7 @@ function renderRichText(content: string) {
 
                 if (boldMatch) {
                     return (
-                        <strong key={partIndex} className="font-bold text-[#01296A]">
+                        <strong key={partIndex} className="font-bold text-[#0F4C94]">
                             {boldMatch[1]}
                         </strong>
                     );
@@ -591,7 +591,7 @@ function QuickPromptStrip({
                     key={`${label}-${index}`}
                     type="button"
                     onClick={() => onSend(label)}
-                    className="inline-flex items-center rounded-full border border-[#dbe4f3] bg-white px-3.5 py-1.5 text-xs font-semibold text-[#01296A] transition hover:border-[#01296A] hover:bg-[#eaf2ff]"
+                    className="inline-flex items-center rounded-full border border-[#dbe4f3] bg-white px-3.5 py-1.5 text-xs font-semibold text-[#0F4C94] transition hover:border-[#0F4C94] hover:bg-[#F4F8FF]"
                 >
                     {label}
                 </button>
@@ -630,7 +630,7 @@ function ChatComposer({
                 }}
                 className="space-y-2"
             >
-                <div className="flex items-end gap-2 rounded-2xl border border-[#dde6f5] bg-white px-3 py-2 shadow-xs focus-within:border-[#01296A] focus-within:ring-2 focus-within:ring-[#01296A]/20">
+                <div className="flex items-end gap-2 rounded-2xl border border-[#dde6f5] bg-white px-3 py-2 shadow-xs focus-within:border-[#0F4C94] focus-within:ring-2 focus-within:ring-[#0F4C94]/20">
                     <label htmlFor="career-coach-content" className="sr-only">
                         {t('candidate.career_coach.message_label')}
                     </label>
@@ -644,7 +644,7 @@ function ChatComposer({
                         placeholder={t(
                             'candidate.career_coach.composer_placeholder',
                         )}
-                        className="min-h-9 max-h-32 flex-1 resize-none border-0 bg-transparent text-sm leading-6 text-[#0f172a] outline-none placeholder:text-[#94a3b8] focus:ring-0"
+                        className="min-h-9 max-h-32 flex-1 resize-none border-0 bg-transparent text-sm leading-6 text-[#0F2747] outline-none placeholder:text-[#94a3b8] focus:ring-0"
                         disabled={isStreaming}
                         onKeyDown={(event) => {
                             if (
@@ -662,7 +662,7 @@ function ChatComposer({
                         size="icon"
                         disabled={isStreaming || content.trim() === ''}
                         aria-label={t('candidate.career_coach.send_message')}
-                        className="size-10 shrink-0 rounded-xl bg-[#01296A] text-white hover:bg-[#001D4D] disabled:opacity-60"
+                        className="size-10 shrink-0 rounded-xl bg-[#0F4C94] text-white hover:bg-[#093579] disabled:opacity-60"
                     >
                         {isStreaming ? (
                             <Loader2 className="size-4 animate-spin" />
@@ -700,7 +700,7 @@ function RecommendationPanel({
 
     return (
         <div className="space-y-5">
-            <Card className="overflow-hidden border-[#e0e7f3] shadow-sm">
+            <Card className="overflow-hidden border-[#E5EDF7] shadow-sm">
                 <CardContent className="space-y-5 p-5 md:p-6">
                     <Badge className="bg-emerald-100 px-3 py-1 text-[10px] font-bold tracking-[0.18em] text-emerald-700 uppercase hover:bg-emerald-100">
                         <Target className="mr-1 size-3.5" />
@@ -709,11 +709,11 @@ function RecommendationPanel({
 
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div className="min-w-0 space-y-1">
-                            <h2 className="text-3xl font-extrabold leading-tight tracking-tight text-[#0f172a] md:text-4xl">
+                            <h2 className="text-3xl font-extrabold leading-tight tracking-tight text-[#0F2747] md:text-4xl">
                                 {target.target_role}
                             </h2>
                             {target.title && target.title !== target.target_role ? (
-                                <p className="text-base font-semibold text-[#01296A]">
+                                <p className="text-base font-semibold text-[#0F4C94]">
                                     ({target.title})
                                 </p>
                             ) : null}
@@ -730,8 +730,8 @@ function RecommendationPanel({
 
                     <div className="grid gap-5 md:grid-cols-[1.55fr_minmax(220px,1fr)]">
                         <div className="space-y-4 rounded-2xl bg-white p-1">
-                            <div className="space-y-3 rounded-2xl bg-[#f7f9fc] p-5">
-                                <div className="flex items-center gap-2 text-[#0f172a]">
+                            <div className="space-y-3 rounded-2xl bg-[#F8FAFC] p-5">
+                                <div className="flex items-center gap-2 text-[#0F2747]">
                                     <span className="flex size-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                                         <Star className="size-4" fill="currentColor" />
                                     </span>
@@ -739,7 +739,7 @@ function RecommendationPanel({
                                         {t('candidate.career_coach.why_path')}
                                     </h3>
                                 </div>
-                                <p className="text-sm leading-7 text-[#1f2937]">
+                                <p className="text-sm leading-7 text-[#0F2747]">
                                     {target.summary ??
                                         t('candidate.career_coach.why_path_fallback')}
                                 </p>
@@ -772,7 +772,7 @@ function RecommendationPanel({
             </Card>
 
             {target.learning_steps.length > 0 ? (
-                <Card className="border-[#e0e7f3]">
+                <Card className="border-[#E5EDF7]">
                     <CardContent className="space-y-5 p-5 md:p-6">
                         <div className="flex items-start justify-between gap-3">
                             <div className="flex items-start gap-3">
@@ -780,7 +780,7 @@ function RecommendationPanel({
                                     <BookOpen className="size-5" />
                                 </span>
                                 <div>
-                                    <h3 className="text-lg font-bold text-[#0f172a]">
+                                    <h3 className="text-lg font-bold text-[#0F2747]">
                                         {t('candidate.career_coach.bridge_title')}
                                     </h3>
                                     <p className="text-sm text-muted-foreground">
@@ -790,7 +790,7 @@ function RecommendationPanel({
                             </div>
                             <Link
                                 href={careerPathsIndex()}
-                                className="hidden text-xs font-bold text-[#01296A] hover:underline md:inline"
+                                className="hidden text-xs font-bold text-[#0F4C94] hover:underline md:inline"
                             >
                                 {t('candidate.career_coach.see_full_path')} →
                             </Link>
@@ -826,14 +826,14 @@ function StatTile({
     const Icon = tone === 'growth' ? TrendingUp : DollarSign;
 
     return (
-        <div className="rounded-2xl bg-[#eaf2ff] p-4">
-            <div className="flex items-center gap-2 text-[#01296A]">
+        <div className="rounded-2xl bg-[#F4F8FF] p-4">
+            <div className="flex items-center gap-2 text-[#0F4C94]">
                 <Icon className="size-4" />
                 <p className="text-[10px] font-bold tracking-[0.18em] uppercase">
                     {label}
                 </p>
             </div>
-            <p className="mt-3 text-xl font-extrabold leading-tight text-[#01296A] md:text-2xl">
+            <p className="mt-3 text-xl font-extrabold leading-tight text-[#0F4C94] md:text-2xl">
                 {value}
             </p>
         </div>
@@ -844,12 +844,12 @@ function SkillGapAside({ target }: { target: TargetRecommendation }) {
     const { t } = useTranslate();
 
     return (
-        <aside className="space-y-4 rounded-2xl bg-[#eaf2ff] p-5">
+        <aside className="space-y-4 rounded-2xl bg-[#F4F8FF] p-5">
             <div className="flex items-start justify-between gap-2">
-                <h3 className="text-base font-bold leading-snug text-[#0f172a]">
+                <h3 className="text-base font-bold leading-snug text-[#0F2747]">
                     {t('candidate.career_coach.skill_gap_title')}
                 </h3>
-                <span className="flex size-7 items-center justify-center rounded-md bg-white text-[#01296A]">
+                <span className="flex size-7 items-center justify-center rounded-md bg-white text-[#0F4C94]">
                     <BarChart3 className="size-4" />
                 </span>
             </div>
@@ -866,7 +866,7 @@ function SkillGapAside({ target }: { target: TargetRecommendation }) {
                         return (
                             <li key={skill.name} className="space-y-1.5">
                                 <div className="flex items-center justify-between gap-2">
-                                    <span className="truncate text-sm font-semibold text-[#0f172a]">
+                                    <span className="truncate text-sm font-semibold text-[#0F2747]">
                                         {skill.name}
                                     </span>
                                     <span className="flex items-baseline gap-1 tabular-nums">
@@ -906,7 +906,7 @@ function SkillGapAside({ target }: { target: TargetRecommendation }) {
                                         style={{ width: `${current}%` }}
                                     />
                                     <span
-                                        className="absolute inset-y-[-2px] w-0.5 rounded-full bg-[#01296A]"
+                                        className="absolute inset-y-[-2px] w-0.5 rounded-full bg-[#0F4C94]"
                                         style={{ left: `${required}%` }}
                                         aria-hidden="true"
                                     />
@@ -941,7 +941,7 @@ function SkillGapAside({ target }: { target: TargetRecommendation }) {
             )}
 
             {target.key_gap_insight ? (
-                <div className="flex gap-2 rounded-xl bg-white/80 p-3 text-xs italic leading-5 text-[#1f2937]">
+                <div className="flex gap-2 rounded-xl bg-white/80 p-3 text-xs italic leading-5 text-[#0F2747]">
                     <Lightbulb className="size-4 shrink-0 text-amber-500" />
                     <span>&ldquo;{target.key_gap_insight}&rdquo;</span>
                 </div>
@@ -954,16 +954,16 @@ function LearningCard({ step, index }: { step: LearningStep; index: number }) {
     const Icon = pickLearningIcon(index);
 
     return (
-        <article className="space-y-3 rounded-2xl border border-[#e6ebf3] bg-white p-4 transition hover:border-[#bcd0f0] hover:shadow-sm">
-            <span className="flex size-10 items-center justify-center rounded-lg bg-[#eaf2ff] text-[#01296A]">
+        <article className="space-y-3 rounded-2xl border border-[#E5EDF7] bg-white p-4 transition hover:border-[#C9DBF3] hover:shadow-sm">
+            <span className="flex size-10 items-center justify-center rounded-lg bg-[#F4F8FF] text-[#0F4C94]">
                 <Icon className="size-5" />
             </span>
             {step.tag ? (
-                <span className="block text-[10px] font-bold tracking-[0.18em] text-[#01296A] uppercase">
+                <span className="block text-[10px] font-bold tracking-[0.18em] text-[#0F4C94] uppercase">
                     {step.tag}
                 </span>
             ) : null}
-            <h4 className="text-base font-bold leading-snug text-[#0f172a]">
+            <h4 className="text-base font-bold leading-snug text-[#0F2747]">
                 {step.title}
             </h4>
             {step.description ? (
@@ -980,9 +980,9 @@ function RecommendationSkeleton() {
 
     return (
         <div className="space-y-5" aria-busy="true" aria-live="polite">
-            <Card className="overflow-hidden border-[#e0e7f3] shadow-sm">
+            <Card className="overflow-hidden border-[#E5EDF7] shadow-sm">
                 <CardContent className="space-y-5 p-5 md:p-6">
-                    <div className="flex items-center gap-2 text-[#01296A]">
+                    <div className="flex items-center gap-2 text-[#0F4C94]">
                         <Sparkles className="size-4 animate-pulse" />
                         <span className="text-[10px] font-bold tracking-[0.18em] uppercase">
                             {t('candidate.career_coach.target_generating')}
@@ -998,16 +998,16 @@ function RecommendationSkeleton() {
                     </div>
 
                     <div className="grid gap-5 md:grid-cols-[1.55fr_minmax(220px,1fr)]">
-                        <div className="space-y-3 rounded-2xl bg-[#f7f9fc] p-5">
+                        <div className="space-y-3 rounded-2xl bg-[#F8FAFC] p-5">
                             <div className="h-4 w-1/3 animate-pulse rounded bg-[#e2e8f2]" />
                             <div className="h-3 animate-pulse rounded bg-[#eef2f8]" />
                             <div className="h-3 w-5/6 animate-pulse rounded bg-[#eef2f8]" />
                             <div className="grid gap-3 pt-2 sm:grid-cols-2">
-                                <div className="h-16 animate-pulse rounded-2xl bg-[#eaf2ff]" />
-                                <div className="h-16 animate-pulse rounded-2xl bg-[#eaf2ff]" />
+                                <div className="h-16 animate-pulse rounded-2xl bg-[#F4F8FF]" />
+                                <div className="h-16 animate-pulse rounded-2xl bg-[#F4F8FF]" />
                             </div>
                         </div>
-                        <div className="space-y-3 rounded-2xl bg-[#eaf2ff] p-5">
+                        <div className="space-y-3 rounded-2xl bg-[#F4F8FF] p-5">
                             <div className="h-4 w-2/3 animate-pulse rounded bg-white/70" />
                             {[0, 1, 2].map((i) => (
                                 <div key={i} className="space-y-1.5">
@@ -1029,10 +1029,10 @@ function RecommendationEmpty() {
     return (
         <Card className="flex h-full items-center justify-center border-dashed border-[#cfd8e8] py-16">
             <CardContent className="max-w-md space-y-3 text-center">
-                <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-[#eaf2ff] text-[#01296A]">
+                <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-[#F4F8FF] text-[#0F4C94]">
                     <Map className="size-7" />
                 </div>
-                <h3 className="text-lg font-bold text-[#0f172a]">
+                <h3 className="text-lg font-bold text-[#0F2747]">
                     {t('candidate.career_coach.target_empty_title')}
                 </h3>
                 <p className="text-sm leading-6 text-muted-foreground">
@@ -1040,7 +1040,7 @@ function RecommendationEmpty() {
                 </p>
                 <Link
                     href={careerPathsIndex()}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#01296A] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#001D4D]"
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#0F4C94] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#093579]"
                 >
                     <Sparkles className="size-4" />
                     {t('candidate.career_coach.target_empty_cta')}

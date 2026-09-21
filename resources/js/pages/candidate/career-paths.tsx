@@ -202,7 +202,7 @@ function PageHero({
     const { t } = useTranslate();
 
     return (
-        <Card className="overflow-hidden border-[#dde6f5] bg-gradient-to-br from-[#01296A] via-[#0b3a8b] to-[#1255b3] text-white shadow-md">
+        <Card className="overflow-hidden border-[#dde6f5] bg-gradient-to-br from-[#0F4C94] via-[#0b3a8b] to-[#1255b3] text-white shadow-md">
             <CardContent className="grid gap-6 p-6 md:p-8 lg:grid-cols-[1.4fr_1fr]">
                 <div className="space-y-4">
                     <Badge className="w-fit bg-white/15 text-white hover:bg-white/15">
@@ -313,15 +313,15 @@ function GenerateCareerPathCard({ aiEnabled }: { aiEnabled: boolean }) {
     const { t } = useTranslate();
 
     return (
-        <Card className="border-[#e0e7f3]">
+        <Card className="border-[#E5EDF7]">
             <CardContent className="space-y-5 p-5 md:p-6">
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
-                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#eaf2ff] text-[#01296A]">
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#F4F8FF] text-[#0F4C94]">
                             <Wand2 className="size-5" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-[#0f172a]">
+                            <h3 className="text-lg font-bold text-[#0F2747]">
                                 {t('candidate.career_paths.form_title')}
                             </h3>
                             <p className="text-sm text-muted-foreground">
@@ -385,7 +385,7 @@ function GenerateCareerPathCard({ aiEnabled }: { aiEnabled: boolean }) {
                             <div className="md:col-span-2">
                                 <Button
                                     disabled={processing}
-                                    className="h-11 w-full bg-[#01296A] text-sm font-bold hover:bg-[#001D4D] md:w-auto"
+                                    className="h-11 w-full bg-[#0F4C94] text-sm font-bold hover:bg-[#093579] md:w-auto"
                                 >
                                     {processing ? (
                                         <Loader2 className="mr-2 size-4 animate-spin" />
@@ -409,10 +409,10 @@ function EmptyState() {
     return (
         <Card className="border-dashed border-[#cfd8e8]">
             <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-                <div className="flex size-14 items-center justify-center rounded-full bg-[#eaf2ff] text-[#01296A]">
+                <div className="flex size-14 items-center justify-center rounded-full bg-[#F4F8FF] text-[#0F4C94]">
                     <Compass className="size-7" />
                 </div>
-                <h3 className="text-lg font-semibold text-[#0f172a]">
+                <h3 className="text-lg font-semibold text-[#0F2747]">
                     {t('candidate.career_paths.empty_title')}
                 </h3>
                 <p className="max-w-md text-sm text-muted-foreground">
@@ -428,7 +428,7 @@ function ActivePathCard({ path }: { path: CareerPathDetail | CareerPathSummary }
     const matchScore = path.match_score ?? 0;
 
     return (
-        <Card className="overflow-hidden border-[#e0e7f3] shadow-sm">
+        <Card className="overflow-hidden border-[#E5EDF7] shadow-sm">
             <CardContent className="space-y-6 p-5 md:p-6">
                 <div className="flex flex-col items-start justify-between gap-4 md:flex-row">
                     <div className="space-y-2">
@@ -436,7 +436,7 @@ function ActivePathCard({ path }: { path: CareerPathDetail | CareerPathSummary }
                             <Target className="mr-1 size-3.5" />
                             {t('candidate.career_paths.target_recommendation')}
                         </Badge>
-                        <h2 className="text-2xl font-bold tracking-tight text-[#0f172a] md:text-3xl">
+                        <h2 className="text-2xl font-bold tracking-tight text-[#0F2747] md:text-3xl">
                             {path.target_role}
                         </h2>
                         {path.summary ? (
@@ -445,12 +445,12 @@ function ActivePathCard({ path }: { path: CareerPathDetail | CareerPathSummary }
                             </p>
                         ) : null}
                     </div>
-                    <div className="flex items-center gap-3 self-start rounded-xl bg-[#eaf2ff] px-4 py-3">
+                    <div className="flex items-center gap-3 self-start rounded-xl bg-[#F4F8FF] px-4 py-3">
                         <div className="text-3xl font-extrabold text-emerald-600">
                             {matchScore}%
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold tracking-[0.18em] text-[#4b5565] uppercase">
+                            <p className="text-[10px] font-bold tracking-[0.18em] text-[#64748B] uppercase">
                                 {t('candidate.career_paths.match_score')}
                             </p>
                             <p className="text-xs text-[#64748b]">
@@ -505,15 +505,15 @@ function InfoTile({
     icon: typeof TrendingUp;
 }) {
     return (
-        <div className="flex items-center gap-3 rounded-xl border border-[#e6ebf3] bg-[#f9fbff] p-4">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-[#eaf2ff] text-[#01296A]">
+        <div className="flex items-center gap-3 rounded-xl border border-[#E5EDF7] bg-[#F4F8FF] p-4">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-[#F4F8FF] text-[#0F4C94]">
                 <Icon className="size-5" />
             </div>
             <div>
-                <p className="text-[10px] font-bold tracking-[0.18em] text-[#4b5565] uppercase">
+                <p className="text-[10px] font-bold tracking-[0.18em] text-[#64748B] uppercase">
                     {label}
                 </p>
-                <p className="text-base font-bold text-[#0f172a]">{value}</p>
+                <p className="text-base font-bold text-[#0F2747]">{value}</p>
             </div>
         </div>
     );
@@ -523,14 +523,14 @@ function SkillGapCard({ path }: { path: CareerPathSummary | CareerPathDetail }) 
     const { t } = useTranslate();
 
     return (
-        <Card className="border-[#e0e7f3]">
+        <Card className="border-[#E5EDF7]">
             <CardContent className="space-y-5 p-5 md:p-6">
                 <div className="flex items-start gap-3">
                     <div className="flex size-11 items-center justify-center rounded-xl bg-[#eef9f1] text-emerald-600">
                         <Brain className="size-5" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-bold text-[#0f172a]">
+                        <h3 className="text-lg font-bold text-[#0F2747]">
                             {t('candidate.career_paths.skill_gap_title')}
                         </h3>
                         <p className="text-sm text-muted-foreground">
@@ -549,11 +549,11 @@ function SkillGapCard({ path }: { path: CareerPathSummary | CareerPathDetail }) 
                         return (
                             <div key={`${skill.name}-${index}`} className="space-y-2">
                                 <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <p className="text-sm font-semibold text-[#0f172a]">
+                                    <p className="text-sm font-semibold text-[#0F2747]">
                                         {skill.name}
                                     </p>
                                     <div className="flex items-center gap-2 text-xs text-[#64748b]">
-                                        <span className="font-semibold text-[#0f172a]">
+                                        <span className="font-semibold text-[#0F2747]">
                                             {skill.current_level ?? 0}%
                                         </span>
                                         <span aria-hidden="true">/</span>
@@ -600,14 +600,14 @@ function LearningRecommendationCard({
     const { t } = useTranslate();
 
     return (
-        <Card className="border-[#e0e7f3]">
+        <Card className="border-[#E5EDF7]">
             <CardContent className="space-y-5 p-5 md:p-6">
                 <div className="flex items-start gap-3">
                     <div className="flex size-11 items-center justify-center rounded-xl bg-[#fff4e5] text-amber-600">
                         <BookOpen className="size-5" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-bold text-[#0f172a]">
+                        <h3 className="text-lg font-bold text-[#0F2747]">
                             {t('candidate.career_paths.learning_title')}
                         </h3>
                         <p className="text-sm text-muted-foreground">
@@ -620,17 +620,17 @@ function LearningRecommendationCard({
                     {path.learning_steps_data.map((step, index) => (
                         <div
                             key={`${step.title}-${index}`}
-                            className="space-y-3 rounded-xl border border-[#e6ebf3] bg-white p-4 transition hover:border-[#bcd0f0] hover:shadow-sm"
+                            className="space-y-3 rounded-xl border border-[#E5EDF7] bg-white p-4 transition hover:border-[#C9DBF3] hover:shadow-sm"
                         >
-                            <div className="flex size-10 items-center justify-center rounded-lg bg-[#eaf2ff] text-[#01296A]">
+                            <div className="flex size-10 items-center justify-center rounded-lg bg-[#F4F8FF] text-[#0F4C94]">
                                 <Workflow className="size-5" />
                             </div>
                             {step.tag ? (
-                                <span className="inline-flex items-center text-[10px] font-bold tracking-[0.16em] text-[#01296A] uppercase">
+                                <span className="inline-flex items-center text-[10px] font-bold tracking-[0.16em] text-[#0F4C94] uppercase">
                                     {step.tag}
                                 </span>
                             ) : null}
-                            <h4 className="text-base font-bold leading-snug text-[#0f172a]">
+                            <h4 className="text-base font-bold leading-snug text-[#0F2747]">
                                 {step.title}
                             </h4>
                             {step.description ? (
@@ -651,15 +651,15 @@ function LearningStepsCard({ steps }: { steps: LearningPathStep[] }) {
     const completed = steps.filter((s) => s.status === 'completed').length;
 
     return (
-        <Card className="border-[#e0e7f3]">
+        <Card className="border-[#E5EDF7]">
             <CardContent className="space-y-4 p-5 md:p-6">
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex items-start gap-3">
-                        <div className="flex size-11 items-center justify-center rounded-xl bg-[#eaf2ff] text-[#01296A]">
+                        <div className="flex size-11 items-center justify-center rounded-xl bg-[#F4F8FF] text-[#0F4C94]">
                             <Star className="size-5" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-[#0f172a]">
+                            <h3 className="text-lg font-bold text-[#0F2747]">
                                 {t('candidate.career_paths.tracker_title')}
                             </h3>
                             <p className="text-sm text-muted-foreground">
@@ -683,11 +683,11 @@ function LearningStepsCard({ steps }: { steps: LearningPathStep[] }) {
                                     'flex items-start justify-between gap-3 rounded-xl border p-4 transition',
                                     isDone
                                         ? 'border-emerald-200 bg-emerald-50/60'
-                                        : 'border-[#e6ebf3] bg-white',
+                                        : 'border-[#E5EDF7] bg-white',
                                 )}
                             >
                                 <div className="flex flex-1 items-start gap-3">
-                                    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-[#01296A] ring-1 ring-[#cfdcf5]">
+                                    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-[#0F4C94] ring-1 ring-[#cfdcf5]">
                                         {step.order_number}
                                     </div>
                                     <div className="min-w-0 flex-1 space-y-1">
@@ -696,7 +696,7 @@ function LearningStepsCard({ steps }: { steps: LearningPathStep[] }) {
                                                 'text-sm font-semibold',
                                                 isDone
                                                     ? 'text-emerald-700 line-through'
-                                                    : 'text-[#0f172a]',
+                                                    : 'text-[#0F2747]',
                                             )}
                                         >
                                             {step.title}
@@ -724,7 +724,7 @@ function LearningStepsCard({ steps }: { steps: LearningPathStep[] }) {
                                         'shrink-0 gap-1.5 rounded-lg text-xs font-bold',
                                         isDone
                                             ? 'text-emerald-700 hover:bg-emerald-100/80'
-                                            : 'text-[#01296A] hover:bg-[#eaf2ff]',
+                                            : 'text-[#0F4C94] hover:bg-[#F4F8FF]',
                                     )}
                                 >
                                     {isDone ? (
@@ -749,14 +749,14 @@ function MilestoneCard({ milestones }: { milestones: Milestone[] }) {
     const { t } = useTranslate();
 
     return (
-        <Card className="border-[#e0e7f3]">
+        <Card className="border-[#E5EDF7]">
             <CardContent className="space-y-4 p-5 md:p-6">
                 <div className="flex items-start gap-3">
                     <div className="flex size-11 items-center justify-center rounded-xl bg-[#eef9f1] text-emerald-600">
                         <Map className="size-5" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-bold text-[#0f172a]">
+                        <h3 className="text-lg font-bold text-[#0F2747]">
                             {t('candidate.career_paths.milestone_title')}
                         </h3>
                         <p className="text-sm text-muted-foreground">
@@ -768,8 +768,8 @@ function MilestoneCard({ milestones }: { milestones: Milestone[] }) {
                 <div className="relative space-y-4 pl-6 before:absolute before:top-2 before:bottom-2 before:left-2 before:w-px before:bg-[#dbe4f3]">
                     {milestones.map((milestone, index) => (
                         <div key={`${milestone.title}-${index}`} className="relative">
-                            <span className="absolute -left-[18px] top-1 flex size-3 items-center justify-center rounded-full bg-[#01296A] ring-4 ring-[#eaf2ff]" />
-                            <p className="text-sm font-bold text-[#0f172a]">
+                            <span className="absolute -left-[18px] top-1 flex size-3 items-center justify-center rounded-full bg-[#0F4C94] ring-4 ring-[#F4F8FF]" />
+                            <p className="text-sm font-bold text-[#0F2747]">
                                 {milestone.title}
                             </p>
                             <p className="text-xs font-medium text-muted-foreground">
@@ -795,11 +795,11 @@ function PathListColumn({
     const { t } = useTranslate();
 
     return (
-        <Card className="border-[#e0e7f3]">
+        <Card className="border-[#E5EDF7]">
             <CardContent className="space-y-4 p-5 md:p-6">
                 <div className="flex items-start justify-between gap-3">
                     <div>
-                        <h3 className="text-lg font-bold text-[#0f172a]">
+                        <h3 className="text-lg font-bold text-[#0F2747]">
                             {t('candidate.career_paths.list_title')}
                         </h3>
                         <p className="text-sm text-muted-foreground">
@@ -812,9 +812,9 @@ function PathListColumn({
                 </div>
 
                 {paths.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-[#d6dfee] bg-[#f9fbff] p-5 text-center">
-                        <PlusCircle className="mx-auto size-6 text-[#01296A]" />
-                        <p className="mt-2 text-sm font-semibold text-[#0f172a]">
+                    <div className="rounded-xl border border-dashed border-[#d6dfee] bg-[#F4F8FF] p-5 text-center">
+                        <PlusCircle className="mx-auto size-6 text-[#0F4C94]" />
+                        <p className="mt-2 text-sm font-semibold text-[#0F2747]">
                             {t('candidate.career_paths.list_empty')}
                         </p>
                     </div>
@@ -830,13 +830,13 @@ function PathListColumn({
                                         className={cn(
                                             'group w-full rounded-xl border p-4 text-left transition',
                                             isActive
-                                                ? 'border-[#01296A] bg-[#eaf2ff] shadow-sm'
-                                                : 'border-[#e6ebf3] bg-white hover:border-[#bcd0f0]',
+                                                ? 'border-[#0F4C94] bg-[#F4F8FF] shadow-sm'
+                                                : 'border-[#E5EDF7] bg-white hover:border-[#C9DBF3]',
                                         )}
                                     >
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="min-w-0 space-y-1">
-                                                <p className="truncate text-sm font-bold text-[#0f172a]">
+                                                <p className="truncate text-sm font-bold text-[#0F2747]">
                                                     {path.target_role}
                                                 </p>
                                                 {path.created_at ? (
@@ -872,7 +872,7 @@ function PathListColumn({
                                                     method="patch"
                                                     as="button"
                                                     preserveScroll
-                                                    className="inline-flex items-center rounded-md bg-[#01296A] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#001D4D]"
+                                                    className="inline-flex items-center rounded-md bg-[#0F4C94] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#093579]"
                                                 >
                                                     {t(
                                                         'candidate.career_paths.list_activate',

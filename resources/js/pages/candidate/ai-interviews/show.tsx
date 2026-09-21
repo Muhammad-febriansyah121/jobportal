@@ -2460,7 +2460,7 @@ export default function CandidateAiInterviewShow({
             />
             <div className="min-h-screen bg-slate-50">
                 {/* Hero header */}
-                <div className="relative overflow-hidden bg-linear-to-br from-[#01296A] via-[#013580] to-[#01296A] px-4 pt-8 pb-8 md:px-8 md:pt-10 md:pb-10 lg:px-12">
+                <div className="relative overflow-hidden bg-linear-to-br from-[#0F4C94] via-[#013580] to-[#0F4C94] px-4 pt-8 pb-8 md:px-8 md:pt-10 md:pb-10 lg:px-12">
                     <div
                         className="pointer-events-none absolute inset-0 opacity-20"
                         style={{

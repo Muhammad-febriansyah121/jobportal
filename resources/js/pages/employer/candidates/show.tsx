@@ -230,7 +230,7 @@ export default function EmployerCandidateShow({
                         {t('employer.candidates_show.back_to_list')}
                     </Link>
 
-                    <Card className="overflow-hidden border-0 bg-gradient-to-br from-[#01296A] via-[#0a3a8a] to-[#0a4ba5] text-white shadow-lg">
+                    <Card className="overflow-hidden border-0 bg-gradient-to-br from-[#0F4C94] via-[#0F4C94] to-[#136BB4] text-white shadow-lg">
                         <CardContent className="grid gap-6 p-6 md:grid-cols-[auto_1fr_auto] md:items-start md:p-8">
                             <CandidateAvatar
                                 name={candidate?.name ?? '?'}
@@ -377,7 +377,7 @@ export default function EmployerCandidateShow({
                                     {t('employer.candidates_show.applied_to')}
                                 </p>
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <Briefcase className="size-4 text-[#01296A]" />
+                                    <Briefcase className="size-4 text-[#0F4C94]" />
                                     <p className="font-semibold">
                                         {application.job.title ?? '—'}
                                     </p>
@@ -386,7 +386,7 @@ export default function EmployerCandidateShow({
                                             href={
                                                 showJob(application.job.id).url
                                             }
-                                            className="text-xs text-[#01296A] hover:underline"
+                                            className="text-xs text-[#0F4C94] hover:underline"
                                         >
                                             {t('employer.candidates_show.view_job')}
                                         </Link>
@@ -472,7 +472,7 @@ export default function EmployerCandidateShow({
                                     <Card>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base">
-                                                <Sparkles className="size-4 text-[#01296A]" />
+                                                <Sparkles className="size-4 text-[#0F4C94]" />
                                                 {t('employer.candidates_show.about_candidate')}
                                             </CardTitle>
                                         </CardHeader>
@@ -488,7 +488,7 @@ export default function EmployerCandidateShow({
                                     <Card>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base">
-                                                <Award className="size-4 text-[#01296A]" />
+                                                <Award className="size-4 text-[#0F4C94]" />
                                                 {t('employer.candidates_show.skills')}
                                             </CardTitle>
                                         </CardHeader>
@@ -523,7 +523,7 @@ export default function EmployerCandidateShow({
                                                     onClick={() =>
                                                         setActiveTab('cv')
                                                     }
-                                                    className="font-semibold text-[#01296A] underline-offset-2 hover:underline"
+                                                    className="font-semibold text-[#0F4C94] underline-offset-2 hover:underline"
                                                 >
                                                     {t('employer.candidates_show.full_cv_tab')}
                                                 </button>{' '}
@@ -538,7 +538,7 @@ export default function EmployerCandidateShow({
                                 <Card>
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-base">
-                                            <Phone className="size-4 text-[#01296A]" />
+                                            <Phone className="size-4 text-[#0F4C94]" />
                                             {t('employer.candidates_show.contact')}
                                         </CardTitle>
                                     </CardHeader>
@@ -574,7 +574,7 @@ export default function EmployerCandidateShow({
                                 <Card>
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-base">
-                                            <PieChart className="size-4 text-[#01296A]" />
+                                            <PieChart className="size-4 text-[#0F4C94]" />
                                             {t('employer.candidates_show.ai_skill_match')}
                                         </CardTitle>
                                     </CardHeader>
@@ -641,7 +641,7 @@ export default function EmployerCandidateShow({
                                 <Card>
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-base">
-                                            <Briefcase className="size-4 text-[#01296A]" />
+                                            <Briefcase className="size-4 text-[#0F4C94]" />
                                             {t('employer.candidates_show.application_detail')}
                                         </CardTitle>
                                     </CardHeader>
@@ -708,7 +708,7 @@ export default function EmployerCandidateShow({
                                     <Card>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base">
-                                                <FileText className="size-4 text-[#01296A]" />
+                                                <FileText className="size-4 text-[#0F4C94]" />
                                                 {t('employer.candidates_show.cover_letter')}
                                             </CardTitle>
                                         </CardHeader>
@@ -724,7 +724,7 @@ export default function EmployerCandidateShow({
                                     <Card>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base">
-                                                <ClipboardList className="size-4 text-[#01296A]" />
+                                                <ClipboardList className="size-4 text-[#0F4C94]" />
                                                 {t('employer.candidates_show.screening_answers')}
                                             </CardTitle>
                                         </CardHeader>
@@ -753,7 +753,7 @@ export default function EmployerCandidateShow({
                                     <Card>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base">
-                                                <History className="size-4 text-[#01296A]" />
+                                                <History className="size-4 text-[#0F4C94]" />
                                                 {t('employer.candidates_show.status_timeline')}
                                             </CardTitle>
                                         </CardHeader>
@@ -766,7 +766,7 @@ export default function EmployerCandidateShow({
                                                             className="relative"
                                                         >
                                                             <span
-                                                                className="absolute -left-[1.4rem] top-1.5 size-2.5 rounded-full bg-[#01296A]"
+                                                                className="absolute -left-[1.4rem] top-1.5 size-2.5 rounded-full bg-[#0F4C94]"
                                                                 aria-hidden
                                                             />
                                                             <div className="flex flex-wrap items-center gap-2">
@@ -818,7 +818,7 @@ export default function EmployerCandidateShow({
                                     <Card>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base">
-                                                <Sparkles className="size-4 text-[#01296A]" />
+                                                <Sparkles className="size-4 text-[#0F4C94]" />
                                                 {t('employer.candidates_show.ai_fit_score')}
                                             </CardTitle>
                                         </CardHeader>
@@ -832,7 +832,7 @@ export default function EmployerCandidateShow({
                                     <Card>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base">
-                                                <Bot className="size-4 text-[#01296A]" />
+                                                <Bot className="size-4 text-[#0F4C94]" />
                                                 {t('employer.candidates_show.ai_interview')}
                                             </CardTitle>
                                         </CardHeader>
@@ -914,7 +914,7 @@ export default function EmployerCandidateShow({
                                     <Card>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base">
-                                                <CalendarCheck className="size-4 text-[#01296A]" />
+                                                <CalendarCheck className="size-4 text-[#0F4C94]" />
                                                 {t('employer.candidates_show.scheduled_interviews')}
                                             </CardTitle>
                                         </CardHeader>
@@ -944,9 +944,9 @@ export default function EmployerCandidateShow({
                                     </Card>
                                 ) : null}
 
-                                <Card className="border-[#01296A]/15 bg-[#eff4ff]/60">
+                                <Card className="border-[#0F4C94]/15 bg-[#eff4ff]/60">
                                     <CardContent className="flex items-start gap-3 p-4">
-                                        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#01296A]/15 text-[#01296A]">
+                                        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#0F4C94]/15 text-[#0F4C94]">
                                             <Wand2 className="size-4" />
                                         </span>
                                         <div className="space-y-1">
@@ -1047,7 +1047,7 @@ export default function EmployerCandidateShow({
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-base">
-                                        <History className="size-4 text-[#01296A]" />
+                                        <History className="size-4 text-[#0F4C94]" />
                                         {t('employer.candidates_show.application_history')}
                                     </CardTitle>
                                 </CardHeader>
@@ -1057,9 +1057,9 @@ export default function EmployerCandidateShow({
                                             key={item.id}
                                             href={show(item.id).url}
                                             className={cn(
-                                                'flex items-start justify-between gap-3 rounded-lg border p-3 transition hover:border-[#01296A]/40',
+                                                'flex items-start justify-between gap-3 rounded-lg border p-3 transition hover:border-[#0F4C94]/40',
                                                 item.is_current &&
-                                                    'border-[#01296A] bg-[#eff4ff]/40',
+                                                    'border-[#0F4C94] bg-[#eff4ff]/40',
                                             )}
                                         >
                                             <div className="space-y-1">
@@ -1074,7 +1074,7 @@ export default function EmployerCandidateShow({
                                                     {item.is_current ? (
                                                         <Badge
                                                             variant="outline"
-                                                            className="text-[10px] text-[#01296A]"
+                                                            className="text-[10px] text-[#0F4C94]"
                                                         >
                                                             {t('employer.candidates_show.current_badge')}
                                                         </Badge>
@@ -1117,7 +1117,7 @@ function TabPill({
     return (
         <TabsTrigger
             value={value}
-            className="gap-2 rounded-md border border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition data-[state=active]:border-[#01296A]/15 data-[state=active]:bg-[#eff4ff] data-[state=active]:text-[#01296A] data-[state=active]:shadow-sm"
+            className="gap-2 rounded-md border border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition data-[state=active]:border-[#0F4C94]/15 data-[state=active]:bg-[#eff4ff] data-[state=active]:text-[#0F4C94] data-[state=active]:shadow-sm"
         >
             <Icon className="size-4" />
             <span>{label}</span>
@@ -1150,7 +1150,7 @@ function CvSection({
         <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
-                    <Icon className="size-4 text-[#01296A]" />
+                    <Icon className="size-4 text-[#0F4C94]" />
                     {title}
                 </CardTitle>
                 <Badge variant="secondary" className="text-xs">
@@ -1321,7 +1321,7 @@ function ExperienceCard({ experience }: { experience: Experience }) {
                 onClick={() => setOpen((v) => !v)}
                 className="flex w-full items-start gap-3 p-4 text-left transition hover:bg-muted/30"
             >
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-[#01296A]/10 text-[#01296A]">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-[#0F4C94]/10 text-[#0F4C94]">
                     <Briefcase className="size-4" />
                 </span>
                 <div className="flex-1 space-y-1">
@@ -1375,7 +1375,7 @@ function EducationItem({ education }: { education: Education }) {
         .join(' — ');
     return (
         <div className="flex items-start gap-3 rounded-lg border p-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#01296A]/10 text-[#01296A]">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#0F4C94]/10 text-[#0F4C94]">
                 <GraduationCap className="size-4" />
             </span>
             <div className="flex-1 space-y-0.5">
@@ -1405,7 +1405,7 @@ function EducationItem({ education }: { education: Education }) {
 function CertificationItem({ cert }: { cert: Certification }) {
     return (
         <div className="flex items-start gap-3 rounded-lg border p-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#01296A]/10 text-[#01296A]">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#0F4C94]/10 text-[#0F4C94]">
                 <Star className="size-4" />
             </span>
             <div className="flex-1 space-y-0.5">

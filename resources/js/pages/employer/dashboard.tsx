@@ -283,10 +283,10 @@ export default function EmployerDashboard({
                 <Head title={t('employer.dashboard.title')} />
                 <div className="min-h-screen bg-white p-4 md:p-6">
                     <div className="mx-auto max-w-3xl space-y-4">
-                        <Card className="border-[#01296A]/20 bg-gradient-to-br from-[#eff4ff] to-background">
+                        <Card className="border-[#0F4C94]/20 bg-gradient-to-br from-[#eff4ff] to-background">
                             <CardContent className="space-y-4 p-8 text-center">
-                                <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-[#01296A]/15">
-                                    <BriefcaseBusiness className="size-6 text-[#01296A]" />
+                                <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-[#0F4C94]/15">
+                                    <BriefcaseBusiness className="size-6 text-[#0F4C94]" />
                                 </div>
                                 <div className="space-y-2">
                                     <h1 className="text-2xl font-bold">
@@ -528,7 +528,7 @@ function HeroBar({
     const primaryQuota = quotaUsage[0] ?? null;
 
     return (
-        <Card className="overflow-hidden border-0 bg-gradient-to-br from-[#01296A] via-[#0a3a8a] to-[#0a4ba5] text-white shadow-lg">
+        <Card className="overflow-hidden border-0 bg-gradient-to-br from-[#0F4C94] via-[#0F4C94] to-[#136BB4] text-white shadow-lg">
             <CardContent className="grid gap-5 p-6 md:grid-cols-[1.6fr_1fr] md:items-center md:p-8">
                 <div className="space-y-3">
                     <p className="text-xs font-semibold tracking-[0.2em] text-white/70 uppercase">
@@ -575,7 +575,7 @@ function HeroBar({
                         <Button
                             asChild
                             size="lg"
-                            className="bg-white text-[#01296A] hover:bg-white/90"
+                            className="bg-white text-[#0F4C94] hover:bg-white/90"
                         >
                             <Link href={createJob().url}>
                                 <Plus className="size-4" />
@@ -744,7 +744,7 @@ function SectionHeader({
     const iconStyle = {
         urgent: 'bg-rose-100 text-rose-700',
         positive: 'bg-emerald-100 text-emerald-700',
-        neutral: 'bg-[#01296A]/10 text-[#01296A]',
+        neutral: 'bg-[#0F4C94]/10 text-[#0F4C94]',
     }[tone];
     return (
         <div className="flex items-start gap-3">
@@ -776,7 +776,7 @@ function TodayInterviewsCard({
         <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
-                    <CalendarClock className="size-4 text-[#01296A]" />
+                    <CalendarClock className="size-4 text-[#0F4C94]" />
                     {t('employer.dashboard.interview_today')}
                 </CardTitle>
                 <Badge variant="secondary" className="text-xs">
@@ -790,7 +790,7 @@ function TodayInterviewsCard({
                             key={iv.id}
                             className="flex flex-wrap items-start gap-3 rounded-lg border p-3"
                         >
-                            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#01296A]/10 text-[#01296A]">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#0F4C94]/10 text-[#0F4C94]">
                                 {iv.mode === 'voice_ai' ? (
                                     <Mic className="size-4" />
                                 ) : (
@@ -804,7 +804,7 @@ function TodayInterviewsCard({
                                 <p className="truncate text-xs text-muted-foreground">
                                     {iv.job_title} · {iv.mode_label}
                                 </p>
-                                <p className="mt-0.5 text-xs font-semibold text-[#01296A]">
+                                <p className="mt-0.5 text-xs font-semibold text-[#0F4C94]">
                                     {iv.time_label}
                                     {iv.duration_minutes
                                         ? ` · ${iv.duration_minutes} ${t('employer.dashboard.minutes')}`
@@ -843,7 +843,7 @@ function ActionItemsCard({ items }: { items: DashboardProps['actionItems'] }) {
         <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
-                    <ListChecks className="size-4 text-[#01296A]" />
+                    <ListChecks className="size-4 text-[#0F4C94]" />
                     {t('employer.dashboard.action_required')}
                 </CardTitle>
                 <Badge variant="secondary" className="text-xs">
@@ -993,7 +993,7 @@ function PipelineFunnelCard({
 }) {
     const { t } = useTranslate();
     const palette = [
-        '#3b82f6',
+        '#319FC9',
         '#f59e0b',
         '#10b981',
         '#8b5cf6',
@@ -1070,7 +1070,7 @@ function PipelineFunnelCard({
         <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
-                    <Filter className="size-4 text-[#01296A]" />
+                    <Filter className="size-4 text-[#0F4C94]" />
                     {t('employer.dashboard.application_progress')}
                 </CardTitle>
                 <Button asChild size="sm" variant="ghost">
@@ -1119,7 +1119,7 @@ function ShortlistedCard({
         <Card className="transition hover:shadow-md">
             <CardContent className="space-y-3 p-4">
                 <div className="flex items-start gap-3">
-                    <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#01296A]/10 text-base font-bold text-[#01296A]">
+                    <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#0F4C94]/10 text-base font-bold text-[#0F4C94]">
                         {initials || '?'}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -1256,7 +1256,7 @@ function PerfTab({
     return (
         <TabsTrigger
             value={value}
-            className="shrink-0 gap-2 rounded-md border border-transparent px-3 py-2 text-xs font-medium text-muted-foreground transition data-[state=active]:border-[#01296A]/15 data-[state=active]:bg-[#eff4ff] data-[state=active]:text-[#01296A] data-[state=active]:shadow-sm sm:text-sm"
+            className="shrink-0 gap-2 rounded-md border border-transparent px-3 py-2 text-xs font-medium text-muted-foreground transition data-[state=active]:border-[#0F4C94]/15 data-[state=active]:bg-[#eff4ff] data-[state=active]:text-[#0F4C94] data-[state=active]:shadow-sm sm:text-sm"
         >
             <Icon className="size-3.5" />
             <span>{label}</span>
@@ -1303,7 +1303,7 @@ function ApplicationTrendCard({
                             >
                                 <div className="flex h-full w-full items-end">
                                     <div
-                                        className="w-full rounded-t-md bg-gradient-to-t from-[#01296A] to-[#3b82f6] transition-all hover:from-[#0a3a8a] hover:to-[#60a5fa]"
+                                        className="w-full rounded-t-md bg-gradient-to-t from-[#0F4C94] to-[#319FC9] transition-all hover:from-[#0F4C94] hover:to-[#319FC9]"
                                         style={{
                                             height: `${Math.max((point.total / max) * 100, point.total > 0 ? 4 : 2)}%`,
                                         }}
@@ -1436,7 +1436,7 @@ function TopSkillsCard({ skills }: { skills: DashboardProps['topSkills'] }) {
                             </div>
                             <div className="h-2 overflow-hidden rounded-full bg-muted/40">
                                 <div
-                                    className="h-full rounded-full bg-[#01296A] transition-all"
+                                    className="h-full rounded-full bg-[#0F4C94] transition-all"
                                     style={{
                                         width: `${Math.max(skill.bar_percent, skill.total > 0 ? 4 : 0)}%`,
                                     }}
@@ -1582,7 +1582,7 @@ function RecruiterLeaderboardCard({
                                 </div>
                                 <div className="h-1.5 overflow-hidden rounded-full bg-muted/40">
                                     <div
-                                        className="h-full rounded-full bg-[#01296A]"
+                                        className="h-full rounded-full bg-[#0F4C94]"
                                         style={{
                                             width: `${Math.max(member.bar_percent, member.total_actions > 0 ? 4 : 0)}%`,
                                         }}
@@ -1676,7 +1676,7 @@ function RecentJobsCard({ jobs }: { jobs: DashboardProps['recentJobs'] }) {
         <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
-                    <BriefcaseBusiness className="size-4 text-[#01296A]" />
+                    <BriefcaseBusiness className="size-4 text-[#0F4C94]" />
                     {t('employer.dashboard.recent_jobs')}
                 </CardTitle>
                 <Button asChild size="sm" variant="ghost">
@@ -1691,7 +1691,7 @@ function RecentJobsCard({ jobs }: { jobs: DashboardProps['recentJobs'] }) {
                         <Link
                             key={job.id}
                             href={`/employer/jobs/${job.id}`}
-                            className="flex items-center justify-between gap-3 rounded-lg border p-3 transition hover:border-[#01296A]/40"
+                            className="flex items-center justify-between gap-3 rounded-lg border p-3 transition hover:border-[#0F4C94]/40"
                         >
                             <div className="min-w-0 flex-1">
                                 <p className="truncate text-sm font-medium">
@@ -1731,7 +1731,7 @@ function RecentActivitiesCard({
         <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
-                    <Star className="size-4 text-[#01296A]" />
+                    <Star className="size-4 text-[#0F4C94]" />
                     {t('employer.dashboard.recent_activities')}
                 </CardTitle>
             </CardHeader>
@@ -1742,7 +1742,7 @@ function RecentActivitiesCard({
                             {visible.map((activity) => (
                                 <li key={activity.id} className="relative">
                                     <span
-                                        className="absolute top-1.5 -left-[1.4rem] size-2.5 rounded-full bg-[#01296A]"
+                                        className="absolute top-1.5 -left-[1.4rem] size-2.5 rounded-full bg-[#0F4C94]"
                                         aria-hidden
                                     />
                                     <p className="text-sm leading-tight">
@@ -1761,7 +1761,7 @@ function RecentActivitiesCard({
                             <button
                                 type="button"
                                 onClick={() => setOpen((v) => !v)}
-                                className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#01296A] hover:underline"
+                                className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#0F4C94] hover:underline"
                             >
                                 {open
                                     ? t('employer.dashboard.show_less')

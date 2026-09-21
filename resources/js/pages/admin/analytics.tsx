@@ -62,7 +62,7 @@ type AnalyticsProps = {
 };
 
 const C = {
-    primary: '#1E4D96',
+    primary: '#136BB4',
     blue: '#3B82F6',
     violet: '#8B5CF6',
     indigo: '#6366F1',
@@ -675,7 +675,7 @@ export default function AdminAnalytics({
                                             'admin.analytics.subscription.est_mrr',
                                         )}
                                     </p>
-                                    <p className="text-base font-bold text-[#1E4D96]">
+                                    <p className="text-base font-bold text-[#136BB4]">
                                         Rp {mrr.toLocaleString('id-ID')}
                                     </p>
                                 </div>

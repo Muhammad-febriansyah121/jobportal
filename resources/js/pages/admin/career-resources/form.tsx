@@ -193,7 +193,7 @@ export function CareerResourceForm({
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         className={cn(
-                            'group relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-lg border border-dashed border-[#d6e0f5] bg-[#eff4ff] text-left transition hover:border-[#01296A]',
+                            'group relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-lg border border-dashed border-[#E5EDF7] bg-[#eff4ff] text-left transition hover:border-[#0F4C94]',
                             previewUrl && 'border-solid bg-white',
                         )}
                     >
@@ -210,14 +210,14 @@ export function CareerResourceForm({
                             </>
                         ) : (
                             <span className="grid place-items-center gap-3 text-center">
-                                <span className="flex size-12 items-center justify-center rounded-lg bg-[#01296A] text-white">
+                                <span className="flex size-12 items-center justify-center rounded-lg bg-[#0F4C94] text-white">
                                     <ImagePlus className="size-5" />
                                 </span>
                                 <span>
-                                    <span className="block text-sm font-bold text-[#1f2937]">
+                                    <span className="block text-sm font-bold text-[#0F2747]">
                                         {t('admin.career_resources_form.upload_thumbnail')}
                                     </span>
-                                    <span className="mt-1 block text-xs font-medium text-[#8490a3]">
+                                    <span className="mt-1 block text-xs font-medium text-[#64748B]">
                                         {t('admin.career_resources_form.click_to_select')}
                                     </span>
                                 </span>
@@ -269,9 +269,9 @@ export function CareerResourceForm({
                     </p>
                     {form.progress ? (
                         <div className="mt-4">
-                            <div className="h-2 overflow-hidden rounded-full bg-[#f4f7fa]">
+                            <div className="h-2 overflow-hidden rounded-full bg-[#F8FAFC]">
                                 <div
-                                    className="h-full rounded-full bg-[#01296A]"
+                                    className="h-full rounded-full bg-[#0F4C94]"
                                     style={{
                                         width: `${form.progress.percentage}%`,
                                     }}
@@ -284,7 +284,7 @@ export function CareerResourceForm({
                     ) : null}
                     <Button
                         type="submit"
-                        className="mt-5 w-full bg-[#01296A] hover:bg-[#001D4D]"
+                        className="mt-5 w-full bg-[#0F4C94] hover:bg-[#093579]"
                         disabled={form.processing}
                     >
                         {form.processing ? t('admin.career_resources_form.saving') : t('admin.career_resources_form.save_resource')}
@@ -369,7 +369,7 @@ function RichEditor({
                 onInput={(event) =>
                     onChange(event.currentTarget.innerHTML)
                 }
-                className="min-h-[360px] rounded-lg border bg-white px-4 py-3 text-sm leading-7 outline-none prose-headings:font-bold focus-visible:border-[#01296A] focus-visible:ring-[3px] focus-visible:ring-[#01296A]/15 [&_blockquote]:border-l-4 [&_blockquote]:border-[#01296A] [&_blockquote]:bg-[#eff4ff] [&_blockquote]:px-4 [&_blockquote]:py-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6"
+                className="min-h-[360px] rounded-lg border bg-white px-4 py-3 text-sm leading-7 outline-none prose-headings:font-bold focus-visible:border-[#0F4C94] focus-visible:ring-[3px] focus-visible:ring-[#0F4C94]/15 [&_blockquote]:border-l-4 [&_blockquote]:border-[#0F4C94] [&_blockquote]:bg-[#eff4ff] [&_blockquote]:px-4 [&_blockquote]:py-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6"
             />
             <InputError message={error} />
         </div>

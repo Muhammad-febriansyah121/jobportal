@@ -92,10 +92,10 @@ export default function CandidatePricing({
                 />
 
                 {/* Wallet balance */}
-                <Card className="border-[#d6e0f5] bg-[#eff4ff]">
+                <Card className="border-[#E5EDF7] bg-[#eff4ff]">
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-base">
-                            <Wallet className="size-4 text-[#01296A]" />
+                            <Wallet className="size-4 text-[#0F4C94]" />
                             {t('candidate.pricing.current_balance')}
                         </CardTitle>
                     </CardHeader>
@@ -185,13 +185,13 @@ export default function CandidatePricing({
                                     key={menu.id}
                                     className={`relative flex flex-col rounded-2xl border p-6 transition-all ${
                                         isPopular
-                                            ? 'border-[#01296A] bg-[#01296A] text-white shadow-xl shadow-[#01296A]/20'
+                                            ? 'border-[#0F4C94] bg-[#0F4C94] text-white shadow-xl shadow-[#0F4C94]/20'
                                             : 'border-border bg-white shadow-sm hover:shadow-md'
                                     }`}
                                 >
                                     {isPopular && (
                                         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                                            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#01296A] shadow-sm">
+                                            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#0F4C94] shadow-sm">
                                                 {t('candidate.pricing.most_popular')}
                                             </span>
                                         </div>
@@ -259,7 +259,7 @@ export default function CandidatePricing({
                                                 className="flex items-start gap-2.5 text-sm"
                                             >
                                                 <span
-                                                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${isPopular ? 'bg-white/20 text-white' : 'bg-[#01296A]/10 text-[#01296A]'}`}
+                                                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${isPopular ? 'bg-white/20 text-white' : 'bg-[#0F4C94]/10 text-[#0F4C94]'}`}
                                                 >
                                                     <CheckIcon
                                                         className="size-2.5"
@@ -309,8 +309,8 @@ export default function CandidatePricing({
                                             onClick={() => buyMenu(menu.id)}
                                             className={`w-full rounded-xl py-3 text-center text-sm font-bold transition-all active:scale-[0.98] ${
                                                 isPopular
-                                                    ? 'bg-white text-[#01296A] hover:bg-white/90'
-                                                    : 'bg-[#01296A] text-white hover:bg-[#001D4D]'
+                                                    ? 'bg-white text-[#0F4C94] hover:bg-white/90'
+                                                    : 'bg-[#0F4C94] text-white hover:bg-[#093579]'
                                             }`}
                                         >
                                             {t('candidate.pricing.topup_now')}
@@ -413,7 +413,7 @@ function Metric({
     return (
         <div className="rounded-md border bg-white p-3">
             <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                <Icon className="size-4 text-[#01296A]" />
+                <Icon className="size-4 text-[#0F4C94]" />
                 {label}
             </p>
             <p className="mt-2 text-base font-bold">{value}</p>

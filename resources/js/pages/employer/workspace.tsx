@@ -31,12 +31,12 @@ export default function EmployerWorkspace({
             <div className="space-y-6 p-4 md:p-6">
                 <Heading title={title} description={description} />
 
-                <Card className="border-[#e8edf3]">
+                <Card className="border-[#E5EDF7]">
                     <CardHeader>
-                        <div className="flex size-12 items-center justify-center rounded-lg bg-[#eaf2ff] text-[#01296A]">
+                        <div className="flex size-12 items-center justify-center rounded-lg bg-[#F4F8FF] text-[#0F4C94]">
                             <Sparkles className="size-6" />
                         </div>
-                        <CardTitle className="text-[#111827]">
+                        <CardTitle className="text-[#0F2747]">
                             {title}
                         </CardTitle>
                         <CardDescription>{message}</CardDescription>

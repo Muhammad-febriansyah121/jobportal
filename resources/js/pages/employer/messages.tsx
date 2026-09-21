@@ -188,7 +188,7 @@ function ConversationRow({ conversation }: { conversation: ConversationRow }) {
                             {conversation.candidate.name}
                         </span>
                         {conversation.unread_count > 0 && (
-                            <Badge className="bg-[#01296A] text-white hover:bg-[#01296A]">
+                            <Badge className="bg-[#0F4C94] text-white hover:bg-[#0F4C94]">
                                 {conversation.unread_count}
                             </Badge>
                         )}
@@ -244,7 +244,7 @@ function CandidateAvatar({ name, src }: { name: string; src: string | null }) {
     }
 
     return (
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-[#111827] text-sm font-semibold text-white">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-[#0F2747] text-sm font-semibold text-white">
             {name
                 .split(' ')
                 .map((part) => part[0])

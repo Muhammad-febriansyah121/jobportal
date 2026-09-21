@@ -176,7 +176,7 @@ export default function CandidateInterviewShow({
                     {t('candidate.interviews_show.back_to_list')}
                 </Link>
 
-                <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-[#01296A] via-[#0a3a8a] to-[#0a4ba5] text-white shadow-lg">
+                <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-[#0F4C94] via-[#0F4C94] to-[#136BB4] text-white shadow-lg">
                     <div className="flex flex-col gap-5 p-6 md:flex-row md:items-start md:gap-6 md:p-8">
                         <CompanyAvatar
                             name={
@@ -316,7 +316,7 @@ export default function CandidateInterviewShow({
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-base">
-                                        <UserCog className="size-4 text-[#01296A]" />
+                                        <UserCog className="size-4 text-[#0F4C94]" />
                                         {t(
                                             'candidate.interviews_show.notes_from_recruiter',
                                         )}
@@ -342,7 +342,7 @@ export default function CandidateInterviewShow({
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-base">
-                                    <Briefcase className="size-4 text-[#01296A]" />
+                                    <Briefcase className="size-4 text-[#0F4C94]" />
                                     {t(
                                         'candidate.interviews_show.about_position',
                                     )}
@@ -409,7 +409,7 @@ export default function CandidateInterviewShow({
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-base">
-                                        <Building2 className="size-4 text-[#01296A]" />
+                                        <Building2 className="size-4 text-[#0F4C94]" />
                                         {t(
                                             'candidate.interviews_show.about_company',
                                         )}
@@ -524,7 +524,7 @@ export default function CandidateInterviewShow({
                         <Card>
                             <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
                                 <CardTitle className="flex items-center gap-2 text-base">
-                                    <UserCircle2 className="size-4 text-[#01296A]" />
+                                    <UserCircle2 className="size-4 text-[#0F4C94]" />
                                     {t(
                                         'candidate.interviews_show.participants',
                                     )}
@@ -558,7 +558,7 @@ export default function CandidateInterviewShow({
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-base">
-                                        <UserCog className="size-4 text-[#01296A]" />
+                                        <UserCog className="size-4 text-[#0F4C94]" />
                                         {t(
                                             'candidate.interviews_show.scheduled_by',
                                         )}
@@ -566,7 +566,7 @@ export default function CandidateInterviewShow({
                                 </CardHeader>
                                 <CardContent>
                                     <div className="flex items-start gap-3">
-                                        <span className="flex size-9 items-center justify-center rounded-full bg-[#01296A]/10 text-sm font-semibold text-[#01296A]">
+                                        <span className="flex size-9 items-center justify-center rounded-full bg-[#0F4C94]/10 text-sm font-semibold text-[#0F4C94]">
                                             {initialFromName(
                                                 interview.scheduler.name,
                                             )}
@@ -592,10 +592,10 @@ export default function CandidateInterviewShow({
                         ) : null}
 
                         {isUpcoming ? (
-                            <Card className="border-[#01296A]/15 bg-gradient-to-br from-[#eff4ff] to-background">
+                            <Card className="border-[#0F4C94]/15 bg-gradient-to-br from-[#eff4ff] to-background">
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-base">
-                                        <Sparkles className="size-4 text-[#01296A]" />
+                                        <Sparkles className="size-4 text-[#0F4C94]" />
                                         {t(
                                             'candidate.interviews_show.quick_actions',
                                         )}
@@ -813,7 +813,7 @@ function ParticipantRow({
                 className={cn(
                     'flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
                     isCandidate
-                        ? 'bg-[#01296A]/10 text-[#01296A]'
+                        ? 'bg-[#0F4C94]/10 text-[#0F4C94]'
                         : 'bg-muted text-muted-foreground',
                 )}
             >
@@ -916,7 +916,7 @@ function StatusTimeline({
                                     isDone
                                         ? 'bg-emerald-500 text-white ring-emerald-200'
                                         : isActive
-                                          ? 'bg-[#01296A] text-white ring-[#01296A]/20'
+                                          ? 'bg-[#0F4C94] text-white ring-[#0F4C94]/20'
                                           : isLocked
                                             ? 'bg-muted text-muted-foreground ring-muted'
                                             : 'bg-muted/40 text-muted-foreground ring-muted',

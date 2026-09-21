@@ -106,7 +106,7 @@ function shortMonth(ym: string, t: any): string {
 }
 
 const C = {
-    primary: '#01296a',
+    primary: '#0F4C94',
     blue: '#3B82F6',
     emerald: '#10B981',
     amber: '#F59E0B',

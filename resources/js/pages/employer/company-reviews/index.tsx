@@ -286,7 +286,7 @@ export default function EmployerCompanyReviewsIndex({
                             />
                         ) : (
                             <>
-                                <div className="rounded-xl border border-[#01296a]/20 bg-[#01296a]/5 px-4 py-3 text-sm text-[#01296a]">
+                                <div className="rounded-xl border border-[#0F4C94]/20 bg-[#0F4C94]/5 px-4 py-3 text-sm text-[#0F4C94]">
                                     <p>
                                         {t('employer.company_reviews.pending_notice_prefix')}{' '}
                                         <strong>{t('employer.company_reviews.approve_lower')}</strong>{' '}

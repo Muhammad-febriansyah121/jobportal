@@ -329,7 +329,7 @@ export function CandidatePricingMenuForm({
                     </div>
 
                     <div className="mt-5 rounded-lg border bg-[#eff4ff] p-4">
-                        <p className="text-sm font-semibold text-[#01296A]">
+                        <p className="text-sm font-semibold text-[#0F4C94]">
                             {form.data.name || t('admin.pricing.form.preview_name_empty')}
                         </p>
                         <p className="mt-3 text-3xl font-bold tracking-tight">
@@ -338,7 +338,7 @@ export function CandidatePricingMenuForm({
                         <p className="mt-1 text-xs text-muted-foreground">
                             {t('admin.candidate_pricing_form.price_label')}
                         </p>
-                        <p className="mt-4 rounded-md bg-white px-3 py-2 text-sm font-bold text-[#01296A]">
+                        <p className="mt-4 rounded-md bg-white px-3 py-2 text-sm font-bold text-[#0F4C94]">
                             {form.data.is_default_free
                                 ? t('admin.pricing.form.badge_free')
                                 : t('admin.pricing.form.badge_topup')}
@@ -379,7 +379,7 @@ export function CandidatePricingMenuForm({
                     </p>
                     <Button
                         type="submit"
-                        className="mt-5 w-full bg-[#01296A] hover:bg-[#001D4D]"
+                        className="mt-5 w-full bg-[#0F4C94] hover:bg-[#093579]"
                         disabled={form.processing}
                     >
                         {form.processing ? t('admin.pricing.form.btn_saving') : t('admin.pricing.form.btn_save')}

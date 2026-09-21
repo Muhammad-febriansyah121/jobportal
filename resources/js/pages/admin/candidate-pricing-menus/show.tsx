@@ -59,7 +59,7 @@ export default function CandidatePricingMenuShow({
 
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex flex-wrap gap-2">
-                        <Badge className="bg-[#01296A] text-white">
+                        <Badge className="bg-[#0F4C94] text-white">
                             {menu.slug}
                         </Badge>
                         <Badge
@@ -87,7 +87,7 @@ export default function CandidatePricingMenuShow({
 
                 <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
                     <section className="rounded-lg border bg-white p-6 shadow-sm">
-                        <p className="text-sm font-semibold text-[#01296A]">
+                        <p className="text-sm font-semibold text-[#0F4C94]">
                             Pricing Kandidat
                         </p>
                         <h1 className="mt-3 text-3xl font-bold tracking-tight">
@@ -100,7 +100,7 @@ export default function CandidatePricingMenuShow({
                             harga paket
                         </p>
 
-                        <p className="mt-5 rounded-lg border bg-[#eaf2ff] px-3 py-3 text-sm text-[#01296A]">
+                        <p className="mt-5 rounded-lg border bg-[#F4F8FF] px-3 py-3 text-sm text-[#0F4C94]">
                             {menu.description || t('admin.pricing.show.empty_desc')}
                         </p>
 
@@ -183,7 +183,7 @@ function Metric({
 }) {
     return (
         <div className="rounded-lg border bg-white p-5 shadow-sm">
-            <span className="flex size-11 items-center justify-center rounded-lg bg-[#eaf2ff] text-[#01296A]">
+            <span className="flex size-11 items-center justify-center rounded-lg bg-[#F4F8FF] text-[#0F4C94]">
                 <Icon className="size-5" />
             </span>
             <p className="mt-4 text-sm font-semibold text-muted-foreground">
