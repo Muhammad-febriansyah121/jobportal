@@ -140,8 +140,9 @@ Route::prefix('admin')
         Route::patch('jobs/{jobListing}/suspend', [AdminJobListingController::class, 'suspend'])->name('jobs.suspend');
         Route::patch('jobs/{jobListing}/reject', [AdminJobListingController::class, 'reject'])->name('jobs.reject');
 
-        Route::resource('scraped-jobs', AdminScrapedJobController::class)
-            ->parameters(['scraped-jobs' => 'scrapedJob'])
+        Route::resource('job-review', AdminScrapedJobController::class)
+            ->parameters(['job-review' => 'scrapedJob'])
+            ->names('scraped-jobs')
             ->only(['index', 'show']);
 
         Route::resource('reports', AdminReportController::class)->only(['index', 'show']);

@@ -43,7 +43,7 @@ test('admin can view scraped jobs and filter the results', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/resources/index')
             ->where('title', 'Hasil Scrape')
-            ->where('indexAction', '/admin/scraped-jobs')
+            ->where('indexAction', '/admin/job-review')
             ->where('headerActions.0', fn (Collection $action): bool => $action['label'] === 'Ambil Data Lagi'
                 && str_contains($action['href'], 'platform=dealls')
                 && str_contains($action['href'], 'search=Senior'))
@@ -76,9 +76,9 @@ test('scraped job navigation uses same-origin relative urls', function () {
         ->get(route('admin.scraped-jobs.index'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('indexAction', '/admin/scraped-jobs')
-            ->where('headerActions.0.href', '/admin/scraped-jobs')
-            ->where('rows.data.0.actions.0.href', '/admin/scraped-jobs/'.$scrapedJob->id)
+            ->where('indexAction', '/admin/job-review')
+            ->where('headerActions.0.href', '/admin/job-review')
+            ->where('rows.data.0.actions.0.href', '/admin/job-review/'.$scrapedJob->id)
             ->etc()
         );
 });
