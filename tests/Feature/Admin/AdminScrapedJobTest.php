@@ -43,6 +43,10 @@ test('admin can view scraped jobs and filter the results', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/resources/index')
             ->where('title', 'Hasil Scrape')
+            ->where('indexAction', '/admin/scraped-jobs')
+            ->where('headerActions.0', fn (Collection $action): bool => $action['label'] === 'Ambil Data Lagi'
+                && str_contains($action['href'], 'platform=dealls')
+                && str_contains($action['href'], 'search=Senior'))
             ->where('rows.data', fn (Collection $rows): bool => $rows->count() === 1 && $rows->first()['title'] === 'Senior Backend Engineer')
             ->etc()
         );
@@ -60,6 +64,21 @@ test('admin can inspect a scraped job detail and its raw payload', function () {
             ->where('title', 'Detail Hasil Scrape')
             ->where('description', $scrapedJob->title)
             ->where('sections.4.items.0.value', fn (string $payload): bool => str_contains($payload, 'dealls'))
+            ->etc()
+        );
+});
+
+test('scraped job navigation uses same-origin relative urls', function () {
+    $admin = User::factory()->admin()->create();
+    $scrapedJob = scrapedJobAdminRecord();
+
+    $this->actingAs($admin)
+        ->get(route('admin.scraped-jobs.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('indexAction', '/admin/scraped-jobs')
+            ->where('headerActions.0.href', '/admin/scraped-jobs')
+            ->where('rows.data.0.actions.0.href', '/admin/scraped-jobs/'.$scrapedJob->id)
             ->etc()
         );
 });

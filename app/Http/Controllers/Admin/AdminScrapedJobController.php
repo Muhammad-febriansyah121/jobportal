@@ -56,14 +56,21 @@ class AdminScrapedJobController extends Controller
                 ],
                 'scraped_at' => $scrapedJob->scraped_at?->format('d M Y H:i') ?? '-',
                 'actions' => [
-                    $this->action('Lihat Detail', route('admin.scraped-jobs.show', $scrapedJob), 'Eye'),
+                    $this->action('Lihat Detail', route('admin.scraped-jobs.show', $scrapedJob, false), 'Eye'),
                 ],
             ]);
 
         return Inertia::render('admin/resources/index', [
             'title' => 'Hasil Scrape',
             'description' => 'Pantau lowongan yang masuk dari sumber scraping sebelum diproses menjadi lowongan publik.',
-            'indexAction' => route('admin.scraped-jobs.index'),
+            'indexAction' => route('admin.scraped-jobs.index', [], false),
+            'headerActions' => [
+                $this->action(
+                    'Ambil Data Lagi',
+                    route('admin.scraped-jobs.index', $request->query(), false),
+                    'RefreshCw',
+                ),
+            ],
             'filters' => [
                 $this->field('search', 'Judul, perusahaan, atau ID eksternal', 'search', $request->string('search')->toString()),
                 $this->field('status', 'Status', 'select', $request->string('status')->toString(), $this->options([
@@ -93,7 +100,7 @@ class AdminScrapedJobController extends Controller
         return Inertia::render('admin/resources/show', [
             'title' => 'Detail Hasil Scrape',
             'description' => $scrapedJob->title,
-            'backHref' => route('admin.scraped-jobs.index'),
+            'backHref' => route('admin.scraped-jobs.index', [], false),
             'sections' => [
                 [
                     'title' => 'Informasi pekerjaan',
