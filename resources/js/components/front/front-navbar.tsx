@@ -1,18 +1,34 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ChevronDown, Menu, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
+import { useMotionValueEvent, useScroll } from 'motion/react';
+import { useState } from 'react';
+import {
+    MobileNav,
+    MobileNavHeader,
+    MobileNavMenu,
+    MobileNavToggle,
+    Navbar,
+    NavBody,
+    NavItems,
+} from '@/components/ui/resizable-navbar';
 import { useTranslate } from '@/hooks/use-translate';
-import { home, login, register } from '@/routes';
+import {
+    aiInterviewSimulator,
+    dashboard,
+    home,
+    login,
+    register,
+} from '@/routes';
+import { index as careerResourcesIndex } from '@/routes/career-resources';
 import { index as companiesIndex } from '@/routes/companies';
 import { index as jobsIndex } from '@/routes/jobs';
+import { index as salaryIndex } from '@/routes/salary';
 import type { Auth } from '@/types';
 
 type Branding = {
     name?: string;
     logo_url?: string | null;
 };
-
-const logoPath = '/images/karivia-assets/logo/karivia-logo-original.png';
 
 export default function FrontNavbar({
     overlay = false,
@@ -24,164 +40,170 @@ export default function FrontNavbar({
     const { t } = useTranslate();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const { scrollY } = useScroll();
     const siteName = branding?.name ?? name ?? 'Karivia';
     const currentPath = page.url.split('?')[0];
+    const overlayActive = overlay && !scrolled;
+
+    useMotionValueEvent(scrollY, 'change', (current) => {
+        setScrolled(current > 100);
+    });
 
     const links = [
-        { label: t('front.nav.jobs'), href: jobsIndex.url() },
-        { label: t('front.nav.companies'), href: companiesIndex.url() },
-        { label: 'Sumber Karier', href: '/career-resources' },
-        { label: 'AI Tools', href: '/ai-interview-simulator', dropdown: true },
-        { label: 'Cek Gaji', href: '/salary' },
+        { name: t('front.nav.home'), link: home.url() },
+        { name: t('front.nav.jobs'), link: jobsIndex.url() },
+        { name: t('front.nav.companies'), link: companiesIndex.url() },
+        { name: 'Sumber Karier', link: careerResourcesIndex.url() },
+        { name: 'AI Tools', link: aiInterviewSimulator.url() },
+        { name: 'Cek Gaji', link: salaryIndex.url() },
     ];
 
-    const logo = branding?.logo_url ?? logoPath;
-    const isOverlay = overlay && !scrolled;
-
-    useEffect(() => {
-        if (!overlay) {
-            return;
-        }
-
-        const handleScroll = () => setScrolled(window.scrollY > 16);
-
-        handleScroll();
-        window.addEventListener('scroll', handleScroll, { passive: true });
-
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [overlay]);
+    const logo = branding?.logo_url ?? null;
 
     return (
         <header
             className={
                 overlay
-                    ? `fixed inset-x-0 top-0 z-50 border-b transition-all duration-300 ${isOverlay ? 'border-white/10 bg-transparent' : 'border-border/80 bg-white/95 shadow-lg shadow-slate-900/10 backdrop-blur-md'}`
-                    : 'relative z-50 border-b border-border bg-white'
+                    ? 'relative z-50 h-0'
+                    : 'relative z-50 border-b border-transparent'
             }
         >
-            <div className="mx-auto flex h-14 max-w-[1160px] items-center justify-between gap-5 px-5 sm:px-8 lg:px-10">
-                <Link
-                    href={home.url()}
-                    aria-label={`Kembali ke ${siteName}`}
-                    className="shrink-0"
-                >
-                    <img
-                        src={logo}
-                        alt={siteName}
-                        width={150}
-                        height={42}
-                        className={`h-10 w-[150px] object-cover object-center ${isOverlay ? 'brightness-0 invert' : ''}`}
-                    />
-                </Link>
-
-                <nav
-                    className="hidden items-center gap-0.5 xl:flex"
-                    aria-label="Navigasi utama"
-                >
-                    {links.map((link) => {
-                        const active =
-                            link.href === '/'
-                                ? currentPath === '/'
-                                : currentPath.startsWith(link.href);
-
-                        return (
-                            <Link
-                                key={link.href}
-                                href={link.href}
-                                className={`relative inline-flex items-center gap-1 px-3.5 py-5 text-[12px] leading-none font-semibold transition-colors ${isOverlay ? (active ? 'text-white after:absolute after:inset-x-3.5 after:bottom-0 after:h-0.5 after:rounded-full after:bg-white' : 'text-white/80 hover:text-white') : active ? 'text-primary after:absolute after:inset-x-3.5 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary' : 'text-text hover:text-primary'}`}
-                            >
-                                {link.label}
-                                {link.dropdown && (
-                                    <ChevronDown
-                                        className="size-3.5"
-                                        aria-hidden="true"
-                                    />
-                                )}
-                            </Link>
-                        );
-                    })}
-                </nav>
-
-                <div className="hidden items-center gap-3 lg:flex">
-                    {auth?.user ? (
-                        <Link
-                            href="/dashboard"
-                            className={`inline-flex min-h-10 items-center rounded-full border px-5 text-xs font-bold transition focus-visible:ring-2 focus-visible:outline-none ${isOverlay ? 'border-white/70 text-white hover:bg-white/10 focus-visible:ring-white' : 'border-primary text-primary hover:bg-background-soft focus-visible:ring-primary'}`}
-                        >
-                            {t('front.nav.dashboard')}
-                        </Link>
-                    ) : (
-                        <>
-                            <Link
-                                href={login.url()}
-                                className={`inline-flex min-h-10 items-center rounded-full border px-5 text-xs font-bold transition focus-visible:ring-2 focus-visible:outline-none ${isOverlay ? 'border-white/70 text-white hover:bg-white/10 focus-visible:ring-white' : 'border-primary text-primary hover:bg-background-soft focus-visible:ring-primary'}`}
-                            >
-                                {t('front.nav.login')}
-                            </Link>
-                            <Link
-                                href={register.url()}
-                                className="inline-flex min-h-10 items-center rounded-full bg-primary px-5 text-xs font-bold text-white shadow-[0_6px_14px_rgba(10,102,255,0.18)] transition hover:bg-primary-700 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
-                            >
-                                {t('front.nav.register')}
-                            </Link>
-                        </>
-                    )}
-                </div>
-
-                <button
-                    type="button"
-                    aria-label={mobileOpen ? 'Tutup menu' : 'Buka menu'}
-                    aria-expanded={mobileOpen}
-                    onClick={() => setMobileOpen((open) => !open)}
-                    className={`flex size-11 items-center justify-center rounded-xl border transition focus-visible:ring-2 focus-visible:outline-none xl:hidden ${isOverlay ? 'border-white/50 text-white hover:bg-white/10 focus-visible:ring-white' : 'border-border text-heading hover:bg-background-soft focus-visible:ring-primary'}`}
-                >
-                    {mobileOpen ? (
-                        <X className="size-5" />
-                    ) : (
-                        <Menu className="size-5" />
-                    )}
-                </button>
-            </div>
-
-            {mobileOpen && (
-                <div
-                    className={`border-t px-5 py-4 xl:hidden ${isOverlay ? 'border-white/10 bg-[#103e9e]' : 'border-border bg-white'}`}
-                >
-                    <nav
-                        className="mx-auto flex max-w-7xl flex-col gap-1"
-                        aria-label="Navigasi mobile"
+            <Navbar className="px-3 sm:px-5" overlay={overlay} tone="light">
+                <NavBody className="px-4 sm:px-6">
+                    <Link
+                        href={home.url()}
+                        aria-label={`Kembali ke ${siteName}`}
+                        className="group relative z-20 flex shrink-0 items-center rounded-lg focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                     >
-                        {links.map((link) => (
+                        {logo ? (
+                            <img
+                                src={logo}
+                                alt={siteName}
+                                width="200"
+                                height="56"
+                                className="max-h-12 w-auto max-w-[200px] object-contain object-left transition-transform duration-200 group-hover:scale-[1.02]"
+                            />
+                        ) : (
+                            <span className="text-sm font-extrabold tracking-tight text-heading">
+                                {siteName}
+                            </span>
+                        )}
+                    </Link>
+
+                    <NavItems
+                        items={links}
+                        activeLink={currentPath}
+                        overlay={overlay}
+                        visible={scrolled}
+                        tone="light"
+                    />
+
+                    <div className="relative z-20 ml-auto hidden items-center gap-2 lg:flex">
+                        {auth?.user ? (
                             <Link
-                                key={link.href}
-                                href={link.href}
-                                onClick={() => setMobileOpen(false)}
-                                className={`min-h-11 rounded-xl px-4 py-3 text-sm font-semibold ${isOverlay ? 'text-white hover:bg-white/10 hover:text-white' : 'text-text hover:bg-background-soft hover:text-primary'}`}
+                                href={dashboard.url()}
+                                className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-primary px-5 text-xs font-bold text-white shadow-[0_8px_18px_rgba(10,102,255,0.18)] transition duration-200 hover:-translate-y-0.5 hover:bg-primary-700 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
                             >
-                                {link.label}
+                                {t('front.nav.dashboard')}
+                                <ArrowRight
+                                    className="size-3.5"
+                                    aria-hidden="true"
+                                />
                             </Link>
-                        ))}
-                        <div
-                            className={`mt-3 grid grid-cols-2 gap-2 border-t pt-4 ${isOverlay ? 'border-white/10' : 'border-border'}`}
+                        ) : (
+                            <>
+                                <Link
+                                    href={login.url()}
+                                    className="inline-flex min-h-11 items-center rounded-full border border-primary px-5 text-sm font-medium text-text/70 transition hover:bg-primary-50 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                                >
+                                    {t('front.nav.login')}
+                                </Link>
+                                <Link
+                                    href={register.url()}
+                                    className="group/cta inline-flex min-h-11 items-center gap-1.5 rounded-full bg-primary px-5 text-xs font-bold text-white shadow-[0_8px_18px_rgba(10,102,255,0.18)] transition duration-200 hover:-translate-y-0.5 hover:bg-primary-700 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                                >
+                                    {t('front.nav.register')}
+                                    <ArrowRight className="size-3.5 transition-transform duration-200 group-hover/cta:translate-x-0.5" />
+                                </Link>
+                            </>
+                        )}
+                    </div>
+                </NavBody>
+
+                <MobileNav className="px-2" overlay={overlay} tone="light">
+                    <MobileNavHeader>
+                        <Link
+                            href={home.url()}
+                            aria-label={`Kembali ke ${siteName}`}
+                            className="group flex items-center rounded-lg focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                         >
+                            {logo ? (
+                                <img
+                                    src={logo}
+                                    alt={siteName}
+                                    width="200"
+                                    height="56"
+                                    className="max-h-12 w-auto max-w-[180px] object-contain object-left transition-transform duration-200 group-hover:scale-[1.02]"
+                                />
+                            ) : (
+                                <span className="text-sm font-extrabold tracking-tight text-heading">
+                                    {siteName}
+                                </span>
+                            )}
+                        </Link>
+                        <MobileNavToggle
+                            isOpen={mobileOpen}
+                            onClick={() => setMobileOpen((open) => !open)}
+                            overlay={overlayActive}
+                            tone="light"
+                        />
+                    </MobileNavHeader>
+
+                    <MobileNavMenu isOpen={mobileOpen}>
+                        <nav
+                            className="flex w-full flex-col gap-1"
+                            aria-label="Navigasi mobile"
+                        >
+                            {links.map((link) => {
+                                const active =
+                                    currentPath === link.link ||
+                                    currentPath.startsWith(`${link.link}/`);
+
+                                return (
+                                    <Link
+                                        key={link.link}
+                                        href={link.link}
+                                        onClick={() => setMobileOpen(false)}
+                                        aria-current={
+                                            active ? 'page' : undefined
+                                        }
+                                        className={`inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${active ? 'bg-primary font-semibold text-white' : 'text-text/70 hover:bg-background-soft hover:text-primary'}`}
+                                    >
+                                        {link.name}
+                                    </Link>
+                                );
+                            })}
+                        </nav>
+
+                        <div className="grid w-full grid-cols-2 gap-2 border-t border-border pt-4">
                             <Link
                                 href={login.url()}
                                 onClick={() => setMobileOpen(false)}
-                                className={`min-h-11 rounded-xl border px-4 py-3 text-center text-sm font-bold ${isOverlay ? 'border-white/60 text-white' : 'border-primary text-primary'}`}
+                                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-primary px-4 text-sm font-bold text-primary transition hover:bg-primary-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                             >
                                 {t('front.nav.login')}
                             </Link>
                             <Link
                                 href={register.url()}
                                 onClick={() => setMobileOpen(false)}
-                                className="min-h-11 rounded-xl bg-primary px-4 py-3 text-center text-sm font-bold text-white"
+                                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-700 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                             >
                                 {t('front.nav.register')}
                             </Link>
                         </div>
-                    </nav>
-                </div>
-            )}
+                    </MobileNavMenu>
+                </MobileNav>
+            </Navbar>
         </header>
     );
 }

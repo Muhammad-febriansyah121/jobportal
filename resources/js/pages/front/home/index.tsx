@@ -12,7 +12,26 @@ type HomeProps = {
         work_mode: string;
         location: string;
         salary: string;
+        published_at?: string | null;
         is_saved: boolean;
+    }>;
+    scrapedJobs: Array<{
+        id: number;
+        slug: string;
+        title: string;
+        is_anonymous: boolean;
+        is_urgent?: boolean;
+        company?: string | null;
+        company_logo?: string | null;
+        type: string;
+        work_mode: string;
+        location: string;
+        salary: string;
+        published_at?: string | null;
+        is_saved: boolean;
+        is_scraped: boolean;
+        source_url: string;
+        source_platform: string;
     }>;
     jobs_pagination?: {
         current_page: number;
@@ -46,6 +65,7 @@ type HomeProps = {
 
 export default function Home({
     jobs,
+    scrapedJobs,
     jobs_pagination,
     stats,
     industries,
@@ -56,6 +76,7 @@ export default function Home({
         <HomeLayout overlayNavbar>
             <HeroSection
                 jobs={jobs}
+                scrapedJobs={scrapedJobs}
                 jobs_pagination={jobs_pagination}
                 stats={stats}
                 industries={industries}

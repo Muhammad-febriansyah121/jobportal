@@ -6,6 +6,7 @@ import {
     Building2,
     ChevronDown,
     Clock,
+    Flame,
     Link2,
     MapPin,
     Search,
@@ -14,11 +15,12 @@ import {
     Wallet,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
-import HomeLayout from '@/layouts/front/home-layout';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslate } from '@/hooks/use-translate';
+import HomeLayout from '@/layouts/front/home-layout';
 import { cn } from '@/lib/utils';
 import { index as jobsIndex, show as jobShow } from '@/routes/jobs';
+import { show as scrapedJobShow } from '@/routes/jobs/scraped';
 
 type JobItem = {
     id: number;
@@ -38,6 +40,7 @@ type JobItem = {
     salary_range: string;
     published_at: string | null;
     is_saved: boolean;
+    is_scraped?: boolean;
 };
 
 type JobsPageProps = {
@@ -57,12 +60,6 @@ type JobsPageProps = {
         to: number | null;
         total: number;
     };
-};
-
-const workModeStyle: Record<string, string> = {
-    Remote: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    Hybrid: 'bg-sky-50 text-sky-700 border-sky-200',
-    Onsite: 'bg-slate-100 text-slate-600 border-slate-200',
 };
 
 function formatRupiah(value: number): string {
@@ -137,7 +134,60 @@ function RupiahFilterInput({ defaultValue }: { defaultValue: number | null }) {
 
 export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
     const { t } = useTranslate();
-    const [heroSearch, setHeroSearch] = useState(filters.search);
+    const [searchQuery, setSearchQuery] = useState(filters.search);
+    const searchDebounceRef = useRef<number | null>(null);
+
+    const submitSearch = (): void => {
+        if (searchDebounceRef.current !== null) {
+            window.clearTimeout(searchDebounceRef.current);
+            searchDebounceRef.current = null;
+        }
+
+        router.get(
+            jobsIndex().url,
+            {
+                ...filters,
+                search: searchQuery.trim() || undefined,
+                page: undefined,
+            },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
+
+    useEffect(() => {
+        const normalizedSearch = searchQuery.trim();
+
+        if (normalizedSearch === filters.search) {
+            return;
+        }
+
+        searchDebounceRef.current = window.setTimeout(() => {
+            router.get(
+                jobsIndex().url,
+                {
+                    ...filters,
+                    search: normalizedSearch || undefined,
+                    page: undefined,
+                },
+                {
+                    preserveScroll: true,
+                    preserveState: true,
+                    replace: true,
+                },
+            );
+        }, 450);
+
+        return () => {
+            if (searchDebounceRef.current !== null) {
+                window.clearTimeout(searchDebounceRef.current);
+                searchDebounceRef.current = null;
+            }
+        };
+    }, [filters, searchQuery]);
 
     const sortOptions = [
         { value: 'relevance', label: t('front.jobs.sort_relevant') },
@@ -219,23 +269,19 @@ export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
                         className="mt-8 flex gap-2"
                         onSubmit={(e) => {
                             e.preventDefault();
-                            router.get(
-                                jobsIndex().url,
-                                { ...filters, search: heroSearch },
-                                { preserveScroll: true, preserveState: true },
-                            );
+                            submitSearch();
                         }}
                     >
                         <div className="relative flex-1">
                             <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-400" />
                             <input
                                 className="h-12 w-full rounded-xl border border-slate-200 bg-white pr-4 pl-10 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-200"
-                                onChange={(e) => setHeroSearch(e.target.value)}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder={t(
                                     'front.jobs.hero_search_placeholder',
                                 )}
                                 type="text"
-                                value={heroSearch}
+                                value={searchQuery}
                             />
                         </div>
                         <button
@@ -300,12 +346,15 @@ export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
                                     <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400" />
                                     <input
                                         className="h-10 w-full rounded-lg border border-slate-200 bg-white pr-3 pl-8 text-sm transition outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                                        defaultValue={filters.search}
+                                        value={searchQuery}
                                         name="search"
                                         placeholder={t(
                                             'front.jobs.filter_keyword_placeholder',
                                         )}
                                         type="text"
+                                        onChange={(event) =>
+                                            setSearchQuery(event.target.value)
+                                        }
                                     />
                                 </div>
                             </div>
@@ -442,9 +491,12 @@ export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
                                 </button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                 {jobs.data.map((job) => (
-                                    <JobCard job={job} key={job.id} />
+                                    <JobCard
+                                        job={job}
+                                        key={`${job.is_scraped ? 'scraped' : 'job'}-${job.id}`}
+                                    />
                                 ))}
                             </div>
                         )}
@@ -483,20 +535,22 @@ function JobCard({ job }: { job: JobItem }) {
     const { t } = useTranslate();
     const initials = companyInitials(job.company);
     const colorClass = avatarColor(job.company);
-    const workModeClass =
-        workModeStyle[job.work_mode] ??
-        'bg-slate-100 text-slate-600 border-slate-200';
     const [shareState, setShareState] = useState<'idle' | 'copied'>('idle');
+
+    const detailUrl = job.is_scraped
+        ? scrapedJobShow.url(job.id)
+        : jobShow(job.slug).url;
+
+    const openJobDetail = (): void => {
+        router.visit(detailUrl);
+    };
 
     const handleShare = async (): Promise<void> => {
         if (typeof window === 'undefined') {
             return;
         }
 
-        const shareUrl = new URL(
-            jobShow(job.slug).url,
-            window.location.origin,
-        ).toString();
+        const shareUrl = new URL(detailUrl, window.location.origin).toString();
 
         if (
             typeof navigator !== 'undefined' &&
@@ -534,46 +588,60 @@ function JobCard({ job }: { job: JobItem }) {
     };
 
     return (
-        <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md">
-            {(job.is_urgent || job.is_few_applicants) && (
-                <div className="flex flex-wrap gap-1.5 border-b border-slate-100 bg-gradient-to-r from-orange-50 to-amber-50/50 px-5 py-2">
-                    {job.is_urgent && (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-orange-500 px-2 py-0.5 text-[11px] font-bold text-white">
-                            🔥 {t('front.jobs.card_urgent_badge')}
-                        </span>
-                    )}
-                    {job.is_few_applicants && (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-amber-400 px-2 py-0.5 text-[11px] font-bold text-amber-950">
-                            ⚡ {t('front.jobs.card_few_applicants_badge')}
-                        </span>
-                    )}
-                </div>
-            )}
-            <div className="flex flex-1 flex-col gap-4 p-5">
-                {/* Header: avatar + share */}
+        <article
+            aria-label={`Lihat detail ${job.title}`}
+            className="group relative flex h-full min-h-[330px] cursor-pointer flex-col overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-[0_18px_40px_rgba(15,76,148,0.12)] focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:outline-none"
+            onClick={(event) => {
+                if ((event.target as HTMLElement).closest('a, button')) {
+                    return;
+                }
+
+                openJobDetail();
+            }}
+            onKeyDown={(event) => {
+                if (
+                    event.target !== event.currentTarget ||
+                    !['Enter', ' '].includes(event.key)
+                ) {
+                    return;
+                }
+
+                event.preventDefault();
+                openJobDetail();
+            }}
+            role="link"
+            tabIndex={0}
+        >
+            <div className="flex flex-1 flex-col px-5 pt-5">
                 <div className="flex items-start justify-between gap-3">
-                    {job.company_logo ? (
-                        <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white">
-                            <img
-                                src={job.company_logo}
-                                alt={job.company ?? 'Company logo'}
-                                className="size-full object-contain"
-                            />
-                        </div>
-                    ) : (
-                        <div
-                            className={cn(
-                                'flex size-12 shrink-0 items-center justify-center rounded-xl text-sm font-bold',
-                                colorClass,
-                            )}
+                    <div className="min-h-6">
+                        <span
+                            className={
+                                job.is_urgent
+                                    ? 'inline-flex items-center gap-1 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-orange-700 uppercase'
+                                    : 'inline-flex items-center gap-1 rounded-lg border border-primary-100 bg-primary-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-primary-700 uppercase'
+                            }
                         >
-                            {initials}
-                        </div>
-                    )}
+                            {job.is_urgent ? (
+                                <Flame
+                                    aria-hidden="true"
+                                    className="size-3.5"
+                                />
+                            ) : (
+                                <Sparkles
+                                    aria-hidden="true"
+                                    className="size-3.5"
+                                />
+                            )}
+                            {job.is_urgent
+                                ? t('front.jobs.card_urgent_badge')
+                                : 'Lowongan terbaru'}
+                        </span>
+                    </div>
                     <button
                         type="button"
                         onClick={() => void handleShare()}
-                        className="inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-primary-300 hover:text-primary-600"
+                        className="inline-flex size-7 shrink-0 items-center justify-center text-slate-500 transition hover:text-primary-600"
                         aria-label={t('front.jobs.card_share')}
                         title={
                             shareState === 'copied'
@@ -585,82 +653,77 @@ function JobCard({ job }: { job: JobItem }) {
                     </button>
                 </div>
 
-                {/* Title + company */}
-                <div className="space-y-1.5">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Link
-                            href={jobShow(job.slug)}
-                            className="line-clamp-2 text-base font-bold text-slate-900 transition group-hover:text-primary-600"
+                <div className="mt-4 flex items-start gap-3.5">
+                    {job.company_logo ? (
+                        <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-primary-100 bg-primary-50">
+                            <img
+                                src={job.company_logo}
+                                alt={job.company ?? 'Company logo'}
+                                className="size-full object-contain p-1.5"
+                            />
+                        </div>
+                    ) : (
+                        <div
+                            className={cn(
+                                'flex size-14 shrink-0 items-center justify-center rounded-2xl text-sm font-bold',
+                                colorClass,
+                            )}
                         >
+                            {initials}
+                        </div>
+                    )}
+                    <div className="min-w-0 pt-0.5">
+                        <h3 className="line-clamp-2 text-[17px] leading-[1.15] font-bold tracking-[-0.02em] text-slate-900 transition group-hover:text-primary-600">
                             {job.title}
-                        </Link>
-                        {!job.is_anonymous && job.company_verified && (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                                <BadgeCheck className="size-3" />
-                                {t('front.jobs.card_verified')}
+                        </h3>
+                        <p className="mt-1 flex min-w-0 items-center gap-1 text-sm text-slate-500">
+                            <span className="truncate">
+                                {job.is_anonymous
+                                    ? t('front.jobs.card_company_anonymous')
+                                    : (job.company ??
+                                      t('front.jobs.card_company_fallback'))}
                             </span>
-                        )}
+                            {!job.is_anonymous && job.company_verified && (
+                                <BadgeCheck
+                                    aria-label={t('front.jobs.card_verified')}
+                                    className="size-3.5 shrink-0 fill-primary-50 text-primary-500"
+                                />
+                            )}
+                        </p>
                     </div>
-                    <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                        <Building2 className="size-3.5 shrink-0 text-slate-400" />
-                        {job.is_anonymous ? (
-                            <span className="inline-flex items-center gap-1">
-                                <span className="text-slate-400 italic">
-                                    {t('front.jobs.card_company_anonymous')}
-                                </span>
-                                <span className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
-                                    {t('front.jobs.card_anonymous_badge')}
-                                </span>
-                            </span>
-                        ) : (
-                            (job.company ??
-                            t('front.jobs.card_company_fallback'))
-                        )}
+                </div>
+
+                <div className="mt-5 space-y-3 rounded-xl border border-slate-100 bg-slate-50/65 px-3.5 py-3 text-sm text-slate-600">
+                    <p className="flex items-center gap-2">
+                        <BriefcaseBusiness className="size-4 shrink-0 text-primary-500" />
+                        <span className="font-semibold text-primary-600">
+                            {job.job_type}
+                        </span>
                     </p>
-                </div>
-
-                {/* Chips */}
-                <div className="flex flex-wrap gap-1.5">
-                    <span
-                        className={cn(
-                            'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold',
-                            workModeClass,
-                        )}
-                    >
-                        {job.work_mode}
-                    </span>
-                    <Chip icon={BriefcaseBusiness}>{job.job_type}</Chip>
-                    <Chip icon={BadgeCheck}>{job.experience_level}</Chip>
-                </div>
-
-                {/* Meta rows */}
-                <div className="space-y-1.5 border-t border-dashed border-slate-200 pt-3">
-                    <p className="flex items-center gap-2 text-xs text-slate-500">
-                        <MapPin className="size-3.5 shrink-0 text-slate-400" />
+                    <p className="flex items-center gap-2">
+                        <MapPin className="size-4 shrink-0 text-slate-500" />
                         <span className="truncate">
+                            {job.work_mode} ·{' '}
                             {job.location ||
                                 t('front.jobs.card_location_fallback')}
                         </span>
                     </p>
-                    <p className="flex items-center gap-2 text-sm font-bold text-primary-600">
-                        <Wallet className="size-3.5 shrink-0 text-primary-500" />
-                        <span className="truncate">{job.salary_range}</span>
+                    <p className="flex items-center gap-2">
+                        <Building2 className="size-4 shrink-0 text-slate-500" />
+                        <span>Min. {job.experience_level}</span>
+                    </p>
+                    <p className="flex items-center gap-2 font-semibold text-slate-700">
+                        <Wallet className="size-4 shrink-0 text-slate-500" />
+                        <span className="truncate">
+                            {job.salary_range || 'Negotiable'}
+                        </span>
                     </p>
                 </div>
             </div>
 
-            {/* Footer: CTA + posted time */}
-            <div className="mt-auto flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/60 px-5 py-3">
-                <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
-                    <Clock className="size-3" />
-                    {job.published_at ?? t('front.jobs.card_date_new')}
-                </span>
-                <Link
-                    className="inline-flex h-9 shrink-0 items-center justify-center rounded-xl bg-primary-600 px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-primary-700"
-                    href={jobShow(job.slug)}
-                >
-                    {t('front.jobs.card_view_detail')}
-                </Link>
+            <div className="mt-auto flex items-center gap-1.5 border-t border-slate-200 bg-slate-50/60 px-5 py-3 text-xs text-slate-500">
+                <Clock className="size-3.5" />
+                <span>{job.published_at ?? t('front.jobs.card_date_new')}</span>
             </div>
         </article>
     );
@@ -694,21 +757,6 @@ function FilterSelect({
                 ))}
             </select>
         </label>
-    );
-}
-
-function Chip({
-    children,
-    icon: Icon,
-}: {
-    children: React.ReactNode;
-    icon: React.ComponentType<{ className?: string }>;
-}) {
-    return (
-        <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] text-slate-500">
-            <Icon className="size-3 shrink-0" />
-            {children}
-        </span>
     );
 }
 

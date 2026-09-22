@@ -37,9 +37,9 @@ export default function FrontFooter() {
                         <img
                             src={branding?.logo_url ?? logoPath}
                             alt={siteName}
-                            width={160}
-                            height={48}
-                            className="h-11 w-[160px] object-cover object-center"
+                            width={190}
+                            height={56}
+                            className="h-14 w-[190px] object-contain object-left"
                         />
                     </Link>
                     <p className="mt-5 max-w-xs text-sm leading-6 text-muted-foreground">

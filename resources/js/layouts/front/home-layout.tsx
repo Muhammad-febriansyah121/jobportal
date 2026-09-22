@@ -8,7 +8,7 @@ interface HomeLayoutProps {
 
 export default function HomeLayout({
     children,
-    overlayNavbar = false,
+    overlayNavbar = true,
 }: HomeLayoutProps) {
     return (
         <div className="flex min-h-screen flex-col bg-background">

@@ -49,6 +49,7 @@ use App\Http\Controllers\PakasirWebhookController;
 use App\Http\Controllers\PricingController;
 use App\Http\Controllers\RegionController;
 use App\Http\Controllers\SalaryController;
+use App\Http\Controllers\ScrapedJobController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 
@@ -67,6 +68,7 @@ Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 
 Route::get('/', HomeController::class)->name('home');
 Route::get('/jobs', [HomeController::class, 'jobs'])->name('jobs.index');
+Route::get('/jobs/scraped/{scrapedJob}', [ScrapedJobController::class, 'show'])->name('jobs.scraped.show');
 Route::get('/companies', [HomeController::class, 'companies'])->name('companies.index');
 Route::get('/companies/{company:slug}', [CompanyProfileController::class, 'show'])->name('companies.show');
 Route::get('/salary', [SalaryController::class, 'index'])->name('salary.index');

@@ -5,6 +5,33 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Keep the landing hero bright and calm, like the reference UI. */
+.career-grid-background {
+    background-color: #ffffff;
+    background-image: none;
+}
+
+.hero-illustration {
+    filter: drop-shadow(0 28px 24px rgba(15, 76, 148, 0.16));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .hero-illustration {
+        animation: hero-float 6s ease-in-out infinite;
+    }
+}
+
+@keyframes hero-float {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
@@ -178,7 +205,7 @@
 
 @layer components {
     .input-field {
-        @apply h-11 w-full rounded-xl border border-input bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground shadow-sm outline-none transition focus:border-primary-light focus:ring-2 focus:ring-primary/15;
+        @apply h-11 w-full rounded-xl border border-input bg-card px-4 text-sm text-foreground shadow-sm transition outline-none placeholder:text-muted-foreground focus:border-primary-light focus:ring-2 focus:ring-primary/15;
     }
 
     textarea.input-field {
