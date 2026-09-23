@@ -396,104 +396,42 @@ class HomeController extends Controller
     {
         $perPage = 9;
 
-        $companies = Company::query()
-            ->where('is_active', true)
-            ->whereNull('suspended_at')
-            ->select([
-                'id',
-                'industry_id',
-                'name',
-                'slug',
-                'logo_url',
-                'hq_city',
-                'hq_province',
-                'company_size',
-                'is_verified',
-                'trust_score',
-            ])
-            ->with('industry:id,name')
-            ->withCount([
-                'jobListings as open_jobs_count' => fn ($query) => $query
-                    ->published()
-                    ->where(fn ($query) => $query
-                        ->whereNull('closes_at')
-                        ->orWhere('closes_at', '>=', now())),
-            ])
-            ->when($request->filled('search'), function ($query) use ($request) {
-                $keyword = $request->string('search')->toString();
-                $query->where('name', 'like', '%'.$keyword.'%');
-            })
-            ->when($request->filled('industry_id'), fn ($query) => $query
-                ->where('industry_id', $request->integer('industry_id')))
-            ->when($request->filled('location'), fn ($query) => $query
-                ->where(fn ($query) => $query
-                    ->where('hq_city', 'like', '%'.$request->string('location')->toString().'%')
-                    ->orWhere('hq_province', 'like', '%'.$request->string('location')->toString().'%')))
-            ->when(
-                $request->string('sort')->toString() === 'most_jobs',
-                fn ($query) => $query->orderByDesc('open_jobs_count')->orderByDesc('is_verified')->orderBy('name'),
-                fn ($query) => $query->orderByDesc('is_verified')->orderByDesc('open_jobs_count')->orderBy('name'),
-            )
+        $scrapedCompanies = ScrapedJob::query()
+            ->select(['id', 'company_name', 'company_logo_url', 'location', 'scraped_at', 'imported_at'])
+            ->latest('scraped_at')
+            ->latest('imported_at')
             ->get()
-            ->map(fn (Company $company): array => [
-                'id' => $company->id,
-                'slug' => $company->slug,
-                'name' => $company->name,
-                'logo_url' => $company->logo_url,
-                'industry' => $company->industry?->name,
-                'location' => collect([$company->hq_city, $company->hq_province])->filter()->implode(', '),
-                'company_size' => $company->company_size,
-                'is_verified' => (bool) $company->is_verified,
-                'trust_score' => $company->trust_score,
-                'open_jobs_count' => (int) $company->open_jobs_count,
-                'source' => 'platform',
-            ]);
+            ->filter(fn (ScrapedJob $job): bool => filled(trim($job->company_name)))
+            ->groupBy(fn (ScrapedJob $job): string => mb_strtolower(trim($job->company_name)))
+            ->map(function ($jobs): array {
+                $latestJob = $jobs->first();
+                $logoJob = $jobs->first(fn (ScrapedJob $job): bool => filled($job->company_logo_url));
+                $locationJob = $jobs->first(fn (ScrapedJob $job): bool => filled($job->location));
 
-        $platformCompanyNames = $companies
-            ->pluck('name')
-            ->map(fn (string $name): string => mb_strtolower(trim($name)))
-            ->all();
+                return [
+                    'id' => 'scraped-'.$latestJob->id,
+                    'slug' => null,
+                    'name' => $latestJob->company_name,
+                    'logo_url' => $logoJob?->company_logo_url,
+                    'industry' => null,
+                    'location' => $locationJob?->location ?? '',
+                    'company_size' => null,
+                    'is_verified' => false,
+                    'trust_score' => null,
+                    'open_jobs_count' => $jobs->count(),
+                    'source' => 'scraped',
+                ];
+            })
+            ->filter(function (array $company) use ($request): bool {
+                $search = mb_strtolower($request->string('search')->toString());
+                $location = mb_strtolower($request->string('location')->toString());
 
-        $scrapedCompanies = $request->filled('industry_id')
-            ? collect()
-            : ScrapedJob::query()
-                ->select(['id', 'company_name', 'company_logo_url', 'location', 'scraped_at', 'imported_at'])
-                ->latest('scraped_at')
-                ->latest('imported_at')
-                ->get()
-                ->filter(fn (ScrapedJob $job): bool => filled(trim($job->company_name)))
-                ->groupBy(fn (ScrapedJob $job): string => mb_strtolower(trim($job->company_name)))
-                ->reject(fn ($jobs, string $companyName): bool => in_array($companyName, $platformCompanyNames, true))
-                ->map(function ($jobs): array {
-                    $latestJob = $jobs->first();
-                    $logoJob = $jobs->first(fn (ScrapedJob $job): bool => filled($job->company_logo_url));
-                    $locationJob = $jobs->first(fn (ScrapedJob $job): bool => filled($job->location));
+                return ($search === '' || str_contains(mb_strtolower($company['name']), $search))
+                    && ($location === '' || str_contains(mb_strtolower($company['location']), $location));
+            })
+            ->values();
 
-                    return [
-                        'id' => 'scraped-'.$latestJob->id,
-                        'slug' => null,
-                        'name' => $latestJob->company_name,
-                        'logo_url' => $logoJob?->company_logo_url,
-                        'industry' => null,
-                        'location' => $locationJob?->location ?? '',
-                        'company_size' => null,
-                        'is_verified' => false,
-                        'trust_score' => null,
-                        'open_jobs_count' => $jobs->count(),
-                        'source' => 'scraped',
-                    ];
-                })
-                ->filter(function (array $company) use ($request): bool {
-                    $search = mb_strtolower($request->string('search')->toString());
-                    $location = mb_strtolower($request->string('location')->toString());
-
-                    return ($search === '' || str_contains(mb_strtolower($company['name']), $search))
-                        && ($location === '' || str_contains(mb_strtolower($company['location']), $location));
-                })
-                ->values();
-
-        $allCompanies = $companies
-            ->concat($scrapedCompanies)
+        $allCompanies = $scrapedCompanies
             ->sortBy($request->string('sort')->toString() === 'most_jobs'
                 ? [
                     ['open_jobs_count', 'desc'],
@@ -522,17 +460,10 @@ class HomeController extends Controller
         return Inertia::render('front/companies/index', [
             'filters' => [
                 'search' => $request->string('search')->toString(),
-                'industry_id' => $request->string('industry_id')->toString(),
                 'location' => $request->string('location')->toString(),
                 'sort' => $request->string('sort')->toString() ?: 'recommended',
             ],
-            'industries' => Industry::query()
-                ->orderBy('name')
-                ->get(['id', 'name'])
-                ->map(fn (Industry $industry): array => [
-                    'id' => $industry->id,
-                    'name' => $industry->name,
-                ]),
+            'industries' => [],
             'companies' => $companies,
         ]);
     }

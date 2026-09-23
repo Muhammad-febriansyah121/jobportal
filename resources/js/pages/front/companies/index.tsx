@@ -1,23 +1,22 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowUpDown,
-    BadgeCheck,
     BriefcaseBusiness,
     Building2,
     ChevronDown,
-    ExternalLink,
+    Clock3,
     MapPin,
     Search,
     SlidersHorizontal,
     Sparkles,
-    Users,
+    Wallet,
     X,
 } from 'lucide-react';
 import { useState } from 'react';
 import HomeLayout from '@/layouts/front/home-layout';
 import { useTranslate } from '@/hooks/use-translate';
 import { cn } from '@/lib/utils';
-import { index as companiesIndex, show as companyShow } from '@/routes/companies';
+import { index as companiesIndex } from '@/routes/companies';
 import { index as jobsIndex } from '@/routes/jobs';
 
 type CompanyItem = {
@@ -37,11 +36,9 @@ type CompanyItem = {
 type CompaniesPageProps = {
     filters: {
         search: string;
-        industry_id: string;
         location: string;
         sort: string;
     };
-    industries: Array<{ id: number; name: string }>;
     companies: {
         data: CompanyItem[];
         links: Array<{ url: string | null; label: string; active: boolean }>;
@@ -71,7 +68,7 @@ function CompanyAvatar({ name, logoUrl }: { name: string; logoUrl: string | null
         return (
             <img
                 alt={name}
-                className="size-14 rounded-xl border border-slate-200 object-cover shrink-0"
+                className="size-14 shrink-0 rounded-2xl border border-primary-100 bg-primary-50 object-contain p-1.5"
                 src={logoUrl}
             />
         );
@@ -79,14 +76,10 @@ function CompanyAvatar({ name, logoUrl }: { name: string; logoUrl: string | null
 
     const initials = name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
 
-    return (
-        <div className={cn('inline-flex size-14 shrink-0 items-center justify-center rounded-xl text-base font-bold', avatarColor(name))}>
-            {initials || 'CO'}
-        </div>
-    );
+    return <div className={cn('inline-flex size-14 shrink-0 items-center justify-center rounded-2xl text-sm font-bold', avatarColor(name))}>{initials || 'CO'}</div>;
 }
 
-export default function FrontCompaniesIndex({ filters, industries, companies }: CompaniesPageProps) {
+export default function FrontCompaniesIndex({ filters, companies }: CompaniesPageProps) {
     const { t } = useTranslate();
     const [heroSearch, setHeroSearch] = useState(filters.search);
 
@@ -100,11 +93,10 @@ export default function FrontCompaniesIndex({ filters, industries, companies }: 
             ? t('front.companies.showing_range', { from: companies.from, to: companies.to, total: companies.total })
             : t('front.companies.showing_count', { count: companies.data.length });
 
-    const activeFilterCount = [filters.search, filters.industry_id, filters.location].filter(Boolean).length;
+    const activeFilterCount = [filters.search, filters.location].filter(Boolean).length;
 
     const activeFilterChips = [
         filters.search && { key: 'search', label: `"${filters.search}"` },
-        filters.industry_id && { key: 'industry_id', label: industries.find((i) => String(i.id) === filters.industry_id)?.name ?? filters.industry_id },
         filters.location && { key: 'location', label: filters.location },
     ].filter(Boolean) as { key: string; label: string }[];
 
@@ -197,7 +189,7 @@ export default function FrontCompaniesIndex({ filters, industries, companies }: 
 
                         <div className="grid gap-3 p-4 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
                             {/* Company name */}
-                            <div className="lg:col-span-4">
+                            <div className="lg:col-span-5">
                                 <p className="mb-1.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase">{t('front.companies.filter_company_name_label')}</p>
                                 <div className="relative">
                                     <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400" />
@@ -211,25 +203,8 @@ export default function FrontCompaniesIndex({ filters, industries, companies }: 
                                 </div>
                             </div>
 
-                            {/* Industry */}
-                            <div className="lg:col-span-3">
-                                <p className="mb-1.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase">{t('front.companies.filter_industry_label')}</p>
-                                <select
-                                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm transition outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                                    defaultValue={filters.industry_id}
-                                    name="industry_id"
-                                >
-                                    <option value="">{t('front.companies.industry_all')}</option>
-                                    {industries.map((industry) => (
-                                        <option key={industry.id} value={industry.id}>
-                                            {industry.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
                             {/* Location */}
-                            <div className="lg:col-span-3">
+                            <div className="lg:col-span-5">
                                 <p className="mb-1.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase">{t('front.companies.filter_location_label')}</p>
                                 <div className="relative">
                                     <MapPin className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400" />
@@ -346,96 +321,63 @@ export default function FrontCompaniesIndex({ filters, industries, companies }: 
 
 function CompanyCard({ company }: { company: CompanyItem }) {
     const { t } = useTranslate();
-    const hasJobs = company.open_jobs_count > 0;
+    const jobsUrl = `${jobsIndex().url}?search=${encodeURIComponent(company.name)}`;
 
     return (
-        <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-lg">
-            {/* Decorative gradient header */}
-            <div className="relative h-16 bg-gradient-to-br from-primary-500/15 via-primary-400/10 to-secondary-300/10">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,_rgba(255,255,255,0.6)_0%,_transparent_60%)]" />
-                {hasJobs && (
-                    <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full border border-primary-200 bg-white/90 px-2.5 py-1 text-[11px] font-bold text-primary-700 shadow-sm backdrop-blur">
-                        <BriefcaseBusiness className="size-3" />
-                        {t('front.companies.card_jobs_badge', { count: company.open_jobs_count })}
+        <Link
+            aria-label={`Lihat lowongan dari ${company.name}`}
+            className="group relative flex h-full min-h-[330px] flex-col overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-[0_18px_40px_rgba(15,76,148,0.12)] focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:outline-none"
+            href={jobsUrl}
+        >
+            <div className="flex flex-1 flex-col px-5 pt-5">
+                <div className="flex items-start justify-between gap-3">
+                    <span className="inline-flex items-center gap-1 rounded-lg border border-primary-100 bg-primary-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-primary-700 uppercase">
+                        <Sparkles className="size-3.5" />
+                        {t('front.companies.card_jobs_latest')}
                     </span>
-                )}
-            </div>
-
-            <div className="-mt-8 flex flex-1 flex-col px-5 pb-5">
-                {/* Avatar (overlapping header) */}
-                <div className="flex items-end justify-between gap-3">
-                    <div className="rounded-2xl bg-white p-1 shadow-sm ring-1 ring-slate-100">
-                        <CompanyAvatar name={company.name} logoUrl={company.logo_url} />
-                    </div>
-                    {company.is_verified && (
-                        <span className="mb-1 inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                            <BadgeCheck className="size-3" />
-                            {t('front.companies.card_verified')}
-                        </span>
-                    )}
+                    <BriefcaseBusiness className="size-5 shrink-0 text-slate-300 transition-colors group-hover:text-primary-500" />
                 </div>
 
-                {/* Name + meta */}
-                <h2 className="mt-3 truncate text-base font-bold text-slate-900 transition group-hover:text-primary-600">
-                    {company.name}
-                </h2>
+                <div className="mt-4 flex items-start gap-3.5">
+                    <CompanyAvatar name={company.name} logoUrl={company.logo_url} />
+                    <div className="min-w-0 pt-0.5">
+                        <h2 className="line-clamp-2 text-[17px] leading-[1.15] font-bold tracking-[-0.02em] text-slate-900 transition-colors group-hover:text-primary-600">
+                            {company.name}
+                        </h2>
+                        <p className="mt-1 truncate text-sm text-slate-500">
+                            {t('front.companies.card_scraped_company')}
+                        </p>
+                    </div>
+                </div>
 
-                <div className="mt-2 space-y-1.5">
-                    <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                        <Building2 className="size-3.5 shrink-0 text-slate-400" />
-                        <span className="truncate">
-                            {company.industry ?? t('front.companies.card_industry_fallback')}
+                <div className="mt-5 space-y-3 rounded-xl border border-slate-100 bg-slate-50/65 px-3.5 py-3 text-sm text-slate-600">
+                    <p className="flex items-center gap-2">
+                        <BriefcaseBusiness className="size-4 shrink-0 text-primary-500" />
+                        <span className="font-semibold text-primary-600">
+                            {t('front.companies.card_jobs', { count: company.open_jobs_count })}
                         </span>
                     </p>
-                    <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                        <MapPin className="size-3.5 shrink-0 text-slate-400" />
+                    <p className="flex items-center gap-2">
+                        <MapPin className="size-4 shrink-0 text-slate-500" />
                         <span className="truncate">
                             {company.location || t('front.companies.card_location_fallback')}
                         </span>
                     </p>
-                    {company.company_size && (
-                        <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                            <Users className="size-3.5 shrink-0 text-slate-400" />
-                            <span className="truncate">
-                                {t('front.companies.card_employees', { size: company.company_size })}
-                            </span>
-                        </p>
-                    )}
-                </div>
-
-                {/* Footer: spacer + actions */}
-                <div className="flex-1" />
-
-                <div className="mt-4 flex gap-2 border-t border-slate-100 pt-4">
-                    {company.slug ? (
-                        <Link
-                            className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:border-primary-200 hover:bg-primary-50/50 hover:text-primary-700"
-                            href={companyShow(company.slug)}
-                        >
-                            <ExternalLink className="size-3.5" />
-                            {t('front.companies.card_profile_link')}
-                        </Link>
-                    ) : (
-                        <span className="inline-flex h-9 flex-1 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 px-2 text-center text-xs font-semibold text-slate-400">
-                            {t('front.companies.card_profile_unavailable')}
-                        </span>
-                    )}
-                    <Link
-                        className={cn(
-                            'inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold transition',
-                            hasJobs
-                                ? 'bg-primary-600 text-white shadow-sm hover:bg-primary-700'
-                                : 'pointer-events-none border border-slate-200 bg-slate-50 text-slate-400',
-                        )}
-                        href={`${jobsIndex().url}?search=${encodeURIComponent(company.name)}`}
-                    >
-                        <BriefcaseBusiness className="size-3.5" />
-                        {hasJobs
-                            ? t('front.companies.card_jobs', { count: company.open_jobs_count })
-                            : t('front.companies.card_jobs_empty')}
-                    </Link>
+                    <p className="flex items-center gap-2">
+                        <Clock3 className="size-4 shrink-0 text-slate-500" />
+                        <span>{t('front.companies.card_jobs_available')}</span>
+                    </p>
+                    <p className="flex items-center gap-2 font-semibold text-slate-700">
+                        <Wallet className="size-4 shrink-0 text-slate-500" />
+                        <span>{t('front.companies.card_salary_available')}</span>
+                    </p>
                 </div>
             </div>
-        </article>
+
+            <div className="mt-auto flex items-center justify-between gap-2 border-t border-slate-200 bg-slate-50/60 px-5 py-3 text-xs font-semibold text-primary-600">
+                <span>{t('front.companies.card_view_jobs')}</span>
+                <BriefcaseBusiness className="size-3.5" />
+            </div>
+        </Link>
     );
 }
