@@ -37,7 +37,7 @@ class AdminJobListingController extends Controller
                 'title' => $job->title,
                 'company' => $job->company?->name,
                 'industry' => $job->industry?->name ?? '-',
-                'source' => $job->source?->platform ? 'Scraped · '.$job->source->platform : 'Original',
+                'source' => $job->source?->platform ? 'Eksternal · '.$job->source->platform : 'Original',
                 'location' => collect([$job->location_city, $job->location_province])->filter()->join(', ') ?: '-',
                 'status' => [
                     'label' => str($job->status)->headline()->toString(),
@@ -118,11 +118,11 @@ class AdminJobListingController extends Controller
                 [
                     'title' => 'Sumber data (admin)',
                     'items' => [
-                        ['label' => 'Asal data', 'value' => $jobListing->source ? 'Scraped' : 'Original'],
+                        ['label' => 'Asal data', 'value' => $jobListing->source ? 'Eksternal' : 'Original'],
                         ['label' => 'Platform', 'value' => $jobListing->source?->platform ?? '-'],
                         ['label' => 'External job ID', 'value' => $jobListing->source?->external_job_id ?? '-'],
                         ['label' => 'URL sumber', 'value' => $jobListing->source?->source_url ?? '-'],
-                        ['label' => 'Waktu scrape', 'value' => $jobListing->source?->scraped_at?->format('d M Y H:i') ?? '-'],
+                        ['label' => 'Waktu diterima', 'value' => $jobListing->source?->scraped_at?->format('d M Y H:i') ?? '-'],
                         ['label' => 'Email HR', 'value' => $jobListing->source?->contact_email ?? '-'],
                         ['label' => 'Email terverifikasi', 'value' => $jobListing->source?->email_verified ? 'Ya' : 'Tidak'],
                     ],

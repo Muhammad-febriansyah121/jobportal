@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\ScrapedJobApplicationEmailService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -10,6 +11,12 @@ Artisan::command('inspire', function () {
 
 Schedule::command('pakasir:reconcile --minutes=5')
     ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();
+
+Schedule::command('applications:send-pending-external-emails')
+    ->everyFiveMinutes()
+    ->when(fn (): bool => app(ScrapedJobApplicationEmailService::class)->isConfigured())
     ->withoutOverlapping()
     ->runInBackground();
 

@@ -37,6 +37,9 @@ type ApplicationShowProps = {
         id: number;
         status: string;
         status_label: string;
+        email_status?: string | null;
+        email_status_label?: string | null;
+        email_sent_at?: string | null;
         cover_letter?: string | null;
         screening_answers: Record<string, string>;
         applied_at?: string | null;
@@ -44,6 +47,7 @@ type ApplicationShowProps = {
         job: {
             id?: number | null;
             slug?: string | null;
+            detail_url?: string | null;
             title?: string | null;
             company?: string | null;
             company_verified: boolean;
@@ -148,6 +152,14 @@ export default function CandidateApplicationShow({
                                 </Link>
                             </Button>
                         ) : null}
+                        {application.job.detail_url ? (
+                            <Button asChild variant="outline">
+                                <Link href={application.job.detail_url}>
+                                    <ExternalLink className="size-4" />
+                                    Detail lowongan
+                                </Link>
+                            </Button>
+                        ) : null}
                     </div>
                 </div>
 
@@ -166,6 +178,19 @@ export default function CandidateApplicationShow({
                                 status={application.status}
                                 label={application.status_label}
                             />
+                            {application.email_status_label ? (
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+                                    <p className="font-semibold text-slate-800">
+                                        Pengiriman CV ke perusahaan
+                                    </p>
+                                    <p className="mt-1 text-slate-600">
+                                        {application.email_status_label}
+                                        {application.email_sent_at
+                                            ? ' · ' + application.email_sent_at
+                                            : ''}
+                                    </p>
+                                </div>
+                            ) : null}
                             <Info label={t('candidate.applications.info_cv')}>
                                 {application.cv_url ? (
                                     <a

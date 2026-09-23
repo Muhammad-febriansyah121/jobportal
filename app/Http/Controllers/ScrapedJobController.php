@@ -25,6 +25,10 @@ class ScrapedJobController extends Controller
                 'requirements' => collect($scrapedJob->requirements ?? [])->values()->all(),
                 'skills' => collect($scrapedJob->skills ?? [])->values()->all(),
                 'apply_url' => $scrapedJob->source_url,
+                'internal_apply_url' => filled($scrapedJob->hr_email)
+                    ? route('candidate.scraped-jobs.apply', $scrapedJob)
+                    : null,
+                'has_internal_apply' => filter_var($scrapedJob->hr_email, FILTER_VALIDATE_EMAIL) !== false,
             ],
         ]);
     }

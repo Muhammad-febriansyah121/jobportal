@@ -26,6 +26,8 @@ type ScrapedJob = {
     requirements: string[];
     skills: string[];
     apply_url: string | null;
+    internal_apply_url: string | null;
+    has_internal_apply: boolean;
 };
 
 function companyInitials(company: string | null): string {
@@ -128,20 +130,31 @@ export default function ScrapedJobShow({ job }: { job: ScrapedJob }) {
                                 </div>
                             </div>
 
-                            {job.apply_url && (
-                                <a
-                                    href={job.apply_url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 text-sm font-bold text-white transition hover:bg-primary-700 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:outline-none"
-                                >
-                                    Lamar sekarang
-                                    <ExternalLink
-                                        aria-hidden="true"
-                                        className="size-4"
-                                    />
-                                </a>
-                            )}
+                            <div className="flex flex-wrap gap-3">
+                                {job.has_internal_apply &&
+                                job.internal_apply_url ? (
+                                    <Link
+                                        href={job.internal_apply_url}
+                                        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 text-sm font-bold text-white transition hover:bg-primary-700 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:outline-none"
+                                    >
+                                        Lamar via Karivia
+                                    </Link>
+                                ) : null}
+                                {job.apply_url ? (
+                                    <a
+                                        href={job.apply_url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 px-5 text-sm font-bold text-slate-700 transition hover:border-primary-400 hover:text-primary-600 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:outline-none"
+                                    >
+                                        Buka sumber asli
+                                        <ExternalLink
+                                            aria-hidden="true"
+                                            className="size-4"
+                                        />
+                                    </a>
+                                ) : null}
+                            </div>
                         </div>
 
                         <div className="mt-8 grid gap-6 border-t border-slate-100 pt-6 sm:grid-cols-2 lg:grid-cols-4">

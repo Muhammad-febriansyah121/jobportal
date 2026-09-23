@@ -21,6 +21,8 @@ type Application = {
     company?: string | null;
     status: string;
     status_label: string;
+    email_status?: string | null;
+    email_status_label?: string | null;
     applied_at?: string | null;
     updated_at?: string | null;
 };
@@ -67,6 +69,7 @@ export default function CandidateApplicationsIndex({
             },
             { key: 'company', label: t('candidate.applications.col_company') },
             { key: 'status', label: t('candidate.applications.col_status') },
+            { key: 'email_status', label: 'Pengiriman email' },
             {
                 key: 'applied_at',
                 label: t('candidate.applications.col_applied_at'),
@@ -88,6 +91,7 @@ export default function CandidateApplicationsIndex({
                 label: app.status_label,
                 tone: STATUS_TONES[app.status] ?? 'neutral',
             },
+            email_status: app.email_status_label ?? '-',
             applied_at: app.applied_at ?? '-',
             updated_at: app.updated_at ?? '-',
             actions: [

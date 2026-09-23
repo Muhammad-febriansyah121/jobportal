@@ -9,15 +9,21 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
-    'job_listing_id', 'candidate_id', 'candidate_cv_id', 'status',
+    'job_listing_id', 'scraped_job_id', 'candidate_id', 'candidate_cv_id', 'status',
     'cover_letter', 'screening_answers_json', 'ai_fit_score', 'ai_skill_match',
-    'applied_at', 'first_responded_at',
+    'applied_at', 'first_responded_at', 'recipient_email', 'email_status',
+    'email_sent_at', 'email_failed_at', 'email_failure_reason',
 ])]
 class Application extends Model
 {
     public function jobListing(): BelongsTo
     {
         return $this->belongsTo(JobListing::class);
+    }
+
+    public function scrapedJob(): BelongsTo
+    {
+        return $this->belongsTo(ScrapedJob::class);
     }
 
     public function candidate(): BelongsTo
@@ -65,6 +71,9 @@ class Application extends Model
             'screening_answers_json' => 'array',
             'applied_at' => 'datetime',
             'first_responded_at' => 'datetime',
+            'recipient_email' => 'encrypted',
+            'email_sent_at' => 'datetime',
+            'email_failed_at' => 'datetime',
         ];
     }
 }

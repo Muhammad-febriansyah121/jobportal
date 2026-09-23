@@ -36,16 +36,16 @@ class CandidateDashboardController extends Controller
             ->groupBy('status')
             ->pluck('total', 'status');
         $activeApplications = Application::query()
-            ->select(['id', 'job_listing_id', 'status', 'ai_fit_score', 'applied_at'])
-            ->with(['jobListing:id,company_id,title,slug', 'jobListing.company:id,name'])
+            ->select(['id', 'job_listing_id', 'scraped_job_id', 'status', 'ai_fit_score', 'applied_at'])
+            ->with(['jobListing:id,company_id,title,slug', 'jobListing.company:id,name', 'scrapedJob:id,title,company_name'])
             ->where('candidate_id', $candidate->id)
             ->latest('applied_at')
             ->limit(5)
             ->get()
             ->map(fn (Application $application): array => [
                 'id' => $application->id,
-                'job_title' => $application->jobListing?->title,
-                'company' => $application->jobListing?->company?->name,
+                'job_title' => $application->jobListing?->title ?? $application->scrapedJob?->title,
+                'company' => $application->jobListing?->company?->name ?? $application->scrapedJob?->company_name,
                 'status' => $application->status,
                 'status_label' => $this->statusLabel($application->status),
                 'ai_fit_score' => $application->ai_fit_score,

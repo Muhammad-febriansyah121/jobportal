@@ -61,8 +61,8 @@ class AdminScrapedJobController extends Controller
             ]);
 
         return Inertia::render('admin/resources/index', [
-            'title' => 'Hasil Scrape',
-            'description' => 'Pantau lowongan yang masuk dari sumber scraping sebelum diproses menjadi lowongan publik.',
+            'title' => 'Lowongan Eksternal',
+            'description' => 'Pantau lowongan yang masuk dari sumber eksternal sebelum diproses menjadi lowongan publik.',
             'indexAction' => route('admin.scraped-jobs.index', [], false),
             'headerActions' => [
                 $this->action(
@@ -88,17 +88,17 @@ class AdminScrapedJobController extends Controller
                 ['key' => 'source_job_id', 'label' => 'ID Eksternal'],
                 ['key' => 'location', 'label' => 'Lokasi'],
                 ['key' => 'status', 'label' => 'Status'],
-                ['key' => 'scraped_at', 'label' => 'Waktu Scrape'],
+                ['key' => 'scraped_at', 'label' => 'Waktu diterima'],
             ],
             'rows' => $scrapedJobs,
-            'emptyState' => 'Belum ada hasil scrape yang masuk.',
+            'emptyState' => 'Belum ada lowongan eksternal yang masuk.',
         ]);
     }
 
     public function show(ScrapedJob $scrapedJob): Response
     {
         return Inertia::render('admin/resources/show', [
-            'title' => 'Detail Hasil Scrape',
+            'title' => 'Detail Lowongan Eksternal',
             'description' => $scrapedJob->title,
             'backHref' => route('admin.scraped-jobs.index', [], false),
             'sections' => [
@@ -115,12 +115,12 @@ class AdminScrapedJobController extends Controller
                     ],
                 ],
                 [
-                    'title' => 'Sumber scraping',
+                    'title' => 'Sumber eksternal',
                     'items' => [
                         ['label' => 'Platform', 'value' => $scrapedJob->source_platform],
                         ['label' => 'ID eksternal', 'value' => $scrapedJob->source_job_id],
                         ['label' => 'URL sumber', 'value' => $scrapedJob->source_url],
-                        ['label' => 'Waktu scrape', 'value' => $scrapedJob->scraped_at?->format('d M Y H:i')],
+                        ['label' => 'Waktu diterima', 'value' => $scrapedJob->scraped_at?->format('d M Y H:i')],
                         ['label' => 'Waktu masuk', 'value' => $scrapedJob->imported_at?->format('d M Y H:i')],
                     ],
                 ],
@@ -142,7 +142,7 @@ class AdminScrapedJobController extends Controller
                     ],
                 ],
                 [
-                    'title' => 'Payload asli',
+                    'title' => 'Data sumber',
                     'items' => [
                         ['label' => 'JSON payload', 'value' => $this->payloadLabel($scrapedJob)],
                     ],

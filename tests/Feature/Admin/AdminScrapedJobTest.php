@@ -42,7 +42,7 @@ test('admin can view scraped jobs and filter the results', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/resources/index')
-            ->where('title', 'Hasil Scrape')
+            ->where('title', 'Lowongan Eksternal')
             ->where('indexAction', '/admin/job-review')
             ->where('headerActions.0', fn (Collection $action): bool => $action['label'] === 'Ambil Data Lagi'
                 && str_contains($action['href'], 'platform=dealls')
@@ -61,7 +61,7 @@ test('admin can inspect a scraped job detail and its raw payload', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/resources/show')
-            ->where('title', 'Detail Hasil Scrape')
+            ->where('title', 'Detail Lowongan Eksternal')
             ->where('description', $scrapedJob->title)
             ->where('sections.4.items.0.value', fn (string $payload): bool => str_contains($payload, 'dealls'))
             ->etc()

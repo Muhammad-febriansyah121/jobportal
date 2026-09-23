@@ -73,7 +73,7 @@
     "nav.admin.companies": "Companies",
     "nav.admin.company_verifications": "Company Verification",
     "nav.admin.jobs": "Job Listings",
-    "nav.admin.scraped_jobs": "Scraped Jobs",
+    "nav.admin.scraped_jobs": "External Jobs",
     "nav.admin.skills": "Skills & Expertise",
     "nav.admin.assessment_questions": "Question Bank",
     "nav.admin.industries": "Industries",

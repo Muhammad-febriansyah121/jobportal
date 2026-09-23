@@ -19,6 +19,7 @@ use App\Http\Controllers\Candidate\CandidatePricingController;
 use App\Http\Controllers\Candidate\CandidateProfileController;
 use App\Http\Controllers\Candidate\CandidateReportController;
 use App\Http\Controllers\Candidate\CandidateSavedJobController;
+use App\Http\Controllers\Candidate\CandidateScrapedJobApplicationController;
 use App\Http\Controllers\Candidate\CandidateSkillController;
 use App\Http\Controllers\Candidate\CandidateSystemReviewController;
 use App\Http\Controllers\Candidate\CandidateWorkspaceController;
@@ -66,6 +67,8 @@ Route::prefix('candidate')
             Route::post('jobs/{jobListing}/save', [CandidateSavedJobController::class, 'store'])->name('jobs.save');
             Route::delete('jobs/{jobListing}/save', [CandidateSavedJobController::class, 'destroy'])->name('jobs.unsave');
             Route::post('jobs/{jobListing}/apply', [CandidateApplicationController::class, 'store'])->name('jobs.apply');
+            Route::get('external-jobs/{scrapedJob}/apply', [CandidateScrapedJobApplicationController::class, 'create'])->name('scraped-jobs.apply');
+            Route::post('external-jobs/{scrapedJob}/apply', [CandidateScrapedJobApplicationController::class, 'store'])->name('scraped-jobs.apply.store');
             Route::post('jobs/{jobListing}/report', [CandidateReportController::class, 'store'])->name('jobs.report');
             Route::post('companies/{company:slug}/reviews', [CandidateCompanyReviewController::class, 'store'])->name('companies.reviews.store');
             Route::get('company-reviews', [CandidateCompanyReviewController::class, 'index'])->name('company-reviews.index');

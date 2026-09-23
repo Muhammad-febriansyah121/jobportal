@@ -33,19 +33,21 @@ class CandidateApplicationController extends Controller
                 'status' => $request->string('status')->toString(),
             ],
             'applications' => $candidate->applications()
-                ->select(['id', 'job_listing_id', 'status', 'ai_fit_score', 'applied_at', 'updated_at'])
-                ->with(['jobListing:id,company_id,title,slug', 'jobListing.company:id,name'])
+                ->select(['id', 'job_listing_id', 'scraped_job_id', 'status', 'email_status', 'ai_fit_score', 'applied_at', 'updated_at'])
+                ->with(['jobListing:id,company_id,title,slug', 'jobListing.company:id,name', 'scrapedJob:id,title,company_name'])
                 ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
                 ->latest('applied_at')
                 ->paginate(12)
                 ->withQueryString()
                 ->through(fn (Application $application): array => [
                     'id' => $application->id,
-                    'job_title' => $application->jobListing?->title,
+                    'job_title' => $application->jobListing?->title ?? $application->scrapedJob?->title,
                     'job_slug' => $application->jobListing?->slug,
-                    'company' => $application->jobListing?->company?->name,
+                    'company' => $application->jobListing?->company?->name ?? $application->scrapedJob?->company_name,
                     'status' => $application->status,
                     'status_label' => $this->statusLabel($application->status),
+                    'email_status' => $application->email_status,
+                    'email_status_label' => $this->emailStatusLabel($application->email_status),
                     'ai_fit_score' => $application->ai_fit_score,
                     'applied_at' => $application->applied_at?->format('d M Y'),
                     'updated_at' => $application->updated_at?->diffForHumans(),
@@ -154,31 +156,51 @@ class CandidateApplicationController extends Controller
             'cv:id,file_url',
             'jobListing:id,company_id,title,slug,description,work_mode,job_type,experience_level,salary_min,salary_max,is_salary_visible',
             'jobListing.company:id,name,is_verified',
+            'scrapedJob',
             'statusHistories.changer:id,name',
             'interviews' => fn ($query) => $query->latest('scheduled_at'),
             'aiInterviewSessions' => fn ($query) => $query->latest('scheduled_at'),
         ]);
+
+        $jobListing = $application->jobListing;
+        $scrapedJob = $application->scrapedJob;
 
         return Inertia::render('candidate/applications/show', [
             'application' => [
                 'id' => $application->id,
                 'status' => $application->status,
                 'status_label' => $this->statusLabel($application->status),
+                'email_status' => $application->email_status,
+                'email_status_label' => $this->emailStatusLabel($application->email_status),
+                'email_sent_at' => $application->email_sent_at?->format('d M Y H:i'),
                 'cover_letter' => $application->cover_letter,
                 'screening_answers' => $application->screening_answers_json ?? [],
                 'ai_fit_score' => $application->ai_fit_score,
                 'applied_at' => $application->applied_at?->format('d M Y H:i'),
                 'cv_url' => $application->cv?->file_url,
-                'job' => [
-                    'id' => $application->jobListing?->id,
-                    'slug' => $application->jobListing?->slug,
-                    'title' => $application->jobListing?->title,
-                    'company' => $application->jobListing?->company?->name,
-                    'company_verified' => (bool) $application->jobListing?->company?->is_verified,
-                    'work_mode' => str($application->jobListing?->work_mode)->headline()->toString(),
-                    'job_type' => str($application->jobListing?->job_type)->headline()->toString(),
-                    'experience_level' => str($application->jobListing?->experience_level)->headline()->toString(),
-                ],
+                'job' => $scrapedJob !== null
+                    ? [
+                        'id' => $scrapedJob->id,
+                        'slug' => null,
+                        'detail_url' => route('jobs.scraped.show', $scrapedJob),
+                        'title' => $scrapedJob->title,
+                        'company' => $scrapedJob->company_name,
+                        'company_verified' => false,
+                        'work_mode' => str($scrapedJob->workplace_type)->headline()->toString(),
+                        'job_type' => str($scrapedJob->employment_type)->headline()->toString(),
+                        'experience_level' => null,
+                    ]
+                    : [
+                        'id' => $jobListing?->id,
+                        'slug' => $jobListing?->slug,
+                        'detail_url' => null,
+                        'title' => $jobListing?->title,
+                        'company' => $jobListing?->company?->name,
+                        'company_verified' => (bool) $jobListing?->company?->is_verified,
+                        'work_mode' => str($jobListing?->work_mode)->headline()->toString(),
+                        'job_type' => str($jobListing?->job_type)->headline()->toString(),
+                        'experience_level' => str($jobListing?->experience_level)->headline()->toString(),
+                    ],
                 'histories' => $application->statusHistories
                     ->map(fn (ApplicationStatusHistory $history): array => [
                         'id' => $history->id,
@@ -275,5 +297,17 @@ class CandidateApplicationController extends Controller
             'rejected' => 'Ditolak',
             'withdrawn' => 'Ditarik',
         ][$status] ?? str($status)->headline()->toString();
+    }
+
+    private function emailStatusLabel(?string $status): ?string
+    {
+        return match ($status) {
+            'queued' => 'Menunggu dikirim',
+            'sending' => 'Sedang dikirim',
+            'sent' => 'Email terkirim',
+            'pending_smtp' => 'Menunggu konfigurasi SMTP',
+            'failed' => 'Pengiriman gagal',
+            default => null,
+        };
     }
 }

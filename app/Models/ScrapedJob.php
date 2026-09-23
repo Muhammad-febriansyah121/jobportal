@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'source_platform', 'source_job_id', 'source_url',
@@ -21,6 +22,11 @@ class ScrapedJob extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function applications(): HasMany
+    {
+        return $this->hasMany(Application::class, 'scraped_job_id');
     }
 
     protected function casts(): array
