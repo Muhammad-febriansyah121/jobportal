@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     BriefcaseBusiness,
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import HomeLayout from '@/layouts/front/home-layout';
 import { index as jobsIndex } from '@/routes/jobs';
+import type { Auth } from '@/types';
 
 type ScrapedJob = {
     id: number;
@@ -65,10 +66,12 @@ function MetaItem({
 }
 
 export default function ScrapedJobShow({ job }: { job: ScrapedJob }) {
+    const { auth } = usePage<{ auth?: Auth }>().props;
     const companyName = job.company ?? 'Perusahaan';
     const location = job.location || 'Lokasi fleksibel';
     const jobType = job.job_type || 'Full-time';
     const workMode = job.work_mode || 'On-site';
+    const canApply = !auth?.user || auth.user.role === 'candidate';
 
     return (
         <HomeLayout>
@@ -129,7 +132,8 @@ export default function ScrapedJobShow({ job }: { job: ScrapedJob }) {
                             </div>
 
                             <div className="flex flex-wrap gap-3">
-                                {job.has_internal_apply &&
+                                {canApply &&
+                                job.has_internal_apply &&
                                 job.internal_apply_url ? (
                                     <Link
                                         href={job.internal_apply_url}
