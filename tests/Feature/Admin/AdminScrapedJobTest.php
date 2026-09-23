@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Application;
+use App\Models\CandidateProfile;
 use App\Models\ScrapedJob;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -48,6 +50,10 @@ test('admin can view scraped jobs and filter the results', function () {
                 && str_contains($action['href'], 'platform=dealls')
                 && str_contains($action['href'], 'search=Senior'))
             ->where('rows.data', fn (Collection $rows): bool => $rows->count() === 1 && $rows->first()['title'] === 'Senior Backend Engineer')
+            ->where('rows.data.0.actions', fn (Collection $actions): bool => $actions->contains(
+                fn (array $action): bool => $action['label'] === 'Hapus'
+                    && $action['method'] === 'delete',
+            ))
             ->etc()
         );
 });
@@ -66,6 +72,30 @@ test('admin can inspect a scraped job detail and its raw payload', function () {
             ->where('sections.4.items.0.value', fn (string $payload): bool => str_contains($payload, 'dealls'))
             ->etc()
         );
+});
+
+test('admin can delete an external job', function () {
+    $admin = User::factory()->admin()->create();
+    $scrapedJob = scrapedJobAdminRecord();
+    $candidateUser = User::factory()->candidate()->create();
+    $candidate = CandidateProfile::create([
+        'user_id' => $candidateUser->id,
+        'full_name' => 'Kandidat Test',
+        'profile_completion' => 0,
+    ]);
+    $application = Application::create([
+        'scraped_job_id' => $scrapedJob->id,
+        'candidate_id' => $candidate->id,
+        'status' => 'applied',
+        'applied_at' => now(),
+    ]);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.scraped-jobs.destroy', $scrapedJob))
+        ->assertRedirect();
+
+    expect(ScrapedJob::find($scrapedJob->id))->toBeNull();
+    expect(Application::find($application->id))->toBeNull();
 });
 
 test('scraped job navigation uses same-origin relative urls', function () {

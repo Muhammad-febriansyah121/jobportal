@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Admin\RecordActivity;
 use App\Http\Controllers\Admin\Concerns\BuildsAdminPages;
 use App\Http\Controllers\Controller;
 use App\Models\ScrapedJob;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -57,6 +59,15 @@ class AdminScrapedJobController extends Controller
                 'scraped_at' => $scrapedJob->scraped_at?->format('d M Y H:i') ?? '-',
                 'actions' => [
                     $this->action('Lihat Detail', route('admin.scraped-jobs.show', $scrapedJob, false), 'Eye'),
+                    $this->action(
+                        'Hapus',
+                        route('admin.scraped-jobs.destroy', $scrapedJob, false),
+                        'Trash',
+                        'delete',
+                        'destructive',
+                        'Hapus lowongan ini?',
+                        'Data lowongan dan lamaran terkait akan dihapus permanen.',
+                    ),
                 ],
             ]);
 
@@ -93,6 +104,21 @@ class AdminScrapedJobController extends Controller
             'rows' => $scrapedJobs,
             'emptyState' => 'Belum ada lowongan eksternal yang masuk.',
         ]);
+    }
+
+    public function destroy(Request $request, ScrapedJob $scrapedJob, RecordActivity $activity): RedirectResponse
+    {
+        $activity->handle($request->user(), 'delete_external_job', $scrapedJob, [
+            'title' => $scrapedJob->title,
+            'company' => $scrapedJob->company_name,
+            'source_job_id' => $scrapedJob->source_job_id,
+        ]);
+
+        $scrapedJob->delete();
+
+        $this->flash('Lowongan berhasil dihapus.');
+
+        return back();
     }
 
     public function show(ScrapedJob $scrapedJob): Response
