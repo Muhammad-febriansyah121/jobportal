@@ -1,12 +1,15 @@
 import { Head, Link } from '@inertiajs/react';
 import {
     ArrowLeft,
+    ArrowRight,
     BriefcaseBusiness,
+    Building2,
     Clock3,
     Globe2,
     MapPin,
     Sparkles,
     Wallet,
+    type LucideIcon,
 } from 'lucide-react';
 import HomeLayout from '@/layouts/front/home-layout';
 import { useTranslate } from '@/hooks/use-translate';
@@ -64,27 +67,22 @@ export default function ScrapedCompanyShow({
                         {t('front.companies.scraped.back')}
                     </Link>
 
-                    <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-slate-950">
-                        <div className="grid lg:grid-cols-[minmax(0,1fr)_280px]">
-                            <div className="relative px-6 py-8 md:px-10 md:py-10">
+                    <section className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-slate-950">
+                        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[46%] bg-[#eaf4ff] lg:block">
+                            <img
+                                alt=""
+                                className="absolute right-[-9%] bottom-0 h-[118%] w-auto max-w-none object-contain object-right-bottom opacity-90"
+                                src="/images/karivia-buildings.png"
+                            />
+                        </div>
+
+                        <div className="relative grid lg:grid-cols-[minmax(0,1fr)_300px]">
+                            <div className="relative bg-white/95 px-6 py-8 md:px-10 md:py-10">
                                 <div className="flex items-start justify-between gap-5">
                                     <p className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-[0.16em] text-primary-600 uppercase">
                                         <Sparkles className="size-3.5" />
                                         {t('front.companies.scraped.eyebrow')}
                                     </p>
-                                    {company.website ? (
-                                        <a
-                                            className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm font-medium text-slate-700 transition hover:border-primary-200 hover:bg-primary-50 hover:text-primary-700"
-                                            href={company.website}
-                                            rel="noreferrer"
-                                            target="_blank"
-                                        >
-                                            <Globe2 className="size-4 text-slate-500" />
-                                            {t(
-                                                'front.companies.scraped.visit_website',
-                                            )}
-                                        </a>
-                                    ) : null}
                                 </div>
 
                                 <div className="mt-10 flex min-w-0 items-start gap-5">
@@ -113,25 +111,44 @@ export default function ScrapedCompanyShow({
                                     </div>
                                 </div>
 
-                                <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 border-t border-slate-200 pt-5 text-sm text-slate-600">
-                                    <span className="inline-flex items-center gap-2">
-                                        <MapPin className="size-4 text-primary-600" />
-                                        {company.location ||
-                                            t(
-                                                'front.companies.card_location_fallback',
+                                <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-5 text-sm text-slate-600">
+                                    <div className="flex flex-wrap gap-x-6 gap-y-3">
+                                        <span className="inline-flex items-center gap-2">
+                                            <MapPin className="size-4 text-primary-600" />
+                                            {company.location ||
+                                                t(
+                                                    'front.companies.card_location_fallback',
+                                                )}
+                                        </span>
+                                        <span className="inline-flex items-center gap-2">
+                                            <BriefcaseBusiness className="size-4 text-primary-600" />
+                                            {t(
+                                                'front.companies.scraped.jobs_count',
+                                                {
+                                                    count: company.open_jobs_count,
+                                                },
                                             )}
-                                    </span>
-                                    <span className="inline-flex items-center gap-2">
-                                        <BriefcaseBusiness className="size-4 text-primary-600" />
-                                        {t(
-                                            'front.companies.scraped.jobs_count',
-                                            { count: company.open_jobs_count },
-                                        )}
-                                    </span>
+                                        </span>
+                                    </div>
+
+                                    {company.website ? (
+                                        <a
+                                            className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border border-primary-200 bg-white px-4 text-sm font-semibold text-primary-700 transition hover:bg-primary-50"
+                                            href={company.website}
+                                            rel="noreferrer"
+                                            target="_blank"
+                                        >
+                                            <Globe2 className="size-4" />
+                                            {t(
+                                                'front.companies.scraped.visit_website',
+                                            )}
+                                            <ArrowRight className="size-3.5" />
+                                        </a>
+                                    ) : null}
                                 </div>
                             </div>
 
-                            <div className="border-t border-slate-200 bg-primary-50/60 px-6 py-7 lg:border-t-0 lg:border-l lg:px-7 lg:py-10">
+                            <div className="m-4 rounded-2xl border border-slate-200 bg-white/95 px-6 py-7 shadow-[0_8px_24px_rgba(15,76,148,0.08)] lg:my-7 lg:mr-7 lg:ml-0 lg:px-7 lg:py-8">
                                 <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">
                                     {t('front.companies.scraped.hero_openings')}
                                 </p>
@@ -143,18 +160,42 @@ export default function ScrapedCompanyShow({
                                         'front.companies.scraped.hero_openings_label',
                                     )}
                                 </p>
-                                <div className="mt-10 border-t border-primary-100 pt-5">
-                                    <p className="text-xs text-slate-500">
-                                        {t(
-                                            'front.companies.scraped.hero_location_label',
-                                        )}
-                                    </p>
-                                    <p className="mt-1 text-sm font-medium text-slate-800">
-                                        {company.location ||
-                                            t(
-                                                'front.companies.card_location_fallback',
-                                            )}
-                                    </p>
+                                <div className="mt-8 space-y-4 border-t border-slate-200 pt-5">
+                                    <div className="flex items-start gap-3">
+                                        <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
+                                            <MapPin className="size-4" />
+                                        </span>
+                                        <div>
+                                            <p className="text-xs text-slate-500">
+                                                {t(
+                                                    'front.companies.scraped.hero_location_label',
+                                                )}
+                                            </p>
+                                            <p className="mt-1 text-sm font-semibold text-slate-800">
+                                                {company.location ||
+                                                    t(
+                                                        'front.companies.card_location_fallback',
+                                                    )}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                        <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
+                                            <Building2 className="size-4" />
+                                        </span>
+                                        <div>
+                                            <p className="text-xs text-slate-500">
+                                                {t(
+                                                    'front.companies.scraped.summary_source',
+                                                )}
+                                            </p>
+                                            <p className="mt-1 text-sm leading-5 font-semibold text-slate-800">
+                                                {t(
+                                                    'front.companies.scraped.summary_source_value',
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -180,12 +221,14 @@ export default function ScrapedCompanyShow({
                             </p>
                             <dl className="mt-5 divide-y divide-slate-200">
                                 <SummaryItem
+                                    icon={BriefcaseBusiness}
                                     label={t(
                                         'front.companies.scraped.summary_jobs',
                                     )}
                                     value={String(company.open_jobs_count)}
                                 />
                                 <SummaryItem
+                                    icon={MapPin}
                                     label={t(
                                         'front.companies.scraped.summary_location',
                                     )}
@@ -197,6 +240,7 @@ export default function ScrapedCompanyShow({
                                     }
                                 />
                                 <SummaryItem
+                                    icon={Building2}
                                     label={t(
                                         'front.companies.scraped.summary_source',
                                     )}
@@ -239,13 +283,26 @@ export default function ScrapedCompanyShow({
     );
 }
 
-function SummaryItem({ label, value }: { label: string; value: string }) {
+function SummaryItem({
+    icon: Icon,
+    label,
+    value,
+}: {
+    icon: LucideIcon;
+    label: string;
+    value: string;
+}) {
     return (
-        <div className="py-4 first:pt-0 last:pb-0">
-            <dt className="text-xs text-slate-400">{label}</dt>
-            <dd className="mt-1 text-sm leading-6 font-medium text-slate-800">
-                {value}
-            </dd>
+        <div className="flex gap-3 py-4 first:pt-0 last:pb-0">
+            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
+                <Icon className="size-4" />
+            </span>
+            <div className="min-w-0">
+                <dt className="text-xs text-slate-400">{label}</dt>
+                <dd className="mt-1 text-sm leading-6 font-medium text-slate-800">
+                    {value}
+                </dd>
+            </div>
         </div>
     );
 }
@@ -324,6 +381,11 @@ function ScrapedJobCard({
                         t('front.companies.scraped.recently_posted')}
                 </span>
             </div>
+
+            <span className="mt-4 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-primary-200 bg-white px-3 text-xs font-semibold text-primary-700 transition group-hover:bg-primary-600 group-hover:text-white">
+                {t('front.companies.scraped.view_detail')}
+                <ArrowRight className="size-3.5" />
+            </span>
         </Link>
     );
 }
