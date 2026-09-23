@@ -43,7 +43,10 @@ function companyInitials(name: string): string {
         .join('');
 }
 
-export default function ScrapedCompanyShow({ company, jobs }: ScrapedCompanyPageProps) {
+export default function ScrapedCompanyShow({
+    company,
+    jobs,
+}: ScrapedCompanyPageProps) {
     const { t } = useTranslate();
     const initials = companyInitials(company.name);
 
@@ -51,8 +54,8 @@ export default function ScrapedCompanyShow({ company, jobs }: ScrapedCompanyPage
         <HomeLayout>
             <Head title={company.name} />
 
-            <main className="bg-[#f7f8fa] px-4 py-8 md:py-12">
-                <div className="mx-auto max-w-6xl">
+            <main className="bg-[#f7f8fa] px-4 pt-24 pb-12 md:px-6 md:pt-28 md:pb-16">
+                <div className="mx-auto max-w-7xl">
                     <Link
                         className="mb-6 inline-flex items-center gap-2 text-sm text-slate-500 transition hover:text-primary-600"
                         href={companiesIndex().url}
@@ -61,24 +64,25 @@ export default function ScrapedCompanyShow({ company, jobs }: ScrapedCompanyPage
                         {t('front.companies.scraped.back')}
                     </Link>
 
-                    <section className="overflow-hidden rounded-2xl bg-slate-950 text-white">
+                    <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-slate-950">
                         <div className="grid lg:grid-cols-[minmax(0,1fr)_280px]">
                             <div className="relative px-6 py-8 md:px-10 md:py-10">
-                                <div className="absolute inset-y-0 left-0 w-1 bg-primary-500" />
                                 <div className="flex items-start justify-between gap-5">
-                                    <p className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-[0.16em] text-primary-300 uppercase">
+                                    <p className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-[0.16em] text-primary-600 uppercase">
                                         <Sparkles className="size-3.5" />
                                         {t('front.companies.scraped.eyebrow')}
                                     </p>
                                     {company.website ? (
                                         <a
-                                            className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3.5 text-sm font-medium text-white transition hover:bg-white/10"
+                                            className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm font-medium text-slate-700 transition hover:border-primary-200 hover:bg-primary-50 hover:text-primary-700"
                                             href={company.website}
                                             rel="noreferrer"
                                             target="_blank"
                                         >
-                                            <Globe2 className="size-4 text-slate-300" />
-                                            {t('front.companies.scraped.visit_website')}
+                                            <Globe2 className="size-4 text-slate-500" />
+                                            {t(
+                                                'front.companies.scraped.visit_website',
+                                            )}
                                         </a>
                                     ) : null}
                                 </div>
@@ -87,99 +91,88 @@ export default function ScrapedCompanyShow({ company, jobs }: ScrapedCompanyPage
                                     {company.logo_url ? (
                                         <img
                                             alt={company.name}
-                                            className="size-20 shrink-0 rounded-2xl bg-white object-contain p-2 md:size-24"
+                                            className="size-20 shrink-0 rounded-2xl border border-slate-200 bg-slate-50 object-contain p-2 md:size-24"
                                             src={company.logo_url}
                                         />
                                     ) : (
-                                        <div className="inline-flex size-20 shrink-0 items-center justify-center rounded-2xl bg-white text-xl font-semibold text-slate-950 md:size-24">
+                                        <div className="inline-flex size-20 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-xl font-semibold text-slate-950 md:size-24">
                                             {initials || 'CO'}
                                         </div>
                                     )}
 
                                     <div className="min-w-0 pt-1">
-                                        <h1 className="text-3xl leading-tight font-semibold tracking-[-0.03em] text-white md:text-5xl">
+                                        <h1 className="text-3xl leading-tight font-semibold tracking-[-0.03em] text-slate-950 md:text-5xl">
                                             {company.name}
                                         </h1>
-                                        <p className="mt-4 line-clamp-3 max-w-2xl text-sm leading-7 text-slate-300 md:text-[15px]">
-                                            {company.profile || t('front.companies.scraped.profile_empty')}
+                                        <p className="mt-4 line-clamp-3 max-w-2xl text-sm leading-7 text-slate-600 md:text-[15px]">
+                                            {company.profile ||
+                                                t(
+                                                    'front.companies.scraped.profile_empty',
+                                                )}
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 border-t border-white/10 pt-5 text-sm text-slate-300">
+                                <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 border-t border-slate-200 pt-5 text-sm text-slate-600">
                                     <span className="inline-flex items-center gap-2">
-                                        <MapPin className="size-4 text-primary-300" />
-                                        {company.location || t('front.companies.card_location_fallback')}
+                                        <MapPin className="size-4 text-primary-600" />
+                                        {company.location ||
+                                            t(
+                                                'front.companies.card_location_fallback',
+                                            )}
                                     </span>
                                     <span className="inline-flex items-center gap-2">
-                                        <BriefcaseBusiness className="size-4 text-primary-300" />
-                                        {t('front.companies.scraped.jobs_count', { count: company.open_jobs_count })}
+                                        <BriefcaseBusiness className="size-4 text-primary-600" />
+                                        {t(
+                                            'front.companies.scraped.jobs_count',
+                                            { count: company.open_jobs_count },
+                                        )}
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="border-t border-white/10 bg-white/[0.04] px-6 py-7 lg:border-t-0 lg:border-l lg:px-7 lg:py-10">
-                                <p className="text-xs font-semibold tracking-[0.16em] text-slate-400 uppercase">
+                            <div className="border-t border-slate-200 bg-primary-50/60 px-6 py-7 lg:border-t-0 lg:border-l lg:px-7 lg:py-10">
+                                <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">
                                     {t('front.companies.scraped.hero_openings')}
                                 </p>
-                                <p className="mt-4 text-6xl leading-none font-semibold tracking-[-0.06em] text-white">
+                                <p className="mt-4 text-6xl leading-none font-semibold tracking-[-0.06em] text-slate-950">
                                     {company.open_jobs_count}
                                 </p>
-                                <p className="mt-3 text-sm leading-6 text-slate-400">
-                                    {t('front.companies.scraped.hero_openings_label')}
+                                <p className="mt-3 text-sm leading-6 text-slate-500">
+                                    {t(
+                                        'front.companies.scraped.hero_openings_label',
+                                    )}
                                 </p>
-                                <div className="mt-10 border-t border-white/10 pt-5">
+                                <div className="mt-10 border-t border-primary-100 pt-5">
                                     <p className="text-xs text-slate-500">
-                                        {t('front.companies.scraped.hero_location_label')}
+                                        {t(
+                                            'front.companies.scraped.hero_location_label',
+                                        )}
                                     </p>
-                                    <p className="mt-1 text-sm font-medium text-slate-200">
-                                        {company.location || t('front.companies.card_location_fallback')}
+                                    <p className="mt-1 text-sm font-medium text-slate-800">
+                                        {company.location ||
+                                            t(
+                                                'front.companies.card_location_fallback',
+                                            )}
                                     </p>
                                 </div>
                             </div>
                         </div>
                     </section>
 
-                    <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-                        <div className="space-y-8">
-                            <section className="border border-slate-200 bg-white p-6 md:p-8 md:rounded-2xl">
-                                <p className="text-xs font-semibold tracking-[0.14em] text-slate-400 uppercase">
-                                    {t('front.companies.scraped.profile_label')}
-                                </p>
-                                <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-                                    {t('front.companies.scraped.about_title')}
-                                </h2>
-                                <p className="mt-5 whitespace-pre-line text-[15px] leading-8 text-slate-600">
-                                    {company.profile || t('front.companies.scraped.profile_empty')}
-                                </p>
-                            </section>
-
-                            <section className="border border-slate-200 bg-white p-6 md:p-8 md:rounded-2xl">
-                                <div className="flex items-end justify-between gap-4 border-b border-slate-200 pb-5">
-                                    <div>
-                                        <p className="text-xs font-semibold tracking-[0.14em] text-slate-400 uppercase">
-                                            {t('front.companies.scraped.jobs_label')}
-                                        </p>
-                                        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                                            {t('front.companies.scraped.jobs_title')}
-                                        </h2>
-                                    </div>
-                                    <span className="text-sm text-slate-500">
-                                        {company.open_jobs_count}
-                                    </span>
-                                </div>
-
-                                <div className="grid gap-4 pt-6 sm:grid-cols-2">
-                                    {jobs.map((job) => (
-                                        <ScrapedJobCard
-                                            company={company}
-                                            job={job}
-                                            key={job.id}
-                                        />
-                                    ))}
-                                </div>
-                            </section>
-                        </div>
+                    <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+                        <section className="border border-slate-200 bg-white p-6 md:rounded-2xl md:p-8">
+                            <p className="text-xs font-semibold tracking-[0.14em] text-slate-400 uppercase">
+                                {t('front.companies.scraped.profile_label')}
+                            </p>
+                            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
+                                {t('front.companies.scraped.about_title')}
+                            </h2>
+                            <p className="mt-5 text-[15px] leading-8 whitespace-pre-line text-slate-600">
+                                {company.profile ||
+                                    t('front.companies.scraped.profile_empty')}
+                            </p>
+                        </section>
 
                         <aside className="h-fit border border-slate-200 bg-white p-6 md:rounded-2xl">
                             <p className="text-xs font-semibold tracking-[0.14em] text-slate-400 uppercase">
@@ -187,20 +180,59 @@ export default function ScrapedCompanyShow({ company, jobs }: ScrapedCompanyPage
                             </p>
                             <dl className="mt-5 divide-y divide-slate-200">
                                 <SummaryItem
-                                    label={t('front.companies.scraped.summary_jobs')}
+                                    label={t(
+                                        'front.companies.scraped.summary_jobs',
+                                    )}
                                     value={String(company.open_jobs_count)}
                                 />
                                 <SummaryItem
-                                    label={t('front.companies.scraped.summary_location')}
-                                    value={company.location || t('front.companies.card_location_fallback')}
+                                    label={t(
+                                        'front.companies.scraped.summary_location',
+                                    )}
+                                    value={
+                                        company.location ||
+                                        t(
+                                            'front.companies.card_location_fallback',
+                                        )
+                                    }
                                 />
                                 <SummaryItem
-                                    label={t('front.companies.scraped.summary_source')}
-                                    value={t('front.companies.scraped.summary_source_value')}
+                                    label={t(
+                                        'front.companies.scraped.summary_source',
+                                    )}
+                                    value={t(
+                                        'front.companies.scraped.summary_source_value',
+                                    )}
                                 />
                             </dl>
                         </aside>
                     </div>
+
+                    <section className="mt-8 border border-slate-200 bg-white p-6 md:rounded-2xl md:p-8">
+                        <div className="flex items-end justify-between gap-4 border-b border-slate-200 pb-5">
+                            <div>
+                                <p className="text-xs font-semibold tracking-[0.14em] text-slate-400 uppercase">
+                                    {t('front.companies.scraped.jobs_label')}
+                                </p>
+                                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                                    {t('front.companies.scraped.jobs_title')}
+                                </h2>
+                            </div>
+                            <span className="text-sm text-slate-500">
+                                {company.open_jobs_count}
+                            </span>
+                        </div>
+
+                        <div className="grid gap-4 pt-6 sm:grid-cols-2 xl:grid-cols-4">
+                            {jobs.map((job) => (
+                                <ScrapedJobCard
+                                    company={company}
+                                    job={job}
+                                    key={job.id}
+                                />
+                            ))}
+                        </div>
+                    </section>
                 </div>
             </main>
         </HomeLayout>
@@ -211,7 +243,9 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
     return (
         <div className="py-4 first:pt-0 last:pb-0">
             <dt className="text-xs text-slate-400">{label}</dt>
-            <dd className="mt-1 text-sm font-medium leading-6 text-slate-800">{value}</dd>
+            <dd className="mt-1 text-sm leading-6 font-medium text-slate-800">
+                {value}
+            </dd>
         </div>
     );
 }
@@ -265,12 +299,16 @@ function ScrapedJobCard({
             <div className="mt-5 space-y-3 rounded-xl border border-slate-100 bg-slate-50/65 px-3.5 py-3 text-sm text-slate-600">
                 <p className="flex items-center gap-2">
                     <BriefcaseBusiness className="size-4 shrink-0 text-primary-500" />
-                    <span className="font-semibold text-primary-600">{job.job_type}</span>
+                    <span className="font-semibold text-primary-600">
+                        {job.job_type}
+                    </span>
                 </p>
                 <p className="flex items-center gap-2">
                     <MapPin className="size-4 shrink-0 text-slate-500" />
                     <span className="truncate">
-                        {job.work_mode} · {job.location || t('front.companies.card_location_fallback')}
+                        {job.work_mode} ·{' '}
+                        {job.location ||
+                            t('front.companies.card_location_fallback')}
                     </span>
                 </p>
                 <p className="flex items-center gap-2 font-semibold text-slate-700">
@@ -281,7 +319,10 @@ function ScrapedJobCard({
 
             <div className="mt-auto flex items-center gap-1.5 border-t border-slate-200 pt-3 text-xs text-slate-500">
                 <Clock3 className="size-3.5" />
-                <span>{job.published_at || t('front.companies.scraped.recently_posted')}</span>
+                <span>
+                    {job.published_at ||
+                        t('front.companies.scraped.recently_posted')}
+                </span>
             </div>
         </Link>
     );
