@@ -583,8 +583,7 @@ export default function HeroSection({
                                         }
                                         className="inline-flex min-h-11 items-center gap-2 rounded-full border border-primary-200 bg-white px-5 text-sm font-bold text-primary transition hover:border-primary hover:bg-primary-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                                     >
-                                        Muat {Math.min(4, remainingJobs)}
-                                        lowongan lagi
+                                      Muat lowongan
                                         <ArrowDown
                                             aria-hidden="true"
                                             className="size-4"
