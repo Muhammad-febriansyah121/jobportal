@@ -68,10 +68,10 @@ export default function ScrapedCompanyShow({
                     </Link>
 
                     <section className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-slate-950">
-                        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[46%] bg-[#eaf4ff] lg:block">
+                        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[42%] bg-[#eaf4ff] lg:block">
                             <img
                                 alt=""
-                                className="absolute right-[-9%] bottom-0 h-[118%] w-auto max-w-none object-contain object-right-bottom opacity-90"
+                                className="absolute right-[-4%] bottom-0 h-[100%] w-auto max-w-none object-contain object-right-bottom"
                                 src="/images/karivia-buildings.png"
                             />
                         </div>
@@ -148,7 +148,7 @@ export default function ScrapedCompanyShow({
                                 </div>
                             </div>
 
-                            <div className="m-4 rounded-2xl border border-slate-200 bg-white/95 px-6 py-7 shadow-[0_8px_24px_rgba(15,76,148,0.08)] lg:my-7 lg:mr-7 lg:ml-0 lg:px-7 lg:py-8">
+                            <div className="relative z-10 m-4 rounded-2xl border border-slate-200 bg-white px-6 py-7 shadow-[0_8px_24px_rgba(15,76,148,0.08)] lg:my-7 lg:mr-7 lg:ml-0 lg:px-7 lg:py-8">
                                 <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">
                                     {t('front.companies.scraped.hero_openings')}
                                 </p>
