@@ -145,7 +145,7 @@ Route::prefix('admin')
         Route::resource('job-review', AdminScrapedJobController::class)
             ->parameters(['job-review' => 'scrapedJob'])
             ->names('scraped-jobs')
-            ->only(['index', 'show', 'destroy']);
+            ->only(['index', 'show', 'update', 'destroy']);
 
         Route::resource('reports', AdminReportController::class)->only(['index', 'show']);
         Route::patch('reports/{report}/under-review', [AdminReportController::class, 'underReview'])->name('reports.under-review');

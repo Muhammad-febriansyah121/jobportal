@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\Admin\RecordActivity;
 use App\Http\Controllers\Admin\Concerns\BuildsAdminPages;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateScrapedJobRequest;
 use App\Models\ScrapedJob;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -25,6 +26,7 @@ class AdminScrapedJobController extends Controller
                 'source_job_id',
                 'company_name',
                 'title',
+                'hr_email',
                 'location',
                 'status',
                 'scraped_at',
@@ -59,6 +61,25 @@ class AdminScrapedJobController extends Controller
                 'scraped_at' => $scrapedJob->scraped_at?->format('d M Y H:i') ?? '-',
                 'actions' => [
                     $this->action('Lihat Detail', route('admin.scraped-jobs.show', $scrapedJob, false), 'Eye'),
+                    $this->action(
+                        'Edit',
+                        route('admin.scraped-jobs.update', $scrapedJob, false),
+                        'Pencil',
+                        'patch',
+                        'warning',
+                        null,
+                        null,
+                        [
+                            $this->field(
+                                'hr_email',
+                                'Email perusahaan',
+                                'email',
+                                $scrapedJob->hr_email,
+                                [],
+                                ['placeholder' => 'hr@perusahaan.com'],
+                            ),
+                        ],
+                    ),
                     $this->action(
                         'Hapus',
                         route('admin.scraped-jobs.destroy', $scrapedJob, false),
@@ -104,6 +125,22 @@ class AdminScrapedJobController extends Controller
             'rows' => $scrapedJobs,
             'emptyState' => 'Belum ada lowongan eksternal yang masuk.',
         ]);
+    }
+
+    public function update(
+        UpdateScrapedJobRequest $request,
+        ScrapedJob $scrapedJob,
+        RecordActivity $activity,
+    ): RedirectResponse {
+        $data = $request->validated();
+        $scrapedJob->update($data);
+        $activity->handle($request->user(), 'update_external_job', $scrapedJob, [
+            'changed_fields' => array_keys($data),
+        ]);
+
+        $this->flash('Email perusahaan berhasil diperbarui.');
+
+        return back();
     }
 
     public function destroy(Request $request, ScrapedJob $scrapedJob, RecordActivity $activity): RedirectResponse

@@ -54,6 +54,11 @@ test('admin can view scraped jobs and filter the results', function () {
                 fn (array $action): bool => $action['label'] === 'Hapus'
                     && $action['method'] === 'delete',
             ))
+            ->where('rows.data.0.actions', fn (Collection $actions): bool => $actions->contains(
+                fn (array $action): bool => $action['label'] === 'Edit'
+                    && $action['method'] === 'patch'
+                    && $action['fields'][0]['name'] === 'hr_email',
+            ))
             ->etc()
         );
 });
@@ -96,6 +101,19 @@ test('admin can delete an external job', function () {
 
     expect(ScrapedJob::find($scrapedJob->id))->toBeNull();
     expect(Application::find($application->id))->toBeNull();
+});
+
+test('admin can update the company email for an external job', function () {
+    $admin = User::factory()->admin()->create();
+    $scrapedJob = scrapedJobAdminRecord(['hr_email' => 'old@example.com']);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.scraped-jobs.update', $scrapedJob), [
+            'hr_email' => 'test-recipient@example.com',
+        ])
+        ->assertRedirect();
+
+    expect($scrapedJob->refresh()->hr_email)->toBe('test-recipient@example.com');
 });
 
 test('scraped job navigation uses same-origin relative urls', function () {
