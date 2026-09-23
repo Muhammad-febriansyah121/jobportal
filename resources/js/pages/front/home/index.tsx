@@ -30,8 +30,6 @@ type HomeProps = {
         published_at?: string | null;
         is_saved: boolean;
         is_scraped: boolean;
-        source_url: string;
-        source_platform: string;
     }>;
     jobs_pagination?: {
         current_page: number;

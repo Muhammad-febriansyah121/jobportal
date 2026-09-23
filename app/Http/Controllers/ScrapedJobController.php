@@ -24,7 +24,6 @@ class ScrapedJobController extends Controller
                 'description' => $scrapedJob->description,
                 'requirements' => collect($scrapedJob->requirements ?? [])->values()->all(),
                 'skills' => collect($scrapedJob->skills ?? [])->values()->all(),
-                'apply_url' => $scrapedJob->source_url,
                 'internal_apply_url' => filled($scrapedJob->hr_email)
                     ? route('candidate.scraped-jobs.apply', $scrapedJob)
                     : null,

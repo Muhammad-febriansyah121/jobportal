@@ -24,7 +24,8 @@ test('public home displays at most sixteen scraped jobs', function () {
             ->component('front/home/index')
             ->has('scrapedJobs', 16)
             ->where('scrapedJobs.0.title', 'Scraped Job 1')
-            ->where('scrapedJobs.0.source_platform', 'dealls')
+            ->missing('scrapedJobs.0.source_url')
+            ->missing('scrapedJobs.0.source_platform')
             ->missing('scrapedJobs.0.raw_payload')
         );
 });
@@ -49,7 +50,7 @@ test('scraped job opens on internal public detail page', function () {
         ->assertInertia(fn ($page) => $page
             ->component('front/jobs/scraped-show')
             ->where('job.title', 'Senior Product Designer')
-            ->where('job.apply_url', 'https://example.com/jobs/detail-1')
+            ->missing('job.apply_url')
             ->missing('job.source_platform')
         );
 });

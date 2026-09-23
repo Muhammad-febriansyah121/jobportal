@@ -86,8 +86,6 @@ class HomeController extends Controller
         $scrapedJobs = ScrapedJob::query()
             ->select([
                 'id',
-                'source_platform',
-                'source_url',
                 'company_name',
                 'company_logo_url',
                 'title',
@@ -119,8 +117,6 @@ class HomeController extends Controller
                 'published_at' => ($job->scraped_at ?? $job->imported_at)?->diffForHumans(),
                 'is_saved' => false,
                 'is_scraped' => true,
-                'source_url' => $job->source_url,
-                'source_platform' => $job->source_platform,
             ])
             ->values()
             ->all();

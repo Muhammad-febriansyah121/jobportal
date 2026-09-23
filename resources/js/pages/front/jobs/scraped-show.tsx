@@ -5,7 +5,6 @@ import {
     CalendarDays,
     Check,
     Clock3,
-    ExternalLink,
     MapPin,
     Wallet,
 } from 'lucide-react';
@@ -25,7 +24,6 @@ type ScrapedJob = {
     description: string | null;
     requirements: string[];
     skills: string[];
-    apply_url: string | null;
     internal_apply_url: string | null;
     has_internal_apply: boolean;
 };
@@ -139,20 +137,6 @@ export default function ScrapedJobShow({ job }: { job: ScrapedJob }) {
                                     >
                                         Lamar via Karivia
                                     </Link>
-                                ) : null}
-                                {job.apply_url ? (
-                                    <a
-                                        href={job.apply_url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 px-5 text-sm font-bold text-slate-700 transition hover:border-primary-400 hover:text-primary-600 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:outline-none"
-                                    >
-                                        Buka sumber asli
-                                        <ExternalLink
-                                            aria-hidden="true"
-                                            className="size-4"
-                                        />
-                                    </a>
                                 ) : null}
                             </div>
                         </div>

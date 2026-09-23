@@ -39,8 +39,6 @@ type JobPreview = {
     published_at?: string | null;
     is_saved: boolean;
     is_scraped?: boolean;
-    source_url?: string | null;
-    source_platform?: string | null;
 };
 
 type HeroSectionProps = {
