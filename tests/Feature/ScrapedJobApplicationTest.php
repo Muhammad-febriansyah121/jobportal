@@ -63,6 +63,23 @@ test('public application routes use neutral paths', function () {
         ->toEndWith('/candidate/external-jobs/'.$job->id.'/apply');
 });
 
+test('scraped application pages use same-origin relative urls', function () {
+    $job = scrapedApplicationJob();
+
+    $this->get(route('jobs.scraped.show', $job))
+        ->assertInertia(fn ($page) => $page
+            ->where('job.internal_apply_url', '/candidate/external-jobs/'.$job->id.'/apply')
+        );
+
+    [$user] = scrapedApplicationCandidate();
+
+    $this->actingAs($user)
+        ->get(route('candidate.scraped-jobs.apply', $job))
+        ->assertInertia(fn ($page) => $page
+            ->where('job.detail_url', '/jobs/external/'.$job->id)
+        );
+});
+
 test('scraped application is saved without sending when smtp is unavailable', function () {
     Mail::fake();
     Setting::query()->whereIn('key', [

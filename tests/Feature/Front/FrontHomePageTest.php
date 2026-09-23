@@ -38,6 +38,7 @@ test('scraped job opens on internal public detail page', function () {
         'company_name' => 'Company Detail',
         'title' => 'Senior Product Designer',
         'description' => 'A public scraped job detail.',
+        'hr_email' => 'hr@example.com',
         'location' => 'Jakarta',
         'employment_type' => 'FULL_TIME',
         'workplace_type' => 'HYBRID',
@@ -50,6 +51,7 @@ test('scraped job opens on internal public detail page', function () {
         ->assertInertia(fn ($page) => $page
             ->component('front/jobs/scraped-show')
             ->where('job.title', 'Senior Product Designer')
+            ->where('job.internal_apply_url', '/candidate/external-jobs/'.$scrapedJob->id.'/apply')
             ->missing('job.apply_url')
             ->missing('job.source_platform')
         );

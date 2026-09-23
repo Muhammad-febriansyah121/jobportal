@@ -40,7 +40,7 @@ class CandidateScrapedJobApplicationController extends Controller
                 'work_mode' => str($scrapedJob->workplace_type)->headline()->toString(),
                 'job_type' => str($scrapedJob->employment_type)->headline()->toString(),
                 'salary_range' => $this->salaryRange($scrapedJob),
-                'detail_url' => route('jobs.scraped.show', $scrapedJob),
+                'detail_url' => route('jobs.scraped.show', $scrapedJob, absolute: false),
                 'recipient_email' => $this->maskEmail((string) $scrapedJob->hr_email),
             ],
             'cvs' => $candidate->cvs()
