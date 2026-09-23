@@ -4714,6 +4714,7 @@
     "front.companies.scraped.profile_empty": "Company profile is not available yet.",
     "front.companies.scraped.jobs_label": "Opportunities",
     "front.companies.scraped.jobs_title": "Available openings",
+    "front.companies.scraped.job_badge": "Latest opening",
     "front.companies.scraped.recently_posted": "Recently posted",
     "front.companies.scraped.summary_label": "Summary",
     "front.companies.scraped.summary_jobs": "Openings",
