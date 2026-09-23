@@ -411,6 +411,7 @@ class HomeController extends Controller
                 return [
                     'id' => 'scraped-'.$latestJob->id,
                     'slug' => null,
+                    'detail_url' => route('companies.scraped.show', $latestJob, absolute: false),
                     'name' => $latestJob->company_name,
                     'logo_url' => $logoJob?->company_logo_url,
                     'industry' => null,

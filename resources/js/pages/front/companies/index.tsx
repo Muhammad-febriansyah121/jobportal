@@ -17,20 +17,15 @@ import HomeLayout from '@/layouts/front/home-layout';
 import { useTranslate } from '@/hooks/use-translate';
 import { cn } from '@/lib/utils';
 import { index as companiesIndex } from '@/routes/companies';
-import { index as jobsIndex } from '@/routes/jobs';
 
 type CompanyItem = {
     id: number | string;
-    slug: string | null;
+    detail_url: string;
     name: string;
     logo_url: string | null;
-    industry: string | null;
     location: string;
-    company_size: string | null;
-    is_verified: boolean;
-    trust_score: number | null;
     open_jobs_count: number;
-    source: 'platform' | 'scraped';
+    source: 'scraped';
 };
 
 type CompaniesPageProps = {
@@ -321,13 +316,12 @@ export default function FrontCompaniesIndex({ filters, companies }: CompaniesPag
 
 function CompanyCard({ company }: { company: CompanyItem }) {
     const { t } = useTranslate();
-    const jobsUrl = `${jobsIndex().url}?search=${encodeURIComponent(company.name)}`;
 
     return (
         <Link
             aria-label={`Lihat lowongan dari ${company.name}`}
             className="group relative flex h-full min-h-[330px] flex-col overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-[0_18px_40px_rgba(15,76,148,0.12)] focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:outline-none"
-            href={jobsUrl}
+            href={company.detail_url}
         >
             <div className="flex flex-1 flex-col px-5 pt-5">
                 <div className="flex items-start justify-between gap-3">

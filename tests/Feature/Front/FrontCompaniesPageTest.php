@@ -3,7 +3,7 @@
 use App\Models\ScrapedJob;
 
 test('guest can open public companies page in home layout', function () {
-    ScrapedJob::create([
+    $job = ScrapedJob::create([
         'source_platform' => 'dealls',
         'source_job_id' => 'public-company-1',
         'source_url' => 'https://example.com/jobs/public-company-1',
@@ -22,6 +22,7 @@ test('guest can open public companies page in home layout', function () {
         ->has('companies.data', 1)
         ->where('companies.data.0.name', 'Scraped Karivia Labs')
         ->where('companies.data.0.source', 'scraped')
+        ->where('companies.data.0.detail_url', route('companies.scraped.show', $job, absolute: false))
     );
 });
 
