@@ -21,8 +21,8 @@ import { index as companiesIndex, show as companyShow } from '@/routes/companies
 import { index as jobsIndex } from '@/routes/jobs';
 
 type CompanyItem = {
-    id: number;
-    slug: string;
+    id: number | string;
+    slug: string | null;
     name: string;
     logo_url: string | null;
     industry: string | null;
@@ -31,6 +31,7 @@ type CompanyItem = {
     is_verified: boolean;
     trust_score: number | null;
     open_jobs_count: number;
+    source: 'platform' | 'scraped';
 };
 
 type CompaniesPageProps = {
@@ -312,7 +313,7 @@ export default function FrontCompaniesIndex({ filters, industries, companies }: 
                     ) : (
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             {companies.data.map((company) => (
-                                <CompanyCard key={company.id} company={company} />
+                                <CompanyCard key={`${company.source}-${company.id}`} company={company} />
                             ))}
                         </div>
                     )}
@@ -406,13 +407,19 @@ function CompanyCard({ company }: { company: CompanyItem }) {
                 <div className="flex-1" />
 
                 <div className="mt-4 flex gap-2 border-t border-slate-100 pt-4">
-                    <Link
-                        className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:border-primary-200 hover:bg-primary-50/50 hover:text-primary-700"
-                        href={companyShow(company.slug)}
-                    >
-                        <ExternalLink className="size-3.5" />
-                        {t('front.companies.card_profile_link')}
-                    </Link>
+                    {company.slug ? (
+                        <Link
+                            className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:border-primary-200 hover:bg-primary-50/50 hover:text-primary-700"
+                            href={companyShow(company.slug)}
+                        >
+                            <ExternalLink className="size-3.5" />
+                            {t('front.companies.card_profile_link')}
+                        </Link>
+                    ) : (
+                        <span className="inline-flex h-9 flex-1 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 px-2 text-center text-xs font-semibold text-slate-400">
+                            {t('front.companies.card_profile_unavailable')}
+                        </span>
+                    )}
                     <Link
                         className={cn(
                             'inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold transition',

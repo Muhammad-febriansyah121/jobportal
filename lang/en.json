@@ -4696,6 +4696,7 @@
     "front.companies.card_employees": ":size employees",
     "front.companies.card_trust": "Trust :score",
     "front.companies.card_profile_link": "Profile",
+    "front.companies.card_profile_unavailable": "Profile unavailable",
     "front.companies.card_jobs": ":count Openings",
     "front.companies.card_jobs_badge": ":count active openings",
     "front.companies.card_jobs_empty": "No active openings",

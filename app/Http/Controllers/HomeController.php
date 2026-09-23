@@ -434,8 +434,90 @@ class HomeController extends Controller
                 fn ($query) => $query->orderByDesc('open_jobs_count')->orderByDesc('is_verified')->orderBy('name'),
                 fn ($query) => $query->orderByDesc('is_verified')->orderByDesc('open_jobs_count')->orderBy('name'),
             )
-            ->paginate($perPage)
-            ->withQueryString();
+            ->get()
+            ->map(fn (Company $company): array => [
+                'id' => $company->id,
+                'slug' => $company->slug,
+                'name' => $company->name,
+                'logo_url' => $company->logo_url,
+                'industry' => $company->industry?->name,
+                'location' => collect([$company->hq_city, $company->hq_province])->filter()->implode(', '),
+                'company_size' => $company->company_size,
+                'is_verified' => (bool) $company->is_verified,
+                'trust_score' => $company->trust_score,
+                'open_jobs_count' => (int) $company->open_jobs_count,
+                'source' => 'platform',
+            ]);
+
+        $platformCompanyNames = $companies
+            ->pluck('name')
+            ->map(fn (string $name): string => mb_strtolower(trim($name)))
+            ->all();
+
+        $scrapedCompanies = $request->filled('industry_id')
+            ? collect()
+            : ScrapedJob::query()
+                ->select(['id', 'company_name', 'company_logo_url', 'location', 'scraped_at', 'imported_at'])
+                ->latest('scraped_at')
+                ->latest('imported_at')
+                ->get()
+                ->filter(fn (ScrapedJob $job): bool => filled(trim($job->company_name)))
+                ->groupBy(fn (ScrapedJob $job): string => mb_strtolower(trim($job->company_name)))
+                ->reject(fn ($jobs, string $companyName): bool => in_array($companyName, $platformCompanyNames, true))
+                ->map(function ($jobs): array {
+                    $latestJob = $jobs->first();
+                    $logoJob = $jobs->first(fn (ScrapedJob $job): bool => filled($job->company_logo_url));
+                    $locationJob = $jobs->first(fn (ScrapedJob $job): bool => filled($job->location));
+
+                    return [
+                        'id' => 'scraped-'.$latestJob->id,
+                        'slug' => null,
+                        'name' => $latestJob->company_name,
+                        'logo_url' => $logoJob?->company_logo_url,
+                        'industry' => null,
+                        'location' => $locationJob?->location ?? '',
+                        'company_size' => null,
+                        'is_verified' => false,
+                        'trust_score' => null,
+                        'open_jobs_count' => $jobs->count(),
+                        'source' => 'scraped',
+                    ];
+                })
+                ->filter(function (array $company) use ($request): bool {
+                    $search = mb_strtolower($request->string('search')->toString());
+                    $location = mb_strtolower($request->string('location')->toString());
+
+                    return ($search === '' || str_contains(mb_strtolower($company['name']), $search))
+                        && ($location === '' || str_contains(mb_strtolower($company['location']), $location));
+                })
+                ->values();
+
+        $allCompanies = $companies
+            ->concat($scrapedCompanies)
+            ->sortBy($request->string('sort')->toString() === 'most_jobs'
+                ? [
+                    ['open_jobs_count', 'desc'],
+                    ['is_verified', 'desc'],
+                    ['name', 'asc'],
+                ]
+                : [
+                    ['is_verified', 'desc'],
+                    ['open_jobs_count', 'desc'],
+                    ['name', 'asc'],
+                ])
+            ->values();
+
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $companies = new LengthAwarePaginator(
+            $allCompanies->forPage($currentPage, $perPage)->values(),
+            $allCompanies->count(),
+            $perPage,
+            $currentPage,
+            [
+                'path' => LengthAwarePaginator::resolveCurrentPath(),
+                'query' => $request->query(),
+            ],
+        );
 
         return Inertia::render('front/companies/index', [
             'filters' => [
@@ -451,18 +533,7 @@ class HomeController extends Controller
                     'id' => $industry->id,
                     'name' => $industry->name,
                 ]),
-            'companies' => $companies->through(fn (Company $company): array => [
-                'id' => $company->id,
-                'slug' => $company->slug,
-                'name' => $company->name,
-                'logo_url' => $company->logo_url,
-                'industry' => $company->industry?->name,
-                'location' => collect([$company->hq_city, $company->hq_province])->filter()->implode(', '),
-                'company_size' => $company->company_size,
-                'is_verified' => (bool) $company->is_verified,
-                'trust_score' => $company->trust_score,
-                'open_jobs_count' => (int) $company->open_jobs_count,
-            ]),
+            'companies' => $companies,
         ]);
     }
 

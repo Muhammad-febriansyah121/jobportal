@@ -4696,6 +4696,7 @@
     "front.companies.card_employees": ":size karyawan",
     "front.companies.card_trust": "Trust :score",
     "front.companies.card_profile_link": "Profil",
+    "front.companies.card_profile_unavailable": "Profil belum tersedia",
     "front.companies.card_jobs": ":count Lowongan",
     "front.companies.card_jobs_badge": ":count lowongan aktif",
     "front.companies.card_jobs_empty": "Belum ada lowongan",
