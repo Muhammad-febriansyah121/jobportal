@@ -77,7 +77,7 @@ export default function ScrapedCompanyShow({
                         </div>
 
                         <div className="relative grid lg:grid-cols-[minmax(0,1fr)_300px]">
-                            <div className="relative bg-white/95 px-6 py-8 md:px-10 md:py-10">
+                            <div className="relative bg-white/95 px-6 py-7 md:px-10 md:py-8">
                                 <div className="flex items-start justify-between gap-5">
                                     <p className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-[0.16em] text-primary-600 uppercase">
                                         <Sparkles className="size-3.5" />
@@ -85,24 +85,24 @@ export default function ScrapedCompanyShow({
                                     </p>
                                 </div>
 
-                                <div className="mt-10 flex min-w-0 items-start gap-5">
+                                <div className="mt-7 flex min-w-0 items-start gap-5">
                                     {company.logo_url ? (
                                         <img
                                             alt={company.name}
-                                            className="size-20 shrink-0 rounded-2xl border border-slate-200 bg-slate-50 object-contain p-2 md:size-24"
+                                            className="size-20 shrink-0 rounded-2xl border border-slate-200 bg-slate-50 object-contain p-2"
                                             src={company.logo_url}
                                         />
                                     ) : (
-                                        <div className="inline-flex size-20 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-xl font-semibold text-slate-950 md:size-24">
+                                        <div className="inline-flex size-20 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-xl font-semibold text-slate-950">
                                             {initials || 'CO'}
                                         </div>
                                     )}
 
                                     <div className="min-w-0 pt-1">
-                                        <h1 className="text-3xl leading-tight font-semibold tracking-[-0.03em] text-slate-950 md:text-5xl">
+                                        <h1 className="text-3xl leading-tight font-semibold tracking-[-0.03em] text-slate-950 md:text-4xl">
                                             {company.name}
                                         </h1>
-                                        <p className="mt-4 line-clamp-3 max-w-2xl text-sm leading-7 text-slate-600 md:text-[15px]">
+                                        <p className="mt-3 line-clamp-3 max-w-2xl text-sm leading-7 text-slate-600 md:text-[15px]">
                                             {company.profile ||
                                                 t(
                                                     'front.companies.scraped.profile_empty',
@@ -111,7 +111,7 @@ export default function ScrapedCompanyShow({
                                     </div>
                                 </div>
 
-                                <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-5 text-sm text-slate-600">
+                                <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-4 text-sm text-slate-600">
                                     <div className="flex flex-wrap gap-x-6 gap-y-3">
                                         <span className="inline-flex items-center gap-2">
                                             <MapPin className="size-4 text-primary-600" />
@@ -148,21 +148,21 @@ export default function ScrapedCompanyShow({
                                 </div>
                             </div>
 
-                            <div className="relative z-10 m-4 rounded-2xl border border-slate-200 bg-white px-6 py-7 shadow-[0_8px_24px_rgba(15,76,148,0.08)] lg:my-7 lg:mr-7 lg:ml-0 lg:px-7 lg:py-8">
+                            <div className="relative z-10 m-3 rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-[0_8px_24px_rgba(15,76,148,0.08)] lg:my-5 lg:mr-5 lg:ml-0 lg:px-6 lg:py-6">
                                 <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">
                                     {t('front.companies.scraped.hero_openings')}
                                 </p>
-                                <p className="mt-4 text-6xl leading-none font-semibold tracking-[-0.06em] text-slate-950">
+                                <p className="mt-3 text-5xl leading-none font-semibold tracking-[-0.06em] text-slate-950">
                                     {company.open_jobs_count}
                                 </p>
-                                <p className="mt-3 text-sm leading-6 text-slate-500">
+                                <p className="mt-2 text-sm leading-6 text-slate-500">
                                     {t(
                                         'front.companies.scraped.hero_openings_label',
                                     )}
                                 </p>
-                                <div className="mt-8 space-y-4 border-t border-slate-200 pt-5">
+                                <div className="mt-5 space-y-3 border-t border-slate-200 pt-4">
                                     <div className="flex items-start gap-3">
-                                        <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
+                                        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
                                             <MapPin className="size-4" />
                                         </span>
                                         <div>
@@ -180,7 +180,7 @@ export default function ScrapedCompanyShow({
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-3">
-                                        <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
+                                        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
                                             <Building2 className="size-4" />
                                         </span>
                                         <div>
