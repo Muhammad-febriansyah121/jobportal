@@ -3,7 +3,6 @@ import {
     ArrowLeft,
     ArrowRight,
     BriefcaseBusiness,
-    Building2,
     Clock3,
     Globe2,
     MapPin,
@@ -171,23 +170,6 @@ export default function ScrapedCompanyShow({
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3">
-                                        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
-                                            <Building2 className="size-4" />
-                                        </span>
-                                        <div>
-                                            <p className="text-xs text-slate-500">
-                                                {t(
-                                                    'front.companies.scraped.summary_source',
-                                                )}
-                                            </p>
-                                            <p className="mt-1 text-sm leading-5 font-semibold text-slate-800">
-                                                {t(
-                                                    'front.companies.scraped.summary_source_value',
-                                                )}
-                                            </p>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -230,15 +212,6 @@ export default function ScrapedCompanyShow({
                                             'front.companies.card_location_fallback',
                                         )
                                     }
-                                />
-                                <SummaryItem
-                                    icon={Building2}
-                                    label={t(
-                                        'front.companies.scraped.summary_source',
-                                    )}
-                                    value={t(
-                                        'front.companies.scraped.summary_source_value',
-                                    )}
                                 />
                             </dl>
                         </aside>
