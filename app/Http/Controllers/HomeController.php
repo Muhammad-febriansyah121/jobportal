@@ -453,7 +453,7 @@ class HomeController extends Controller
             $perPage,
             $currentPage,
             [
-                'path' => LengthAwarePaginator::resolveCurrentPath(),
+                'path' => $request->getPathInfo(),
                 'query' => $request->query(),
             ],
         );

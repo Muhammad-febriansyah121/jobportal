@@ -95,3 +95,25 @@ test('companies page includes unique companies from scraped jobs', function () {
             ->where('companies.data.0.slug', null)
         );
 });
+
+test('companies pagination links are relative URLs', function () {
+    foreach (range(1, 10) as $index) {
+        ScrapedJob::create([
+            'source_platform' => 'dealls',
+            'source_job_id' => 'pagination-company-'.$index,
+            'source_url' => 'https://example.com/jobs/pagination-'.$index,
+            'company_name' => 'Pagination Company '.$index,
+            'title' => 'Engineer '.$index,
+            'description' => 'A public scraped job.',
+            'location' => 'Jakarta',
+            'scraped_at' => now()->subMinutes($index),
+            'status' => 'pending',
+        ]);
+    }
+
+    $this->get(route('companies.index'))
+        ->assertInertia(fn ($page) => $page
+            ->where('companies.links.2.url', '/companies?page=2')
+            ->where('companies.links.3.url', '/companies?page=2')
+        );
+});
