@@ -67,17 +67,9 @@ export default function ScrapedCompanyShow({
                         {t('front.companies.scraped.back')}
                     </Link>
 
-                    <section className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-slate-950">
-                        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[42%] bg-[#eaf4ff] lg:block">
-                            <img
-                                alt=""
-                                className="absolute right-[-4%] bottom-0 h-[100%] w-auto max-w-none object-contain object-right-bottom"
-                                src="/images/karivia-buildings.png"
-                            />
-                        </div>
-
-                        <div className="relative grid lg:grid-cols-[minmax(0,1fr)_300px]">
-                            <div className="relative bg-white/95 px-6 py-7 md:px-10 md:py-8">
+                    <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-slate-950">
+                        <div className="grid lg:grid-cols-[minmax(0,1fr)_300px]">
+                            <div className="px-6 py-7 md:px-10 md:py-8">
                                 <div className="flex items-start justify-between gap-5">
                                     <p className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-[0.16em] text-primary-600 uppercase">
                                         <Sparkles className="size-3.5" />
@@ -148,7 +140,7 @@ export default function ScrapedCompanyShow({
                                 </div>
                             </div>
 
-                            <div className="relative z-10 m-3 rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-[0_8px_24px_rgba(15,76,148,0.08)] lg:my-5 lg:mr-5 lg:ml-0 lg:px-6 lg:py-6">
+                            <div className="border-t border-slate-200 bg-primary-50/55 px-6 py-6 lg:border-t-0 lg:border-l lg:px-6 lg:py-8">
                                 <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">
                                     {t('front.companies.scraped.hero_openings')}
                                 </p>
