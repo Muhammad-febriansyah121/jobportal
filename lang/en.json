@@ -3448,6 +3448,7 @@
     "auth.two_factor_challenge.toggle_to_recovery": "use recovery code",
     "auth.verify_email.head_title": "Verify Email",
     "auth.verify_email.link_sent_notice": "A new verification link has been sent to your email address.",
+    "auth.verify_email.link_invalid_notice": "This verification link is no longer valid. Resend the verification email to get a new link.",
     "auth.verify_email.logout": "Log out",
     "auth.verify_email.resend_button": "Resend Verification Email",
     "auth.verify_email.layout_title": "Verify email",

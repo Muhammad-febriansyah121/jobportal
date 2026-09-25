@@ -81,7 +81,8 @@ class FortifyServiceProvider extends ServiceProvider
                 [
                     'id' => $notifiable->getKey(),
                     'hash' => sha1($notifiable->getEmailForVerification()),
-                ]
+                ],
+                absolute: false,
             );
 
             return (new MailMessage)

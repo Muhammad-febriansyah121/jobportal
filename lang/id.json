@@ -3448,6 +3448,7 @@
     "auth.two_factor_challenge.toggle_to_recovery": "gunakan kode pemulihan",
     "auth.verify_email.head_title": "Verifikasi Email",
     "auth.verify_email.link_sent_notice": "Tautan verifikasi baru telah dikirim ke alamat email Anda.",
+    "auth.verify_email.link_invalid_notice": "Tautan verifikasi sudah tidak valid. Kirim ulang email verifikasi untuk mendapatkan tautan baru.",
     "auth.verify_email.logout": "Keluar",
     "auth.verify_email.resend_button": "Kirim Ulang Email Verifikasi",
     "auth.verify_email.layout_title": "Verifikasi email",

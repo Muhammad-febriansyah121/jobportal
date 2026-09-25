@@ -27,6 +27,7 @@ test('email can be verified', function () {
         'verification.verify',
         now()->addMinutes(60),
         ['id' => $user->id, 'hash' => sha1($user->email)],
+        absolute: false,
     );
 
     $response = $this->actingAs($user)->get($verificationUrl);
@@ -45,6 +46,7 @@ test('email is not verified with invalid hash', function () {
         'verification.verify',
         now()->addMinutes(60),
         ['id' => $user->id, 'hash' => sha1('wrong-email')],
+        absolute: false,
     );
 
     $this->actingAs($user)->get($verificationUrl);
@@ -62,12 +64,51 @@ test('email is not verified with invalid user id', function () {
         'verification.verify',
         now()->addMinutes(60),
         ['id' => 123, 'hash' => sha1($user->email)],
+        absolute: false,
     );
 
     $this->actingAs($user)->get($verificationUrl);
 
     Event::assertNotDispatched(Verified::class);
     expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
+});
+
+test('email verification remains valid when the public host differs from the generated host', function () {
+    $user = User::factory()->unverified()->create();
+
+    Event::fake();
+    URL::forceRootUrl('https://www.karivia.id');
+
+    try {
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => sha1($user->email)],
+            absolute: false,
+        );
+
+        $response = $this->actingAs($user)->get($verificationUrl);
+
+        Event::assertDispatched(Verified::class);
+        expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
+        $response->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+    } finally {
+        URL::forceRootUrl(null);
+    }
+});
+
+test('invalid email verification signature returns to the verification prompt', function () {
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user)
+        ->get(route('verification.verify', [
+            'id' => $user->id,
+            'hash' => sha1($user->email),
+            'expires' => now()->addMinutes(60)->timestamp,
+            'signature' => 'invalid',
+        ]))
+        ->assertRedirect(route('verification.notice'))
+        ->assertSessionHas('status', 'verification-link-invalid');
 });
 
 test('verified user is redirected to dashboard from verification prompt', function () {
@@ -90,6 +131,7 @@ test('already verified user visiting verification link is redirected without fir
         'verification.verify',
         now()->addMinutes(60),
         ['id' => $user->id, 'hash' => sha1($user->email)],
+        absolute: false,
     );
 
     $this->actingAs($user)->get($verificationUrl)

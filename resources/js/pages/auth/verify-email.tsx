@@ -25,6 +25,12 @@ export default function VerifyEmail({ status }: { status?: string }) {
                 </div>
             )}
 
+            {status === 'verification-link-invalid' && (
+                <div className="mb-4 text-center text-sm font-medium text-amber-600">
+                    {t('auth.verify_email.link_invalid_notice')}
+                </div>
+            )}
+
             <Form {...send.form()} className="space-y-6 text-center">
                 {({ processing }) => (
                     <>
@@ -45,4 +51,3 @@ export default function VerifyEmail({ status }: { status?: string }) {
         </>
     );
 }
-

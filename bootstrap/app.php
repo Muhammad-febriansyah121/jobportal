@@ -15,6 +15,9 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Exceptions\InvalidSignatureException;
+use Illuminate\Routing\Middleware\ValidateSignature;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -33,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'candidate.onboarded' => EnsureCandidateOnboardingIsComplete::class,
             'employer' => EnsureUserIsEmployer::class,
             'inertia.ssr.disable' => DisableInertiaSSR::class,
+            'signed' => ValidateSignature::relative(),
         ]);
 
         $middleware->web(append: [
@@ -51,5 +55,11 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (InvalidSignatureException $exception, Request $request) {
+            if ($request->routeIs('verification.verify') && $request->user() !== null) {
+                return redirect()
+                    ->route('verification.notice')
+                    ->with('status', 'verification-link-invalid');
+            }
+        });
     })->create();
