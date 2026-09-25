@@ -100,7 +100,7 @@ class HomeController extends Controller
             ])
             ->latest('scraped_at')
             ->latest('imported_at')
-            ->limit(16)
+            ->limit(32)
             ->get()
             ->map(fn (ScrapedJob $job): array => [
                 'id' => $job->id,

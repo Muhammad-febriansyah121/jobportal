@@ -3,8 +3,8 @@
 use App\Models\ScrapedJob;
 use App\Models\User;
 
-test('public home displays at most sixteen scraped jobs', function () {
-    foreach (range(1, 17) as $index) {
+test('public home displays at most thirty-two scraped jobs', function () {
+    foreach (range(1, 33) as $index) {
         ScrapedJob::create([
             'source_platform' => 'dealls',
             'source_job_id' => 'scraped-'.$index,
@@ -23,7 +23,7 @@ test('public home displays at most sixteen scraped jobs', function () {
     $this->get(route('home'))
         ->assertInertia(fn ($page) => $page
             ->component('front/home/index')
-            ->has('scrapedJobs', 16)
+            ->has('scrapedJobs', 32)
             ->where('scrapedJobs.0.title', 'Scraped Job 1')
             ->missing('scrapedJobs.0.source_url')
             ->missing('scrapedJobs.0.source_platform')
