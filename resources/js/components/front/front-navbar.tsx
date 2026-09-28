@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { ArrowRight } from 'lucide-react';
 import { useMotionValueEvent, useScroll } from 'motion/react';
 import { useState } from 'react';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import {
     MobileNav,
     MobileNavHeader,
@@ -99,6 +100,11 @@ export default function FrontNavbar({
                     />
 
                     <div className="relative z-20 ml-auto hidden items-center gap-2 lg:flex">
+                        <LanguageSwitcher
+                            align="end"
+                            variant="inline"
+                            triggerClassName="rounded-full border border-primary-100 bg-white/80 px-3 text-text/70 hover:bg-primary-50 hover:text-primary"
+                        />
                         {auth?.user ? (
                             <Link
                                 href={dashboard.url()}
@@ -184,6 +190,13 @@ export default function FrontNavbar({
                                 );
                             })}
                         </nav>
+
+                        <div className="flex w-full items-center justify-between border-t border-border pt-4">
+                            <span className="text-sm font-semibold text-text/70">
+                                {t('language.label')}
+                            </span>
+                            <LanguageSwitcher align="end" variant="inline" />
+                        </div>
 
                         <div className="grid w-full grid-cols-2 gap-2 border-t border-border pt-4">
                             <Link

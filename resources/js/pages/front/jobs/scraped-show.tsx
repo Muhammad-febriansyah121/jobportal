@@ -5,9 +5,24 @@ import {
     CalendarDays,
     Check,
     Clock3,
+    Copy,
+    Facebook,
+    Linkedin,
     MapPin,
+    MessageCircle,
+    Share2,
+    Twitter,
     Wallet,
 } from 'lucide-react';
+import { useState } from 'react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import HomeLayout from '@/layouts/front/home-layout';
 import { index as jobsIndex } from '@/routes/jobs';
 import type { Auth } from '@/types';
@@ -67,11 +82,55 @@ function MetaItem({
 
 export default function ScrapedJobShow({ job }: { job: ScrapedJob }) {
     const { auth } = usePage<{ auth?: Auth }>().props;
+    const [shareState, setShareState] = useState<'idle' | 'copied'>('idle');
     const companyName = job.company ?? 'Perusahaan';
     const location = job.location || 'Lokasi fleksibel';
     const jobType = job.job_type || 'Full-time';
     const workMode = job.work_mode || 'On-site';
     const canApply = !auth?.user || auth.user.role === 'candidate';
+
+    const getShareUrl = (): string =>
+        typeof window === 'undefined' ? '' : window.location.href;
+
+    const openSocialShare = (url: string): void => {
+        window.open(url, '_blank', 'noopener,noreferrer,width=640,height=520');
+    };
+
+    const shareText = `Lihat lowongan ${job.title} di ${companyName}.`;
+
+    const handleNativeShare = async (): Promise<void> => {
+        if (typeof navigator === 'undefined' || !navigator.share) {
+            await handleCopyLink();
+
+            return;
+        }
+
+        try {
+            await navigator.share({
+                title: `${job.title} — ${companyName}`,
+                text: shareText,
+                url: getShareUrl(),
+            });
+        } catch {
+            return;
+        }
+    };
+
+    const handleCopyLink = async (): Promise<void> => {
+        const shareUrl = getShareUrl();
+
+        if (!navigator.clipboard?.writeText || shareUrl === '') {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            setShareState('copied');
+            window.setTimeout(() => setShareState('idle'), 2000);
+        } catch {
+            return;
+        }
+    };
 
     return (
         <HomeLayout>
@@ -142,6 +201,93 @@ export default function ScrapedJobShow({ job }: { job: ScrapedJob }) {
                                         Lamar via Karivia
                                     </Link>
                                 ) : null}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button
+                                            type="button"
+                                            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 transition hover:border-primary-300 hover:text-primary-600 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:outline-none"
+                                            aria-label="Bagikan lowongan"
+                                        >
+                                            <Share2
+                                                aria-hidden="true"
+                                                className="size-4"
+                                            />
+                                            Bagikan
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        align="end"
+                                        className="w-56"
+                                    >
+                                        <DropdownMenuLabel>
+                                            Bagikan lowongan
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            onSelect={() =>
+                                                openSocialShare(
+                                                    `https://wa.me/?text=${encodeURIComponent(`${shareText} ${getShareUrl()}`)}`,
+                                                )
+                                            }
+                                        >
+                                            <MessageCircle className="text-emerald-600" />
+                                            WhatsApp
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onSelect={() =>
+                                                openSocialShare(
+                                                    `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getShareUrl())}`,
+                                                )
+                                            }
+                                        >
+                                            <Facebook className="text-blue-600" />
+                                            Facebook
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onSelect={() =>
+                                                openSocialShare(
+                                                    `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(getShareUrl())}`,
+                                                )
+                                            }
+                                        >
+                                            <Twitter className="text-slate-700" />
+                                            X / Twitter
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onSelect={() =>
+                                                openSocialShare(
+                                                    `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(getShareUrl())}`,
+                                                )
+                                            }
+                                        >
+                                            <Linkedin className="text-sky-700" />
+                                            LinkedIn
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            onSelect={() =>
+                                                void handleNativeShare()
+                                            }
+                                        >
+                                            <Share2 />
+                                            Bagikan dari perangkat
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onSelect={() =>
+                                                void handleCopyLink()
+                                            }
+                                        >
+                                            {shareState === 'copied' ? (
+                                                <Check className="text-emerald-600" />
+                                            ) : (
+                                                <Copy />
+                                            )}
+                                            {shareState === 'copied'
+                                                ? 'Tautan tersalin'
+                                                : 'Salin tautan'}
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         </div>
 
