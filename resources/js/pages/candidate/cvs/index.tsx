@@ -38,11 +38,13 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useTranslate } from '@/hooks/use-translate';
+import { dashboard as candidateDashboard } from '@/routes/candidate';
 import {
     destroy as destroyCv,
     primary as primaryCv,
     store as storeCv,
 } from '@/routes/candidate/cvs';
+import { edit as candidateProfile } from '@/routes/candidate/profile';
 
 type CvItem = {
     id: number;
@@ -316,8 +318,8 @@ export default function CandidateCvsIndex({ cvs }: Props) {
 
 CandidateCvsIndex.layout = {
     breadcrumbs: [
-        { title: 'Dashboard', href: '/candidate/dashboard' },
-        { title: 'Data Profil', href: '/candidate/profile/edit' },
+        { title: 'Dashboard', href: candidateDashboard() },
+        { title: 'Data Profil', href: candidateProfile() },
         { title: 'CV' },
     ],
 };

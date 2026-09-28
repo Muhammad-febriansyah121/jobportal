@@ -82,6 +82,12 @@ class JobListing extends Model
         return $query->where('status', 'published');
     }
 
+    public function isOpen(): bool
+    {
+        return $this->status === 'published'
+            && ($this->closes_at === null || $this->closes_at->greaterThanOrEqualTo(now()));
+    }
+
     protected function casts(): array
     {
         return [

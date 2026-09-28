@@ -11,6 +11,8 @@ class ScrapedJobController extends Controller
 {
     public function show(Request $request, ScrapedJob $scrapedJob): Response
     {
+        abort_unless($scrapedJob->isVisible(), 404);
+
         $canApply = $request->user()?->role === null || $request->user()?->role === 'candidate';
         $hasInternalApply = $canApply && filter_var($scrapedJob->hr_email, FILTER_VALIDATE_EMAIL) !== false;
 

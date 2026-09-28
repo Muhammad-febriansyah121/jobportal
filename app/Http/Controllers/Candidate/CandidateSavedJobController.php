@@ -20,7 +20,7 @@ class CandidateSavedJobController extends Controller
 
         return Inertia::render('candidate/saved-jobs', [
             'savedJobs' => $candidate->savedJobs()
-                ->with(['jobListing:id,company_id,title,slug,status,location_city,location_province,work_mode,job_type,salary_min,salary_max,is_salary_visible,published_at', 'jobListing.company:id,name,is_verified'])
+                ->with(['jobListing:id,company_id,title,slug,status,location_city,location_province,work_mode,job_type,salary_min,salary_max,is_salary_visible,published_at,closes_at', 'jobListing.company:id,name,is_verified'])
                 ->latest()
                 ->paginate(12)
                 ->withQueryString()
@@ -30,6 +30,7 @@ class CandidateSavedJobController extends Controller
                     'slug' => $savedJob->jobListing?->slug,
                     'title' => $savedJob->jobListing?->title,
                     'status' => $savedJob->jobListing?->status,
+                    'is_open' => $savedJob->jobListing?->isOpen() ?? false,
                     'company' => $savedJob->jobListing?->company?->name,
                     'company_verified' => (bool) $savedJob->jobListing?->company?->is_verified,
                     'location' => collect([$savedJob->jobListing?->location_city, $savedJob->jobListing?->location_province])->filter()->implode(', '),

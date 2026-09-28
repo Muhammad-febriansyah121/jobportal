@@ -705,7 +705,6 @@ function CandidateSidebar() {
                         title: t('common.settings'),
                         href: settingsProfileEdit(),
                         icon: Settings,
-                        lockWhenProfileIncomplete: true,
                     },
                 ],
             },

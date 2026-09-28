@@ -61,7 +61,7 @@ class CandidateApplicationController extends Controller
         ResolveCandidateProfile $resolveCandidateProfile,
         ComputeRuleBasedFitScore $computeRuleBasedFitScore,
     ): RedirectResponse {
-        abort_unless($jobListing->status === 'published', 404);
+        abort_unless($jobListing->isOpen(), 404);
 
         $candidate = $resolveCandidateProfile->handle($request->user());
         $data = $request->validated();

@@ -22,6 +22,7 @@ class CompanyProfileController extends Controller
         $jobs = JobListing::query()
             ->published()
             ->where('company_id', $company->id)
+            ->where(fn (Builder $query): Builder => $query->whereNull('closes_at')->orWhere('closes_at', '>=', now()))
             ->select(['id', 'slug', 'title', 'location_city', 'location_province', 'work_mode', 'job_type', 'experience_level', 'salary_min', 'salary_max', 'is_salary_visible', 'published_at', 'closes_at'])
             ->latest('published_at')
             ->limit(10)

@@ -49,6 +49,7 @@ type SavedJob = {
     slug: string;
     title: string;
     status?: string | null;
+    is_open: boolean;
     company?: string | null;
     company_verified: boolean;
     location: string;
@@ -138,12 +139,18 @@ function createColumns(t: (key: string) => string): ColumnDef<SavedJob>[] {
             ),
             cell: ({ row }) => (
                 <div className="space-y-0.5">
-                    <Link
-                        href={show(row.original.slug).url}
-                        className="font-semibold text-foreground hover:text-primary-600 hover:underline"
-                    >
-                        {row.getValue('title')}
-                    </Link>
+                    {row.original.is_open ? (
+                        <Link
+                            href={show(row.original.slug).url}
+                            className="font-semibold text-foreground hover:text-primary-600 hover:underline"
+                        >
+                            {row.getValue('title')}
+                        </Link>
+                    ) : (
+                        <span className="font-semibold text-muted-foreground">
+                            {row.getValue('title')}
+                        </span>
+                    )}
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Building2 className="size-3" />
                         {row.original.company ?? '—'}
@@ -222,7 +229,7 @@ function createColumns(t: (key: string) => string): ColumnDef<SavedJob>[] {
             header: '',
             cell: ({ row }) => {
                 const job = row.original;
-                const isActive = !job.status || job.status === 'published';
+                const isActive = job.is_open;
 
                 return (
                     <div className="flex items-center gap-2">

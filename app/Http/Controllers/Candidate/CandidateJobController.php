@@ -8,11 +8,10 @@ use App\Actions\Candidate\RecordCandidateJobView;
 use App\Actions\Candidate\ResolveCandidateProfile;
 use App\Http\Controllers\Controller;
 use App\Models\AiMatchScore;
-use App\Models\CandidateIntentSignal;
 use App\Models\CandidateProfile;
 use App\Models\Industry;
 use App\Models\JobListing;
-use Illuminate\Database\Eloquent\Builder;
+use App\Models\ScrapedJob;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,87 +20,63 @@ class CandidateJobController extends Controller
 {
     public function index(Request $request, ResolveCandidateProfile $resolveCandidateProfile): Response
     {
-        $candidate = $resolveCandidateProfile->handle($request->user())->load(['skills:id', 'intentSignal', 'experiences', 'preferredIndustry:id']);
-        $skillIds = $candidate->skills->pluck('id')->all();
-        $activeTab = $request->string('tab', 'recommended')->toString();
-
-        /** @var CandidateIntentSignal|null $intentSignal */
-        $intentSignal = $candidate->intentSignal;
-        $hasIntentData = $intentSignal !== null && $intentSignal->intent_strength > 0;
-
-        $jobs = JobListing::query()
-            ->published()
-            ->select(['id', 'company_id', 'industry_id', 'title', 'slug', 'description', 'location_city', 'location_province', 'work_mode', 'job_type', 'experience_level', 'salary_min', 'salary_max', 'is_salary_visible', 'integrity_score', 'published_at', 'closes_at'])
-            ->with(['company:id,name,is_verified,trust_score', 'industry:id,name', 'skills:id,name'])
-            ->withCount(['skills as matched_skills_count' => fn (Builder $query) => $query->whereIn('skills.id', $skillIds)])
-            ->where(fn (Builder $query) => $query->whereNull('closes_at')->orWhere('closes_at', '>=', now()))
-            ->when($activeTab === 'remote', fn (Builder $query) => $query->where('work_mode', 'remote'))
-            ->when($activeTab === 'salary-transparent', fn (Builder $query) => $query->where('is_salary_visible', true))
-            ->when($request->filled('search'), function (Builder $query) use ($request): void {
+        $activeTab = $request->string('tab', 'all')->toString();
+        if (! in_array($activeTab, ['all', 'remote', 'salary-transparent'], true)) {
+            $activeTab = 'all';
+        }
+        $candidate = $resolveCandidateProfile->handle($request->user());
+        $jobs = ScrapedJob::query()
+            ->visible()
+            ->select([
+                'id',
+                'company_name',
+                'company_logo_url',
+                'title',
+                'location',
+                'employment_type',
+                'workplace_type',
+                'salary_min',
+                'salary_max',
+                'salary_currency',
+                'skills',
+                'hr_email',
+                'source_platform',
+                'scraped_at',
+                'imported_at',
+            ])
+            ->when($activeTab === 'remote', fn ($query) => $query->whereRaw('LOWER(workplace_type) = ?', ['remote']))
+            ->when($activeTab === 'salary-transparent', fn ($query) => $query->where(function ($query): void {
+                $query->whereNotNull('salary_min')->orWhereNotNull('salary_max');
+            }))
+            ->when($request->filled('search'), function ($query) use ($request): void {
                 $search = $request->string('search')->toString();
 
-                $query->where(function (Builder $query) use ($search): void {
+                $query->where(function ($query) use ($search): void {
                     $query->where('title', 'like', '%'.$search.'%')
+                        ->orWhere('company_name', 'like', '%'.$search.'%')
+                        ->orWhere('location', 'like', '%'.$search.'%')
                         ->orWhere('description', 'like', '%'.$search.'%')
-                        ->orWhereHas('company', fn (Builder $query) => $query->where('name', 'like', '%'.$search.'%'))
-                        ->orWhereHas('skills', fn (Builder $query) => $query->where('name', 'like', '%'.$search.'%'));
+                        ->orWhere('skills', 'like', '%'.$search.'%');
                 });
             })
-            ->when($request->filled('location'), function (Builder $query) use ($request): void {
-                $location = $request->string('location')->toString();
+            ->when($request->filled('location'), fn ($query) => $query->where('location', 'like', '%'.$request->string('location')->toString().'%'))
+            ->when($request->filled('work_mode'), fn ($query) => $query->whereRaw('LOWER(workplace_type) = ?', [strtolower($request->string('work_mode')->toString())]))
+            ->when($request->filled('job_type'), fn ($query) => $query->whereRaw('LOWER(employment_type) = ?', [strtolower($request->string('job_type')->toString())]))
+            ->when($request->filled('salary_min'), fn ($query) => $query->where(function ($query) use ($request): void {
+                $salaryMin = $request->integer('salary_min');
 
-                $query->where(function (Builder $query) use ($location): void {
-                    $query->where('location_city', 'like', '%'.$location.'%')
-                        ->orWhere('location_province', 'like', '%'.$location.'%');
-                });
-            })
-            ->when($request->filled('work_mode'), fn (Builder $query) => $query->where('work_mode', $request->string('work_mode')->toString()))
-            ->when($request->filled('job_type'), fn (Builder $query) => $query->where('job_type', $request->string('job_type')->toString()))
-            ->when($request->filled('experience_level'), fn (Builder $query) => $query->where('experience_level', $request->string('experience_level')->toString()))
-            ->when($request->filled('industry_id'), fn (Builder $query) => $query->where('industry_id', $request->integer('industry_id')))
-            ->when($request->filled('salary_min'), fn (Builder $query) => $query->where('salary_max', '>=', $request->integer('salary_min')))
-            ->when($request->boolean('verified_company'), fn (Builder $query) => $query->whereHas('company', fn (Builder $query) => $query->where('is_verified', true)))
-            ->when($request->boolean('skill_match') && $skillIds !== [], fn (Builder $query) => $query->whereHas('skills', fn (Builder $query) => $query->whereIn('skills.id', $skillIds)))
-            ->when(
-                in_array($activeTab, ['recommended', 'skill-match'], true),
-                function (Builder $query) use ($activeTab, $hasIntentData, $intentSignal): void {
-                    if ($activeTab === 'recommended' && $hasIntentData) {
-                        $industryIds = $intentSignal->topIndustryIds();
-                        $workModes = $intentSignal->topWorkModes();
-
-                        $industryPlaceholders = $industryIds !== [] ? implode(',', array_fill(0, count($industryIds), '?')) : 'NULL';
-                        $workModePlaceholders = $workModes !== [] ? implode(',', array_fill(0, count($workModes), '?')) : "'__none__'";
-
-                        $bindings = array_merge($industryIds, $workModes);
-
-                        $query->orderByRaw(
-                            "(matched_skills_count + CASE WHEN industry_id IN ({$industryPlaceholders}) THEN 3 ELSE 0 END + CASE WHEN work_mode IN ({$workModePlaceholders}) THEN 2 ELSE 0 END) DESC",
-                            $bindings
-                        );
-                    } else {
-                        $query->orderByDesc('matched_skills_count');
-                    }
-                },
-                fn (Builder $query) => $query->latest('published_at')
-            )
+                $query->where('salary_max', '>=', $salaryMin)
+                    ->orWhere('salary_min', '>=', $salaryMin);
+            }))
+            ->latest('scraped_at')
+            ->latest('imported_at')
             ->paginate(12)
             ->withQueryString();
 
-        $jobIds = collect($jobs->items())->pluck('id');
-        $savedJobIds = $candidate->savedJobs()->whereIn('job_listing_id', $jobIds)->pluck('job_listing_id');
-        $appliedJobIds = $candidate->applications()->whereIn('job_listing_id', $jobIds)->pluck('job_listing_id');
-        $matchScores = AiMatchScore::query()
-            ->where('candidate_id', $candidate->id)
-            ->whereIn('job_listing_id', $jobIds)
-            ->get()
-            ->keyBy('job_listing_id');
-
-        $candidateSkillIds = $candidate->skills->pluck('id')->all();
-        $candidateExperienceYears = $this->totalYearsExperience($candidate);
-        $candidateIndustryId = $candidate->preferredIndustry?->id;
-        $candidateHeadlineLower = $candidate->headline ? mb_strtolower($candidate->headline) : null;
-        $candidateWorkModePref = $candidate->work_mode_pref ?? 'any';
-        $candidateExpectedSalaryMin = $candidate->expected_salary_min;
+        $scrapedJobIds = collect($jobs->items())->pluck('id');
+        $appliedScrapedJobIds = $candidate->applications()
+            ->whereIn('scraped_job_id', $scrapedJobIds)
+            ->pluck('scraped_job_id');
 
         return Inertia::render('candidate/jobs/index', [
             'filters' => [
@@ -116,19 +91,12 @@ class CandidateJobController extends Controller
                 'verified_company' => $request->boolean('verified_company'),
                 'skill_match' => $request->boolean('skill_match'),
             ],
-            'has_intent_data' => $hasIntentData,
+            'has_intent_data' => false,
+            'source' => 'external',
             'industries' => $this->industries(),
-            'jobs' => $jobs->through(fn (JobListing $job): array => $this->jobCard(
+            'jobs' => $jobs->through(fn (ScrapedJob $job): array => $this->scrapedJobCard(
                 $job,
-                $savedJobIds->contains($job->id),
-                $appliedJobIds->contains($job->id),
-                $matchScores->get($job->id),
-                $candidateSkillIds,
-                $candidateExperienceYears,
-                $candidateIndustryId,
-                $candidateHeadlineLower,
-                $candidateWorkModePref,
-                $candidateExpectedSalaryMin,
+                $appliedScrapedJobIds->contains($job->id),
             )),
         ]);
     }
@@ -153,7 +121,7 @@ class CandidateJobController extends Controller
             : null;
         $hasApplied = $candidateApplication !== null;
 
-        abort_unless($jobListing->status === 'published' || $hasApplied, 404);
+        abort_unless($jobListing->isOpen() || $hasApplied, 404);
 
         if ($candidate) {
             $recordCandidateJobView->handle($candidate, $jobListing);
@@ -247,6 +215,7 @@ class CandidateJobController extends Controller
                     : [],
                 'similarJobs' => JobListing::query()
                     ->published()
+                    ->where(fn ($query) => $query->whereNull('closes_at')->orWhere('closes_at', '>=', now()))
                     ->select(['id', 'company_id', 'industry_id', 'title', 'slug', 'location_city', 'location_province', 'work_mode', 'job_type', 'salary_min', 'salary_max', 'is_salary_visible', 'published_at'])
                     ->with(['company:id,name,logo_url,is_verified', 'industry:id,name', 'skills:id,name'])
                     ->whereKeyNot($jobListing->id)
@@ -262,6 +231,53 @@ class CandidateJobController extends Controller
                 'candidate_phone' => $shouldRenderApplyPage ? $request->user()?->phone : null,
             ]
         );
+    }
+
+    private function scrapedJobCard(ScrapedJob $job, bool $hasApplied): array
+    {
+        return [
+            'id' => $job->id,
+            'slug' => 'scraped-'.$job->id,
+            'title' => $job->title,
+            'is_anonymous' => false,
+            'is_scraped' => true,
+            'company' => $job->company_name,
+            'company_verified' => false,
+            'industry' => null,
+            'location' => $job->location ?? '',
+            'work_mode' => strtolower($job->workplace_type ?: 'onsite'),
+            'work_mode_label' => str($job->workplace_type ?: 'onsite')->headline()->toString(),
+            'job_type' => strtolower($job->employment_type ?: 'full_time'),
+            'job_type_label' => str($job->employment_type ?: 'full_time')->headline()->toString(),
+            'salary_range' => $this->scrapedSalaryRange($job),
+            'published_at' => ($job->scraped_at ?? $job->imported_at)?->toIso8601String(),
+            'matched_skills_count' => null,
+            'ai_match_score' => null,
+            'is_saved' => false,
+            'has_applied' => $hasApplied,
+            'has_internal_apply' => filter_var($job->hr_email, FILTER_VALIDATE_EMAIL) !== false,
+            'source_platform' => $job->source_platform,
+            'skills' => collect($job->skills ?? [])
+                ->filter(fn (mixed $skill): bool => is_string($skill) && trim($skill) !== '')
+                ->values()
+                ->map(fn (string $skill, int $index): array => [
+                    'id' => $index + 1,
+                    'name' => $skill,
+                ])
+                ->all(),
+        ];
+    }
+
+    private function scrapedSalaryRange(ScrapedJob $job): string
+    {
+        $amounts = collect([$job->salary_min, $job->salary_max])
+            ->filter(fn (?int $amount): bool => $amount !== null)
+            ->map(fn (int $amount): string => number_format($amount, 0, ',', '.'))
+            ->values();
+
+        return $amounts->isEmpty()
+            ? 'Gaji tidak dicantumkan'
+            : ($job->salary_currency ?? 'IDR').' '.$amounts->implode(' - ');
     }
 
     /**

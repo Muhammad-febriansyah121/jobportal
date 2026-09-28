@@ -336,6 +336,20 @@ test('candidate with incomplete onboarding is redirected when opening locked men
         ->assertRedirect(route('candidate.onboarding.edit'));
 });
 
+test('candidate with incomplete onboarding can access profile data tabs', function () {
+    $candidate = User::factory()->candidate()->create([
+        'onboarding_completed_at' => null,
+    ]);
+
+    $this->actingAs($candidate)
+        ->get(route('candidate.skills.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('candidate/skills')
+            ->has('candidateSkills')
+        );
+});
+
 test('candidate with completed onboarding can access candidate menus', function () {
     $candidate = User::factory()->candidate()->create([
         'onboarding_completed_at' => now(),

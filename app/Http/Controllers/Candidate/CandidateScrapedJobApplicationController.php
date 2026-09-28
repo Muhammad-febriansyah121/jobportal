@@ -22,6 +22,7 @@ class CandidateScrapedJobApplicationController extends Controller
         ResolveCandidateProfile $resolveCandidateProfile,
         ScrapedJobApplicationEmailService $emailService,
     ): Response|RedirectResponse {
+        $this->ensureVisible($scrapedJob);
         $candidate = $resolveCandidateProfile->handle($request->user());
         $existing = $candidate->applications()->where('scraped_job_id', $scrapedJob->id)->first();
 
@@ -63,6 +64,7 @@ class CandidateScrapedJobApplicationController extends Controller
         ResolveCandidateProfile $resolveCandidateProfile,
         SubmitScrapedJobApplication $submitScrapedJobApplication,
     ): RedirectResponse {
+        $this->ensureVisible($scrapedJob);
         $this->ensureEmailAvailable($scrapedJob);
         $candidate = $resolveCandidateProfile->handle($request->user());
         $request->user()->update(['phone' => $request->validated('phone')]);
@@ -86,6 +88,11 @@ class CandidateScrapedJobApplicationController extends Controller
         throw ValidationException::withMessages([
             'job' => 'Email perusahaan untuk lowongan ini belum tersedia atau tidak valid.',
         ]);
+    }
+
+    private function ensureVisible(ScrapedJob $scrapedJob): void
+    {
+        abort_unless($scrapedJob->isVisible(), 404);
     }
 
     private function maskEmail(string $email): string

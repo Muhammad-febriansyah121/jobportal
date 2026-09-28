@@ -78,6 +78,11 @@ class AdminScrapedJobController extends Controller
                                 [],
                                 ['placeholder' => 'hr@perusahaan.com'],
                             ),
+                            $this->field('status', 'Status', 'select', $scrapedJob->status, $this->options([
+                                'pending' => 'Pending',
+                                'reviewed' => 'Reviewed',
+                                'rejected' => 'Rejected',
+                            ])),
                         ],
                     ),
                     $this->action(
@@ -138,7 +143,7 @@ class AdminScrapedJobController extends Controller
             'changed_fields' => array_keys($data),
         ]);
 
-        $this->flash('Email perusahaan berhasil diperbarui.');
+        $this->flash('Lowongan eksternal berhasil diperbarui.');
 
         return back();
     }

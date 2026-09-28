@@ -116,6 +116,19 @@ test('admin can update the company email for an external job', function () {
     expect($scrapedJob->refresh()->hr_email)->toBe('test-recipient@example.com');
 });
 
+test('admin can update external job moderation status', function () {
+    $admin = User::factory()->admin()->create();
+    $scrapedJob = scrapedJobAdminRecord();
+
+    $this->actingAs($admin)
+        ->patch(route('admin.scraped-jobs.update', $scrapedJob), [
+            'status' => 'rejected',
+        ])
+        ->assertRedirect();
+
+    expect($scrapedJob->refresh()->status)->toBe('rejected');
+});
+
 test('scraped job navigation uses same-origin relative urls', function () {
     $admin = User::factory()->admin()->create();
     $scrapedJob = scrapedJobAdminRecord();

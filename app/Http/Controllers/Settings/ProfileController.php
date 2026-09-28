@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Actions\Candidate\ResolveCandidateProfile;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
@@ -43,7 +44,7 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(ProfileUpdateRequest $request, ResolveCandidateProfile $resolveCandidateProfile): RedirectResponse
     {
         $user = $request->user();
         $validated = $request->safe()->except(['avatar', 'remove_avatar']);
@@ -69,10 +70,12 @@ class ProfileController extends Controller
         $user->save();
 
         if ($user->role === 'candidate') {
-            $user->candidateProfile()->updateOrCreate(
+            $candidateProfile = $user->candidateProfile()->updateOrCreate(
                 ['user_id' => $user->id],
                 ['full_name' => $user->name]
             );
+
+            $resolveCandidateProfile->refreshCompletion($candidateProfile);
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);

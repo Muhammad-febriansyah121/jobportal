@@ -84,6 +84,7 @@ class HomeController extends Controller
         ])->values()->all();
 
         $scrapedJobs = ScrapedJob::query()
+            ->visible()
             ->select([
                 'id',
                 'company_name',
@@ -273,6 +274,7 @@ class HomeController extends Controller
                 ->pluck('job_listing_id');
 
         $scrapedJobs = ScrapedJob::query()
+            ->visible()
             ->select([
                 'id',
                 'company_name',
@@ -397,6 +399,7 @@ class HomeController extends Controller
         $perPage = 9;
 
         $scrapedCompanies = ScrapedJob::query()
+            ->visible()
             ->select(['id', 'company_name', 'company_logo_url', 'location', 'scraped_at', 'imported_at'])
             ->latest('scraped_at')
             ->latest('imported_at')

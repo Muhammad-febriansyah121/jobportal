@@ -10,8 +10,11 @@ class ScrapedCompanyProfileController extends Controller
 {
     public function show(ScrapedJob $scrapedJob): Response
     {
+        abort_unless($scrapedJob->isVisible(), 404);
+
         $companyName = trim($scrapedJob->company_name);
         $jobs = ScrapedJob::query()
+            ->visible()
             ->select([
                 'id',
                 'company_name',

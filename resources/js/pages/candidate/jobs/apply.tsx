@@ -15,6 +15,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { index as cvsIndex } from '@/routes/candidate/cvs';
 import { cn } from '@/lib/utils';
 import { index, show } from '@/routes/candidate/jobs';
 
@@ -171,7 +172,7 @@ export default function CandidateJobApplyPage({
                                                 <p className="text-sm text-amber-700">
                                                     Kamu belum punya CV.{' '}
                                                     <Link
-                                                        href="/candidate/cv"
+                                                        href={cvsIndex()}
                                                         className="underline underline-offset-2 hover:text-amber-900"
                                                     >
                                                         Upload CV terlebih dahulu

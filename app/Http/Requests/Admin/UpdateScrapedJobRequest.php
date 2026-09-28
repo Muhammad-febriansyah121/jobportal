@@ -15,6 +15,7 @@ class UpdateScrapedJobRequest extends FormRequest
     {
         return [
             'hr_email' => ['nullable', 'email', 'max:255'],
+            'status' => ['sometimes', 'in:pending,reviewed,rejected'],
         ];
     }
 }

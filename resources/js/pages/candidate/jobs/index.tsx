@@ -10,6 +10,7 @@ import {
     CheckCircle2,
     Clock3,
     Eye,
+    ExternalLink,
     Filter,
     MapPin,
     Sparkles,
@@ -30,6 +31,7 @@ import { Input } from '@/components/ui/input';
 import { useTranslate } from '@/hooks/use-translate';
 import { cn } from '@/lib/utils';
 import { index, save, show, unsave } from '@/routes/candidate/jobs';
+import { show as scrapedJobShow } from '@/routes/jobs/scraped';
 
 type Option = {
     value: string;
@@ -40,6 +42,7 @@ type Job = {
     id: number;
     slug: string;
     title: string;
+    is_scraped?: boolean;
     is_anonymous: boolean;
     company?: string | null;
     company_verified: boolean;
@@ -55,6 +58,8 @@ type Job = {
     ai_match_score?: number | null;
     is_saved: boolean;
     has_applied: boolean;
+    has_internal_apply?: boolean;
+    source_platform?: string | null;
     skills: Array<{ id: number; name: string }>;
 };
 
@@ -73,6 +78,7 @@ type JobsIndexProps = {
     };
     has_intent_data: boolean;
     industries: Option[];
+    source: 'external' | 'internal';
     jobs: {
         data: Job[];
         links: Array<{
@@ -121,15 +127,22 @@ export default function CandidateJobsIndex({
     has_intent_data,
     industries,
     jobs,
+    source,
 }: JobsIndexProps) {
     const { t } = useTranslate();
 
-    const tabs = [
-        ['recommended', t('candidate.jobs.tabs.recommended')],
-        ['all', t('candidate.jobs.tabs.all')],
-        ['remote', t('candidate.jobs.tabs.remote')],
-        ['salary-transparent', t('candidate.jobs.tabs.salary_transparent')],
-    ] as const;
+    const tabs = (source === 'external'
+        ? [
+              ['all', t('candidate.jobs.tabs.all')],
+              ['remote', t('candidate.jobs.tabs.remote')],
+              ['salary-transparent', t('candidate.jobs.tabs.salary_transparent')],
+          ]
+        : [
+              ['recommended', t('candidate.jobs.tabs.recommended')],
+              ['all', t('candidate.jobs.tabs.all')],
+              ['remote', t('candidate.jobs.tabs.remote')],
+              ['salary-transparent', t('candidate.jobs.tabs.salary_transparent')],
+          ]);
 
     return (
         <>
@@ -148,6 +161,11 @@ export default function CandidateJobsIndex({
                         <p className="text-sm text-muted-foreground">
                             {t('candidate.jobs.page_description')}
                         </p>
+                        {source === 'external' ? (
+                            <span className="mt-2 inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                                Data lowongan eksternal
+                            </span>
+                        ) : null}
                     </div>
                 </div>
 
@@ -282,96 +300,118 @@ export default function CandidateJobsIndex({
                                 </Field>
                             </div>
 
-                            {/* Row 2: experience + industry + salary + toggles + submit */}
-                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                                <Field
-                                    label={t('candidate.jobs.experience')}
-                                    name="experience_level"
-                                >
-                                    <Select
-                                        name="experience_level"
-                                        defaultValue={
-                                            filters.experience_level ?? ''
-                                        }
-                                    >
-                                        <option value="">
-                                            {t('candidate.jobs.all_levels')}
-                                        </option>
-                                        <option value="entry">
-                                            {t('candidate.jobs.level_entry')}
-                                        </option>
-                                        <option value="mid">
-                                            {t('candidate.jobs.level_mid')}
-                                        </option>
-                                        <option value="senior">
-                                            {t('candidate.jobs.level_senior')}
-                                        </option>
-                                        <option value="lead">
-                                            {t('candidate.jobs.level_lead')}
-                                        </option>
-                                        <option value="manager">
-                                            {t('candidate.jobs.level_manager')}
-                                        </option>
-                                    </Select>
-                                </Field>
-                                <Field
-                                    label={t('candidate.jobs.industry')}
-                                    name="industry_id"
-                                >
-                                    <Select
-                                        name="industry_id"
-                                        defaultValue={filters.industry_id ?? ''}
-                                    >
-                                        <option value="">
-                                            {t('candidate.jobs.all_industries')}
-                                        </option>
-                                        {industries.map((industry) => (
-                                            <option
-                                                key={industry.value}
-                                                value={industry.value}
-                                            >
-                                                {industry.label}
-                                            </option>
-                                        ))}
-                                    </Select>
-                                </Field>
-                                <Field
-                                    label={t('candidate.jobs.salary_min')}
-                                    name="salary_min"
-                                >
-                                    <RupiahInput
+                            {/* Row 2: source-supported filters */}
+                            {source === 'external' ? (
+                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                    <Field
+                                        label={t('candidate.jobs.salary_min')}
                                         name="salary_min"
-                                        defaultValue={filters.salary_min}
-                                        placeholder={t(
-                                            'candidate.jobs.salary_min_placeholder',
-                                        )}
-                                    />
-                                </Field>
-                                <div className="flex flex-col justify-end gap-2.5">
-                                    <label className="flex cursor-pointer items-center gap-2 text-sm">
-                                        <input
-                                            className="size-4 rounded border-input"
-                                            type="checkbox"
-                                            name="verified_company"
-                                            value="1"
-                                            defaultChecked={
-                                                filters.verified_company
-                                            }
+                                    >
+                                        <RupiahInput
+                                            name="salary_min"
+                                            defaultValue={filters.salary_min}
+                                            placeholder={t(
+                                                'candidate.jobs.salary_min_placeholder',
+                                            )}
                                         />
-                                        {t('candidate.jobs.verified_company')}
-                                    </label>
-                                    <label className="flex cursor-pointer items-center gap-2 text-sm">
-                                        <input
-                                            className="size-4 rounded border-input"
-                                            type="checkbox"
-                                            name="skill_match"
-                                            value="1"
-                                            defaultChecked={filters.skill_match}
-                                        />
-                                        {t('candidate.jobs.skill_match')}
-                                    </label>
+                                    </Field>
+                                    <div className="flex items-end sm:col-span-1 lg:col-span-3">
+                                        <p className="rounded-lg bg-slate-50 px-3 py-2.5 text-xs leading-5 text-muted-foreground">
+                                            Filter pengalaman, industri, perusahaan terverifikasi, dan skill match tersedia setelah data lowongan internal aktif.
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                    <Field
+                                        label={t('candidate.jobs.experience')}
+                                        name="experience_level"
+                                    >
+                                        <Select
+                                            name="experience_level"
+                                            defaultValue={
+                                                filters.experience_level ?? ''
+                                            }
+                                        >
+                                            <option value="">
+                                                {t('candidate.jobs.all_levels')}
+                                            </option>
+                                            <option value="entry">
+                                                {t('candidate.jobs.level_entry')}
+                                            </option>
+                                            <option value="mid">
+                                                {t('candidate.jobs.level_mid')}
+                                            </option>
+                                            <option value="senior">
+                                                {t('candidate.jobs.level_senior')}
+                                            </option>
+                                            <option value="lead">
+                                                {t('candidate.jobs.level_lead')}
+                                            </option>
+                                            <option value="manager">
+                                                {t('candidate.jobs.level_manager')}
+                                            </option>
+                                        </Select>
+                                    </Field>
+                                    <Field
+                                        label={t('candidate.jobs.industry')}
+                                        name="industry_id"
+                                    >
+                                        <Select
+                                            name="industry_id"
+                                            defaultValue={filters.industry_id ?? ''}
+                                        >
+                                            <option value="">
+                                                {t('candidate.jobs.all_industries')}
+                                            </option>
+                                            {industries.map((industry) => (
+                                                <option
+                                                    key={industry.value}
+                                                    value={industry.value}
+                                                >
+                                                    {industry.label}
+                                                </option>
+                                            ))}
+                                        </Select>
+                                    </Field>
+                                    <Field
+                                        label={t('candidate.jobs.salary_min')}
+                                        name="salary_min"
+                                    >
+                                        <RupiahInput
+                                            name="salary_min"
+                                            defaultValue={filters.salary_min}
+                                            placeholder={t(
+                                                'candidate.jobs.salary_min_placeholder',
+                                            )}
+                                        />
+                                    </Field>
+                                    <div className="flex flex-col justify-end gap-2.5">
+                                        <label className="flex cursor-pointer items-center gap-2 text-sm">
+                                            <input
+                                                className="size-4 rounded border-input"
+                                                type="checkbox"
+                                                name="verified_company"
+                                                value="1"
+                                                defaultChecked={
+                                                    filters.verified_company
+                                                }
+                                            />
+                                            {t('candidate.jobs.verified_company')}
+                                        </label>
+                                        <label className="flex cursor-pointer items-center gap-2 text-sm">
+                                            <input
+                                                className="size-4 rounded border-input"
+                                                type="checkbox"
+                                                name="skill_match"
+                                                value="1"
+                                                defaultChecked={filters.skill_match}
+                                            />
+                                            {t('candidate.jobs.skill_match')}
+                                        </label>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="flex items-center gap-3 pt-1">
                                 <Button
@@ -432,6 +472,9 @@ function JobCard({
         : null;
     const score = job.ai_match_score ?? 0;
     const visibleSkills = job.skills.slice(0, 4);
+    const detailHref = job.is_scraped
+        ? scrapedJobShow.url(job.id)
+        : show(job.slug);
 
     return (
         <Card
@@ -457,7 +500,7 @@ function JobCard({
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
                                         <Link
-                                            href={show(job.slug)}
+                                            href={detailHref}
                                             className="line-clamp-2 text-lg leading-tight font-bold text-foreground transition-colors hover:text-[#0F4C94]"
                                         >
                                             {job.title}
@@ -488,7 +531,9 @@ function JobCard({
                                         </div>
                                     </div>
 
-                                    <SaveJobButton job={job} />
+                                    {!job.is_scraped ? (
+                                        <SaveJobButton job={job} />
+                                    ) : null}
                                 </div>
 
                                 <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -523,6 +568,11 @@ function JobCard({
                                             {t(
                                                 'candidate.jobs.anonymous_badge',
                                             )}
+                                        </Badge>
+                                    ) : job.is_scraped ? (
+                                        <Badge className="gap-1 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
+                                            <ExternalLink className="size-3" />
+                                            Eksternal
                                         </Badge>
                                     ) : job.company_verified ? (
                                         <Badge className="border-transparent bg-[#0F4C94]/10 text-[#0F4C94] hover:bg-[#0F4C94]/10">
@@ -582,7 +632,16 @@ function JobCard({
                     </div>
 
                     <aside className="border-t border-border/60 bg-slate-50/80 p-5 lg:border-t-0 lg:border-l">
-                        {score > 0 ? (
+                        {job.is_scraped ? (
+                            <div className="rounded-lg border border-dashed border-amber-200 bg-amber-50/70 p-3">
+                                <p className="text-sm font-semibold text-amber-800">
+                                    Sumber eksternal
+                                </p>
+                                <p className="mt-1 text-xs leading-5 text-amber-700">
+                                    Detail dan opsi lamaran tersedia di halaman lowongan.
+                                </p>
+                            </div>
+                        ) : score > 0 ? (
                             <div>
                                 <div
                                     className={cn(
@@ -634,18 +693,28 @@ function JobCard({
                                 asChild
                                 className="h-10 bg-[#0F4C94] hover:bg-[#093579]"
                             >
-                                <Link href={show(job.slug)}>
-                                    <Eye className="size-4" />
-                                    {job.has_applied
+                                <Link href={detailHref}>
+                                    {job.is_scraped ? (
+                                        <ExternalLink className="size-4" />
+                                    ) : (
+                                        <Eye className="size-4" />
+                                    )}
+                                    {job.is_scraped
+                                        ? job.has_internal_apply
+                                            ? 'Lihat & Lamar'
+                                            : 'Lihat lowongan'
+                                        : job.has_applied
                                         ? t('candidate.jobs.view_application')
                                         : t('candidate.jobs.detail')}
                                 </Link>
                             </Button>
-                            <SaveJobButton
-                                job={job}
-                                className="h-10 justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-                                withLabel
-                            />
+                            {!job.is_scraped ? (
+                                <SaveJobButton
+                                    job={job}
+                                    className="h-10 justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                                    withLabel
+                                />
+                            ) : null}
                         </div>
                     </aside>
                 </div>

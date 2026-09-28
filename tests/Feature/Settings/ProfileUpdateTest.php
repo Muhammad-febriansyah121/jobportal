@@ -94,6 +94,28 @@ test('candidate profile full name is synced when profile is updated', function (
     expect($candidate?->full_name)->toBe('Nama Baru Kandidat');
 });
 
+test('candidate settings update refreshes profile completion', function () {
+    $user = User::factory()->candidate()->create([
+        'name' => 'Nama Kandidat',
+    ]);
+
+    CandidateProfile::create([
+        'user_id' => $user->id,
+        'full_name' => 'Nama Kandidat',
+        'work_mode_pref' => 'any',
+        'profile_completion' => 100,
+    ]);
+
+    $this->actingAs($user)
+        ->patch(route('profile.update'), [
+            'name' => 'Nama Kandidat Baru',
+            'email' => $user->email,
+        ])
+        ->assertRedirect(route('profile.edit'));
+
+    expect($user->refresh()->candidateProfile?->profile_completion)->toBe(15);
+});
+
 test('email verification status is unchanged when the email address is unchanged', function () {
     $user = User::factory()->create();
 

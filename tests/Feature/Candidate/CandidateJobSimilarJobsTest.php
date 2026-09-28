@@ -90,3 +90,31 @@ test('similar jobs do not trigger N+1 queries', function () {
     // count. Without the fix, each extra similar job adds 2 lazy queries.
     expect($relationQueriesWithFour)->toBe($relationQueriesWithOne);
 });
+
+test('similar jobs exclude expired published jobs', function () {
+    $candidateUser = User::factory()->candidate()->create(['onboarding_completed_at' => now()]);
+    CandidateProfile::create([
+        'user_id' => $candidateUser->id,
+        'full_name' => 'Kandidat',
+        'work_mode_pref' => 'any',
+    ]);
+
+    $employer = User::factory()->employer()->create();
+    $company = Company::create([
+        'owner_id' => $employer->id,
+        'name' => 'Karivia Tech',
+        'slug' => 'karivia-tech',
+    ]);
+    $industry = Industry::factory()->create();
+
+    $main = makePublishedJob($company, $employer, $industry, 'main-open-job');
+    $expired = makePublishedJob($company, $employer, $industry, 'similar-expired');
+    $expired->update(['closes_at' => now()->subMinute()]);
+
+    $this->actingAs($candidateUser)
+        ->get(route('candidate.jobs.show', $main))
+        ->assertInertia(fn ($page) => $page->where(
+            'similarJobs',
+            fn ($jobs): bool => $jobs->isEmpty(),
+        ));
+});

@@ -64,3 +64,49 @@ test('inactive company detail returns not found', function () {
 
     $this->get(route('companies.show', $company->slug))->assertNotFound();
 });
+
+test('company detail excludes expired published jobs', function () {
+    $owner = User::factory()->employer()->create();
+    $company = Company::create([
+        'owner_id' => $owner->id,
+        'name' => 'Karivia Labs Expiry',
+        'slug' => 'karivia-labs-expiry',
+        'is_active' => true,
+    ]);
+
+    JobListing::create([
+        'company_id' => $company->id,
+        'created_by' => $owner->id,
+        'title' => 'Open Engineer',
+        'slug' => 'open-engineer-company-expiry',
+        'description' => 'Build products.',
+        'work_mode' => 'remote',
+        'job_type' => 'full_time',
+        'experience_level' => 'mid',
+        'status' => 'published',
+        'published_at' => now(),
+        'closes_at' => now()->addDay(),
+    ]);
+
+    JobListing::create([
+        'company_id' => $company->id,
+        'created_by' => $owner->id,
+        'title' => 'Expired Engineer',
+        'slug' => 'expired-engineer-company-expiry',
+        'description' => 'Build products.',
+        'work_mode' => 'remote',
+        'job_type' => 'full_time',
+        'experience_level' => 'mid',
+        'status' => 'published',
+        'published_at' => now()->subDay(),
+        'closes_at' => now()->subMinute(),
+    ]);
+
+    $this->get(route('companies.show', $company->slug))
+        ->assertInertia(fn ($page) => $page
+            ->component('companies/show')
+            ->where('company.open_jobs_count', 1)
+            ->has('jobs', 1)
+            ->where('jobs.0.title', 'Open Engineer')
+        );
+});
