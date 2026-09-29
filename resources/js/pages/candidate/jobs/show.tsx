@@ -146,7 +146,9 @@ export default function CandidateJobShow({ job, similarJobs }: JobShowProps) {
             typeof navigator !== 'undefined' &&
             navigator.clipboard?.writeText
         ) {
-            await navigator.clipboard.writeText(shareUrl);
+            await navigator.clipboard.writeText(
+                `Lihat lowongan ${job.title} di ${job.company ?? 'Karivia'}.\n${shareUrl}`,
+            );
             setShareState('copied');
             window.setTimeout(() => setShareState('idle'), 1500);
         }

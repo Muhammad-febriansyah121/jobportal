@@ -13,6 +13,19 @@
         : ($faviconUrl ?? null);
     $metaDescription = $siteSettings['site_meta_description'] ?? null;
     $metaKeywords = $siteSettings['site_meta_keywords'] ?? null;
+    $jobTitle = data_get($page, 'props.job.title');
+    $jobCompany = data_get($page, 'props.job.company');
+    $jobDescription = data_get($page, 'props.job.description');
+    $shareTitle = $jobTitle
+        ? $jobTitle.' — '.($jobCompany ?: $siteName)
+        : $siteName;
+    $shareDescription = filled($jobDescription)
+        ? \Illuminate\Support\Str::of((string) $jobDescription)
+            ->stripTags()
+            ->squish()
+            ->limit(160)
+            ->toString()
+        : $metaDescription;
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -49,8 +62,8 @@
         /></noscript>
         <!-- End Meta Pixel Code -->
 
-        @if ($metaDescription)
-            <meta name="description" content="{{ $metaDescription }}">
+        @if ($shareDescription)
+            <meta name="description" content="{{ $shareDescription }}">
         @endif
 
         @if ($metaKeywords)
@@ -60,9 +73,9 @@
         {{-- Open Graph --}}
         <meta property="og:type" content="website">
         <meta property="og:site_name" content="{{ $siteName }}">
-        <meta property="og:title" content="{{ $siteName }}">
-        @if ($metaDescription)
-            <meta property="og:description" content="{{ $metaDescription }}">
+        <meta property="og:title" content="{{ $shareTitle }}">
+        @if ($shareDescription)
+            <meta property="og:description" content="{{ $shareDescription }}">
         @endif
         @if ($ogImageUrl)
             <meta property="og:image" content="{{ $ogImageUrl }}">
@@ -73,9 +86,9 @@
 
         {{-- Twitter Card --}}
         <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:title" content="{{ $siteName }}">
-        @if ($metaDescription)
-            <meta name="twitter:description" content="{{ $metaDescription }}">
+        <meta name="twitter:title" content="{{ $shareTitle }}">
+        @if ($shareDescription)
+            <meta name="twitter:description" content="{{ $shareDescription }}">
         @endif
         @if ($ogImageUrl)
             <meta name="twitter:image" content="{{ $ogImageUrl }}">

@@ -58,6 +58,23 @@ test('scraped job opens on internal public detail page', function () {
         );
 });
 
+test('scraped job share metadata includes job title and company', function () {
+    $scrapedJob = ScrapedJob::create([
+        'source_platform' => 'dealls',
+        'source_job_id' => 'scraped-share-metadata',
+        'source_url' => 'https://example.com/jobs/share-metadata',
+        'company_name' => 'Company Metadata',
+        'title' => 'Senior Backend Engineer',
+        'description' => 'Build reliable services for growing teams.',
+        'scraped_at' => now()->subHour(),
+        'status' => 'pending',
+    ]);
+
+    $this->get(route('jobs.scraped.show', $scrapedJob))
+        ->assertSee('<meta property="og:title" content="Senior Backend Engineer — Company Metadata">', false)
+        ->assertSee('<meta property="og:description" content="Build reliable services for growing teams.">', false);
+});
+
 test('non candidate users do not receive scraped application actions', function () {
     $employer = User::factory()->employer()->create();
     $scrapedJob = ScrapedJob::create([

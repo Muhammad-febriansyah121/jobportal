@@ -124,7 +124,7 @@ export default function ScrapedJobShow({ job }: { job: ScrapedJob }) {
         }
 
         try {
-            await navigator.clipboard.writeText(shareUrl);
+            await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
             setShareState('copied');
             window.setTimeout(() => setShareState('idle'), 2000);
         } catch {
@@ -226,7 +226,7 @@ export default function ScrapedJobShow({ job }: { job: ScrapedJob }) {
                                         <DropdownMenuItem
                                             onSelect={() =>
                                                 openSocialShare(
-                                                    `https://wa.me/?text=${encodeURIComponent(`${shareText} ${getShareUrl()}`)}`,
+                                                    `https://wa.me/?text=${encodeURIComponent(`${shareText}\n${getShareUrl()}`)}`,
                                                 )
                                             }
                                         >
