@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslate } from '@/hooks/use-translate';
+import { buildJobShareMessage } from '@/lib/job-share-message';
 import { cn } from '@/lib/utils';
 import { save, show, unsave } from '@/routes/candidate/jobs';
 
@@ -124,6 +125,11 @@ export default function CandidateJobShow({ job, similarJobs }: JobShowProps) {
             typeof window === 'undefined'
                 ? show(job.slug).url
                 : window.location.href;
+        const shareMessage = buildJobShareMessage({
+            title: job.title,
+            company: job.company,
+            url: shareUrl,
+        });
 
         if (
             typeof navigator !== 'undefined' &&
@@ -132,8 +138,7 @@ export default function CandidateJobShow({ job, similarJobs }: JobShowProps) {
             try {
                 await navigator.share({
                     title: job.title,
-                    text: `Cek lowongan ${job.title} di ${job.company ?? 'Karivia'}`,
-                    url: shareUrl,
+                    text: shareMessage,
                 });
 
                 return;
@@ -146,9 +151,7 @@ export default function CandidateJobShow({ job, similarJobs }: JobShowProps) {
             typeof navigator !== 'undefined' &&
             navigator.clipboard?.writeText
         ) {
-            await navigator.clipboard.writeText(
-                `Lihat lowongan ${job.title} di ${job.company ?? 'Karivia'}.\n${shareUrl}`,
-            );
+            await navigator.clipboard.writeText(shareMessage);
             setShareState('copied');
             window.setTimeout(() => setShareState('idle'), 1500);
         }

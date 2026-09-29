@@ -24,6 +24,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import HomeLayout from '@/layouts/front/home-layout';
+import { buildJobShareMessage } from '@/lib/job-share-message';
 import { index as jobsIndex } from '@/routes/jobs';
 import type { Auth } from '@/types';
 
@@ -96,7 +97,12 @@ export default function ScrapedJobShow({ job }: { job: ScrapedJob }) {
         window.open(url, '_blank', 'noopener,noreferrer,width=640,height=520');
     };
 
-    const shareText = `Lihat lowongan ${job.title} di ${companyName}.`;
+    const getShareMessage = (): string =>
+        buildJobShareMessage({
+            title: job.title,
+            company: companyName,
+            url: getShareUrl(),
+        });
 
     const handleNativeShare = async (): Promise<void> => {
         if (typeof navigator === 'undefined' || !navigator.share) {
@@ -108,8 +114,7 @@ export default function ScrapedJobShow({ job }: { job: ScrapedJob }) {
         try {
             await navigator.share({
                 title: `${job.title} — ${companyName}`,
-                text: shareText,
-                url: getShareUrl(),
+                text: getShareMessage(),
             });
         } catch {
             return;
@@ -124,7 +129,7 @@ export default function ScrapedJobShow({ job }: { job: ScrapedJob }) {
         }
 
         try {
-            await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+            await navigator.clipboard.writeText(getShareMessage());
             setShareState('copied');
             window.setTimeout(() => setShareState('idle'), 2000);
         } catch {
@@ -226,7 +231,7 @@ export default function ScrapedJobShow({ job }: { job: ScrapedJob }) {
                                         <DropdownMenuItem
                                             onSelect={() =>
                                                 openSocialShare(
-                                                    `https://wa.me/?text=${encodeURIComponent(`${shareText}\n${getShareUrl()}`)}`,
+                                                    `https://wa.me/?text=${encodeURIComponent(getShareMessage())}`,
                                                 )
                                             }
                                         >
@@ -246,7 +251,7 @@ export default function ScrapedJobShow({ job }: { job: ScrapedJob }) {
                                         <DropdownMenuItem
                                             onSelect={() =>
                                                 openSocialShare(
-                                                    `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(getShareUrl())}`,
+                                                    `https://twitter.com/intent/tweet?text=${encodeURIComponent(getShareMessage())}`,
                                                 )
                                             }
                                         >

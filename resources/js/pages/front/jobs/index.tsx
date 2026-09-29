@@ -18,6 +18,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { useTranslate } from '@/hooks/use-translate';
 import HomeLayout from '@/layouts/front/home-layout';
+import { buildJobShareMessage } from '@/lib/job-share-message';
 import { cn } from '@/lib/utils';
 import { index as jobsIndex, show as jobShow } from '@/routes/jobs';
 import { show as scrapedJobShow } from '@/routes/jobs/scraped';
@@ -551,6 +552,11 @@ function JobCard({ job }: { job: JobItem }) {
         }
 
         const shareUrl = new URL(detailUrl, window.location.origin).toString();
+        const shareMessage = buildJobShareMessage({
+            title: job.title,
+            company: job.company,
+            url: shareUrl,
+        });
 
         if (
             typeof navigator !== 'undefined' &&
@@ -559,8 +565,7 @@ function JobCard({ job }: { job: JobItem }) {
             try {
                 await navigator.share({
                     title: `${job.title} - ${job.company ?? 'Karivia'}`,
-                    text: `Lihat lowongan ${job.title} di ${job.company ?? 'Karivia'}.`,
-                    url: shareUrl,
+                    text: shareMessage,
                 });
 
                 return;
@@ -578,9 +583,7 @@ function JobCard({ job }: { job: JobItem }) {
             typeof navigator !== 'undefined' &&
             navigator.clipboard?.writeText
         ) {
-            await navigator.clipboard.writeText(
-                `Lihat lowongan ${job.title} di ${job.company ?? 'Karivia'}.\n${shareUrl}`,
-            );
+            await navigator.clipboard.writeText(shareMessage);
             setShareState('copied');
 
             window.setTimeout(() => {

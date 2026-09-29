@@ -24,6 +24,7 @@ import {
 import { useState } from 'react';
 import HomeLayout from '@/layouts/front/home-layout';
 import { useTranslate } from '@/hooks/use-translate';
+import { buildJobShareMessage } from '@/lib/job-share-message';
 import { cn } from '@/lib/utils';
 import { login, register } from '@/routes';
 import { show as showCandidateJob } from '@/routes/candidate/jobs';
@@ -220,6 +221,11 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
             typeof window === 'undefined'
                 ? jobShow(job.slug).url
                 : window.location.href;
+        const shareMessage = buildJobShareMessage({
+            title: job.title,
+            company: job.company,
+            url: shareUrl,
+        });
 
         if (
             typeof navigator !== 'undefined' &&
@@ -228,8 +234,7 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
             try {
                 await navigator.share({
                     title: `${job.title} - ${job.company ?? 'Karivia'}`,
-                    text: `Lihat lowongan ${job.title} di ${job.company ?? 'Karivia'}.`,
-                    url: shareUrl,
+                    text: shareMessage,
                 });
 
                 return;
@@ -247,9 +252,7 @@ export default function FrontJobShow({ job, similarJobs }: JobShowProps) {
             typeof navigator !== 'undefined' &&
             navigator.clipboard?.writeText
         ) {
-            await navigator.clipboard.writeText(
-                `Lihat lowongan ${job.title} di ${job.company ?? 'Karivia'}.\n${shareUrl}`,
-            );
+            await navigator.clipboard.writeText(shareMessage);
             setShareState('copied');
 
             window.setTimeout(() => {
