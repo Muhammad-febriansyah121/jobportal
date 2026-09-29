@@ -24,8 +24,8 @@ messaging.onBackgroundMessage((payload) => {
 
     self.registration.showNotification(title, {
         body,
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
+        icon: '/karivia-favicon.svg',
+        badge: '/karivia-favicon.svg',
         data: { link },
         requireInteraction: true,
         silent: false,
