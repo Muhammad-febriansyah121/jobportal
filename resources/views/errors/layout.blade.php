@@ -29,7 +29,7 @@
     @if ($faviconUrl)
         <link rel="icon" href="{{ $faviconUrl }}" type="image/png">
     @else
-        <link rel="icon" href="/karivia-favicon.svg" type="image/svg+xml">
+        <link rel="icon" href="/favicon.ico?v=2" sizes="any">
     @endif
 
     <link rel="preconnect" href="https://fonts.googleapis.com">

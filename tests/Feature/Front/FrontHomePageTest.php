@@ -73,7 +73,7 @@ test('scraped job share metadata includes job title and company', function () {
     $this->get(route('jobs.scraped.show', $scrapedJob))
         ->assertSee('<meta property="og:title" content="Senior Backend Engineer — Company Metadata">', false)
         ->assertSee('<meta property="og:description" content="Build reliable services for growing teams.">', false)
-        ->assertDontSee('/favicon.ico', false);
+        ->assertSee('href="/favicon.ico?v=2"', false);
 });
 
 test('non candidate users do not receive scraped application actions', function () {

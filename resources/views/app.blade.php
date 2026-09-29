@@ -105,8 +105,9 @@
             <link rel="icon" href="{{ $faviconUrl }}" type="image/png">
             <link rel="apple-touch-icon" href="{{ $faviconUrl }}">
         @else
-            <link rel="icon" href="/karivia-favicon.svg" type="image/svg+xml">
-            <link rel="apple-touch-icon" href="/karivia-favicon.svg">
+            <link rel="icon" href="/favicon.ico?v=2" sizes="any">
+            <link rel="icon" href="/karivia-favicon.svg?v=2" type="image/svg+xml">
+            <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
         @endif
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
