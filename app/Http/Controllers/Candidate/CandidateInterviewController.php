@@ -34,7 +34,7 @@ class CandidateInterviewController extends Controller
             perPage: $perPage,
             currentPage: $page,
             options: [
-                'path' => $request->url(),
+                'path' => $request->getPathInfo(),
                 'query' => $request->query(),
             ],
         );

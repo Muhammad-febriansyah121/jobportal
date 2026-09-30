@@ -154,6 +154,58 @@ test('candidate interview link is only visible after passing ai stage', function
         );
 });
 
+test('candidate interview pagination links are relative URLs', function () {
+    $candidateUser = User::factory()->candidate()->create([
+        'onboarding_completed_at' => now(),
+    ]);
+    $candidate = CandidateProfile::create([
+        'user_id' => $candidateUser->id,
+        'full_name' => 'Kandidat Pagination',
+        'work_mode_pref' => 'any',
+    ]);
+    $employer = User::factory()->employer()->create();
+    $company = Company::create([
+        'owner_id' => $employer->id,
+        'name' => 'Karivia Pagination',
+        'slug' => 'karivia-pagination',
+    ]);
+    foreach (range(1, 13) as $index) {
+        $job = JobListing::create([
+            'company_id' => $company->id,
+            'created_by' => $employer->id,
+            'title' => "Pagination Tester {$index}",
+            'slug' => "pagination-tester-{$index}",
+            'description' => 'Test interview pagination links.',
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+
+        $application = $candidate->applications()->create([
+            'job_listing_id' => $job->id,
+            'status' => 'interview',
+            'applied_at' => now()->subMinutes($index),
+        ]);
+
+        Interview::create([
+            'application_id' => $application->id,
+            'scheduled_by' => $employer->id,
+            'scheduled_at' => now()->addDay(),
+            'mode' => 'online',
+            'location_url' => "https://meet.example.com/pagination-{$index}",
+            'status' => 'scheduled',
+        ]);
+    }
+
+    $this->actingAs($candidateUser)
+        ->get(route('candidate.interviews.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('candidate/interviews/index')
+            ->where('interviews.links.2.url', '/candidate/interviews?page=2')
+            ->etc()
+        );
+});
+
 test('candidate ai interview start list keeps applications available even when prior sessions exist', function () {
     $candidateUser = User::factory()->candidate()->create([
         'onboarding_completed_at' => now(),
