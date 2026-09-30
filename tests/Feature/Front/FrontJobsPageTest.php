@@ -32,6 +32,9 @@ test('guest can open public jobs page in home layout', function () {
         ->component('front/jobs/index')
         ->has('jobs.data', 1)
         ->where('jobs.data.0.slug', 'backend-engineer-public')
+        ->where('jobs.links', fn ($links): bool => collect($links)
+            ->filter(fn (array $link): bool => $link['url'] !== null)
+            ->every(fn (array $link): bool => str_starts_with($link['url'], '/')))
     );
 });
 

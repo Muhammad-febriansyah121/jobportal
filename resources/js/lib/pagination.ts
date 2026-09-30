@@ -42,6 +42,12 @@ export function shouldRenderPagination(links: PaginationNavLink[]): boolean {
     return links.some((link) => link.url !== null && !link.active);
 }
 
+export function normalizePaginationUrl(url: string): string {
+    const parsed = new URL(url, 'http://pagination.local');
+
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+}
+
 function decodePaginationLabel(label: string): string {
     return label
         .replace('&laquo;', '')

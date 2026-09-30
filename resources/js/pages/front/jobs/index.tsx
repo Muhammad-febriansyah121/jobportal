@@ -19,6 +19,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslate } from '@/hooks/use-translate';
 import HomeLayout from '@/layouts/front/home-layout';
 import { buildJobShareMessage } from '@/lib/job-share-message';
+import { normalizePaginationUrl } from '@/lib/pagination';
 import { cn } from '@/lib/utils';
 import { index as jobsIndex, show as jobShow } from '@/routes/jobs';
 import { show as scrapedJobShow } from '@/routes/jobs/scraped';
@@ -516,7 +517,13 @@ export default function FrontJobsIndex({ filters, jobs }: JobsPageProps) {
                                             link.url === null &&
                                                 'pointer-events-none opacity-40',
                                         )}
-                                        href={link.url ?? '#'}
+                                        href={
+                                            link.url
+                                                ? normalizePaginationUrl(
+                                                      link.url,
+                                                  )
+                                                : '#'
+                                        }
                                         preserveScroll
                                         preserveState
                                     >

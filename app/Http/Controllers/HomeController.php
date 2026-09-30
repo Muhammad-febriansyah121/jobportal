@@ -382,7 +382,7 @@ class HomeController extends Controller
             $total,
             $perPage,
             $currentPage,
-            ['path' => $request->url(), 'query' => $request->query()],
+            ['path' => $request->getPathInfo(), 'query' => $request->query()],
         );
 
         return Inertia::render('front/jobs/index', [
