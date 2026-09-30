@@ -205,6 +205,10 @@ class HomeController extends Controller
     public function jobs(Request $request): Response
     {
         $perPage = 16;
+        $location = $request->string('location')->toString();
+        $isRemoteLocation = mb_strtolower(trim($location)) === 'remote';
+        $workMode = mb_strtolower($request->string('work_mode')->toString());
+        $jobType = mb_strtolower($request->string('job_type')->toString());
 
         $fewApplicantsWindow = now()->subDays(JobListing::FEW_APPLICANTS_DAYS_WINDOW);
         $fewApplicantsThreshold = JobListing::FEW_APPLICANTS_THRESHOLD;
@@ -241,14 +245,13 @@ class HomeController extends Controller
                         ->orWhereHas('company', fn ($companyQuery) => $companyQuery->where('name', 'like', '%'.$keyword.'%'));
                 });
             })
-            ->when($request->filled('location'), fn ($query) => $query->where(function ($query) use ($request) {
-                $location = $request->string('location')->toString();
+            ->when($request->filled('location') && ! $isRemoteLocation, fn ($query) => $query->where(function ($query) use ($location) {
 
                 $query->where('location_city', 'like', '%'.$location.'%')
                     ->orWhere('location_province', 'like', '%'.$location.'%');
             }))
-            ->when($request->filled('work_mode'), fn ($query) => $query->where('work_mode', $request->string('work_mode')->toString()))
-            ->when($request->filled('job_type'), fn ($query) => $query->where('job_type', $request->string('job_type')->toString()))
+            ->when($isRemoteLocation || $request->filled('work_mode'), fn ($query) => $query->where('work_mode', $isRemoteLocation ? 'remote' : $workMode))
+            ->when($request->filled('job_type'), fn ($query) => $query->where('job_type', $jobType))
             ->when($request->filled('experience_level'), fn ($query) => $query->where('experience_level', $request->string('experience_level')->toString()))
             ->when($request->filled('industry_id'), fn ($query) => $query->where('industry_id', $request->integer('industry_id')))
             ->when($request->integer('salary_min') > 0, fn ($query) => $query->where('salary_min', '>=', $request->integer('salary_min')))
@@ -280,6 +283,7 @@ class HomeController extends Controller
                 'company_name',
                 'company_logo_url',
                 'title',
+                'description',
                 'location',
                 'employment_type',
                 'workplace_type',
@@ -295,15 +299,17 @@ class HomeController extends Controller
                 $query->where(function ($query) use ($keyword) {
                     $query->where('title', 'like', '%'.$keyword.'%')
                         ->orWhere('company_name', 'like', '%'.$keyword.'%')
-                        ->orWhere('location', 'like', '%'.$keyword.'%');
+                        ->orWhere('location', 'like', '%'.$keyword.'%')
+                        ->orWhere('description', 'like', '%'.$keyword.'%')
+                        ->orWhere('skills', 'like', '%'.$keyword.'%');
                 });
             })
-            ->when($request->filled('location'), fn ($query) => $query
-                ->where('location', 'like', '%'.$request->string('location')->toString().'%'))
-            ->when($request->filled('work_mode'), fn ($query) => $query
-                ->where('workplace_type', $request->string('work_mode')->toString()))
+            ->when($request->filled('location') && ! $isRemoteLocation, fn ($query) => $query
+                ->where('location', 'like', '%'.$location.'%'))
+            ->when($isRemoteLocation || $request->filled('work_mode'), fn ($query) => $query
+                ->whereRaw('LOWER(workplace_type) = ?', [$isRemoteLocation ? 'remote' : $workMode]))
             ->when($request->filled('job_type'), fn ($query) => $query
-                ->where('employment_type', $request->string('job_type')->toString()))
+                ->whereRaw('LOWER(employment_type) = ?', [$jobType]))
             ->when($request->integer('salary_min') > 0, fn ($query) => $query
                 ->where('salary_min', '>=', $request->integer('salary_min')))
             ->get();

@@ -215,15 +215,23 @@ export default function HeroSection({
     const submitSearch = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
+        const isRemoteLocation = location.toLowerCase() === 'remote';
+
         router.get(jobsIndex.url(), {
             search: query.trim() || undefined,
-            location: location || undefined,
+            location: isRemoteLocation ? undefined : location || undefined,
+            work_mode: isRemoteLocation ? 'remote' : undefined,
         });
     };
 
     const applyQuickSearch = (value: string) => {
         setQuery(value);
-        router.get(jobsIndex.url(), { search: value });
+        router.get(
+            jobsIndex.url(),
+            value === 'remote'
+                ? { work_mode: 'remote' }
+                : { search: value },
+        );
     };
 
     const sourceJobs = useMemo(() => {

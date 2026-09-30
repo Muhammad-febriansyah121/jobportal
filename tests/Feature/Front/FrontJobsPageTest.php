@@ -78,6 +78,42 @@ test('jobs page supports search filter', function () {
     );
 });
 
+test('jobs page filters external remote jobs by work mode and skill', function () {
+    ScrapedJob::create([
+        'source_platform' => 'dealls',
+        'source_job_id' => 'remote-external',
+        'source_url' => 'https://example.com/jobs/remote-external',
+        'company_name' => 'Remote Company',
+        'title' => 'Backend Engineer',
+        'description' => 'Build APIs from Jakarta.',
+        'location' => 'Jakarta',
+        'employment_type' => 'FULL_TIME',
+        'workplace_type' => 'REMOTE',
+        'skills' => ['Laravel', 'PHP'],
+        'imported_at' => now(),
+    ]);
+
+    ScrapedJob::create([
+        'source_platform' => 'dealls',
+        'source_job_id' => 'onsite-external',
+        'source_url' => 'https://example.com/jobs/onsite-external',
+        'company_name' => 'Onsite Company',
+        'title' => 'Frontend Engineer',
+        'description' => 'Build web interfaces.',
+        'location' => 'Jakarta',
+        'employment_type' => 'FULL_TIME',
+        'workplace_type' => 'ONSITE',
+        'skills' => ['React'],
+        'imported_at' => now(),
+    ]);
+
+    $this->get(route('jobs.index', ['location' => 'Remote', 'search' => 'Laravel']))
+        ->assertInertia(fn ($page) => $page
+            ->has('jobs.data', 1)
+            ->where('jobs.data.0.title', 'Backend Engineer')
+        );
+});
+
 test('jobs page combines public and scraped jobs in sixteen item pages', function () {
     $employer = User::factory()->employer()->create();
     $company = Company::create([
