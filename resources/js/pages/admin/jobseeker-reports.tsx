@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cleanPaginationLabel } from '@/lib/pagination';
+import { cleanPaginationLabel, normalizePaginationUrl } from '@/lib/pagination';
 import { jobseekerReports } from '@/routes/admin';
 
 type JobReport = {
@@ -28,9 +28,11 @@ type JobReport = {
 
 type TrendPoint = { month: string; applications: number; candidates: number; hired: number };
 type PaginationLink = { url: string | null; label: string; active: boolean };
+type Applicant = { id: number; candidate: string; email: string; job: string; company: string; status: string; applied_at: string };
 
 type Props = {
     jobs: { data: JobReport[]; links: PaginationLink[]; from: number | null; to: number | null; total: number };
+    applicants: { data: Applicant[]; links: PaginationLink[]; from: number | null; to: number | null; total: number };
     filters: { search: string };
     summary: {
         total_applications: number;
@@ -122,6 +124,7 @@ export default function JobseekerReports({ jobs, filters, summary, trend, status
                     <TabsList className="h-11 w-full justify-start gap-1 rounded-xl border bg-card p-1 sm:w-fit">
                         <TabsTrigger value="list" className="gap-2 px-4"><BriefcaseBusiness className="size-4" />Daftar lamaran</TabsTrigger>
                         <TabsTrigger value="analytics" className="gap-2 px-4"><BarChart3 className="size-4" />Analitik</TabsTrigger>
+                        <TabsTrigger value="candidates" className="gap-2 px-4"><Users className="size-4" />Kandidat</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="list" className="space-y-4">
@@ -146,7 +149,25 @@ export default function JobseekerReports({ jobs, filters, summary, trend, status
                                         </TableBody>
                                     </Table>
                                 </div>
-                                <div className="flex flex-wrap items-center justify-between gap-3 border-t px-6 py-4 text-sm text-muted-foreground"><span>{jobs.from ?? 0}–{jobs.to ?? 0} dari {number(jobs.total)} lowongan</span><div className="flex gap-2">{jobs.links.map((link) => <Button key={`${link.label}-${link.url}`} asChild={Boolean(link.url)} disabled={!link.url} variant={link.active ? 'default' : 'outline'} size="sm"><Link href={link.url ?? '#'}>{cleanPaginationLabel(link.label)}</Link></Button>)}</div></div>
+                                <PaginationFooter from={jobs.from} to={jobs.to} total={jobs.total} links={jobs.links} label="lowongan" />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="candidates" className="space-y-4">
+                        <Card>
+                            <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div><CardTitle>Daftar kandidat yang melamar</CardTitle><CardDescription>Telusuri jobseeker, lowongan, dan perusahaan tujuan lamaran.</CardDescription></div>
+                                <SearchForm search={search} setSearch={setSearch} onSubmit={submitSearch} />
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <div className="overflow-x-auto">
+                                    <Table className="min-w-240">
+                                        <TableHeader><TableRow className="bg-muted/30"><TableHead>Jobseeker</TableHead><TableHead>Lowongan</TableHead><TableHead>Perusahaan</TableHead><TableHead>Status</TableHead><TableHead>Waktu melamar</TableHead></TableRow></TableHeader>
+                                        <TableBody>{applicants.data.length ? applicants.data.map((applicant) => <TableRow key={applicant.id}><TableCell><div className="font-semibold">{applicant.candidate}</div><div className="text-xs text-muted-foreground">{applicant.email}</div></TableCell><TableCell className="font-medium">{applicant.job}</TableCell><TableCell>{applicant.company}</TableCell><TableCell><Badge variant={applicant.status === 'hired' ? 'default' : 'secondary'}>{STATUS_LABELS[applicant.status] ?? applicant.status}</Badge></TableCell><TableCell className="text-muted-foreground">{applicant.applied_at}</TableCell></TableRow>) : <TableRow><TableCell colSpan={5} className="h-32 text-center text-muted-foreground">Belum ada kandidat yang melamar.</TableCell></TableRow>}</TableBody>
+                                    </Table>
+                                </div>
+                                <PaginationFooter from={applicants.from} to={applicants.to} total={applicants.total} links={applicants.links} label="kandidat" />
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -167,6 +188,14 @@ export default function JobseekerReports({ jobs, filters, summary, trend, status
 
 function Empty() {
  return <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">Belum ada data analytics.</div>; 
+}
+
+function SearchForm({ search, setSearch, onSubmit }: { search: string; setSearch: (value: string) => void; onSubmit: (event: React.FormEvent<HTMLFormElement>) => void }) {
+    return <form onSubmit={onSubmit} className="flex w-full max-w-sm gap-2"><div className="relative flex-1"><Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" /><Input aria-label="Cari report" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari kandidat/lowongan..." className="pl-9" /></div><Button type="submit">Cari</Button></form>;
+}
+
+function PaginationFooter({ from, to, total, links, label }: { from: number | null; to: number | null; total: number; links: PaginationLink[]; label: string }) {
+    return <div className="flex flex-wrap items-center justify-between gap-3 border-t px-6 py-4 text-sm text-muted-foreground"><span>{from ?? 0}–{to ?? 0} dari {number(total)} {label}</span><div className="flex gap-2">{links.map((link) => <Button key={`${link.label}-${link.url}`} asChild={Boolean(link.url)} disabled={!link.url} variant={link.active ? 'default' : 'outline'} size="sm"><Link href={link.url ? normalizePaginationUrl(link.url) : '#'}>{cleanPaginationLabel(link.label)}</Link></Button>)}</div></div>;
 }
 
 function Metric({ label, value, icon: Icon, tone }: { label: string; value: number | string; icon: LucideIcon; tone: 'blue' | 'violet' | 'emerald' | 'amber' | 'rose' }) {

@@ -49,6 +49,8 @@ test('admin can view jobseeker application report and analytics data', function 
             ->where('summary.hired_candidates', 1)
             ->where('jobs.data.0.applications', 1)
             ->where('statusCounts.hired', 1)
+            ->where('applicants.data.0.candidate', 'Candidate Report')
+            ->where('applicants.data.0.company', 'Report Company')
             ->has('trend', 12)
             ->has('topJobs', 1));
 });

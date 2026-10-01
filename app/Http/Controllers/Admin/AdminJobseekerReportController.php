@@ -52,6 +52,40 @@ class AdminJobseekerReportController extends Controller
                 'published_at' => $job->published_at?->format('d M Y') ?? '-',
             ]);
 
+        $applicants = Application::query()
+            ->select(['id', 'job_listing_id', 'candidate_id', 'status', 'applied_at'])
+            ->with([
+                'candidate:id,user_id,full_name',
+                'candidate.user:id,name,email',
+                'jobListing:id,company_id,title',
+                'jobListing.company:id,name',
+            ])
+            ->whereNotNull('job_listing_id')
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($query) use ($search): void {
+                    $query->whereHas('candidate', fn ($candidate) => $candidate
+                        ->where('full_name', 'like', "%{$search}%")
+                        ->orWhereHas('user', fn ($user) => $user
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")))
+                        ->orWhereHas('jobListing', fn ($job) => $job
+                            ->where('title', 'like', "%{$search}%")
+                            ->orWhereHas('company', fn ($company) => $company->where('name', 'like', "%{$search}%")));
+                });
+            })
+            ->latest('applied_at')
+            ->paginate(10, pageName: 'candidates_page')
+            ->withQueryString()
+            ->through(fn (Application $application): array => [
+                'id' => $application->id,
+                'candidate' => $application->candidate?->full_name ?? $application->candidate?->user?->name ?? 'Kandidat tanpa nama',
+                'email' => $application->candidate?->user?->email ?? '-',
+                'job' => $application->jobListing?->title ?? '-',
+                'company' => $application->jobListing?->company?->name ?? 'Tanpa perusahaan',
+                'status' => $application->status,
+                'applied_at' => $application->applied_at?->format('d M Y H:i') ?? '-',
+            ]);
+
         $statusCounts = Application::query()
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
@@ -89,6 +123,7 @@ class AdminJobseekerReportController extends Controller
 
         return Inertia::render('admin/jobseeker-reports', [
             'jobs' => $jobs,
+            'applicants' => $applicants,
             'filters' => ['search' => $search],
             'summary' => [
                 'total_applications' => $totalApplications,
