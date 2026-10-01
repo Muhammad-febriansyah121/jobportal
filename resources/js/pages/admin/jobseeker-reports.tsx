@@ -1,15 +1,16 @@
 import { Head, Link, router } from '@inertiajs/react';
+import type { ColumnDef } from '@tanstack/react-table';
 import type { ApexOptions } from 'apexcharts';
 import { BarChart3, BriefcaseBusiness, Search, TrendingUp, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ReactApexChart from 'react-apexcharts';
+import { JobseekerDataTable } from '@/components/admin/jobseeker-data-table';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cleanPaginationLabel, normalizePaginationUrl } from '@/lib/pagination';
 import { jobseekerReports } from '@/routes/admin';
@@ -33,7 +34,7 @@ type Applicant = { id: number; candidate: string; email: string; job: string; co
 type Props = {
     jobs: { data: JobReport[]; links: PaginationLink[]; from: number | null; to: number | null; total: number };
     applicants: { data: Applicant[]; links: PaginationLink[]; from: number | null; to: number | null; total: number };
-    filters: { search: string };
+    filters: { search: string; tab: 'list' | 'analytics' | 'candidates' };
     summary: {
         total_applications: number;
         unique_candidates: number;
@@ -60,6 +61,24 @@ const chartBase: ApexOptions = {
     tooltip: { theme: 'light' },
 };
 
+const jobColumns: ColumnDef<JobReport>[] = [
+    { accessorKey: 'title', header: 'Lowongan', cell: ({ row }) => <div><div className="font-semibold">{row.original.title}</div><div className="text-xs text-muted-foreground">{row.original.company}</div></div> },
+    { accessorKey: 'status', header: 'Status', cell: ({ row }) => <Badge variant={row.original.status === 'published' ? 'default' : 'secondary'}>{row.original.status === 'published' ? 'Aktif' : row.original.status}</Badge> },
+    { accessorKey: 'applications', header: 'Total pelamar', cell: ({ row }) => <div className="text-right font-bold tabular-nums">{number(row.original.applications)}</div> },
+    { accessorKey: 'shortlisted', header: 'Shortlist', cell: ({ row }) => <div className="text-right tabular-nums">{number(row.original.shortlisted)}</div> },
+    { accessorKey: 'interview', header: 'Interview', cell: ({ row }) => <div className="text-right tabular-nums">{number(row.original.interview)}</div> },
+    { accessorKey: 'hired', header: 'Diterima', cell: ({ row }) => <div className="text-right font-semibold text-emerald-600 tabular-nums">{number(row.original.hired)}</div> },
+    { accessorKey: 'published_at', header: 'Terbit', cell: ({ row }) => <span className="text-muted-foreground">{row.original.published_at}</span> },
+];
+
+const applicantColumns: ColumnDef<Applicant>[] = [
+    { accessorKey: 'candidate', header: 'Jobseeker', cell: ({ row }) => <div><div className="font-semibold">{row.original.candidate}</div><div className="text-xs text-muted-foreground">{row.original.email}</div></div> },
+    { accessorKey: 'job', header: 'Lowongan', cell: ({ row }) => <span className="font-medium">{row.original.job}</span> },
+    { accessorKey: 'company', header: 'Perusahaan' },
+    { accessorKey: 'status', header: 'Status', cell: ({ row }) => <Badge variant={row.original.status === 'hired' ? 'default' : 'secondary'}>{STATUS_LABELS[row.original.status] ?? row.original.status}</Badge> },
+    { accessorKey: 'applied_at', header: 'Waktu melamar', cell: ({ row }) => <span className="text-muted-foreground">{row.original.applied_at}</span> },
+];
+
 function number(value: number): string {
     return value.toLocaleString('id-ID');
 }
@@ -74,9 +93,33 @@ function month(value: string): string {
 
 export default function JobseekerReports({ jobs, applicants, filters, summary, trend, statusCounts, topJobs }: Props) {
     const [search, setSearch] = useState(filters.search);
-    const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        router.get(jobseekerReports({ query: { search: search || undefined } }).url, {}, { preserveState: true, preserveScroll: true });
+    const tab = filters.tab;
+
+    useEffect(() => {
+        const normalizedSearch = search.trim();
+
+        if (normalizedSearch === filters.search) {
+            return;
+        }
+
+        const timeout = window.setTimeout(() => {
+            router.get(
+                jobseekerReports({ query: { search: normalizedSearch || undefined, tab: filters.tab } }).url,
+                {},
+                { preserveState: true, preserveScroll: true, replace: true },
+            );
+        }, 350);
+
+        return () => window.clearTimeout(timeout);
+    }, [filters.search, filters.tab, search]);
+
+    const handleTabChange = (nextTab: string) => {
+        const next = nextTab as Props['filters']['tab'];
+        router.get(
+            jobseekerReports({ query: { search: search.trim() || undefined, tab: next } }).url,
+            {},
+            { preserveState: true, preserveScroll: true, replace: true },
+        );
     };
 
     const statusEntries = useMemo(() => Object.entries(statusCounts).filter(([, total]) => total > 0), [statusCounts]);
@@ -120,7 +163,7 @@ export default function JobseekerReports({ jobs, applicants, filters, summary, t
                     <Metric label="Response rate" value={`${summary.response_rate}%`} icon={TrendingUp} tone="rose" />
                 </div>
 
-                <Tabs defaultValue="list" className="space-y-5">
+                <Tabs value={tab} onValueChange={handleTabChange} className="space-y-5">
                     <TabsList className="h-11 w-full justify-start gap-1 rounded-xl border bg-card p-1 sm:w-fit">
                         <TabsTrigger value="list" className="gap-2 px-4"><BriefcaseBusiness className="size-4" />Daftar lamaran</TabsTrigger>
                         <TabsTrigger value="analytics" className="gap-2 px-4"><BarChart3 className="size-4" />Analitik</TabsTrigger>
@@ -131,24 +174,10 @@ export default function JobseekerReports({ jobs, applicants, filters, summary, t
                         <Card>
                             <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div><CardTitle>Lamaran per lowongan</CardTitle><CardDescription>Urut berdasarkan jumlah pelamar terbanyak.</CardDescription></div>
-                                <form onSubmit={submitSearch} className="flex w-full max-w-sm gap-2">
-                                    <div className="relative flex-1"><Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" /><Input aria-label="Cari lowongan atau perusahaan" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari lowongan/perusahaan..." className="pl-9" /></div>
-                                    <Button type="submit">Cari</Button>
-                                </form>
+                                <SearchForm search={search} setSearch={setSearch} placeholder="Cari lowongan/perusahaan..." />
                             </CardHeader>
                             <CardContent className="p-0">
-                                <div className="overflow-x-auto">
-                                    <Table className="min-w-220">
-                                        <TableHeader><TableRow className="bg-muted/30"><TableHead>Lowongan</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Total pelamar</TableHead><TableHead className="text-right">Shortlist</TableHead><TableHead className="text-right">Interview</TableHead><TableHead className="text-right">Diterima</TableHead><TableHead>Terbit</TableHead></TableRow></TableHeader>
-                                        <TableBody>
-                                            {jobs.data.length ? jobs.data.map((job) => <TableRow key={job.id}>
-                                                <TableCell><div className="font-semibold">{job.title}</div><div className="text-xs text-muted-foreground">{job.company}</div></TableCell>
-                                                <TableCell><Badge variant={job.status === 'published' ? 'default' : 'secondary'}>{job.status === 'published' ? 'Aktif' : job.status}</Badge></TableCell>
-                                                <TableCell className="text-right font-bold tabular-nums">{number(job.applications)}</TableCell><TableCell className="text-right tabular-nums">{number(job.shortlisted)}</TableCell><TableCell className="text-right tabular-nums">{number(job.interview)}</TableCell><TableCell className="text-right font-semibold text-emerald-600 tabular-nums">{number(job.hired)}</TableCell><TableCell className="text-muted-foreground">{job.published_at}</TableCell>
-                                            </TableRow>) : <TableRow><TableCell colSpan={7} className="h-32 text-center text-muted-foreground">Belum ada data lamaran.</TableCell></TableRow>}
-                                        </TableBody>
-                                    </Table>
-                                </div>
+                                <JobseekerDataTable columns={jobColumns} data={jobs.data} emptyState="Belum ada data lamaran." className="min-w-220" />
                                 <PaginationFooter from={jobs.from} to={jobs.to} total={jobs.total} links={jobs.links} label="lowongan" />
                             </CardContent>
                         </Card>
@@ -158,15 +187,10 @@ export default function JobseekerReports({ jobs, applicants, filters, summary, t
                         <Card>
                             <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div><CardTitle>Daftar kandidat yang melamar</CardTitle><CardDescription>Telusuri jobseeker, lowongan, dan perusahaan tujuan lamaran.</CardDescription></div>
-                                <SearchForm search={search} setSearch={setSearch} onSubmit={submitSearch} />
+                                <SearchForm search={search} setSearch={setSearch} placeholder="Cari kandidat/lowongan..." />
                             </CardHeader>
                             <CardContent className="p-0">
-                                <div className="overflow-x-auto">
-                                    <Table className="min-w-240">
-                                        <TableHeader><TableRow className="bg-muted/30"><TableHead>Jobseeker</TableHead><TableHead>Lowongan</TableHead><TableHead>Perusahaan</TableHead><TableHead>Status</TableHead><TableHead>Waktu melamar</TableHead></TableRow></TableHeader>
-                                        <TableBody>{applicants.data.length ? applicants.data.map((applicant) => <TableRow key={applicant.id}><TableCell><div className="font-semibold">{applicant.candidate}</div><div className="text-xs text-muted-foreground">{applicant.email}</div></TableCell><TableCell className="font-medium">{applicant.job}</TableCell><TableCell>{applicant.company}</TableCell><TableCell><Badge variant={applicant.status === 'hired' ? 'default' : 'secondary'}>{STATUS_LABELS[applicant.status] ?? applicant.status}</Badge></TableCell><TableCell className="text-muted-foreground">{applicant.applied_at}</TableCell></TableRow>) : <TableRow><TableCell colSpan={5} className="h-32 text-center text-muted-foreground">Belum ada kandidat yang melamar.</TableCell></TableRow>}</TableBody>
-                                    </Table>
-                                </div>
+                                <JobseekerDataTable columns={applicantColumns} data={applicants.data} emptyState="Belum ada kandidat yang melamar." className="min-w-240" />
                                 <PaginationFooter from={applicants.from} to={applicants.to} total={applicants.total} links={applicants.links} label="kandidat" />
                             </CardContent>
                         </Card>
@@ -190,8 +214,8 @@ function Empty() {
  return <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">Belum ada data analytics.</div>; 
 }
 
-function SearchForm({ search, setSearch, onSubmit }: { search: string; setSearch: (value: string) => void; onSubmit: (event: React.FormEvent<HTMLFormElement>) => void }) {
-    return <form onSubmit={onSubmit} className="flex w-full max-w-sm gap-2"><div className="relative flex-1"><Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" /><Input aria-label="Cari report" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari kandidat/lowongan..." className="pl-9" /></div><Button type="submit">Cari</Button></form>;
+function SearchForm({ search, setSearch, placeholder }: { search: string; setSearch: (value: string) => void; placeholder: string }) {
+    return <div className="relative w-full max-w-sm"><Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" /><Input aria-label="Cari report" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={placeholder} className="pl-9" /></div>;
 }
 
 function PaginationFooter({ from, to, total, links, label }: { from: number | null; to: number | null; total: number; links: PaginationLink[]; label: string }) {

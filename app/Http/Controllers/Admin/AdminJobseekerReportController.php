@@ -15,6 +15,9 @@ class AdminJobseekerReportController extends Controller
     public function __invoke(Request $request): Response
     {
         $search = $request->string('search')->trim()->toString();
+        $tab = in_array($request->string('tab')->toString(), ['list', 'analytics', 'candidates'], true)
+            ? $request->string('tab')->toString()
+            : 'list';
         $applications = Application::query()
             ->whereNotNull('job_listing_id')
             ->where('applied_at', '>=', $this->reportStart())
@@ -124,7 +127,7 @@ class AdminJobseekerReportController extends Controller
         return Inertia::render('admin/jobseeker-reports', [
             'jobs' => $jobs,
             'applicants' => $applicants,
-            'filters' => ['search' => $search],
+            'filters' => ['search' => $search, 'tab' => $tab],
             'summary' => [
                 'total_applications' => $totalApplications,
                 'unique_candidates' => Application::distinct('candidate_id')->count('candidate_id'),
