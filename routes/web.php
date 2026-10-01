@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\AdminDatabaseBackupController;
 use App\Http\Controllers\Admin\AdminFaqController;
 use App\Http\Controllers\Admin\AdminIndustryController;
 use App\Http\Controllers\Admin\AdminJobListingController;
+use App\Http\Controllers\Admin\AdminJobseekerReportController;
 use App\Http\Controllers\Admin\AdminLaporanController;
 use App\Http\Controllers\Admin\AdminLegalPageController;
 use App\Http\Controllers\Admin\AdminMentorController;
@@ -225,6 +226,7 @@ Route::prefix('admin')
             ->parameters(['activity-logs' => 'activityLog'])
             ->only(['index', 'show']);
         Route::get('analytics', AdminPlatformAnalyticsController::class)->name('analytics');
+        Route::get('jobseeker-reports', AdminJobseekerReportController::class)->name('jobseeker-reports');
 
         Route::get('laporan', [AdminLaporanController::class, 'index'])->name('laporan.index');
         Route::get('laporan/revenue', [AdminLaporanController::class, 'exportRevenue'])->name('laporan.revenue');

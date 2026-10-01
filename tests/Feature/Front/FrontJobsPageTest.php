@@ -117,6 +117,41 @@ test('jobs page filters external remote jobs by work mode and skill', function (
         );
 });
 
+test('jobs search does not match common words inside scraped descriptions', function () {
+    ScrapedJob::create([
+        'source_platform' => 'dealls',
+        'source_job_id' => 'it-noise',
+        'source_url' => 'https://example.com/jobs/it-noise',
+        'company_name' => 'Marketing Company',
+        'title' => 'Marketing Specialist',
+        'description' => 'Work with digital teams and build strong partnerships.',
+        'location' => 'Jakarta',
+        'employment_type' => 'FULL_TIME',
+        'workplace_type' => 'ONSITE',
+        'skills' => ['Marketing'],
+        'imported_at' => now(),
+    ]);
+
+    ScrapedJob::create([
+        'source_platform' => 'dealls',
+        'source_job_id' => 'it-match',
+        'source_url' => 'https://example.com/jobs/it-match',
+        'company_name' => 'IT Company',
+        'title' => 'IT Support Specialist',
+        'description' => 'Support internal systems.',
+        'location' => 'Jakarta',
+        'employment_type' => 'FULL_TIME',
+        'workplace_type' => 'ONSITE',
+        'skills' => ['Helpdesk'],
+        'imported_at' => now(),
+    ]);
+
+    $this->get(route('jobs.index', ['search' => 'it']))
+        ->assertInertia(fn ($page) => $page
+            ->has('jobs.data', 1)
+            ->where('jobs.data.0.title', 'IT Support Specialist'));
+});
+
 test('jobs page combines public and scraped jobs in sixteen item pages', function () {
     $employer = User::factory()->employer()->create();
     $company = Company::create([

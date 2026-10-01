@@ -300,8 +300,7 @@ class HomeController extends Controller
                     $query->where('title', 'like', '%'.$keyword.'%')
                         ->orWhere('company_name', 'like', '%'.$keyword.'%')
                         ->orWhere('location', 'like', '%'.$keyword.'%')
-                        ->orWhere('description', 'like', '%'.$keyword.'%')
-                        ->orWhere('skills', 'like', '%'.$keyword.'%');
+                        ->orWhereJsonContains('skills', $keyword);
                 });
             })
             ->when($request->filled('location') && ! $isRemoteLocation, fn ($query) => $query

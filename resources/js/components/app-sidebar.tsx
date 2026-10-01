@@ -80,6 +80,7 @@ import { dashboard, logout } from '@/routes';
 import {
     dashboard as adminDashboard,
     analytics as adminAnalytics,
+    jobseekerReports as adminJobseekerReports,
 } from '@/routes/admin';
 import { index as adminActivityLogs } from '@/routes/admin/activity-logs';
 import { index as adminAiAuditLogs } from '@/routes/admin/ai-audit-logs';
@@ -225,6 +226,11 @@ function AdminSidebar() {
                         title: t('nav.admin.analytics'),
                         href: adminAnalytics(),
                         icon: BarChart3,
+                    },
+                    {
+                        title: 'Report Jobseeker',
+                        href: adminJobseekerReports(),
+                        icon: Users,
                     },
                 ],
             },
