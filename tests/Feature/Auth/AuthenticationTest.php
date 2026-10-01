@@ -330,7 +330,7 @@ test('google login is rejected for inactive accounts', function () {
     $response->assertSessionHasErrors('google');
 });
 
-test('google register callback creates an active candidate account', function () {
+test('google register callback rejects accounts without a phone number', function () {
     Setting::set('google_login_client_id', 'test-google-client-id.apps.googleusercontent.com');
     Setting::set('google_login_client_secret', 'test-google-client-secret');
 
@@ -358,12 +358,9 @@ test('google register callback creates an active candidate account', function ()
 
     $user = User::query()->where('email', 'new-google-user@example.com')->first();
 
-    expect($user)->not->toBeNull();
-    expect($user?->role)->toBe('candidate');
-    expect($user?->is_active)->toBeTrue();
-    expect($user?->email_verified_at)->not->toBeNull();
-    expect(CandidateProfile::query()->where('user_id', $user?->id)->exists())->toBeTrue();
-
-    $this->assertAuthenticatedAs($user);
-    $response->assertRedirect(route('candidate.dashboard', absolute: false));
+    expect($user)->toBeNull();
+    $this->assertGuest();
+    $response
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors('google');
 });

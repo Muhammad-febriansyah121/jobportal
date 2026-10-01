@@ -1358,6 +1358,8 @@
     "employer.team.full_name_placeholder": "Budi Santoso",
     "employer.team.email": "Email",
     "employer.team.email_placeholder": "budi@perusahaan.com",
+    "employer.team.phone": "Nomor telepon",
+    "employer.team.phone_placeholder": "081234567890",
     "employer.team.password": "Password",
     "employer.team.password_placeholder": "Min. 8 karakter",
     "employer.team.role": "Role",

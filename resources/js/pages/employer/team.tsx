@@ -94,6 +94,7 @@ export default function EmployerTeam({ company, members, isOwner }: TeamProps) {
     const addForm = useForm({
         name: '',
         email: '',
+        phone: '',
         password: '',
     });
 
@@ -187,6 +188,29 @@ export default function EmployerTeam({ company, members, isOwner }: TeamProps) {
                                         />
                                         <InputError
                                             message={addForm.errors.email}
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="add-phone">
+                                            {t('employer.team.phone')}
+                                        </Label>
+                                        <Input
+                                            id="add-phone"
+                                            type="tel"
+                                            required
+                                            placeholder={t(
+                                                'employer.team.phone_placeholder',
+                                            )}
+                                            value={addForm.data.phone}
+                                            onChange={(e) =>
+                                                addForm.setData(
+                                                    'phone',
+                                                    e.target.value,
+                                                )
+                                            }
+                                        />
+                                        <InputError
+                                            message={addForm.errors.phone}
                                         />
                                     </div>
                                     <div className="space-y-1.5">

@@ -178,22 +178,8 @@ class GoogleLoginController extends Controller
                 ]);
             }
 
-            $name = trim((string) ($tokenData['name'] ?? ''));
-            $name = $name !== '' ? $name : Str::before($email, '@');
-
-            $user = User::create([
-                'name' => $name,
-                'email' => $email,
-                'password' => Str::random(32),
-                'role' => 'candidate',
-                'is_active' => true,
-                'email_verified_at' => now(),
-            ]);
-
-            $user->candidateProfile()->create([
-                'user_id' => $user->id,
-                'full_name' => $name,
-                'work_mode_pref' => 'any',
+            throw ValidationException::withMessages([
+                'google' => 'Registrasi Google membutuhkan nomor telepon. Gunakan formulir registrasi biasa.',
             ]);
         }
 

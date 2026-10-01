@@ -34,6 +34,7 @@ test('owner can add a new user and they are automatically tied to the company', 
         ->post(route('employer.team.store'), [
             'name' => 'Budi Santoso',
             'email' => 'budi@karivia.test',
+            'phone' => '081234567890',
             'password' => 'password123',
             'role' => 'recruiter',
         ])
@@ -62,6 +63,7 @@ test('duplicate email is rejected', function () {
         ->post(route('employer.team.store'), [
             'name' => 'Someone',
             'email' => 'existing@karivia.test',
+            'phone' => '081234567890',
             'password' => 'password123',
             'role' => 'viewer',
         ])
@@ -83,8 +85,23 @@ test('non-owner cannot add team members', function () {
         ->post(route('employer.team.store'), [
             'name' => 'Intruder',
             'email' => 'intruder@karivia.test',
+            'phone' => '081234567890',
             'password' => 'password123',
             'role' => 'viewer',
         ])
         ->assertForbidden();
+});
+
+test('team member requires a phone number', function () {
+    [$owner] = createOwnerWithCompany();
+
+    actingAs($owner)
+        ->post(route('employer.team.store'), [
+            'name' => 'Tanpa Nomor',
+            'email' => 'tanpa-nomor@karivia.test',
+            'password' => 'password123',
+        ])
+        ->assertSessionHasErrors('phone');
+
+    expect(User::where('email', 'tanpa-nomor@karivia.test')->exists())->toBeFalse();
 });

@@ -59,6 +59,7 @@ class EmployerTeamController extends Controller
         $user = User::create([
             'name' => $request->validated('name'),
             'email' => $request->validated('email'),
+            'phone' => $request->validated('phone'),
             'password' => bcrypt($request->validated('password')),
             'role' => 'employer',
         ]);

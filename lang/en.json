@@ -1358,6 +1358,8 @@
     "employer.team.full_name_placeholder": "Budi Santoso",
     "employer.team.email": "Email",
     "employer.team.email_placeholder": "budi@company.com",
+    "employer.team.phone": "Phone number",
+    "employer.team.phone_placeholder": "081234567890",
     "employer.team.password": "Password",
     "employer.team.password_placeholder": "Min. 8 characters",
     "employer.team.role": "Role",

@@ -21,6 +21,7 @@ class SaveTeamMemberRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['required', 'string', 'max:20', 'regex:/^\+?[0-9\s-]{8,20}$/'],
             'password' => ['required', 'string', Password::min(8)],
         ];
     }
@@ -32,6 +33,8 @@ class SaveTeamMemberRequest extends FormRequest
     {
         return [
             'email.unique' => 'Email tersebut sudah terdaftar. Gunakan fitur tambah anggota lama untuk mengundang pengguna yang sudah ada.',
+            'phone.required' => 'Nomor telepon wajib diisi.',
+            'phone.regex' => 'Format nomor telepon tidak valid.',
         ];
     }
 }
