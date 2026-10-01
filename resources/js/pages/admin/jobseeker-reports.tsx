@@ -72,7 +72,7 @@ function month(value: string): string {
     );
 }
 
-export default function JobseekerReports({ jobs, filters, summary, trend, statusCounts, topJobs }: Props) {
+export default function JobseekerReports({ jobs, applicants, filters, summary, trend, statusCounts, topJobs }: Props) {
     const [search, setSearch] = useState(filters.search);
     const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
