@@ -15,7 +15,7 @@ class AdminJobseekerReportController extends Controller
     public function __invoke(Request $request): Response
     {
         $search = $request->string('search')->trim()->toString();
-        $tab = in_array($request->string('tab')->toString(), ['list', 'analytics', 'candidates'], true)
+        $tab = in_array($request->string('tab')->toString(), ['list', 'analytics', 'candidates', 'external'], true)
             ? $request->string('tab')->toString()
             : 'list';
         $applications = Application::query()
@@ -89,6 +89,42 @@ class AdminJobseekerReportController extends Controller
                 'applied_at' => $application->applied_at?->format('d M Y H:i') ?? '-',
             ]);
 
+        $externalApplicants = Application::query()
+            ->select(['id', 'scraped_job_id', 'candidate_id', 'status', 'applied_at'])
+            ->with([
+                'candidate:id,user_id,full_name',
+                'candidate.user:id,name,email',
+                'scrapedJob:id,title,company_name,source_platform,source_url',
+            ])
+            ->whereNotNull('scraped_job_id')
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($query) use ($search): void {
+                    $query->whereHas('candidate', fn ($candidate) => $candidate
+                        ->where('full_name', 'like', "%{$search}%")
+                        ->orWhereHas('user', fn ($user) => $user
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")))
+                        ->orWhereHas('scrapedJob', fn ($job) => $job
+                            ->where('title', 'like', "%{$search}%")
+                            ->orWhere('company_name', 'like', "%{$search}%")
+                            ->orWhere('source_platform', 'like', "%{$search}%"));
+                });
+            })
+            ->latest('applied_at')
+            ->paginate(10, pageName: 'external_page')
+            ->withQueryString()
+            ->through(fn (Application $application): array => [
+                'id' => $application->id,
+                'candidate' => $application->candidate?->full_name ?? $application->candidate?->user?->name ?? 'Kandidat tanpa nama',
+                'email' => $application->candidate?->user?->email ?? '-',
+                'job' => $application->scrapedJob?->title ?? '-',
+                'company' => $application->scrapedJob?->company_name ?? 'Perusahaan eksternal',
+                'platform' => $application->scrapedJob?->source_platform ?? '-',
+                'source_url' => $application->scrapedJob?->source_url,
+                'status' => $application->status,
+                'applied_at' => $application->applied_at?->format('d M Y H:i') ?? '-',
+            ]);
+
         $statusCounts = Application::query()
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
@@ -127,6 +163,7 @@ class AdminJobseekerReportController extends Controller
         return Inertia::render('admin/jobseeker-reports', [
             'jobs' => $jobs,
             'applicants' => $applicants,
+            'externalApplicants' => $externalApplicants,
             'filters' => ['search' => $search, 'tab' => $tab],
             'summary' => [
                 'total_applications' => $totalApplications,

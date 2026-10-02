@@ -4,6 +4,7 @@ use App\Models\Application;
 use App\Models\CandidateProfile;
 use App\Models\Company;
 use App\Models\JobListing;
+use App\Models\ScrapedJob;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -59,4 +60,40 @@ test('non admin users cannot view jobseeker application report', function () {
     $this->actingAs(User::factory()->candidate()->create())
         ->get(route('admin.jobseeker-reports'))
         ->assertForbidden();
+});
+
+test('admin can view external job applications in external tab', function () {
+    $admin = User::factory()->admin()->create();
+    $candidate = User::factory()->candidate()->create();
+    $profile = CandidateProfile::create([
+        'user_id' => $candidate->id,
+        'full_name' => 'External Candidate',
+    ]);
+    $scrapedJob = ScrapedJob::create([
+        'source_platform' => 'dealls',
+        'source_job_id' => 'external-report-1',
+        'source_url' => 'https://dealls.com/jobs/external-report-1',
+        'company_name' => 'External Company',
+        'title' => 'External Product Manager',
+        'description' => 'External job for report.',
+        'status' => 'reviewed',
+        'imported_at' => now(),
+    ]);
+    Application::create([
+        'scraped_job_id' => $scrapedJob->id,
+        'candidate_id' => $profile->id,
+        'status' => 'applied',
+        'applied_at' => now(),
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.jobseeker-reports', ['tab' => 'external']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/jobseeker-reports')
+            ->where('filters.tab', 'external')
+            ->where('externalApplicants.data.0.candidate', 'External Candidate')
+            ->where('externalApplicants.data.0.company', 'External Company')
+            ->where('externalApplicants.data.0.platform', 'dealls')
+            ->etc());
 });
