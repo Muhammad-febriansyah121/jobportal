@@ -125,6 +125,7 @@ import { index as candidateInterviews } from '@/routes/candidate/interviews';
 import { index as candidateMessages } from '@/routes/candidate/messages';
 import { edit as candidateOnboardingEdit } from '@/routes/candidate/onboarding';
 import { index as candidatePricing } from '@/routes/candidate/pricing';
+import { referral as candidateReferral } from '@/routes/candidate';
 import { index as candidateJobs } from '@/routes/candidate/jobs';
 import { index as candidateSavedJobs } from '@/routes/candidate/saved-jobs';
 import { index as candidateSystemReviews } from '@/routes/candidate/system-reviews';
@@ -719,6 +720,11 @@ function CandidateSidebar() {
                         href: candidatePricing(),
                         icon: CreditCard,
                         lockWhenProfileIncomplete: true,
+                    },
+                    {
+                        title: t('nav.candidate.referral'),
+                        href: candidateReferral(),
+                        icon: Gift,
                     },
                     {
                         title: t('common.settings'),

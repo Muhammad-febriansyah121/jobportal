@@ -33,8 +33,9 @@ class SaveReferralCampaignRequest extends FormRequest
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
             'max_redemptions' => ['nullable', 'integer', 'min:1'],
+            'max_referrals_per_user' => ['nullable', 'integer', 'min:1'],
             'is_active' => ['boolean'],
-            'codes' => ['required', 'string', 'max:50'],
+            'codes' => ['nullable', 'string', 'max:50'],
             'owner_email' => ['nullable', 'email', 'exists:users,email'],
         ];
     }

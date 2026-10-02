@@ -115,6 +115,34 @@ test('candidate registration redeems referral code atomically', function () {
         ->and((int) $profile->ai_interview_quota_balance)->toBe(2);
 });
 
+test('candidate registration creates an automatic referral code', function () {
+    $campaign = ReferralCampaign::create([
+        'name' => 'Automatic Referral',
+        'slug' => 'automatic-referral-'.uniqid(),
+        'cv_builder_quota' => 1,
+        'ai_interview_quota' => 1,
+        'validity_days' => 30,
+        'max_referrals_per_user' => 5,
+        'is_active' => true,
+    ]);
+
+    $this->post(route('register.store'), [
+        'name' => 'Automatic Referral Candidate',
+        'email' => 'automatic-referral@example.com',
+        'phone' => '081234567890',
+        'role' => 'candidate',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ])->assertRedirect();
+
+    $user = User::query()->where('email', 'automatic-referral@example.com')->firstOrFail();
+
+    expect(ReferralCode::query()
+        ->where('referral_campaign_id', $campaign->id)
+        ->where('owner_user_id', $user->id)
+        ->value('max_redemptions'))->toBe(5);
+});
+
 test('invalid referral code rolls back candidate registration', function () {
     $response = $this->from(route('register', ['type' => 'candidate']))
         ->post(route('register.store'), [

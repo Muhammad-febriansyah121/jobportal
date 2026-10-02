@@ -2,6 +2,7 @@
 
 namespace App\Actions\Fortify;
 
+use App\Actions\Candidate\EnsureCandidateReferralCode;
 use App\Actions\Candidate\RedeemReferralVoucher;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
@@ -20,6 +21,7 @@ class CreateNewUser implements CreatesNewUsers
     public function __construct(
         private RecaptchaService $recaptchaService,
         private RedeemReferralVoucher $redeemReferralVoucher,
+        private EnsureCandidateReferralCode $ensureCandidateReferralCode,
     ) {}
 
     /**
@@ -77,6 +79,8 @@ class CreateNewUser implements CreatesNewUsers
                         ]);
                     }
                 }
+
+                $this->ensureCandidateReferralCode->handle($candidate);
             }
 
             return $user;

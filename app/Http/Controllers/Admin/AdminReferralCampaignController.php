@@ -35,15 +35,17 @@ class AdminReferralCampaignController extends Controller
     public function store(SaveReferralCampaignRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $code = Str::upper(trim($data['codes']));
+        $code = filled($data['codes'] ?? null) ? Str::upper(trim($data['codes'])) : null;
         $ownerEmail = $data['owner_email'] ?? null;
         unset($data['codes']);
         unset($data['owner_email']);
         $campaign = ReferralCampaign::create($data);
-        $campaign->codes()->create([
-            'code' => $code,
-            'owner_user_id' => $ownerEmail ? User::query()->where('email', $ownerEmail)->value('id') : null,
-        ]);
+        if ($code !== null) {
+            $campaign->codes()->create([
+                'code' => $code,
+                'owner_user_id' => $ownerEmail ? User::query()->where('email', $ownerEmail)->value('id') : null,
+            ]);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Campaign referral berhasil dibuat.']);
 

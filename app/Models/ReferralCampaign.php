@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'slug', 'description', 'ai_token_amount', 'cv_builder_quota', 'ai_interview_quota', 'validity_days', 'starts_at', 'ends_at', 'max_redemptions', 'is_active'])]
+#[Fillable(['name', 'slug', 'description', 'ai_token_amount', 'cv_builder_quota', 'ai_interview_quota', 'validity_days', 'starts_at', 'ends_at', 'max_redemptions', 'max_referrals_per_user', 'is_active'])]
 class ReferralCampaign extends Model
 {
     /** @use HasFactory<ReferralCampaignFactory> */

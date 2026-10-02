@@ -17,6 +17,7 @@ use App\Http\Controllers\Candidate\CandidateMessageController;
 use App\Http\Controllers\Candidate\CandidateOnboardingController;
 use App\Http\Controllers\Candidate\CandidatePricingController;
 use App\Http\Controllers\Candidate\CandidateProfileController;
+use App\Http\Controllers\Candidate\CandidateReferralController;
 use App\Http\Controllers\Candidate\CandidateReportController;
 use App\Http\Controllers\Candidate\CandidateSavedJobController;
 use App\Http\Controllers\Candidate\CandidateScrapedJobApplicationController;
@@ -30,6 +31,7 @@ Route::prefix('candidate')
     ->middleware(['auth', 'verified', 'candidate'])
     ->group(function () {
         Route::get('/', CandidateDashboardController::class)->name('dashboard');
+        Route::get('referral', CandidateReferralController::class)->name('referral');
 
         Route::get('onboarding', [CandidateOnboardingController::class, 'edit'])->name('onboarding.edit');
         Route::post('onboarding', [CandidateOnboardingController::class, 'store'])->name('onboarding.store');

@@ -81,6 +81,27 @@ test('pricing page renders voucher expiry without a paid topup', function () {
         );
 });
 
+test('candidate receives an automatic referral code and can view share link', function () {
+    $this->campaign->update(['max_referrals_per_user' => 10]);
+
+    $this->actingAs($this->candidate)
+        ->get(route('candidate.referral'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('candidate/referral')
+            ->where('referral.campaign', 'October Referral')
+            ->where('referral.successful_redemptions', 0)
+            ->where('referral.max_redemptions', 10)
+            ->where('referral.share_url', fn (mixed $value): bool => is_string($value) && str_contains($value, 'referral_code=KARIVIA-'))
+            ->etc()
+        );
+
+    expect(ReferralCode::query()
+        ->where('referral_campaign_id', $this->campaign->id)
+        ->where('owner_user_id', $this->candidate->id)
+        ->count())->toBe(1);
+});
+
 test('example', function () {
     $response = $this->get('/');
 

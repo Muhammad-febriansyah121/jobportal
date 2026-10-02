@@ -28,6 +28,7 @@ class ReferralCampaignFactory extends Factory
             'starts_at' => now()->subDay(),
             'ends_at' => now()->addMonth(),
             'max_redemptions' => null,
+            'max_referrals_per_user' => null,
             'is_active' => true,
         ];
     }
