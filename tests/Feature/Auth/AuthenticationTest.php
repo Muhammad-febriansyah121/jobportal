@@ -229,6 +229,20 @@ test('users are redirected to intended url after login when redirect query is pr
     $response->assertRedirect($intended);
 });
 
+test('candidate login ignores stale admin intended url', function () {
+    $user = User::factory()->candidate()->create();
+
+    $this->get(route('login', ['redirect' => '/admin/jobseeker-reports']))
+        ->assertOk();
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $response->assertRedirect(route('candidate.dashboard', absolute: false));
+});
+
 test('users with two factor enabled are redirected to two factor challenge', function () {
     $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
 

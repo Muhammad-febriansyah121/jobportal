@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class GoogleLoginController extends Controller
@@ -198,14 +199,35 @@ class GoogleLoginController extends Controller
         Auth::login($user, $remember);
         $request->session()->regenerate();
 
-        $target = match ($user->role) {
+        $fallbackTarget = match ($user->role) {
             'candidate' => route('candidate.dashboard'),
             'employer' => route('employer.dashboard'),
             'admin' => route('admin.dashboard'),
             default => route('dashboard'),
         };
 
-        return redirect()->intended($target);
+        $intended = $request->session()->pull('url.intended');
+        $target = is_string($intended) && $this->canAccessIntendedPath($user->role, $intended)
+            ? $intended
+            : $fallbackTarget;
+
+        return redirect($target);
+    }
+
+    private function canAccessIntendedPath(string $role, string $target): bool
+    {
+        $path = trim((string) parse_url($target, PHP_URL_PATH), '/');
+
+        if ($path === '') {
+            return true;
+        }
+
+        return match ($role) {
+            'admin' => true,
+            'candidate' => ! Str::startsWith($path, ['admin/', 'employer/']) && $path !== 'admin' && $path !== 'employer',
+            'employer' => ! Str::startsWith($path, ['admin/', 'candidate/']) && $path !== 'admin' && $path !== 'candidate',
+            default => ! Str::startsWith($path, ['admin/', 'candidate/', 'employer/']) && ! in_array($path, ['admin', 'candidate', 'employer'], true),
+        };
     }
 
     private function validationMessage(ValidationException $exception): string
