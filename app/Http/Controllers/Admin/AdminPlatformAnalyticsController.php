@@ -7,11 +7,10 @@ use App\Models\AiAuditLog;
 use App\Models\Application;
 use App\Models\Company;
 use App\Models\CompanyVerification;
-use App\Models\JobListing;
-use App\Models\JobListingAnalytic;
 use App\Models\Payment;
 use App\Models\PricingPlan;
 use App\Models\Report;
+use App\Models\ScrapedJob;
 use App\Models\Subscription;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -30,8 +29,8 @@ class AdminPlatformAnalyticsController extends Controller
                 'users' => User::count(),
                 'companies' => Company::count(),
                 'verified_companies' => Company::where('is_verified', true)->count(),
-                'jobs_live' => JobListing::where('status', 'published')->count(),
-                'applications_month' => Application::where('created_at', '>=', now()->startOfMonth())->count(),
+                'jobs_live' => ScrapedJob::whereIn('status', ScrapedJob::VISIBLE_STATUSES)->count(),
+                'applications_month' => Application::whereNotNull('scraped_job_id')->where('created_at', '>=', now()->startOfMonth())->count(),
                 'active_subscriptions' => Subscription::where('status', 'active')->count(),
                 'verification_queue' => CompanyVerification::where('status', 'pending')->count(),
                 'pending_payments' => Payment::where('status', 'pending')->count(),
@@ -40,8 +39,8 @@ class AdminPlatformAnalyticsController extends Controller
                 'users' => $this->monthlyCounts(User::query()),
                 'companies' => $this->monthlyCounts(Company::query()),
                 'candidates' => $this->monthlyCounts(User::query()->where('role', 'candidate')),
-                'jobs' => $this->monthlyCounts(JobListing::query()),
-                'applications' => $this->monthlyCounts(Application::query()),
+                'jobs' => $this->monthlyCounts(ScrapedJob::query()),
+                'applications' => $this->monthlyCounts(Application::query()->whereNotNull('scraped_job_id')),
                 'reports' => $this->monthlyCounts(Report::query()),
                 'aiUsage' => $this->monthlyCounts(AiAuditLog::query()),
             ],
@@ -53,6 +52,7 @@ class AdminPlatformAnalyticsController extends Controller
             ],
             'revenueSeries' => $this->monthlyRevenue(),
             'applicationFunnel' => Application::query()
+                ->whereNotNull('scraped_job_id')
                 ->selectRaw('status, count(*) as total')
                 ->groupBy('status')
                 ->pluck('total', 'status'),
@@ -60,22 +60,15 @@ class AdminPlatformAnalyticsController extends Controller
                 ->selectRaw('role, count(*) as total')
                 ->groupBy('role')
                 ->pluck('total', 'role'),
-            'jobsByStatus' => JobListing::query()
+            'jobsByStatus' => ScrapedJob::query()
                 ->selectRaw('status, count(*) as total')
                 ->groupBy('status')
                 ->pluck('total', 'status'),
-            'jobsByWorkMode' => JobListing::query()
-                ->selectRaw('work_mode, count(*) as total')
-                ->groupBy('work_mode')
+            'jobsByWorkMode' => ScrapedJob::query()
+                ->selectRaw('workplace_type as work_mode, count(*) as total')
+                ->groupBy('workplace_type')
                 ->pluck('total', 'work_mode'),
-            'topIndustries' => JobListing::query()
-                ->where('status', 'published')
-                ->join('industries', 'job_listings.industry_id', '=', 'industries.id')
-                ->selectRaw('industries.name, count(*) as total')
-                ->groupBy('industries.id', 'industries.name')
-                ->orderByDesc('total')
-                ->limit(10)
-                ->get(),
+            'topIndustries' => collect(),
             'subscriptionsByPlan' => PricingPlan::query()
                 ->withCount(['subscriptions as active_count' => fn (Builder $q) => $q->where('subscriptions.status', 'active')])
                 ->withSum(['payments as revenue' => fn (Builder $q) => $q->where('payments.status', 'paid')], 'amount')
@@ -164,8 +157,8 @@ class AdminPlatformAnalyticsController extends Controller
 
     private function conversionRate(): float
     {
-        $views = JobListingAnalytic::sum('views_count');
-        $applications = Application::count();
+        $views = ScrapedJob::whereIn('status', ScrapedJob::VISIBLE_STATUSES)->count();
+        $applications = Application::whereNotNull('scraped_job_id')->count();
 
         if ($views === 0) {
             return 0.0;

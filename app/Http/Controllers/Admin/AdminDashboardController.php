@@ -8,9 +8,9 @@ use App\Models\Application;
 use App\Models\CandidateWalletTransaction;
 use App\Models\Company;
 use App\Models\Interview;
-use App\Models\JobListing;
 use App\Models\Payment;
 use App\Models\Report;
+use App\Models\ScrapedJob;
 use App\Models\Subscription;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -34,8 +34,8 @@ class AdminDashboardController extends Controller
             'total_candidates' => User::where('role', 'candidate')->count(),
             'total_companies' => Company::count(),
             'total_mentors' => User::where('role', 'mentor')->count(),
-            'active_jobs' => JobListing::where('status', 'published')->count(),
-            'total_applications' => Application::count(),
+            'active_jobs' => ScrapedJob::whereIn('status', ScrapedJob::VISIBLE_STATUSES)->count(),
+            'total_applications' => Application::whereNotNull('scraped_job_id')->count(),
             'pending_company_verifications' => Company::where('verification_status', 'pending')->count(),
             'pending_reports' => Report::whereIn('status', ['open', 'pending'])->count(),
             'active_subscriptions' => Subscription::where('status', 'active')->count(),
@@ -129,7 +129,7 @@ class AdminDashboardController extends Controller
             'registrationSeries' => [
                 'users' => $this->monthlyCounts(User::query()),
                 'companies' => $this->monthlyCounts(Company::query()),
-                'jobs' => $this->monthlyCounts(JobListing::query()),
+                'jobs' => $this->monthlyCounts(ScrapedJob::query()),
             ],
             'aiUsageByFeature' => AiAuditLog::query()
                 ->selectRaw('feature, count(*) as total')
@@ -142,22 +142,21 @@ class AdminDashboardController extends Controller
                     'total' => (int) $log->total,
                 ]),
             'conversionFunnel' => [
-                'applications' => Application::count(),
+                'applications' => Application::whereNotNull('scraped_job_id')->count(),
                 'interviews' => Interview::count(),
-                'hired' => Application::where('status', 'hired')->count(),
+                'hired' => Application::whereNotNull('scraped_job_id')->where('status', 'hired')->count(),
             ],
-            'topJobs' => JobListing::query()
+            'topJobs' => ScrapedJob::query()
                 ->withCount('applications')
-                ->with(['company:id,name'])
                 ->orderByDesc('applications_count')
                 ->limit(5)
-                ->get(['id', 'title', 'company_id', 'status', 'work_mode'])
-                ->map(fn (JobListing $job): array => [
+                ->get(['id', 'title', 'company_name', 'status', 'workplace_type'])
+                ->map(fn (ScrapedJob $job): array => [
                     'id' => $job->id,
                     'title' => $job->title,
-                    'company' => $job->company?->name ?? '—',
-                    'status' => $job->status,
-                    'work_mode' => $job->work_mode,
+                    'company' => $job->company_name ?? '—',
+                    'status' => in_array($job->status, ScrapedJob::VISIBLE_STATUSES, true) ? 'published' : $job->status,
+                    'work_mode' => $job->workplace_type,
                     'applications_count' => $job->applications_count,
                 ])
                 ->values()
