@@ -18,6 +18,7 @@ import {
     FileSearch,
     FileText,
     GraduationCap,
+    Gift,
     Grid2X2,
     LayoutGrid,
     Library,
@@ -87,6 +88,8 @@ import { index as adminAiAuditLogs } from '@/routes/admin/ai-audit-logs';
 import { show as adminAiHealth } from '@/routes/admin/ai-health';
 import { index as adminAssessmentQuestions } from '@/routes/admin/assessment-questions';
 import { index as adminCandidatePricingMenus } from '@/routes/admin/candidate-pricing-menus';
+import { index as adminReferralCampaigns } from '@/routes/admin/referral-campaigns';
+import { referralReports as adminReferralReports } from '@/routes/admin';
 import { index as adminCareerResources } from '@/routes/admin/career-resources';
 import { index as adminCompanies } from '@/routes/admin/companies';
 import { index as adminCompanySizes } from '@/routes/admin/company-sizes';
@@ -349,6 +352,16 @@ function AdminSidebar() {
                         title: t('nav.admin.candidate_pricing'),
                         href: adminCandidatePricingMenus(),
                         icon: CreditCard,
+                    },
+                    {
+                        title: 'Referral campaigns',
+                        href: adminReferralCampaigns(),
+                        icon: Gift,
+                    },
+                    {
+                        title: 'Referral report',
+                        href: adminReferralReports(),
+                        icon: BarChart3,
                     },
                     {
                         title: t('nav.admin.subscriptions'),

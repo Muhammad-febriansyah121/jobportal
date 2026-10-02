@@ -1,0 +1,11 @@
+import { Head, Link, router } from '@inertiajs/react';
+import { Plus, Power } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { create, toggle } from '@/routes/admin/referral-campaigns';
+
+type Campaign = { id: number; name: string; slug: string; redemptions: number; status: string; validity_days: number };
+
+export default function ReferralCampaignIndex({ campaigns }: { campaigns: Campaign[] }) {
+    return <><Head title="Referral campaigns" /><div className="space-y-6 p-6"><div className="flex items-center justify-between"><div><h1 className="text-xl font-semibold">Referral campaigns</h1><p className="mt-1 text-sm text-muted-foreground">Kelola kode referral dan benefit wallet candidate.</p></div><Button asChild className="bg-[#0F4C94] hover:bg-[#093579]"><Link href={create()}> <Plus className="mr-2 size-4" />Campaign baru</Link></Button></div><Card className="border-border shadow-none"><CardContent className="p-0"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="border-b bg-muted/30 text-left text-muted-foreground"><tr><th className="px-5 py-3 font-medium">Campaign</th><th className="px-5 py-3 font-medium">Redemption</th><th className="px-5 py-3 font-medium">Masa aktif</th><th className="px-5 py-3 font-medium">Status</th><th className="px-5 py-3" /></tr></thead><tbody>{campaigns.map((campaign) => <tr key={campaign.id} className="border-b last:border-0"><td className="px-5 py-4"><p className="font-medium">{campaign.name}</p><p className="text-xs text-muted-foreground">{campaign.slug}</p></td><td className="px-5 py-4">{campaign.redemptions}</td><td className="px-5 py-4">{campaign.validity_days} hari</td><td className="px-5 py-4"><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">{campaign.status}</span></td><td className="px-5 py-4 text-right"><Button variant="ghost" size="icon" aria-label="Toggle campaign" onClick={() => router.patch(toggle(campaign.id).url)}><Power className="size-4" /></Button></td></tr>)}</tbody></table></div>{campaigns.length === 0 ? <p className="p-8 text-center text-sm text-muted-foreground">Belum ada campaign.</p> : null}</CardContent></Card></div></>;
+}

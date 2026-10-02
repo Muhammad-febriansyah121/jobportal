@@ -2,6 +2,8 @@
 
 use App\Models\ActivityLog;
 use App\Models\CandidateProfile;
+use App\Models\ReferralCampaign;
+use App\Models\ReferralCode;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\RecaptchaService;
@@ -78,6 +80,56 @@ test('candidate can register and profile is created', function () {
 
     $this->assertAuthenticated();
     $response->assertRedirect();
+});
+
+test('candidate registration redeems referral code atomically', function () {
+    $campaign = ReferralCampaign::create([
+        'name' => 'Registration Referral',
+        'slug' => 'registration-referral-'.uniqid(),
+        'cv_builder_quota' => 1,
+        'ai_interview_quota' => 2,
+        'validity_days' => 30,
+        'is_active' => true,
+    ]);
+    ReferralCode::create([
+        'referral_campaign_id' => $campaign->id,
+        'code' => 'JOIN-KARIVIA',
+        'is_active' => true,
+    ]);
+
+    $this->post(route('register.store'), [
+        'name' => 'Referral Candidate',
+        'email' => 'referral-candidate@example.com',
+        'phone' => '081234567890',
+        'role' => 'candidate',
+        'referral_code' => 'join-karivia',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ])->assertRedirect();
+
+    $profile = CandidateProfile::query()
+        ->whereBelongsTo(User::query()->where('email', 'referral-candidate@example.com')->firstOrFail(), 'user')
+        ->firstOrFail();
+
+    expect((int) $profile->cv_builder_quota_balance)->toBe(1)
+        ->and((int) $profile->ai_interview_quota_balance)->toBe(2);
+});
+
+test('invalid referral code rolls back candidate registration', function () {
+    $response = $this->from(route('register', ['type' => 'candidate']))
+        ->post(route('register.store'), [
+            'name' => 'Invalid Referral Candidate',
+            'email' => 'invalid-referral@example.com',
+            'phone' => '081234567890',
+            'role' => 'candidate',
+            'referral_code' => 'NOT-VALID',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+    $response->assertSessionHasErrors('referral_code');
+    expect(User::where('email', 'invalid-referral@example.com')->exists())->toBeFalse();
+    $this->assertGuest();
 });
 
 test('employer can register without candidate profile', function () {

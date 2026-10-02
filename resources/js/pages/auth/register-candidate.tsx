@@ -33,6 +33,7 @@ type Props = {
     recaptchaEnabled?: boolean;
     skills?: string[];
     googleLoginClientId?: string;
+    referralCode?: string;
 };
 
 const partnerCompanies = [
@@ -51,6 +52,7 @@ export default function RegisterCandidate({
     recaptchaEnabled = false,
     skills = [],
     googleLoginClientId = '',
+    referralCode = '',
 }: Props) {
     const { t } = useTranslate();
     const { name, branding } = usePage().props as {
@@ -338,6 +340,22 @@ export default function RegisterCandidate({
                                             <InputError
                                                 message={errors.phone}
                                             />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="referral_code" className="text-sm font-medium">
+                                                {t('auth.register_candidate.referral_code_label')}
+                                            </Label>
+                                            <Input
+                                                id="referral_code"
+                                                type="text"
+                                                name="referral_code"
+                                                defaultValue={referralCode}
+                                                placeholder={t('auth.register_candidate.referral_code_placeholder')}
+                                                autoComplete="off"
+                                                className="h-11 rounded-lg bg-muted/50 uppercase transition-shadow focus:ring-2 focus:ring-primary/20"
+                                            />
+                                            <InputError message={errors.referral_code} />
                                         </div>
 
                                         <div className="space-y-2">

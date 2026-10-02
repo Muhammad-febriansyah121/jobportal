@@ -180,6 +180,7 @@ class FortifyServiceProvider extends ServiceProvider
             if ($page === 'auth/register-candidate') {
                 $props['skills'] = Skill::orderBy('name')->pluck('name')->toArray();
                 $props['googleLoginClientId'] = $googleLoginClientId;
+                $props['referralCode'] = trim((string) $request->query('referral_code', $request->query('ref', '')));
             }
 
             return Inertia::render($page, $props);

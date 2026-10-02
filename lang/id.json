@@ -4971,6 +4971,8 @@
     "auth.register_candidate.email_label": "Email",
     "auth.register_candidate.phone_label": "No. Telepon",
     "auth.register_candidate.phone_placeholder": "08xxxxxxxxxx",
+    "auth.register_candidate.referral_code_label": "Kode referral (opsional)",
+    "auth.register_candidate.referral_code_placeholder": "Masukkan kode referral",
     "auth.register_candidate.password_label": "Password",
     "auth.register_employer.password_label": "Password",
     "admin.dashboard.leaderboard.suspend": "Ditangguhkan",

@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'expected_salary_min', 'expected_salary_max', 'work_mode_pref', 'availability',
     'preferred_industry_id', 'preferred_role', 'profile_completion', 'ai_cv_summary',
     'cv_builder_json', 'cv_builder_updated_at', 'ai_token_balance',
-    'cv_builder_quota_balance', 'free_cv_builder_granted_at',
+    'cv_builder_quota_balance', 'free_cv_builder_granted_at', 'cv_builder_quota_expires_at',
     'ai_interview_quota_balance', 'free_ai_interview_granted_at', 'ai_interview_quota_expires_at',
     'linkedin_url', 'github_url', 'portfolio_url',
 ])]
@@ -26,6 +26,7 @@ class CandidateProfile extends Model
             'cv_builder_json' => 'array',
             'cv_builder_updated_at' => 'datetime',
             'free_cv_builder_granted_at' => 'datetime',
+            'cv_builder_quota_expires_at' => 'datetime',
             'free_ai_interview_granted_at' => 'datetime',
             'ai_interview_quota_expires_at' => 'datetime',
         ];

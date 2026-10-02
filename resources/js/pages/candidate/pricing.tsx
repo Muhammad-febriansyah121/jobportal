@@ -1,6 +1,6 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useTranslate } from '@/hooks/use-translate';
-import { CalendarClock, CheckIcon, Coins, Info, ReceiptText, Sparkles, Wallet } from 'lucide-react';
+import { CalendarClock, CheckIcon, Coins, Info, ReceiptText, Sparkles, Ticket, Wallet } from 'lucide-react';
 import type { ComponentType } from 'react';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { index as cvBuilderIndex } from '@/routes/candidate/cvs';
-import { claimTrial as claimTrialPricing, purchase as purchasePricing } from '@/routes/candidate/pricing';
+import { claimTrial as claimTrialPricing, purchase as purchasePricing, redeemVoucher } from '@/routes/candidate/pricing';
 
 type CandidatePricingMenu = {
     id: number;
@@ -74,6 +74,7 @@ export default function CandidatePricing({
     recentTransactions,
 }: CandidatePricingPageProps) {
     const { t } = useTranslate();
+    const voucherForm = useForm({ code: '' });
     const buyMenu = (menuId: number) => {
         router.post(purchasePricing(menuId).url);
     };
@@ -127,6 +128,42 @@ export default function CandidatePricing({
                             <span>{t('candidate.pricing.topup_accumulative_note')}</span>
                         </div>
                     </CardContent>
+                </Card>
+
+                <Card className="border-[#E5EDF7] shadow-none">
+                    <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                        <div className="flex items-start gap-3">
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#0F4C94]/8 text-[#0F4C94]">
+                                <Ticket className="size-5" />
+                            </div>
+                            <div>
+                                <p className="font-semibold text-foreground">Punya kode referral?</p>
+                                <p className="mt-1 text-sm text-muted-foreground">Masukkan kode untuk mendapatkan kuota tools gratis.</p>
+                            </div>
+                        </div>
+                        <form
+                            className="flex w-full max-w-md gap-2"
+                            onSubmit={(event) => {
+                                event.preventDefault();
+                                voucherForm.post(redeemVoucher.url(), {
+                                    preserveScroll: true,
+                                    onSuccess: () => voucherForm.reset(),
+                                });
+                            }}
+                        >
+                            <input
+                                value={voucherForm.data.code}
+                                onChange={(event) => voucherForm.setData('code', event.target.value.toUpperCase())}
+                                placeholder="CONTOH-KODE"
+                                aria-label="Kode referral"
+                                className="h-10 min-w-0 flex-1 rounded-lg border border-input bg-background px-3 text-sm uppercase outline-none transition focus:border-[#0F4C94] focus:ring-2 focus:ring-[#0F4C94]/10"
+                            />
+                            <Button type="submit" disabled={voucherForm.processing || !voucherForm.data.code.trim()} className="h-10 shrink-0 bg-[#0F4C94] px-4 hover:bg-[#093579]">
+                                {voucherForm.processing ? 'Memproses…' : 'Gunakan kode'}
+                            </Button>
+                        </form>
+                    </CardContent>
+                    {voucherForm.errors.code ? <p className="px-5 pb-4 text-sm text-red-600">{voucherForm.errors.code}</p> : null}
                 </Card>
 
                 {/* Pending payment */}
@@ -185,7 +222,7 @@ export default function CandidatePricing({
                                     key={menu.id}
                                     className={`relative flex flex-col rounded-2xl border p-6 transition-all ${
                                         isPopular
-                                            ? 'border-[#0F4C94] bg-[#0F4C94] text-white shadow-xl shadow-[#0F4C94]/20'
+                                            ? 'border-[#0F4C94] bg-[#0F4C94] text-white shadow-sm'
                                             : 'border-border bg-white shadow-sm hover:shadow-md'
                                     }`}
                                 >

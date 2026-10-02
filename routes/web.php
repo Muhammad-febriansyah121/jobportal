@@ -22,6 +22,8 @@ use App\Http\Controllers\Admin\AdminLegalPageController;
 use App\Http\Controllers\Admin\AdminMentorController;
 use App\Http\Controllers\Admin\AdminPlatformAnalyticsController;
 use App\Http\Controllers\Admin\AdminPricingPlanController;
+use App\Http\Controllers\Admin\AdminReferralCampaignController;
+use App\Http\Controllers\Admin\AdminReferralReportController;
 use App\Http\Controllers\Admin\AdminReportController;
 use App\Http\Controllers\Admin\AdminSalaryInsightController;
 use App\Http\Controllers\Admin\AdminScrapedJobController;
@@ -176,6 +178,11 @@ Route::prefix('admin')
             ->parameters(['candidate-pricing-menus' => 'candidatePricingMenu'])
             ->only(['index', 'create', 'store', 'show', 'edit', 'update']);
         Route::patch('candidate-pricing-menus/{candidatePricingMenu}/toggle', [AdminCandidatePricingMenuController::class, 'toggle'])->name('candidate-pricing-menus.toggle');
+        Route::resource('referral-campaigns', AdminReferralCampaignController::class)
+            ->parameters(['referral-campaigns' => 'referralCampaign'])
+            ->only(['index', 'create', 'store']);
+        Route::patch('referral-campaigns/{referralCampaign}/toggle', [AdminReferralCampaignController::class, 'toggle'])->name('referral-campaigns.toggle');
+        Route::get('referral-reports', AdminReferralReportController::class)->name('referral-reports');
 
         Route::resource('subscriptions', AdminSubscriptionController::class)->only(['index', 'show']);
         Route::patch('subscriptions/{subscription}/extend', [AdminSubscriptionController::class, 'extend'])->name('subscriptions.extend');

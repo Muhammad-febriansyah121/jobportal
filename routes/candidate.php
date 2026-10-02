@@ -123,6 +123,7 @@ Route::prefix('candidate')
             Route::patch('career-paths/steps/{step}', [CandidateCareerPathController::class, 'toggleStep'])->name('career-paths.steps.toggle');
 
             Route::get('pricing', [CandidatePricingController::class, 'index'])->name('pricing.index');
+            Route::post('pricing/redeem-voucher', [CandidatePricingController::class, 'redeemVoucher'])->middleware('throttle:5,1')->name('pricing.redeem-voucher');
             Route::post('pricing/claim-trial/{candidatePricingMenu}', [CandidatePricingController::class, 'claimTrial'])->name('pricing.claim-trial');
             Route::post('pricing/purchase/{candidatePricingMenu}', [CandidatePricingController::class, 'purchase'])->name('pricing.purchase');
             Route::post('pricing/check/{candidateWalletTransaction}', [CandidatePricingController::class, 'check'])->name('pricing.check');

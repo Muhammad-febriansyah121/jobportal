@@ -66,6 +66,10 @@ class CandidateWalletManager
 
     public function canUseBuilderDraft(CandidateProfile $candidate): bool
     {
+        if ($candidate->cv_builder_quota_expires_at?->isPast()) {
+            return false;
+        }
+
         return (int) $candidate->cv_builder_quota_balance >= self::CV_BUILDER_DRAFT_QUOTA_COST
             && (int) $candidate->ai_token_balance >= self::CV_BUILDER_DRAFT_TOKEN_COST;
     }

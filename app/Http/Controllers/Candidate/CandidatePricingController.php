@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Candidate;
 
 use App\Actions\Candidate\CandidateWalletManager;
+use App\Actions\Candidate\RedeemReferralVoucher;
 use App\Actions\Candidate\ResolveCandidateProfile;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Candidate\RedeemReferralVoucherRequest;
 use App\Models\CandidatePricingMenu;
 use App\Models\CandidateWalletTransaction;
 use App\Services\PakasirService;
@@ -17,6 +19,22 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class CandidatePricingController extends Controller
 {
+    public function redeemVoucher(
+        RedeemReferralVoucherRequest $request,
+        ResolveCandidateProfile $resolveCandidateProfile,
+        RedeemReferralVoucher $redeemReferralVoucher
+    ): RedirectResponse {
+        $candidate = $resolveCandidateProfile->handle($request->user());
+        $redeemReferralVoucher->handle($candidate, $request->string('code')->toString());
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Kode referral berhasil digunakan. Benefit gratis sudah masuk ke wallet kamu.',
+        ]);
+
+        return back();
+    }
+
     public function index(
         Request $request,
         ResolveCandidateProfile $resolveCandidateProfile,
@@ -67,7 +85,12 @@ class CandidatePricingController extends Controller
             ->where('source', 'purchase')
             ->whereNotNull('expires_at')
             ->latest('id')
-            ->value('expires_at');
+            ->first()?->expires_at;
+        $cvBuilderQuotaExpiresAt = $candidate->cv_builder_quota_expires_at;
+
+        if ($latestPaidTopupExpiresAt !== null && ($cvBuilderQuotaExpiresAt === null || $latestPaidTopupExpiresAt->isAfter($cvBuilderQuotaExpiresAt))) {
+            $cvBuilderQuotaExpiresAt = $latestPaidTopupExpiresAt;
+        }
 
         return Inertia::render('candidate/pricing', [
             'wallet' => [
@@ -75,7 +98,7 @@ class CandidatePricingController extends Controller
                 'cv_builder_quota_balance' => (int) $candidate->cv_builder_quota_balance,
                 'ai_interview_quota_balance' => (int) $candidate->ai_interview_quota_balance,
                 'ai_interview_quota_expires_at' => $candidate->ai_interview_quota_expires_at?->toIso8601String(),
-                'cv_builder_quota_expires_at' => $latestPaidTopupExpiresAt?->toIso8601String(),
+                'cv_builder_quota_expires_at' => $cvBuilderQuotaExpiresAt?->toIso8601String(),
                 'draft_token_cost' => CandidateWalletManager::CV_BUILDER_DRAFT_TOKEN_COST,
                 'draft_quota_cost' => CandidateWalletManager::CV_BUILDER_DRAFT_QUOTA_COST,
             ],
@@ -140,8 +163,9 @@ class CandidatePricingController extends Controller
         $validityDays = (int) ($candidatePricingMenu->validity_days ?: 7);
         $aiInterviewDelta = (int) $candidatePricingMenu->ai_interview_quota;
         $cvBuilderDelta = (int) $candidatePricingMenu->cv_builder_quota;
+        $expiresAt = now()->addDays($validityDays);
 
-        DB::transaction(function () use ($candidate, $candidatePricingMenu, $validityDays, $aiInterviewDelta, $cvBuilderDelta): void {
+        DB::transaction(function () use ($candidate, $candidatePricingMenu, $validityDays, $aiInterviewDelta, $cvBuilderDelta, $expiresAt): void {
             CandidateWalletTransaction::create([
                 'candidate_id' => $candidate->id,
                 'candidate_pricing_menu_id' => $candidatePricingMenu->id,
@@ -154,7 +178,7 @@ class CandidatePricingController extends Controller
                 'amount' => 0,
                 'status' => 'paid',
                 'paid_at' => now(),
-                'expires_at' => now()->addDays($validityDays),
+                'expires_at' => $expiresAt,
                 'meta_json' => [
                     'menu' => $candidatePricingMenu->name,
                     'validity_days' => $validityDays,
@@ -165,9 +189,13 @@ class CandidatePricingController extends Controller
             $candidate->forceFill([
                 'cv_builder_quota_balance' => max(0, (int) $candidate->cv_builder_quota_balance + $cvBuilderDelta),
                 'ai_interview_quota_balance' => max(0, (int) $candidate->ai_interview_quota_balance + $aiInterviewDelta),
-                'ai_interview_quota_expires_at' => $aiInterviewDelta > 0
-                    ? now()->addDays($validityDays)
+                'ai_interview_quota_expires_at' => $aiInterviewDelta > 0 && ($candidate->ai_interview_quota_expires_at === null || $expiresAt->isAfter($candidate->ai_interview_quota_expires_at))
+                    ? $expiresAt
                     : $candidate->ai_interview_quota_expires_at,
+                'cv_builder_quota_expires_at' => $cvBuilderDelta > 0
+                    && ($candidate->cv_builder_quota_expires_at === null || $expiresAt->isAfter($candidate->cv_builder_quota_expires_at))
+                    ? $expiresAt
+                    : $candidate->cv_builder_quota_expires_at,
             ])->save();
         });
 
@@ -297,10 +325,11 @@ class CandidatePricingController extends Controller
                 }
 
                 $validityDays = (int) ($fresh->pricingMenu?->validity_days ?? 0);
+                $expiresAt = $validityDays > 0 ? now()->addDays($validityDays) : null;
                 $fresh->update([
                     'status' => 'paid',
                     'paid_at' => now(),
-                    'expires_at' => $validityDays > 0 ? now()->addDays($validityDays) : null,
+                    'expires_at' => $expiresAt,
                 ]);
 
                 $aiInterviewDelta = (int) $fresh->ai_interview_quota_delta;
@@ -309,9 +338,12 @@ class CandidatePricingController extends Controller
                     'ai_token_balance' => max(0, (int) $candidate->ai_token_balance + (int) $fresh->ai_token_delta),
                     'cv_builder_quota_balance' => max(0, (int) $candidate->cv_builder_quota_balance + (int) $fresh->cv_builder_quota_delta),
                     'ai_interview_quota_balance' => max(0, (int) $candidate->ai_interview_quota_balance + $aiInterviewDelta),
-                    'ai_interview_quota_expires_at' => $aiInterviewDelta > 0 && $validityDays > 0
-                        ? now()->addDays($validityDays)
+                    'ai_interview_quota_expires_at' => $aiInterviewDelta > 0 && $expiresAt !== null && ($candidate->ai_interview_quota_expires_at === null || $expiresAt->isAfter($candidate->ai_interview_quota_expires_at))
+                        ? $expiresAt
                         : $candidate->ai_interview_quota_expires_at,
+                    'cv_builder_quota_expires_at' => (int) $fresh->cv_builder_quota_delta > 0 && $expiresAt !== null && ($candidate->cv_builder_quota_expires_at === null || $expiresAt->isAfter($candidate->cv_builder_quota_expires_at))
+                        ? $expiresAt
+                        : $candidate->cv_builder_quota_expires_at,
                 ])->save();
             });
 

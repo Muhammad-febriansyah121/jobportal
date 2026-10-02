@@ -129,10 +129,11 @@ class PakasirWebhookController extends Controller
                 }
 
                 $validityDays = (int) ($freshTransaction->pricingMenu?->validity_days ?? 0);
+                $expiresAt = $validityDays > 0 ? now()->addDays($validityDays) : null;
                 $freshTransaction->update([
                     'status' => 'paid',
                     'paid_at' => $completedAt ?: now(),
-                    'expires_at' => $validityDays > 0 ? now()->addDays($validityDays) : null,
+                    'expires_at' => $expiresAt,
                 ]);
 
                 $aiInterviewDelta = (int) $freshTransaction->ai_interview_quota_delta;
@@ -141,9 +142,12 @@ class PakasirWebhookController extends Controller
                     'ai_token_balance' => max(0, (int) $candidate->ai_token_balance + (int) $freshTransaction->ai_token_delta),
                     'cv_builder_quota_balance' => max(0, (int) $candidate->cv_builder_quota_balance + (int) $freshTransaction->cv_builder_quota_delta),
                     'ai_interview_quota_balance' => max(0, (int) $candidate->ai_interview_quota_balance + $aiInterviewDelta),
-                    'ai_interview_quota_expires_at' => $aiInterviewDelta > 0 && $validityDays > 0
-                        ? now()->addDays($validityDays)
+                    'ai_interview_quota_expires_at' => $aiInterviewDelta > 0 && $expiresAt !== null && ($candidate->ai_interview_quota_expires_at === null || $expiresAt->isAfter($candidate->ai_interview_quota_expires_at))
+                        ? $expiresAt
                         : $candidate->ai_interview_quota_expires_at,
+                    'cv_builder_quota_expires_at' => (int) $freshTransaction->cv_builder_quota_delta > 0 && $expiresAt !== null && ($candidate->cv_builder_quota_expires_at === null || $expiresAt->isAfter($candidate->cv_builder_quota_expires_at))
+                        ? $expiresAt
+                        : $candidate->cv_builder_quota_expires_at,
                 ])->save();
             });
 
