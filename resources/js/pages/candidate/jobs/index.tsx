@@ -45,6 +45,7 @@ type Job = {
     is_scraped?: boolean;
     is_anonymous: boolean;
     company?: string | null;
+    company_logo?: string | null;
     company_verified: boolean;
     industry?: string | null;
     location: string;
@@ -161,11 +162,6 @@ export default function CandidateJobsIndex({
                         <p className="text-sm text-muted-foreground">
                             {t('candidate.jobs.page_description')}
                         </p>
-                        {source === 'external' ? (
-                            <span className="mt-2 inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                                Data lowongan eksternal
-                            </span>
-                        ) : null}
                     </div>
                 </div>
 
@@ -489,11 +485,22 @@ function JobCard({
                         <div className="flex items-start gap-3.5">
                             <div
                                 className={cn(
-                                    'flex size-12 shrink-0 items-center justify-center rounded-xl text-base font-bold shadow-sm ring-1 ring-black/5',
+                                    'relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl text-base font-bold shadow-sm ring-1 ring-black/5',
                                     avatarColor,
                                 )}
                             >
                                 {initial}
+                                {job.company_logo ? (
+                                    <img
+                                        src={job.company_logo}
+                                        alt={`${companyName} logo`}
+                                        className="absolute inset-0 size-full bg-white object-contain p-1"
+                                        loading="lazy"
+                                        onError={(event) => {
+                                            event.currentTarget.style.display = 'none';
+                                        }}
+                                    />
+                                ) : null}
                             </div>
 
                             <div className="min-w-0 flex-1">
@@ -569,11 +576,6 @@ function JobCard({
                                                 'candidate.jobs.anonymous_badge',
                                             )}
                                         </Badge>
-                                    ) : job.is_scraped ? (
-                                        <Badge className="gap-1 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
-                                            <ExternalLink className="size-3" />
-                                            Eksternal
-                                        </Badge>
                                     ) : job.company_verified ? (
                                         <Badge className="border-transparent bg-[#0F4C94]/10 text-[#0F4C94] hover:bg-[#0F4C94]/10">
                                             {t('candidate.jobs.verified_badge')}
@@ -632,16 +634,7 @@ function JobCard({
                     </div>
 
                     <aside className="border-t border-border/60 bg-slate-50/80 p-5 lg:border-t-0 lg:border-l">
-                        {job.is_scraped ? (
-                            <div className="rounded-lg border border-dashed border-amber-200 bg-amber-50/70 p-3">
-                                <p className="text-sm font-semibold text-amber-800">
-                                    Sumber eksternal
-                                </p>
-                                <p className="mt-1 text-xs leading-5 text-amber-700">
-                                    Detail dan opsi lamaran tersedia di halaman lowongan.
-                                </p>
-                            </div>
-                        ) : score > 0 ? (
+                        {score > 0 ? (
                             <div>
                                 <div
                                     className={cn(

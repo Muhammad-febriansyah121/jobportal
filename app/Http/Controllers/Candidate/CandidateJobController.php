@@ -242,6 +242,7 @@ class CandidateJobController extends Controller
             'is_anonymous' => false,
             'is_scraped' => true,
             'company' => $job->company_name,
+            'company_logo' => $job->company_logo_url,
             'company_verified' => false,
             'industry' => null,
             'location' => $job->location ?? '',

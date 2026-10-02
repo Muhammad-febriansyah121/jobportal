@@ -13,6 +13,7 @@ test('candidate jobs page lists external jobs', function () {
         'source_job_id' => 'external-1',
         'source_url' => 'https://example.com/jobs/external-1',
         'company_name' => 'External Company',
+        'company_logo_url' => 'https://example.com/logo.png',
         'title' => 'React Engineer',
         'description' => 'Build frontend products.',
         'location' => 'Jakarta',
@@ -35,6 +36,7 @@ test('candidate jobs page lists external jobs', function () {
             ->where('jobs.data.0.id', $job->id)
             ->where('jobs.data.0.is_scraped', true)
             ->where('jobs.data.0.title', 'React Engineer')
+            ->where('jobs.data.0.company_logo', 'https://example.com/logo.png')
             ->where('jobs.data.0.has_internal_apply', true)
         );
 });
