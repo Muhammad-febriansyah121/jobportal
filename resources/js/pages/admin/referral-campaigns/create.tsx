@@ -23,22 +23,26 @@ export default function CreateReferralCampaign() {
             <div><h1 className="text-xl font-semibold">Tambah referral campaign</h1><p className="mt-1 text-sm text-muted-foreground">Atur benefit dan batas referral. Kode akan dibuat otomatis untuk setiap jobseeker.</p></div>
             <form onSubmit={submit} className="space-y-5 rounded-xl border border-border bg-card p-6 shadow-none">
                 <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Nama campaign" name="name" value={form.data.name} onChange={(v) => form.setData('name', v)} error={form.errors.name} />
-                    <Field label="Slug" name="slug" value={form.data.slug} onChange={(v) => form.setData('slug', v)} error={form.errors.slug} />
-                    <Field label="Masa berlaku (hari)" name="validity_days" type="number" value={form.data.validity_days} onChange={(v) => form.setData('validity_days', Number(v))} error={form.errors.validity_days} />
-                    <Field label="Kuota CV Builder" name="cv_builder_quota" type="number" value={form.data.cv_builder_quota} onChange={(v) => form.setData('cv_builder_quota', Number(v))} error={form.errors.cv_builder_quota} />
-                    <Field label="Kuota AI Interview" name="ai_interview_quota" type="number" value={form.data.ai_interview_quota} onChange={(v) => form.setData('ai_interview_quota', Number(v))} error={form.errors.ai_interview_quota} />
-                    <Field label="AI token" name="ai_token_amount" type="number" value={form.data.ai_token_amount} onChange={(v) => form.setData('ai_token_amount', Number(v))} error={form.errors.ai_token_amount} />
-                    <Field label="Batas redemption" name="max_redemptions" type="number" value={form.data.max_redemptions} onChange={(v) => form.setData('max_redemptions', v)} error={form.errors.max_redemptions} />
-                    <Field label="Batas referral per user" name="max_referrals_per_user" type="number" value={form.data.max_referrals_per_user} onChange={(v) => form.setData('max_referrals_per_user', v)} error={form.errors.max_referrals_per_user} />
+                    <Field label="Nama campaign" name="name" placeholder="Contoh: Referral Oktober" value={form.data.name} onChange={(v) => { form.setData('name', v); form.setData('slug', slugify(v)); }} error={form.errors.name} />
+                    <Field label="Slug otomatis" name="slug" placeholder="Dibuat otomatis dari nama campaign" value={form.data.slug} onChange={() => {}} error={form.errors.slug} readOnly />
+                    <Field label="Masa berlaku (hari)" name="validity_days" type="number" placeholder="Contoh: 30" value={form.data.validity_days} onChange={(v) => form.setData('validity_days', Number(v))} error={form.errors.validity_days} />
+                    <Field label="Kuota CV Builder" name="cv_builder_quota" type="number" placeholder="Contoh: 1" value={form.data.cv_builder_quota} onChange={(v) => form.setData('cv_builder_quota', Number(v))} error={form.errors.cv_builder_quota} />
+                    <Field label="Kuota AI Interview" name="ai_interview_quota" type="number" placeholder="Contoh: 1" value={form.data.ai_interview_quota} onChange={(v) => form.setData('ai_interview_quota', Number(v))} error={form.errors.ai_interview_quota} />
+                    <Field label="AI token" name="ai_token_amount" type="number" placeholder="Contoh: 500" value={form.data.ai_token_amount} onChange={(v) => form.setData('ai_token_amount', Number(v))} error={form.errors.ai_token_amount} />
+                    <Field label="Batas redemption" name="max_redemptions" type="number" placeholder="Kosongkan jika tidak dibatasi" value={form.data.max_redemptions} onChange={(v) => form.setData('max_redemptions', v)} error={form.errors.max_redemptions} />
+                    <Field label="Batas referral per user" name="max_referrals_per_user" type="number" placeholder="Kosongkan jika tidak dibatasi" value={form.data.max_referrals_per_user} onChange={(v) => form.setData('max_referrals_per_user', v)} error={form.errors.max_referrals_per_user} />
                 </div>
-                <div><Label htmlFor="description">Deskripsi</Label><textarea id="description" value={form.data.description} onChange={(e) => form.setData('description', e.target.value)} className="mt-2 min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-[#0F4C94]" /></div>
+                <div><Label htmlFor="description">Deskripsi</Label><textarea id="description" placeholder="Jelaskan benefit campaign untuk jobseeker." value={form.data.description} onChange={(e) => form.setData('description', e.target.value)} className="mt-2 min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-[#0F4C94]" /></div>
                 <div className="flex justify-end"><Button type="submit" disabled={form.processing} className="bg-[#0F4C94] hover:bg-[#093579]">{form.processing ? 'Menyimpan…' : 'Simpan campaign'}</Button></div>
             </form>
         </div>
     </>;
 }
 
-function Field({ label, name, value, onChange, error, type = 'text' }: { label: string; name: string; value: string | number; onChange: (value: string) => void; error?: string; type?: string }) {
-    return <div><Label htmlFor={name}>{label}</Label><Input id={name} name={name} type={type} value={value} onChange={(e) => onChange(e.target.value)} className="mt-2" />{error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}</div>;
+function Field({ label, name, value, onChange, error, type = 'text', placeholder, readOnly = false }: { label: string; name: string; value: string | number; onChange: (value: string) => void; error?: string; type?: string; placeholder?: string; readOnly?: boolean }) {
+    return <div><Label htmlFor={name}>{label}</Label><Input id={name} name={name} type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} readOnly={readOnly} className={`mt-2 ${readOnly ? 'bg-muted/40 text-muted-foreground' : ''}`} />{error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}</div>;
+}
+
+function slugify(value: string): string {
+    return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }

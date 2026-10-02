@@ -24,7 +24,7 @@ class SaveReferralCampaignRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'unique:referral_campaigns,slug'],
+            'slug' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'ai_token_amount' => ['required', 'integer', 'min:0'],
             'cv_builder_quota' => ['required', 'integer', 'min:0'],

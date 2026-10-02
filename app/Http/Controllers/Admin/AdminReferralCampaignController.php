@@ -35,6 +35,7 @@ class AdminReferralCampaignController extends Controller
     public function store(SaveReferralCampaignRequest $request): RedirectResponse
     {
         $data = $request->validated();
+        $data['slug'] = $this->uniqueSlug($data['slug'] ?? null, $data['name']);
         $code = filled($data['codes'] ?? null) ? Str::upper(trim($data['codes'])) : null;
         $ownerEmail = $data['owner_email'] ?? null;
         unset($data['codes']);
@@ -50,6 +51,20 @@ class AdminReferralCampaignController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Campaign referral berhasil dibuat.']);
 
         return to_route('admin.referral-campaigns.index');
+    }
+
+    private function uniqueSlug(?string $slug, string $name): string
+    {
+        $baseSlug = Str::slug($slug ?: $name) ?: 'referral-campaign';
+        $candidate = $baseSlug;
+        $suffix = 2;
+
+        while (ReferralCampaign::query()->where('slug', $candidate)->exists()) {
+            $candidate = $baseSlug.'-'.$suffix;
+            $suffix++;
+        }
+
+        return $candidate;
     }
 
     public function toggle(ReferralCampaign $referralCampaign): RedirectResponse
