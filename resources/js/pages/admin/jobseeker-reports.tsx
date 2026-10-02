@@ -1,7 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { ApexOptions } from 'apexcharts';
-import { BarChart3, BriefcaseBusiness, ExternalLink, Search, TrendingUp, Users } from 'lucide-react';
+import { BarChart3, BriefcaseBusiness, Search, TrendingUp, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import ReactApexChart from 'react-apexcharts';
@@ -30,12 +30,11 @@ type JobReport = {
 type TrendPoint = { month: string; applications: number; candidates: number; hired: number };
 type PaginationLink = { url: string | null; label: string; active: boolean };
 type Applicant = { id: number; candidate: string; email: string; job: string; company: string; status: string; applied_at: string };
-type ExternalApplicant = Applicant & { platform: string; source_url: string | null };
 
 type Props = {
     jobs: { data: JobReport[]; links: PaginationLink[]; from: number | null; to: number | null; total: number };
     applicants: { data: Applicant[]; links: PaginationLink[]; from: number | null; to: number | null; total: number };
-    filters: { search: string; tab: 'list' | 'analytics' | 'candidates' | 'external' };
+    filters: { search: string; tab: 'list' | 'analytics' | 'candidates' };
     summary: {
         total_applications: number;
         unique_candidates: number;
@@ -46,7 +45,6 @@ type Props = {
     trend: TrendPoint[];
     statusCounts: Record<string, number>;
     topJobs: Array<{ title: string; company: string; applications: number }>;
-    externalApplicants: { data: ExternalApplicant[]; links: PaginationLink[]; from: number | null; to: number | null; total: number };
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -81,15 +79,6 @@ const applicantColumns: ColumnDef<Applicant>[] = [
     { accessorKey: 'applied_at', header: 'Waktu melamar', cell: ({ row }) => <span className="text-muted-foreground">{row.original.applied_at}</span> },
 ];
 
-const externalApplicantColumns: ColumnDef<ExternalApplicant>[] = [
-    { accessorKey: 'candidate', header: 'Jobseeker', cell: ({ row }) => <div><div className="font-semibold">{row.original.candidate}</div><div className="text-xs text-muted-foreground">{row.original.email}</div></div> },
-    { accessorKey: 'job', header: 'Lowongan', cell: ({ row }) => row.original.source_url ? <a href={row.original.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium text-primary hover:underline">{row.original.job}<ExternalLink className="size-3" /></a> : <span className="font-medium">{row.original.job}</span> },
-    { accessorKey: 'company', header: 'Perusahaan eksternal' },
-    { accessorKey: 'platform', header: 'Sumber', cell: ({ row }) => <Badge variant="outline">{row.original.platform}</Badge> },
-    { accessorKey: 'status', header: 'Status', cell: ({ row }) => <Badge variant={row.original.status === 'hired' ? 'default' : 'secondary'}>{STATUS_LABELS[row.original.status] ?? row.original.status}</Badge> },
-    { accessorKey: 'applied_at', header: 'Waktu melamar', cell: ({ row }) => <span className="text-muted-foreground">{row.original.applied_at}</span> },
-];
-
 function number(value: number): string {
     return value.toLocaleString('id-ID');
 }
@@ -102,7 +91,7 @@ function month(value: string): string {
     );
 }
 
-export default function JobseekerReports({ jobs, applicants, externalApplicants, filters, summary, trend, statusCounts, topJobs }: Props) {
+export default function JobseekerReports({ jobs, applicants, filters, summary, trend, statusCounts, topJobs }: Props) {
     const [search, setSearch] = useState(filters.search);
     const tab = filters.tab;
 
@@ -164,7 +153,7 @@ export default function JobseekerReports({ jobs, applicants, externalApplicants,
         <>
             <Head title="Report Jobseeker" />
             <div className="space-y-6 p-4 md:p-6">
-                <Heading title="Report Jobseeker" description="Pantau volume lamaran, performa lowongan, dan alur seleksi kandidat." />
+                <Heading title="Report Jobseeker" description="Pantau lamaran dari lowongan eksternal dan alur seleksi kandidat." />
 
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                     <Metric label="Total lamaran" value={summary.total_applications} icon={BarChart3} tone="blue" />
@@ -179,13 +168,12 @@ export default function JobseekerReports({ jobs, applicants, externalApplicants,
                         <TabsTrigger value="list" className="gap-2 px-4"><BriefcaseBusiness className="size-4" />Daftar lamaran</TabsTrigger>
                         <TabsTrigger value="analytics" className="gap-2 px-4"><BarChart3 className="size-4" />Analitik</TabsTrigger>
                         <TabsTrigger value="candidates" className="gap-2 px-4"><Users className="size-4" />Kandidat</TabsTrigger>
-                        <TabsTrigger value="external" className="gap-2 px-4"><ExternalLink className="size-4" />Eksternal</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="list" className="space-y-4">
                         <Card>
                             <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div><CardTitle>Lamaran per lowongan</CardTitle><CardDescription>Urut berdasarkan jumlah pelamar terbanyak.</CardDescription></div>
+                                <div><CardTitle>Lamaran per lowongan eksternal</CardTitle><CardDescription>Urut berdasarkan jumlah pelamar terbanyak.</CardDescription></div>
                                 <SearchForm search={search} setSearch={setSearch} placeholder="Cari lowongan/perusahaan..." />
                             </CardHeader>
                             <CardContent className="p-0">
@@ -204,19 +192,6 @@ export default function JobseekerReports({ jobs, applicants, externalApplicants,
                             <CardContent className="p-0">
                                 <JobseekerDataTable columns={applicantColumns} data={applicants.data} emptyState="Belum ada kandidat yang melamar." className="min-w-240" />
                                 <PaginationFooter from={applicants.from} to={applicants.to} total={applicants.total} links={applicants.links} label="kandidat" />
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent value="external" className="space-y-4">
-                        <Card>
-                            <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div><CardTitle>Lamaran dari lowongan eksternal</CardTitle><CardDescription>Jobseeker yang melamar lowongan hasil agregasi dari platform lain.</CardDescription></div>
-                                <SearchForm search={search} setSearch={setSearch} placeholder="Cari kandidat/lowongan/perusahaan..." />
-                            </CardHeader>
-                            <CardContent className="p-0">
-                                <JobseekerDataTable columns={externalApplicantColumns} data={externalApplicants.data} emptyState="Belum ada lamaran eksternal." className="min-w-280" />
-                                <PaginationFooter from={externalApplicants.from} to={externalApplicants.to} total={externalApplicants.total} links={externalApplicants.links} label="lamaran eksternal" />
                             </CardContent>
                         </Card>
                     </TabsContent>
