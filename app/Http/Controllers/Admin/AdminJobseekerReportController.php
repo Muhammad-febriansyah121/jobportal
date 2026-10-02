@@ -31,6 +31,9 @@ class AdminJobseekerReportController extends Controller
                 'applications as shortlisted_count' => fn ($query) => $query->where('status', 'shortlisted'),
                 'applications as interview_count' => fn ($query) => $query->where('status', 'interview'),
                 'applications as hired_count' => fn ($query) => $query->where('status', 'hired'),
+                'applications as email_sent_count' => fn ($query) => $query->where('email_status', 'sent'),
+                'applications as email_failed_count' => fn ($query) => $query->where('email_status', 'failed'),
+                'applications as email_pending_count' => fn ($query) => $query->whereIn('email_status', ['queued', 'sending', 'pending_smtp']),
             ])
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($query) use ($search): void {
@@ -47,7 +50,7 @@ class AdminJobseekerReportController extends Controller
                 'id' => $job->id,
                 'title' => $job->title,
                 'company' => $job->company_name ?? 'Tanpa perusahaan',
-                'status' => $job->status,
+                'status' => $this->emailStatusForJob($job),
                 'applications' => (int) $job->applications_count,
                 'shortlisted' => (int) $job->shortlisted_count,
                 'interview' => (int) $job->interview_count,
@@ -145,5 +148,22 @@ class AdminJobseekerReportController extends Controller
     private function reportStart(): CarbonImmutable
     {
         return CarbonImmutable::now()->startOfMonth()->subMonths(11);
+    }
+
+    private function emailStatusForJob(ScrapedJob $job): string
+    {
+        if ((int) $job->email_failed_count > 0) {
+            return 'failed';
+        }
+
+        if ((int) $job->email_pending_count > 0) {
+            return 'queued';
+        }
+
+        if ((int) $job->applications_count > 0 && (int) $job->email_sent_count === (int) $job->applications_count) {
+            return 'sent';
+        }
+
+        return 'pending';
     }
 }

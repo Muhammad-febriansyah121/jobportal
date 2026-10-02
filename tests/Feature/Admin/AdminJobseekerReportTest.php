@@ -43,6 +43,7 @@ test('admin can view jobseeker application report and analytics data', function 
             ->where('summary.unique_candidates', 1)
             ->where('summary.hired_candidates', 1)
             ->where('jobs.data.0.applications', 1)
+            ->where('jobs.data.0.status', 'sent')
             ->where('statusCounts.hired', 1)
             ->where('applicants.data.0.candidate', 'Candidate Report')
             ->where('applicants.data.0.company', 'Report Company')

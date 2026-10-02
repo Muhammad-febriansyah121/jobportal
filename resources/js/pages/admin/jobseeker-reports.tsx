@@ -63,7 +63,7 @@ const chartBase: ApexOptions = {
 
 const jobColumns: ColumnDef<JobReport>[] = [
     { accessorKey: 'title', header: 'Lowongan', cell: ({ row }) => <div><div className="font-semibold">{row.original.title}</div><div className="text-xs text-muted-foreground">{row.original.company}</div></div> },
-    { accessorKey: 'status', header: 'Status', cell: ({ row }) => <Badge variant={row.original.status === 'published' ? 'default' : 'secondary'}>{row.original.status === 'published' ? 'Aktif' : row.original.status}</Badge> },
+    { accessorKey: 'status', header: 'Status email', cell: ({ row }) => <Badge variant={emailStatusVariant(row.original.status === 'pending' ? null : row.original.status)}>{jobEmailStatusLabel(row.original.status)}</Badge> },
     { accessorKey: 'applications', header: 'Total pelamar', cell: ({ row }) => <div className="text-right font-bold tabular-nums">{number(row.original.applications)}</div> },
     { accessorKey: 'shortlisted', header: 'Shortlist', cell: ({ row }) => <div className="text-right tabular-nums">{number(row.original.shortlisted)}</div> },
     { accessorKey: 'interview', header: 'Interview', cell: ({ row }) => <div className="text-right tabular-nums">{number(row.original.interview)}</div> },
@@ -88,6 +88,15 @@ function emailStatusLabel(status: string | null): string {
         pending_smtp: 'SMTP belum siap',
         failed: 'Pengiriman gagal',
     }[status ?? ''] ?? 'Belum dikirim';
+}
+
+function jobEmailStatusLabel(status: string): string {
+    return {
+        sent: 'Terkirim',
+        queued: 'Menunggu dikirim',
+        failed: 'Pengiriman gagal',
+        pending: 'Belum dikirim',
+    }[status] ?? 'Belum dikirim';
 }
 
 function emailStatusVariant(status: string | null): 'default' | 'secondary' | 'destructive' | 'outline' {
