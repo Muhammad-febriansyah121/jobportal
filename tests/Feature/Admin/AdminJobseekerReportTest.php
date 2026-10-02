@@ -28,6 +28,8 @@ test('admin can view jobseeker application report and analytics data', function 
         'scraped_job_id' => $job->id,
         'candidate_id' => $profile->id,
         'status' => 'hired',
+        'email_status' => 'sent',
+        'email_sent_at' => now(),
         'applied_at' => Carbon::now(),
     ]);
 
@@ -44,6 +46,7 @@ test('admin can view jobseeker application report and analytics data', function 
             ->where('statusCounts.hired', 1)
             ->where('applicants.data.0.candidate', 'Candidate Report')
             ->where('applicants.data.0.company', 'Report Company')
+            ->where('applicants.data.0.email_status', 'sent')
             ->has('trend', 12)
             ->has('topJobs', 1));
 });

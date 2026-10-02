@@ -29,7 +29,7 @@ type JobReport = {
 
 type TrendPoint = { month: string; applications: number; candidates: number; hired: number };
 type PaginationLink = { url: string | null; label: string; active: boolean };
-type Applicant = { id: number; candidate: string; email: string; job: string; company: string; status: string; applied_at: string };
+type Applicant = { id: number; candidate: string; email: string; job: string; company: string; status: string; email_status: string | null; email_sent_at: string | null; applied_at: string };
 
 type Props = {
     jobs: { data: JobReport[]; links: PaginationLink[]; from: number | null; to: number | null; total: number };
@@ -76,8 +76,31 @@ const applicantColumns: ColumnDef<Applicant>[] = [
     { accessorKey: 'job', header: 'Lowongan', cell: ({ row }) => <span className="font-medium">{row.original.job}</span> },
     { accessorKey: 'company', header: 'Perusahaan' },
     { accessorKey: 'status', header: 'Status', cell: ({ row }) => <Badge variant={row.original.status === 'hired' ? 'default' : 'secondary'}>{STATUS_LABELS[row.original.status] ?? row.original.status}</Badge> },
+    { accessorKey: 'email_status', header: 'Email perusahaan', cell: ({ row }) => <Badge variant={emailStatusVariant(row.original.email_status)}>{emailStatusLabel(row.original.email_status)}</Badge> },
     { accessorKey: 'applied_at', header: 'Waktu melamar', cell: ({ row }) => <span className="text-muted-foreground">{row.original.applied_at}</span> },
 ];
+
+function emailStatusLabel(status: string | null): string {
+    return {
+        queued: 'Menunggu dikirim',
+        sending: 'Sedang dikirim',
+        sent: 'Email terkirim',
+        pending_smtp: 'SMTP belum siap',
+        failed: 'Pengiriman gagal',
+    }[status ?? ''] ?? 'Belum dikirim';
+}
+
+function emailStatusVariant(status: string | null): 'default' | 'secondary' | 'destructive' | 'outline' {
+    if (status === 'sent') {
+        return 'default';
+    }
+
+    if (status === 'failed') {
+        return 'destructive';
+    }
+
+    return status === 'pending_smtp' ? 'outline' : 'secondary';
+}
 
 function number(value: number): string {
     return value.toLocaleString('id-ID');

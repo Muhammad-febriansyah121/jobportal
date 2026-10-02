@@ -56,7 +56,7 @@ class AdminJobseekerReportController extends Controller
             ]);
 
         $applicants = Application::query()
-            ->select(['id', 'scraped_job_id', 'candidate_id', 'status', 'applied_at'])
+            ->select(['id', 'scraped_job_id', 'candidate_id', 'status', 'email_status', 'email_sent_at', 'applied_at'])
             ->with([
                 'candidate:id,user_id,full_name',
                 'candidate.user:id,name,email',
@@ -85,6 +85,8 @@ class AdminJobseekerReportController extends Controller
                 'job' => $application->scrapedJob?->title ?? '-',
                 'company' => $application->scrapedJob?->company_name ?? 'Perusahaan eksternal',
                 'status' => $application->status,
+                'email_status' => $application->email_status,
+                'email_sent_at' => $application->email_sent_at?->format('d M Y H:i'),
                 'applied_at' => $application->applied_at?->format('d M Y H:i') ?? '-',
             ]);
 
