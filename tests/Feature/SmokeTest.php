@@ -118,6 +118,14 @@ it('public route does not 404 or 500', function (string $uri): void {
         ->not->toBe(500, "GET {$path} returned 500");
 })->with('publicRoutes');
 
+it('includes configured Meta Pixel tracking code', function (): void {
+    $response = $this->get('/');
+
+    $response->assertSee("fbq('init', '1567280844635194');", false)
+        ->assertSee('https://www.facebook.com/tr?id=1567280844635194&ev=PageView&noscript=1', false)
+        ->assertDontSee('1760783824917166', false);
+});
+
 it('shared auth route does not 404 or 500', function (string $uri): void {
     $user = User::factory()->candidate()->create();
     $response = $this->actingAs($user)->get('/'.$uri);
