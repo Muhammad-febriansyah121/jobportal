@@ -42,6 +42,7 @@
           gtag('js', new Date());
 
           gtag('config', 'G-HBDC1R1MD4');
+          gtag('config', 'G-95Q11FS4B6');
         </script>
 
         <!-- Meta Pixel Code -->

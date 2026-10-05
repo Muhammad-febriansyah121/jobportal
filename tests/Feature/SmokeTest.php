@@ -126,6 +126,14 @@ it('includes configured Meta Pixel tracking code', function (): void {
         ->assertDontSee('1760783824917166', false);
 });
 
+it('includes configured Google Analytics tracking code', function (): void {
+    $response = $this->get('/');
+
+    $response->assertSee('https://www.googletagmanager.com/gtag/js?id=G-HBDC1R1MD4', false)
+        ->assertSee("gtag('config', 'G-HBDC1R1MD4');", false)
+        ->assertSee("gtag('config', 'G-95Q11FS4B6');", false);
+});
+
 it('shared auth route does not 404 or 500', function (string $uri): void {
     $user = User::factory()->candidate()->create();
     $response = $this->actingAs($user)->get('/'.$uri);
